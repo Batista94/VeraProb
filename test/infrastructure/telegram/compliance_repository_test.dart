@@ -110,7 +110,7 @@ void main() {
   // =========================================================================
   group('getBatchComplianceStatus — batch parsing', () {
     test('empty list returns empty map', () {
-      final result = parseBatchResponse([]);
+      final result = parseBatchResponse(<dynamic>[]);
       expect(result, isEmpty);
     });
 
@@ -137,7 +137,7 @@ void main() {
         {
           'set_id': 'SET-C',
           'status': 'active',
-          'items': [],
+          'items': <dynamic>[],
           'total_required': 0,
           'total_fulfilled': 0,
         },
@@ -216,7 +216,7 @@ void main() {
           parseComplianceResponse({
                 'status': 'active',
                 'set_id': 'SET-1',
-                'items': [],
+                'items': <dynamic>[],
                 'total_required': 0,
                 'total_fulfilled': 0,
               })

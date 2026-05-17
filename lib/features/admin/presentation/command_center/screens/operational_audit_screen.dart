@@ -41,7 +41,7 @@ class OperationalAuditScreen extends ConsumerWidget {
           icon: const Icon(Icons.add_road_outlined),
           label: const Text('Nova Viagem'),
           backgroundColor: VeraProbColors.primary,
-          onPressed: () => showDialog(
+          onPressed: () => showDialog<void>(
             context: context,
             barrierDismissible: false,
             builder: (_) => const CreateExecutionDialog(),

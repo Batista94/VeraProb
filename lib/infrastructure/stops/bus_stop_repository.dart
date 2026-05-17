@@ -8,7 +8,7 @@ import 'package:veraprob/domain/stops/i_stop_repository.dart';
 class StopRepository implements IStopRepository {
   @override
   Future<List<Stop>> getNearbyStops(double lat, double lon) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
 
     return [
       const Stop(

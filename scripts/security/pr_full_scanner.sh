@@ -165,18 +165,20 @@ TOTAL_WARNS=$S1_WARNS
 DART_CHANGED=""
 [[ -n "$CHANGED_FILES" ]] && DART_CHANGED=$(echo "$CHANGED_FILES" | grep "\.dart$" | grep -v "\.g\.dart$" | grep -v "\.freezed\.dart$" || true)
 
-# ── Step 2: Regression Alerts (DISABLED FOR DEV - RE-ENABLE FOR V1) ──────────
-# echo -e "\n${BOLD}${BLUE}Step 2: Regression Impact Analysis...${NC}"
-# if [[ "${SKIP_REGRESSION:-0}" == "1" ]]; then
-#   echo -e "  ${GREEN}SKIP_REGRESSION=1: Skipping regression analysis.${NC}"
-# elif [[ "$HAS_REGRESSION" == "true" ]]; then
-#   echo -e "  ${YELLOW}${BOLD}[REGRESSION-ALERT]${NC} Changes in migrations or domain detected."
-#   echo "$REGRESSION_FILES" | while read -r line; do
-#     [[ -n "$line" ]] && echo "    → $line"
-#   done
-# else
-#   echo -e "  ${GREEN}No regression-impacting changes detected.${NC}"
-# fi
+# ── Step 2: Migration Append-Only Gate (INV-DB) ──────────────────────────────
+echo -e "\n${BOLD}${BLUE}Step 2: Migration Append-Only Gate (INV-DB)...${NC}"
+MODIFIED_MIGRATIONS=$(echo "$REGRESSION_FILES" | grep "supabase/migrations/.*\.sql" || true)
+if [[ -n "$MODIFIED_MIGRATIONS" ]]; then
+  echo -e "  ${RED}${BOLD}[BLOCK]${NC} Existing migration file(s) modified — Append-Only invariant violated (INV-DB):"
+  echo "$MODIFIED_MIGRATIONS" | while IFS= read -r line; do
+    [[ -n "$line" ]] && echo -e "    ${RED}→ $line${NC}"
+  done
+  TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+elif [[ -z "${CHANGED_FILES:-}" ]]; then
+  echo -e "  ${GREEN}No changes detected.${NC}"
+else
+  echo -e "  ${GREEN}All migration changes are new files (Append-Only compliant).${NC}"
+fi
 
 # ── Step 3: Barrel File Validation (Architect Mode) ──────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 3: Barrel File Validation (INV-13)...${NC}"
@@ -462,16 +464,28 @@ fi
 echo -e "\n${BOLD}${BLUE}Step 9: Governance & Process Audit...${NC}"
 
 if [[ -n "${CHANGED_FILES:-}" ]]; then
-  # 9.1: Mandatory Test Plan for Migrations
+  # 9.1: Mandatory Test Plan for Migrations (1:1 timestamp-prefix match)
   MIG_FILES=$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql" || true)
   if [[ -n "$MIG_FILES" ]]; then
-    echo -e "  [9.1] Checking for Mandatory Test Plans..."
-    TEST_PLANS=$(echo "$CHANGED_FILES" | grep -E "forensic_records/plans/.*\.md" || true)
-    if [[ -z "$TEST_PLANS" ]]; then
-       echo -e "  ${RED}${BOLD}[BLOCK]${NC} DB Migrations detected but NO Test Plan (.md) found in forensic_records/plans/."
-       TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+    echo -e "  [9.1] Checking Mandatory Test Plans (1:1 per migration)..."
+    PLAN_BLOCKS=0
+    while IFS= read -r mig; do
+      [[ -z "$mig" ]] && continue
+      # Skip modified migrations — already blocked by Step 2
+      IS_MODIFIED=$(echo "${MODIFIED_MIGRATIONS:-}" | grep -F "$mig" || true)
+      [[ -n "$IS_MODIFIED" ]] && continue
+      MIG_BASENAME=$(basename "$mig" .sql)
+      TIMESTAMP_PREFIX="${MIG_BASENAME:0:14}"
+      PLAN_IN_PR=$(echo "$CHANGED_FILES" | grep "forensic_records/plans/${TIMESTAMP_PREFIX}" | grep "\.md$" || true)
+      if [[ -z "$PLAN_IN_PR" ]]; then
+        echo -e "  ${RED}${BOLD}[BLOCK]${NC} ${MIG_BASENAME}.sql — no Test Plan found. Add: forensic_records/plans/${TIMESTAMP_PREFIX}*_test_plan.md"
+        PLAN_BLOCKS=$((PLAN_BLOCKS + 1))
+      fi
+    done <<< "$MIG_FILES"
+    if [[ $PLAN_BLOCKS -gt 0 ]]; then
+      TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
     else
-       echo -e "  ${GREEN}Test Plan(s) detected for migrations.${NC}"
+      echo -e "  ${GREEN}All new migrations have matching Test Plans (1:1 compliant).${NC}"
     fi
   fi
 

@@ -75,7 +75,7 @@ void main() {
 
       final state = container.read(searchQueryStreamProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

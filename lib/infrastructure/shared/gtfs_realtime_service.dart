@@ -16,7 +16,7 @@ class GtfsRealtimeService implements IVehiclePositionService {
   @override
   Stream<List<VehiclePosition>> getVehiclePositions() async* {
     while (true) {
-      await Future.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(const Duration(seconds: 5));
 
       final positions = _generateMockPositions();
       yield positions;

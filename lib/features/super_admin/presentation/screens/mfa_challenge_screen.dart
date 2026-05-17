@@ -87,7 +87,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
       switch (result) {
         case MfaVerificationSuccess():
           await Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+            MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
             (_) => false,
           );
         case MfaVerificationFailure():
@@ -145,7 +145,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
   void _signOutAndReturn() {
     ref.read(authRepositoryProvider).signOut();
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+      MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
       (_) => false,
     );
   }

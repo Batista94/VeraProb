@@ -5,7 +5,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_shadow_verdict_repository.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 void main() {
   // ── Fixtures ───────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import 'package:veraprob/application/normalization/models/connectivity_state.dar
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/models/route_adherence.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
-import '../../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 void main() {
   final now = DateTime.utc(2026, 4, 7, 20, 0, 0);

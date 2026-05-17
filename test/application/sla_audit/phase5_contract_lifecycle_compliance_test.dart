@@ -34,7 +34,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.da
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 

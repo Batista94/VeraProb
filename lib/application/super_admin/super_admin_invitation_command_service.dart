@@ -34,7 +34,7 @@ class SuperAdminInvitationCommandService implements InvitationCommandService {
     required String invitationId,
     required DateTime expiresAtUtc,
   }) async {
-    await _client.rpc(
+    await _client.rpc<void>(
       'super_admin_invite_first_admin',
       params: {
         'p_org_id': _orgId,

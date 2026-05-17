@@ -110,8 +110,10 @@ void main() {
           (_) async => AuthMFAListFactorsResponse(totp: [], phone: [], all: []),
         );
         when(
-          () =>
-              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'check_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -152,8 +154,10 @@ void main() {
           ),
         );
         when(
-          () =>
-              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'check_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -175,8 +179,10 @@ void main() {
     group('verifyChallenge', () {
       test('returns failure immediately when locked out', () async {
         when(
-          () =>
-              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'check_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 5,
@@ -205,8 +211,10 @@ void main() {
 
       test('returns success and resets lockout on valid code', () async {
         when(
-          () =>
-              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'check_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -230,8 +238,10 @@ void main() {
           ),
         );
         when(
-          () =>
-              mockClient.rpc('reset_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'reset_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
         final result = await repo.verifyChallenge(
@@ -242,15 +252,19 @@ void main() {
 
         expect(result, isA<MfaVerificationSuccess>());
         verify(
-          () =>
-              mockClient.rpc('reset_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'reset_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).called(1);
       });
 
       test('records failure and returns failure on invalid code', () async {
         when(
-          () =>
-              mockClient.rpc('check_mfa_lockout', params: any(named: 'params')),
+          () => mockClient.rpc<dynamic>(
+            'check_mfa_lockout',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer(
           (_) => FakePostgrestFilterBuilder({
             'failed_attempts': 0,
@@ -266,7 +280,7 @@ void main() {
           ),
         ).thenThrow(const AuthException('Invalid TOTP code'));
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<dynamic>(
             'record_mfa_failure',
             params: any(named: 'params'),
           ),
@@ -289,7 +303,7 @@ void main() {
         expect(failure.failedAttempts, 1);
         expect(failure.isLockedOut, isFalse);
         verify(
-          () => mockClient.rpc(
+          () => mockClient.rpc<dynamic>(
             'record_mfa_failure',
             params: any(named: 'params'),
           ),
@@ -301,7 +315,7 @@ void main() {
         'pre-check lockout short-circuits BOTH mfa.verify AND record_mfa_failure',
         () async {
           when(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'check_mfa_lockout',
               params: any(named: 'params'),
             ),
@@ -338,7 +352,7 @@ void main() {
             ),
           );
           verifyNever(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'record_mfa_failure',
               params: any(named: 'params'),
             ),
@@ -351,7 +365,7 @@ void main() {
         'successful verification calls reset_mfa_lockout exactly 1×',
         () async {
           when(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'check_mfa_lockout',
               params: any(named: 'params'),
             ),
@@ -378,7 +392,7 @@ void main() {
             ),
           );
           when(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'reset_mfa_lockout',
               params: any(named: 'params'),
             ),
@@ -391,13 +405,13 @@ void main() {
           );
 
           verify(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'reset_mfa_lockout',
               params: any(named: 'params'),
             ),
           ).called(1);
           verifyNever(
-            () => mockClient.rpc(
+            () => mockClient.rpc<dynamic>(
               'record_mfa_failure',
               params: any(named: 'params'),
             ),

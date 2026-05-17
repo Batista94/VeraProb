@@ -125,7 +125,7 @@ void main() {
 
       final state = container.read(orgSettingsProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

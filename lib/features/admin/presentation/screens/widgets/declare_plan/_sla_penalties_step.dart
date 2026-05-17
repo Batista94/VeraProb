@@ -191,7 +191,7 @@ class Step3SlaPenalties extends ConsumerWidget {
     BuildContext context,
     AsyncValue<List<SlaTemplateView>> allTemplatesAsync,
   ) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       constraints: const BoxConstraints(maxHeight: 500),

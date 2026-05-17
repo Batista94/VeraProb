@@ -78,7 +78,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                       await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         await Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
+                          MaterialPageRoute<void>(
                             builder: (_) => const AdminLockScreen(),
                           ),
                           (_) => false,

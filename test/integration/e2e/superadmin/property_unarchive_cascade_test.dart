@@ -91,7 +91,7 @@ void main() {
 
           try {
             // 2. Archive the org first (to set up blocked state)
-            await serviceRoleClient.rpc(
+            await serviceRoleClient.rpc<dynamic>(
               'super_admin_archive_organization',
               params: {
                 'p_org_id': org.orgId,
@@ -115,7 +115,7 @@ void main() {
             );
 
             // 3. Unarchive the org (the operation under test)
-            await serviceRoleClient.rpc(
+            await serviceRoleClient.rpc<dynamic>(
               'super_admin_unarchive_organization',
               params: {
                 'p_org_id': org.orgId,

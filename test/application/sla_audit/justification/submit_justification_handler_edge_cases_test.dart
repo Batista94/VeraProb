@@ -275,7 +275,7 @@ void main() {
 
         // Binary Shield: validate evidence hashes via listEquals (INV-33).
         final payloadHashes = List<String>.from(
-          payload['evidence_hashes'] ?? [],
+          (payload['evidence_hashes'] as List<dynamic>?) ?? [],
         );
         expect(listEquals(payloadHashes, command.evidenceHashes), isTrue);
       },

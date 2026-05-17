@@ -19,7 +19,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -57,17 +62,25 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
 
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+        uses: subosito/flutter-action@v2.18.0
         with:
-          flutter-version: "3.41.5"
+          flutter-version: "3.41.9"
           channel: stable
           cache: true
 
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
       - name: Cache pub dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -102,7 +115,7 @@ jobs:
             --release
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: web-build-staging
           path: build/web/

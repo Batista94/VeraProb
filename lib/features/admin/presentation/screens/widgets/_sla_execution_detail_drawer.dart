@@ -145,7 +145,7 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        showDialog(
+                        showDialog<void>(
                           context: context,
                           builder: (_) => InvestigationModal(
                             setId: item.setId,
@@ -420,7 +420,7 @@ class _SolicitarDefesaButtonState
   }
 
   void _showLinkDialog(BuildContext context, String link) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Link de Defesa Gerado'),

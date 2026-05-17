@@ -84,7 +84,8 @@ final currentUserRoleProvider = Provider<UserRole>((ref) {
 /// Current operator Display Name.
 final currentOperatorNameProvider = Provider<String>((ref) {
   final authState = ref.watch(authStateProvider).value;
-  return authState?.session?.user.userMetadata?['name'] ?? 'Operador';
+  return (authState?.session?.user.userMetadata?['name'] as String?) ??
+      'Operador';
 });
 
 /// Current operator Email — used for Pillar C (Audit Trail) forensic logging.

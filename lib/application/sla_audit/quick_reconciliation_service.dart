@@ -79,16 +79,14 @@ class QuickReconciliationService {
     // Use the alert trigger time as reference for the temporal heuristic
     final messageTs = alert.triggeredAtUtc.millisecondsSinceEpoch ~/ 1000;
 
-    final setId =
-        await _client.rpc(
-              'find_execution_for_telegram',
-              params: {
-                'p_org_id': organizationId,
-                'p_driver_id': driverId,
-                'p_message_ts': messageTs,
-              },
-            )
-            as String?;
+    final setId = await _client.rpc<String?>(
+      'find_execution_for_telegram',
+      params: {
+        'p_org_id': organizationId,
+        'p_driver_id': driverId,
+        'p_message_ts': messageTs,
+      },
+    );
 
     if (setId == null) {
       throw StateError(

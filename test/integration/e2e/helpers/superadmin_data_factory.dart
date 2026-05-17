@@ -56,6 +56,11 @@ abstract class SuperAdminDataFactory {
   }) async {
     final client = SuperAdminTestConfig.createServiceRoleClient();
     try {
+      // Idempotência: purga remanescentes de runs anteriores que tenham
+      // o mesmo nome (cnpj varia a cada run). Determinismo > tolerância
+      // (INV-15). Caso contrário, status='ARCHIVED' órfão envenena a UI.
+      await _purgeOrgsByName(client, orgName);
+
       // 1. Criar organização
       final orgId = _uuid.v4();
       await client.from('organizations').insert({
@@ -328,5 +333,78 @@ abstract class SuperAdminDataFactory {
   static void _log(String message) {
     // ignore: avoid_print
     print('[SuperAdminDataFactory] $message');
+  }
+
+  /// Remove orgs remanescentes (qualquer status) com o nome dado.
+  ///
+  /// Reutilizado por [createOrgWithAdmins] para garantir idempotência
+  /// quando uma run anterior abortou e deixou rows com status='ARCHIVED'.
+  /// Mesma ordem de FK do [cleanup]: invitations → user_roles → auth.users
+  /// → organizations. Todas falhas são logadas e ignoradas — purge é
+  /// best-effort.
+  static Future<void> _purgeOrgsByName(
+    SupabaseClient client,
+    String orgName,
+  ) async {
+    try {
+      final rows = await client
+          .from('organizations')
+          .select('id')
+          .eq('name', orgName);
+      if (rows.isEmpty) return;
+
+      final orgIds = rows.map((r) => r['id'] as String).toList(growable: false);
+
+      for (final orgId in orgIds) {
+        // 1. Coletar user_ids da org antes de deletar user_roles
+        List<String> userIds = const [];
+        try {
+          final roleRows = await client
+              .from('user_roles')
+              .select('user_id')
+              .eq('organization_id', orgId);
+          userIds = roleRows
+              .map((r) => r['user_id'] as String)
+              .toList(growable: false);
+        } catch (e) {
+          _log('purge: falha ao listar user_roles de $orgId: $e');
+        }
+
+        // 2. invitations
+        try {
+          await client
+              .from('invitations')
+              .delete()
+              .eq('organization_id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar invitations de $orgId: $e');
+        }
+
+        // 3. user_roles
+        try {
+          await client.from('user_roles').delete().eq('organization_id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar user_roles de $orgId: $e');
+        }
+
+        // 4. auth.users
+        for (final userId in userIds) {
+          try {
+            await client.auth.admin.deleteUser(userId);
+          } catch (e) {
+            _log('purge: falha ao deletar user $userId: $e');
+          }
+        }
+
+        // 5. organização
+        try {
+          await client.from('organizations').delete().eq('id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar org $orgId: $e');
+        }
+      }
+    } catch (e) {
+      _log('purge: falha ao buscar orgs por nome "$orgName": $e');
+    }
   }
 }

@@ -318,17 +318,15 @@ void main() async {
         final fx = await _seed(sc, orgId: orgId, status: 'inTransit');
 
         // First call: dwell < 300 s → dwell_pending + sets entered_at.
-        final r1 =
-            await sc.rpc(
-                  'check_and_close_execution_autonomously',
-                  params: {
-                    'p_org_id': fx.orgId,
-                    'p_set_id': fx.setId,
-                    'p_current_lat': _inDestLat,
-                    'p_current_lng': _inDestLng,
-                  },
-                )
-                as Map<String, dynamic>;
+        final r1 = await sc.rpc<Map<String, dynamic>>(
+          'check_and_close_execution_autonomously',
+          params: {
+            'p_org_id': fx.orgId,
+            'p_set_id': fx.setId,
+            'p_current_lat': _inDestLat,
+            'p_current_lng': _inDestLng,
+          },
+        );
 
         expect(r1['result'], equals('dwell_pending'));
 
@@ -353,17 +351,15 @@ void main() async {
             .eq('organization_id', fx.orgId);
 
         // Second call: dwell ≥ 300 s → closed.
-        final r2 =
-            await sc.rpc(
-                  'check_and_close_execution_autonomously',
-                  params: {
-                    'p_org_id': fx.orgId,
-                    'p_set_id': fx.setId,
-                    'p_current_lat': _inDestLat,
-                    'p_current_lng': _inDestLng,
-                  },
-                )
-                as Map<String, dynamic>;
+        final r2 = await sc.rpc<Map<String, dynamic>>(
+          'check_and_close_execution_autonomously',
+          params: {
+            'p_org_id': fx.orgId,
+            'p_set_id': fx.setId,
+            'p_current_lat': _inDestLat,
+            'p_current_lng': _inDestLng,
+          },
+        );
 
         expect(r2['result'], equals('closed'));
 
@@ -412,17 +408,15 @@ void main() async {
             category: 'lacre',
           );
 
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _inDestLat,
-                      'p_current_lng': _inDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              'p_current_lat': _inDestLat,
+              'p_current_lng': _inDestLng,
+            },
+          );
 
           expect(r['result'], equals('closed'));
 
@@ -451,17 +445,15 @@ void main() async {
             deviceSerial: serial,
           );
 
-          final r =
-              await sc.rpc(
-                    'process_gps_for_execution_transitions',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_device_serial': serial,
-                      'p_lat': _inOrigLat,
-                      'p_lng': _inOrigLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'process_gps_for_execution_transitions',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_device_serial': serial,
+              'p_lat': _inOrigLat,
+              'p_lng': _inOrigLng,
+            },
+          );
 
           expect(r['result'], equals('started'));
 
@@ -511,17 +503,15 @@ void main() async {
           final orgId = uuid.v4();
           final fx = await _seed(sc, orgId: orgId, status: 'inTransit');
 
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _outDestLat,
-                      'p_current_lng': _outDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              'p_current_lat': _outDestLat,
+              'p_current_lng': _outDestLng,
+            },
+          );
 
           expect(r['result'], equals('outside_dest_zone'));
 
@@ -553,17 +543,15 @@ void main() async {
               .eq('set_id', fx.setId)
               .eq('organization_id', fx.orgId);
 
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _inDestLat,
-                      'p_current_lng': _inDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              'p_current_lat': _inDestLat,
+              'p_current_lng': _inDestLng,
+            },
+          );
 
           expect(r['result'], equals('dwell_pending'));
 
@@ -597,17 +585,15 @@ void main() async {
                 .eq('set_id', fx.setId)
                 .eq('organization_id', fx.orgId);
 
-            final r =
-                await sc.rpc(
-                      'check_and_close_execution_autonomously',
-                      params: {
-                        'p_org_id': fx.orgId,
-                        'p_set_id': fx.setId,
-                        'p_current_lat': _inDestLat,
-                        'p_current_lng': _inDestLng,
-                      },
-                    )
-                    as Map<String, dynamic>;
+            final r = await sc.rpc<Map<String, dynamic>>(
+              'check_and_close_execution_autonomously',
+              params: {
+                'p_org_id': fx.orgId,
+                'p_set_id': fx.setId,
+                'p_current_lat': _inDestLat,
+                'p_current_lng': _inDestLng,
+              },
+            );
 
             expect(
               r['result'],
@@ -632,17 +618,15 @@ void main() async {
                 .eq('set_id', fx.setId)
                 .eq('organization_id', fx.orgId);
 
-            final r =
-                await sc.rpc(
-                      'check_and_close_execution_autonomously',
-                      params: {
-                        'p_org_id': fx.orgId,
-                        'p_set_id': fx.setId,
-                        'p_current_lat': _inDestLat,
-                        'p_current_lng': _inDestLng,
-                      },
-                    )
-                    as Map<String, dynamic>;
+            final r = await sc.rpc<Map<String, dynamic>>(
+              'check_and_close_execution_autonomously',
+              params: {
+                'p_org_id': fx.orgId,
+                'p_set_id': fx.setId,
+                'p_current_lat': _inDestLat,
+                'p_current_lng': _inDestLng,
+              },
+            );
 
             expect(
               r['result'],
@@ -680,17 +664,15 @@ void main() async {
             category: 'lacre',
           );
 
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _inDestLat,
-                      'p_current_lng': _inDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              'p_current_lat': _inDestLat,
+              'p_current_lng': _inDestLng,
+            },
+          );
 
           expect(r['result'], equals('evidence_pending'));
 
@@ -732,8 +714,14 @@ void main() async {
             };
 
             final results = await Future.wait([
-              sc.rpc('check_and_close_execution_autonomously', params: params),
-              sc2.rpc('check_and_close_execution_autonomously', params: params),
+              sc.rpc<dynamic>(
+                'check_and_close_execution_autonomously',
+                params: params,
+              ),
+              sc2.rpc<dynamic>(
+                'check_and_close_execution_autonomously',
+                params: params,
+              ),
             ]);
 
             // Both report 'closed': winner closes, loser gets idempotent path.
@@ -768,17 +756,15 @@ void main() async {
           final fx = await _seed(sc, orgId: orgA, status: 'inTransit');
           await PostgresTestConfig.ensureSentinelOrg(id: orgB);
 
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': orgB,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _inDestLat,
-                      'p_current_lng': _inDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': orgB,
+              'p_set_id': fx.setId,
+              'p_current_lat': _inDestLat,
+              'p_current_lng': _inDestLng,
+            },
+          );
 
           expect(
             r['result'],
@@ -810,16 +796,14 @@ void main() async {
           );
 
           // Call without GPS params — function must try canonical_facts and fail.
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      // p_current_lat / p_current_lng intentionally omitted → DEFAULT NULL
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              // p_current_lat / p_current_lng intentionally omitted → DEFAULT NULL
+            },
+          );
 
           expect(r['result'], equals('no_gps_data'));
         },
@@ -830,17 +814,15 @@ void main() async {
         final orgId = uuid.v4();
         await PostgresTestConfig.ensureSentinelOrg(id: orgId);
 
-        final r =
-            await sc.rpc(
-                  'process_gps_for_execution_transitions',
-                  params: {
-                    'p_org_id': orgId,
-                    'p_device_serial': 'UNKNOWN-DEV-${uuid.v4()}',
-                    'p_lat': _inOrigLat,
-                    'p_lng': _inOrigLng,
-                  },
-                )
-                as Map<String, dynamic>;
+        final r = await sc.rpc<Map<String, dynamic>>(
+          'process_gps_for_execution_transitions',
+          params: {
+            'p_org_id': orgId,
+            'p_device_serial': 'UNKNOWN-DEV-${uuid.v4()}',
+            'p_lat': _inOrigLat,
+            'p_lng': _inOrigLng,
+          },
+        );
 
         expect(r['result'], equals('no_asset'));
       });
@@ -853,7 +835,8 @@ void main() async {
           final fx = await _seed(sc, orgId: orgId, status: 'inTransit');
 
           // Close directly — no audit row for this call.
-          await sc.rpc(
+          // RPC returns BOOLEAN (see 20260702000001_complete_execution_rpc.sql).
+          await sc.rpc<bool>(
             'complete_execution',
             params: {
               'p_org_id': fx.orgId,
@@ -871,17 +854,15 @@ void main() async {
                   .length;
 
           // Autonomous closer on already-completed execution.
-          final r =
-              await sc.rpc(
-                    'check_and_close_execution_autonomously',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_set_id': fx.setId,
-                      'p_current_lat': _inDestLat,
-                      'p_current_lng': _inDestLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'check_and_close_execution_autonomously',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_set_id': fx.setId,
+              'p_current_lat': _inDestLat,
+              'p_current_lng': _inDestLng,
+            },
+          );
 
           expect(r['result'], equals('closed'));
 
@@ -917,17 +898,15 @@ void main() async {
             deviceSerial: serial,
           );
 
-          final r =
-              await sc.rpc(
-                    'process_gps_for_execution_transitions',
-                    params: {
-                      'p_org_id': fx.orgId,
-                      'p_device_serial': serial,
-                      'p_lat': _inOrigLat,
-                      'p_lng': _inOrigLng,
-                    },
-                  )
-                  as Map<String, dynamic>;
+          final r = await sc.rpc<Map<String, dynamic>>(
+            'process_gps_for_execution_transitions',
+            params: {
+              'p_org_id': fx.orgId,
+              'p_device_serial': serial,
+              'p_lat': _inOrigLat,
+              'p_lng': _inOrigLng,
+            },
+          );
 
           expect(r['result'], equals('none'));
 

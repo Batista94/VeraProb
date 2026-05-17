@@ -54,7 +54,9 @@ void main() {
         provider.positionStream.listen(emissions.add);
 
         await provider.connect();
-        await Future.delayed(Duration.zero); // Garantir subscription ativa
+        await Future<void>.delayed(
+          Duration.zero,
+        ); // Garantir subscription ativa
 
         // Act - simular 1000 mensagens para 10 tripIds diferentes
         for (int i = 0; i < 1000; i++) {
@@ -83,7 +85,7 @@ void main() {
         }
 
         // Aguardar debounce timer (50ms) + margem para processamento
-        await Future.delayed(const Duration(milliseconds: 100));
+        await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Assert - deve ter emitido apenas 1 snapshot com 10 posições (última de cada trip)
         expect(emissions.length, equals(1));
@@ -119,7 +121,7 @@ void main() {
         provider.positionStream.listen(emissions.add);
 
         await provider.connect();
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         // Act - enviar posição T+10s
         final payload1 = PostgresChangePayload(
@@ -144,7 +146,7 @@ void main() {
         );
         provider.onPayloadReceived(payload1);
 
-        await Future.delayed(const Duration(milliseconds: 60));
+        await Future<void>.delayed(const Duration(milliseconds: 60));
         emissions.clear(); // Limpar primeira emissão
 
         // Enviar posição T+5s (ANTERIOR - deve ser descartada)
@@ -170,7 +172,7 @@ void main() {
         );
         provider.onPayloadReceived(payload2);
 
-        await Future.delayed(const Duration(milliseconds: 60));
+        await Future<void>.delayed(const Duration(milliseconds: 60));
 
         // Assert - NÃO deve ter emitido nova snapshot (evento descartado)
         expect(emissions.length, equals(0));
@@ -191,7 +193,7 @@ void main() {
       provider.positionStream.listen(emissions.add);
 
       await provider.connect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Act - enviar 3 mensagens rapidamente
       for (int i = 0; i < 3; i++) {
@@ -222,7 +224,7 @@ void main() {
       expect(emissions.length, equals(0));
 
       // Aguardar janela de debounce completar
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
       // Assert - deve ter emitido 1 snapshot com última posição
       expect(emissions.length, equals(1));
@@ -248,7 +250,7 @@ void main() {
         provider.positionStream.listen(emissions.add);
 
         await provider.connect();
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         // Act - simular 500 eventos acumulados de 4h atrás chegando de uma vez
         for (int i = 0; i < 500; i++) {
@@ -276,7 +278,7 @@ void main() {
         }
 
         // Aguardar debounce
-        await Future.delayed(const Duration(milliseconds: 60));
+        await Future<void>.delayed(const Duration(milliseconds: 60));
 
         // Assert - deve ter processado e agrupado por tripId
         expect(emissions.length, equals(1));
@@ -310,7 +312,7 @@ void main() {
       provider.positionStream.listen(emissions.add);
 
       await provider.connect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Act - enviar 10 atualizações para o mesmo tripId
       for (int i = 0; i < 10; i++) {
@@ -335,7 +337,7 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
       // Assert - deve ter apenas 1 posição no snapshot (última)
       expect(emissions.length, equals(1));

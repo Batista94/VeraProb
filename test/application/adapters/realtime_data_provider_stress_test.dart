@@ -155,7 +155,7 @@ void main() {
       }
 
       // Aguardar debounce
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verificar que todas as posições foram processadas
       expect(emissions, isNotEmpty);
@@ -194,7 +194,7 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Adicionar nova posição e verificar que é processada rapidamente
       final startTime = DateTime.now().toUtc();
@@ -218,7 +218,7 @@ void main() {
       );
       provider.onPayloadReceived(newPayload);
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       final processingTime = DateTime.now().toUtc().difference(startTime);
 
@@ -258,7 +258,7 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
       final beforeDisconnect = emissions.length;
 
       // Desconectar
@@ -289,7 +289,7 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verificar que continuou processando após reconexão
       expect(emissions.length, greaterThan(beforeDisconnect));
@@ -330,7 +330,7 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Avançar o tempo do mock
       currentTime = currentTime.add(const Duration(seconds: 1));
@@ -354,13 +354,13 @@ void main() {
         provider.onPayloadReceived(payload);
       }
 
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Verificar que apenas posições recentes estão no buffer
       final lastSnapshot = emissions.last;
       expect(lastSnapshot.length, 50); // Apenas as recentes
       expect(
-        lastSnapshot.every((p) => p.tripId.startsWith('trip-new')),
+        lastSnapshot.every((p) => p.tripId.startsWith('trip-new') as bool),
         isTrue,
       );
 

@@ -85,7 +85,7 @@ class _SuperAdminSessionTimeoutState
 
     if (mounted) {
       await Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+        MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
         (_) => false,
       );
     }

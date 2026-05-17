@@ -156,14 +156,14 @@ void main() {
   // ── Helper: stub RPC success ──────────────────────────────────────────────
   void stubRpc(String name, dynamic result) {
     when(
-      () => mockClient.rpc(name, params: any(named: 'params')),
+      () => mockClient.rpc<dynamic>(name, params: any(named: 'params')),
     ).thenAnswer((_) => _FakePostgrestFilterBuilder(result));
   }
 
   // ── Helper: stub RPC failure ──────────────────────────────────────────────
   void stubRpcThrows(String name, PostgrestException error) {
     when(
-      () => mockClient.rpc(name, params: any(named: 'params')),
+      () => mockClient.rpc<dynamic>(name, params: any(named: 'params')),
     ).thenThrow(error);
   }
 
@@ -199,7 +199,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -326,7 +326,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -473,7 +473,7 @@ void main() {
       'missing "data" key causes TypeError wrapped in DomainException',
       () async {
         stubEdgeFn({
-          'result': [],
+          'result': <dynamic>[],
         }); // no 'data' key → null cast → caught by on Object
         expect(
           () => repo.getAllTenantHealth(),
@@ -661,7 +661,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -823,7 +823,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -887,7 +887,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -948,7 +948,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -1057,7 +1057,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -1131,7 +1131,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -1147,7 +1147,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -1164,7 +1164,7 @@ void main() {
 
       final captured =
           verify(
-                () => mockClient.rpc(
+                () => mockClient.rpc<dynamic>(
                   rpcName,
                   params: captureAny(named: 'params'),
                 ),
@@ -1240,7 +1240,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockClient.rpc(
+                  () => mockClient.rpc<dynamic>(
                     'super_admin_create_organization',
                     params: captureAny(named: 'params'),
                   ),

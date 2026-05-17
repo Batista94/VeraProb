@@ -33,7 +33,7 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
 
   void _highlight(String id) {
     setState(() => _highlightedId = id);
-    Future.delayed(const Duration(seconds: 3), () {
+    Future<void>.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _highlightedId = null);
     });
   }

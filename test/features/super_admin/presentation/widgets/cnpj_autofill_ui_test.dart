@@ -69,7 +69,7 @@ void main() {
       (tester) async {
         // Simulate API delay
         when(mockService.lookup(any)).thenAnswer((_) async {
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future<void>.delayed(const Duration(milliseconds: 500));
           return CnpjCompanyData(
             cnpj: '45518855000147',
             legalName: 'Estrela Dalva Transportes Ltda',

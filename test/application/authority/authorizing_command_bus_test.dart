@@ -115,7 +115,7 @@ void main() {
         );
 
         // We need to wait a tick for the exception flow to settle and check counters
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(
           evaluator.evaluationCount,
@@ -161,7 +161,7 @@ void main() {
           reason: 'Mapper must reject unknown commands before Evaluation',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(
           evaluator.evaluationCount,
@@ -198,7 +198,7 @@ void main() {
           reason: 'Underlying service failure should bubble up.',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(evaluator.evaluationCount, 1);
 
@@ -277,7 +277,7 @@ void main() {
           reason: 'Driver must be rejected when trying to resolve alerts.',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         // Forensic evidence: decision MUST be logged
         expect(ledger.ledgerCount, 1, reason: 'Denied attempt must be logged.');
@@ -327,7 +327,7 @@ void main() {
           reason: 'Operador must be rejected when updating contracts.',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(ledger.ledgerCount, 1);
         final decision = ledger.testLedgerArray.first;
@@ -369,7 +369,7 @@ void main() {
         reason: 'Unknown role must be denied for all actions.',
       );
 
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(ledger.ledgerCount, 1);
       final decision = ledger.testLedgerArray.first;
@@ -480,7 +480,7 @@ void main() {
               'Cross-tenant command must be vetoed BEFORE policy evaluation.',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         // Forensic decision MUST be logged even on cross-tenant veto
         expect(
@@ -655,7 +655,7 @@ void main() {
           reason: 'Critical command without super_admin scope must be denied.',
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(ledger.ledgerCount, 1);
         final decision = ledger.testLedgerArray.first;
@@ -767,7 +767,7 @@ void main() {
           throwsA(isA<UnauthorizedActionException>()),
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(ledger.ledgerCount, 1);
         final decision = ledger.testLedgerArray.first;
@@ -848,7 +848,7 @@ void main() {
           throwsA(isA<UnauthorizedActionException>()),
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(ledger.ledgerCount, 1);
         final decision = ledger.testLedgerArray.first;
@@ -902,7 +902,7 @@ void main() {
           throwsA(isA<UnauthorizedActionException>()),
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         // Braço NUNCA se move em cenário de negação
         expect(

@@ -66,7 +66,7 @@ class PostgresTestConfig {
     if (_schemaReloaded) return;
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc('notify_pgrst_reload');
+      await seedClient.rpc<void>('notify_pgrst_reload');
       await Future<void>.delayed(const Duration(milliseconds: 500));
     } finally {
       await seedClient.dispose();
@@ -383,7 +383,7 @@ class PostgresTestConfig {
   }) async {
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc(
+      await seedClient.rpc<void>(
         'test_cleanup_forensic_data',
         params: {'p_org_id': orgId},
       );
@@ -586,7 +586,7 @@ class PostgresTestConfig {
   }) async {
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc(
+      await seedClient.rpc<void>(
         'test_cleanup_system_audit_log',
         params: {'p_org_ids': orgIds},
       );

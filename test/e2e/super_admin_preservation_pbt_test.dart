@@ -126,7 +126,7 @@ void main() async {
 
             // Call the ORIGINAL overload (without p_allowed_domains)
             final orgId =
-                await serviceRoleClient.rpc(
+                await serviceRoleClient.rpc<void>(
                       'super_admin_create_organization',
                       params: {
                         'p_legal_name': input.legalName,
@@ -196,7 +196,7 @@ void main() async {
             final superAdminUserId = _uuid.v4();
 
             final orgId =
-                await serviceRoleClient.rpc(
+                await serviceRoleClient.rpc<void>(
                       'super_admin_create_organization',
                       params: {
                         'p_legal_name': input.legalName,
@@ -265,7 +265,7 @@ void main() async {
 
             // service_role client has no JWT sub → bypass path
             final orgId =
-                await serviceRoleClient.rpc(
+                await serviceRoleClient.rpc<void>(
                       'super_admin_create_organization',
                       params: {
                         'p_legal_name': 'PBT Bypass Legal',
@@ -310,7 +310,7 @@ void main() async {
           final superAdminUserId = _uuid.v4();
 
           final orgId =
-              await serviceRoleClient.rpc(
+              await serviceRoleClient.rpc<void>(
                     'super_admin_create_organization',
                     params: {
                       'p_legal_name': 'PBT Domains Legal',
@@ -329,7 +329,7 @@ void main() async {
                   as String;
 
           // Now update allowed_domains with mixed-case, spaces, empty strings
-          await serviceRoleClient.rpc(
+          await serviceRoleClient.rpc<void>(
             'super_admin_update_allowed_domains',
             params: {
               'p_org_id': orgId,
@@ -382,7 +382,7 @@ void main() async {
           final superAdminUserId = _uuid.v4();
 
           final orgId =
-              await serviceRoleClient.rpc(
+              await serviceRoleClient.rpc<void>(
                     'super_admin_create_organization',
                     params: {
                       'p_legal_name': 'Preservation Test Transportes Ltda.',

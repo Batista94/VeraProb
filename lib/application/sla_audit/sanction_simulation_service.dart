@@ -88,7 +88,7 @@ class SanctionSimulationService {
         vehiclePlate: 'TEST-0001',
         speed: 92.0,
       );
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
       await simulateSpeedViolation(
         organizationId: organizationId,
         vehiclePlate: 'TEST-0002',

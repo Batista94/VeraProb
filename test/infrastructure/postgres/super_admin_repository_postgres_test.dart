@@ -90,7 +90,7 @@ Future<String> _ensureUser(
   );
 
   final decoded = jsonDecode(search.body);
-  List users;
+  List<dynamic> users;
   if (decoded is List) {
     users = decoded;
   } else if (decoded is Map && decoded.containsKey('users')) {

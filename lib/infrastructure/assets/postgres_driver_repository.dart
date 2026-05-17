@@ -49,7 +49,7 @@ class PostgresDriverRepository extends BasePostgresRepository
   Future<void> archiveDriver(String driverId) async {
     try {
       // INV-3: No hard DELETE. RPC soft-archives driver + revokes Telegram bindings.
-      await client.rpc(
+      await client.rpc<void>(
         'offboard_driver',
         params: {'p_driver_id': driverId, 'p_org_id': _orgId},
       );

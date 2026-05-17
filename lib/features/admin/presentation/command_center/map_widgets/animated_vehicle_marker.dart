@@ -150,7 +150,7 @@ class _AnimatedFleetMarkerLayerState extends State<AnimatedFleetMarkerLayer>
           .firstOrNull;
 
       final status = trip?.status != null
-          ? TripStatusView.values.byName(trip.status.name)
+          ? TripStatusView.values.byName(trip!.status.name as String)
           : _DefaultStatusHelper().status;
       final isSelected = state.tripId == widget.selectedId;
       final attention = widget.attentionProjection?.getContextFor(

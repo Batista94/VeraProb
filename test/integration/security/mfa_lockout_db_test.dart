@@ -63,7 +63,7 @@ Future<String> _createOrGetAuthUser(String email, String password) async {
   final lookupBody = jsonDecode(lookup.body);
   final allUsers = (lookupBody is Map && lookupBody['users'] is List)
       ? lookupBody['users'] as List
-      : (lookupBody is List ? lookupBody : const []);
+      : (lookupBody is List ? lookupBody : const <dynamic>[]);
   final users = allUsers
       .cast<Map<String, dynamic>>()
       .where((u) => u['email'] == email)
@@ -115,7 +115,7 @@ void main() {
   });
 
   Future<Map<String, dynamic>> recordFailure(String uid) async {
-    final raw = await seedClient.rpc(
+    final raw = await seedClient.rpc<dynamic>(
       'record_mfa_failure',
       params: {'p_user_id': uid},
     );
@@ -123,7 +123,7 @@ void main() {
   }
 
   Future<Map<String, dynamic>> checkLockout(String uid) async {
-    final raw = await seedClient.rpc(
+    final raw = await seedClient.rpc<dynamic>(
       'check_mfa_lockout',
       params: {'p_user_id': uid},
     );
@@ -205,7 +205,10 @@ void main() {
       await recordFailure(userA);
       await recordFailure(userA);
       await recordFailure(userA);
-      await seedClient.rpc('reset_mfa_lockout', params: {'p_user_id': userA});
+      await seedClient.rpc<dynamic>(
+        'reset_mfa_lockout',
+        params: {'p_user_id': userA},
+      );
 
       final after = await checkLockout(userA);
       expect(after['failed_attempts'], equals(0));

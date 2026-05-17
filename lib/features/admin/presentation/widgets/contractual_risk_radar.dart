@@ -338,7 +338,7 @@ class _FeedNodeItem extends StatelessWidget {
                 child: InkWell(
                   onTap: () {
                     // Open Investigation Modal for deep dive
-                    showDialog(
+                    showDialog<void>(
                       context: context,
                       builder: (_) => InvestigationModal(
                         setId: node.execution.setId,

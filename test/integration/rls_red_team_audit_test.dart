@@ -475,7 +475,7 @@ Future<SupabaseClient> _signIn(String email, String password) async {
       lastError = e;
       if (e.code == 'invalid_credentials') {
         // Wait and retry - potential race in local Supabase propagation
-        await Future.delayed(Duration(milliseconds: 500 * (i + 1)));
+        await Future<void>.delayed(Duration(milliseconds: 500 * (i + 1)));
         continue;
       }
       rethrow;

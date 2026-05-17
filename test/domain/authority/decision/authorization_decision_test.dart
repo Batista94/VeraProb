@@ -298,7 +298,7 @@ void main() {
         final json = decision.toJson();
         final obligationsJson = json['obligations'];
 
-        expect(obligationsJson, isA<List>());
+        expect(obligationsJson, isA<List<dynamic>>());
         expect(obligationsJson.length, equals(1));
         expect(obligationsJson[0]['type'], equals('notify_security'));
         expect(obligationsJson[0]['metadata'], equals({'level': 'medium'}));

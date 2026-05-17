@@ -125,7 +125,7 @@ void main() {
 
       // Read the provider to trigger subscription
       final sub = container.listen(searchQueryStreamProvider, (_, _) {});
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       final value = container.read(searchQueryStreamProvider);
       expect(value.value, '');
       sub.close();

@@ -58,7 +58,7 @@ void main() {
       provider.dispose();
 
       // Aguardar tempo que seria de reconexão
-      await Future.delayed(const Duration(seconds: 2));
+      await Future<void>.delayed(const Duration(seconds: 2));
 
       // Não deve ter tentado reconectar
       verify(
@@ -95,7 +95,7 @@ void main() {
       provider.dispose();
 
       // Aguardar tempo de debounce
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       // Não deve ter emitido (timer cancelado)
       expect(emissions, isEmpty);
@@ -110,7 +110,7 @@ void main() {
 
       provider.dispose();
 
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(streamClosed, isTrue);
     });
 
@@ -126,7 +126,7 @@ void main() {
 
       provider.dispose();
 
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(streamClosed, isTrue);
     });
 
@@ -154,7 +154,7 @@ void main() {
       );
 
       provider.onPayloadReceived(payload);
-      await Future.delayed(const Duration(milliseconds: 100));
+      await Future<void>.delayed(const Duration(milliseconds: 100));
 
       expect(emissions, isNotEmpty);
 

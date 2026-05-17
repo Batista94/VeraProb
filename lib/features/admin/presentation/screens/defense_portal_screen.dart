@@ -137,7 +137,7 @@ class _HeaderState extends ConsumerState<_Header> {
           ),
         const Spacer(),
         FilledButton.icon(
-          onPressed: () => showDialog(
+          onPressed: () => showDialog<void>(
             context: context,
             builder: (_) => const JustificationSubmissionForm(),
           ),

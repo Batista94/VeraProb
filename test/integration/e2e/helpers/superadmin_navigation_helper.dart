@@ -81,7 +81,24 @@ abstract class SuperAdminNavigationHelper {
       reason: 'A organização "$orgName" deve estar visível na lista de tenants',
     );
 
-    await tester.tap(orgFinder.first);
+    // O Text fica dentro de ListTile (lib/features/super_admin/presentation/
+    // screens/tenant_list_panel.dart:245). Tap direto no Text falha hittest
+    // porque o InkWell do ListTile não cobre o filho. Subir até o ListTile.
+    final tappableTile = find
+        .ancestor(of: orgFinder.first, matching: find.byType(ListTile))
+        .first;
+
+    // ensureVisible garante que o ListTile esteja dentro do viewport antes
+    // do tap. Em viewport 800x600 (default flutter_test), tiles após o
+    // ~7º item ficam off-screen e tap falha hittest mesmo no ancestor.
+    await tester.ensureVisible(tappableTile);
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      SuperAdminTestConfig.defaultTimeout,
+    );
+
+    await tester.tap(tappableTile);
     await tester.pumpAndSettle(
       const Duration(milliseconds: 100),
       EnginePhase.sendSemanticsUpdate,

@@ -26,7 +26,7 @@ import 'package:veraprob/application/normalization/operational_state_normalizer.
 import 'package:veraprob/domain/entities/stop.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Coordinate constants (São Paulo – Paraíso area) ─────────────────────────
 const double kBaseLat = -23.5612;

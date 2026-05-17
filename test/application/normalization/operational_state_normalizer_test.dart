@@ -28,7 +28,7 @@ import 'package:veraprob/application/normalization/operational_state_normalizer.
 import 'package:veraprob/domain/entities/stop.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Coordinate constants (mirrored from motion_classifier_test.dart) ──────────
 const double kStopALat = -23.5612;

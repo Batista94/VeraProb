@@ -28,7 +28,7 @@ class SupabaseForensicThrottleGateway implements ForensicThrottleGateway {
 
   @override
   Future<void> assertAllowed({required String organizationId}) async {
-    final response = await _client.rpc(
+    final response = await _client.rpc<dynamic>(
       'check_forensic_throttle',
       params: {'p_org_id': organizationId},
     );
@@ -49,7 +49,7 @@ class SupabaseForensicThrottleGateway implements ForensicThrottleGateway {
 
   @override
   Future<void> recordFailure({required String organizationId}) async {
-    await _client.rpc(
+    await _client.rpc<void>(
       'record_forensic_failure',
       params: {'p_org_id': organizationId},
     );
@@ -57,7 +57,7 @@ class SupabaseForensicThrottleGateway implements ForensicThrottleGateway {
 
   @override
   Future<void> recordSuccess({required String organizationId}) async {
-    await _client.rpc(
+    await _client.rpc<void>(
       'reset_forensic_throttle',
       params: {'p_org_id': organizationId},
     );

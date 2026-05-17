@@ -8,7 +8,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import '../../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository executionRepo;

@@ -145,7 +145,16 @@
       "Bash(flutter doctor *)",
       "Bash(xargs -I{} sh -c 'echo \"$\\(grep -c \"test\\(\" {}\\) tests in {}\"')",
       "Bash(xargs -I{} sh -c 'echo \"$\\(grep -c \"testWidgets\\\\|^\\\\s*test\\(\" {} 2>/dev/null\\) {}\"')",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(sed -n 125,132p C:/Users/wes_b/Projects/VeraProb/__TRACKED_VAR__)",
+      "Bash(sed -n 25,40p C:/Users/wes_b/Projects/VeraProb/__TRACKED_VAR__)",
+      "Bash(Select-String \"inference_failure\")",
+      "Bash(Select-String \"lib/\")",
+      "Bash(bash scripts/refresh_schema_cache.sh0)",
+      "Bash(PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c \"UPDATE public.organizations SET status = 'ACTIVE' WHERE name LIKE 'Adverse%' AND status = 'ARCHIVED';\")",
+      "Bash(docker exec *)",
+      "Bash(bash scripts/sync_db_types.sh)",
+      "Bash(echo \"exit=$?\")"
     ]
   },
   "enabledMcpjsonServers": [

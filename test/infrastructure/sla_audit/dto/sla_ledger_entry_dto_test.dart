@@ -415,7 +415,7 @@ void main() {
           'plan_version': 1,
           'occurred_at_utc': '2026-04-07T21:00:00.000Z',
           'operator_id': null,
-          'payload': {},
+          'payload': <String, dynamic>{},
         };
 
         final dto = SlaLedgerEntryDto.fromJson(json);
@@ -432,7 +432,7 @@ void main() {
           'contract_id': 'contract-1',
           'plan_version': 1,
           'occurred_at_utc': '2026-04-07T21:00:00.000Z',
-          'payload': {},
+          'payload': <String, dynamic>{},
         };
 
         final dto = SlaLedgerEntryDto.fromJson(json);

@@ -706,7 +706,7 @@ void main() {
           }
 
           // Query pg_class via service_role to check relrowsecurity flag.
-          final result = await adminClient.rpc(
+          final result = await adminClient.rpc<dynamic>(
             'check_rls_enabled',
             params: {'p_table_name': 'operational_alerts'},
           );

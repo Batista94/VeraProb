@@ -46,7 +46,10 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 - **Exemplo**: `DP-001: Migração para BigInt -> Impacto INV-19 -> Motivo: Precisão monetária.`
 
 ## 7. CLEAN CODE & LINTING (Agent Mandatory)
-- **Analyzer Compliance**: Trate todos os avisos do `flutter analyze` como erros bloqueantes.
+- **Analyzer Compliance**: Trate todos os avisos do `flutter analyze` como erros bloqueantes. Zero warnings, zero infos.
+- **Strict Mode (INV-7)**: `strict-casts`, `strict-inference` e `strict-raw-types` ATIVOS globalmente. Infraestrutura possui isenção temporária em `lib/infrastructure/analysis_options.yaml` (~80 violações `Map<dynamic,dynamic>`). Delete esse arquivo após corrigi-las.
+- **Blindagem de Camadas (INV-13)**: `lib/features/` NUNCA importa `lib/infrastructure/` diretamente, exceto `observability/` e `config/` (cross-cutting). Use serviço de aplicação ou interface IRepository. Scanner: `INFRA-LEAK-UI`.
+- **Exceções Tipadas (INV-10)**: Nunca `throw Exception(...)`, `throw StateError(...)` ou `throw FormatException(...)` em `lib/domain/` ou `lib/application/`. Use: `IntegrityException`, `SovereigntyViolationException`, `ConflictException`, `AuthorizationException`, `ResourceNotFoundException`. Scanner: `GENERIC-EXCEPTION-DOMAIN`.
 - **Dart Wildcards**: Use apenas um único underscore `_` para parâmetros não utilizados, independentemente da quantidade (evita erro `unnecessary_underscores`).
 - **Unused Code**: Remova variáveis locais e imports não utilizados antes de submeter alterações.
 - **Automated Fix**: Execute `dart fix --apply` após edições estruturais.

@@ -123,7 +123,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
   Future<void> _copyCode(String code) async {
     await Clipboard.setData(ClipboardData(text: code));
     setState(() => _codeCopied = true);
-    Future.delayed(const Duration(seconds: 2), () {
+    Future<void>.delayed(const Duration(seconds: 2), () {
       if (mounted) setState(() => _codeCopied = false);
     });
   }

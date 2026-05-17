@@ -690,7 +690,7 @@ class _FailingHttpClient implements HttpClient {
   set findProxy(String Function(Uri url)? f) {}
 
   @override
-  set keyLog(Function(String line)? callback) {}
+  set keyLog(void Function(String line)? callback) {}
 
   @override
   void close({bool force = false}) {}

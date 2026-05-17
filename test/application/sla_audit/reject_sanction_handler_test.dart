@@ -13,7 +13,7 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
 

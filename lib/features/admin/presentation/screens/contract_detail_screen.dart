@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
@@ -129,7 +130,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
       if (!context.mounted) return;
 
-      await showDialog(
+      await showDialog<void>(
         context: context,
         builder: (_) => AlertDialog(
           title: const Text('Link de Revisão Gerado'),
@@ -464,7 +465,7 @@ class _ExecutionsTab extends StatelessWidget {
 // ── Financial Tab ─────────────────────────────────────────────────────────────
 
 class _FinancialTab extends StatelessWidget {
-  final dynamic financialSummary;
+  final SlaExecutionSummary financialSummary;
 
   const _FinancialTab({required this.financialSummary});
 

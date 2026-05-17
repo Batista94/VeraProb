@@ -75,7 +75,7 @@ void main() async {
           final ledgerEntryId = ledgerRow['id'] as String;
 
           // Verify queue entry was auto-created by the trigger
-          await Future.delayed(const Duration(milliseconds: 200));
+          await Future<void>.delayed(const Duration(milliseconds: 200));
           final queueRows = await client
               .from('sanction_review_queue')
               .select()
@@ -120,7 +120,7 @@ void main() async {
               .single();
 
           final ledgerEntryId = ledgerRow1['id'] as String;
-          await Future.delayed(const Duration(milliseconds: 200));
+          await Future<void>.delayed(const Duration(milliseconds: 200));
 
           // Attempt direct duplicate insert into queue
           await client

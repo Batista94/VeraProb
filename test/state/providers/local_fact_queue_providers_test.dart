@@ -55,7 +55,7 @@ void main() {
 
       final state = container.read(pendingFactCountProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

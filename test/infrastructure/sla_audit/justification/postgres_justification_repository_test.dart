@@ -124,7 +124,7 @@ class _FakeBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
 
 // ── Fake RPC builder (supports error injection) ────────────────────────────────
 
-class _FakeRpcBuilder extends Fake implements PostgrestFilterBuilder<dynamic> {
+class _FakeRpcBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
   final dynamic _result;
   final Object? _error;
 
@@ -132,46 +132,40 @@ class _FakeRpcBuilder extends Fake implements PostgrestFilterBuilder<dynamic> {
 
   @override
   Future<S> then<S>(
-    FutureOr<S> Function(dynamic value) onValue, {
+    FutureOr<S> Function(T value) onValue, {
     Function? onError,
   }) {
     if (_error != null) {
-      return Future<dynamic>.error(_error).then(onValue, onError: onError);
+      return Future<T>.error(_error).then(onValue, onError: onError);
     }
-    return Future<dynamic>.value(_result).then(onValue, onError: onError);
+    return Future<T>.value(_result as T).then(onValue, onError: onError);
   }
 
   @override
-  Future<dynamic> catchError(
-    Function onError, {
-    bool Function(Object error)? test,
-  }) {
+  Future<T> catchError(Function onError, {bool Function(Object error)? test}) {
     if (_error != null) {
-      return Future<dynamic>.error(_error).catchError(onError, test: test);
+      return Future<T>.error(_error).catchError(onError, test: test);
     }
-    return Future<dynamic>.value(_result);
+    return Future<T>.value(_result as T);
   }
 
   @override
-  Future<dynamic> whenComplete(FutureOr<void> Function() action) {
+  Future<T> whenComplete(FutureOr<void> Function() action) {
     if (_error != null) {
-      return Future<dynamic>.error(_error).whenComplete(action);
+      return Future<T>.error(_error).whenComplete(action);
     }
-    return Future<dynamic>.value(_result).whenComplete(action);
+    return Future<T>.value(_result as T).whenComplete(action);
   }
 
   @override
-  Stream<dynamic> asStream() =>
-      _error != null ? Stream.error(_error) : Stream.value(_result);
+  Stream<T> asStream() =>
+      _error != null ? Stream.error(_error) : Stream.value(_result as T);
 
   @override
-  Future<dynamic> timeout(
-    Duration timeLimit, {
-    FutureOr<dynamic> Function()? onTimeout,
-  }) {
-    if (_error != null) return Future<dynamic>.error(_error);
-    return Future<dynamic>.value(
-      _result,
+  Future<T> timeout(Duration timeLimit, {FutureOr<T> Function()? onTimeout}) {
+    if (_error != null) return Future<T>.error(_error);
+    return Future<T>.value(
+      _result as T,
     ).timeout(timeLimit, onTimeout: onTimeout);
   }
 }
@@ -840,8 +834,8 @@ void main() {
       'success — RPC called with exact 6-key param contract, returns 1',
       () async {
         when(
-          () => mockClient.rpc(any(), params: any(named: 'params')),
-        ).thenAnswer((_) => _FakeRpcBuilder(1));
+          () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+        ).thenAnswer((_) => _FakeRpcBuilder<int>(1));
 
         final result = await sut.updateStatusWithAuditLog(
           id: _justId,
@@ -862,7 +856,7 @@ void main() {
     test('RPC — param keys match DB contract exactly', () async {
       final capturedParams = <Map<String, dynamic>>[];
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<int>(
           'update_justification_status_with_audit',
           params: captureAny(named: 'params'),
         ),
@@ -870,7 +864,7 @@ void main() {
         capturedParams.add(
           inv.namedArguments[const Symbol('params')] as Map<String, dynamic>,
         );
-        return _FakeRpcBuilder(1);
+        return _FakeRpcBuilder<int>(1);
       });
 
       final evidenceUrls = ['https://s3.example.com/file1.pdf'];
@@ -902,7 +896,7 @@ void main() {
     test('dbValue — status strings sent as UPPERCASE to RPC', () async {
       final capturedParams = <Map<String, dynamic>>[];
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<int>(
           'update_justification_status_with_audit',
           params: captureAny(named: 'params'),
         ),
@@ -910,7 +904,7 @@ void main() {
         capturedParams.add(
           inv.namedArguments[const Symbol('params')] as Map<String, dynamic>,
         );
-        return _FakeRpcBuilder(1);
+        return _FakeRpcBuilder<int>(1);
       });
 
       await sut.updateStatusWithAuditLog(
@@ -931,8 +925,8 @@ void main() {
 
     test('OCC conflict — returns 0 when RPC signals no rows updated', () async {
       when(
-        () => mockClient.rpc(any(), params: any(named: 'params')),
-      ).thenAnswer((_) => _FakeRpcBuilder(0));
+        () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+      ).thenAnswer((_) => _FakeRpcBuilder<int>(0));
 
       final result = await sut.updateStatusWithAuditLog(
         id: _justId,
@@ -955,8 +949,8 @@ void main() {
         code: 'P0001',
       );
       when(
-        () => mockClient.rpc(any(), params: any(named: 'params')),
-      ).thenAnswer((_) => _FakeRpcBuilder(null, error: pgErr));
+        () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+      ).thenAnswer((_) => _FakeRpcBuilder<int>(null, error: pgErr));
 
       expect(
         () => sut.updateStatusWithAuditLog(
@@ -1281,8 +1275,8 @@ void main() {
   group('useToken()', () {
     test('success — returns justification ID from RPC', () async {
       when(
-        () => mockClient.rpc(any(), params: any(named: 'params')),
-      ).thenAnswer((_) => _FakeRpcBuilder(_justId));
+        () => mockClient.rpc<String>(any(), params: any(named: 'params')),
+      ).thenAnswer((_) => _FakeRpcBuilder<String>(_justId));
 
       final result = await sut.useToken(
         tokenValue: _tokenValue,
@@ -1298,7 +1292,7 @@ void main() {
       () async {
         final capturedParams = <Map<String, dynamic>>[];
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<String>(
             'use_justification_token',
             params: captureAny(named: 'params'),
           ),
@@ -1306,7 +1300,7 @@ void main() {
           capturedParams.add(
             inv.namedArguments[const Symbol('params')] as Map<String, dynamic>,
           );
-          return _FakeRpcBuilder(_justId);
+          return _FakeRpcBuilder<String>(_justId);
         });
 
         await sut.useToken(
@@ -1332,8 +1326,8 @@ void main() {
           code: 'P0001',
         );
         when(
-          () => mockClient.rpc(any(), params: any(named: 'params')),
-        ).thenAnswer((_) => _FakeRpcBuilder(null, error: pgErr));
+          () => mockClient.rpc<String>(any(), params: any(named: 'params')),
+        ).thenAnswer((_) => _FakeRpcBuilder<String>(null, error: pgErr));
 
         expect(
           () => sut.useToken(

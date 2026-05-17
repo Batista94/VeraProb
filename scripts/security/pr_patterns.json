@@ -110,9 +110,9 @@
     "severity": "BLOCK"
   },
   "INV-DB": {
-    "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\b|\\bDROP\\s+TABLE\\b|\\bALTER\\s+COLUMN\\b.+\\bSET\\s+NOT\\s+NULL\\b",
+    "pattern": "\\bDELETE\\s+FROM\\b|\\bTRUNCATE\\b|\\bDROP\\s+TABLE\\b|\\bDROP\\s+COLUMN\\b|\\bALTER\\s+COLUMN\\b.+\\bSET\\s+NOT\\s+NULL\\b",
     "path_filter": "supabase/migrations/",
-    "description": "Destructive migration operation. Use soft-delete or non-blocking constraints (INV-DB: Zero-Downtime). Safe bypass: follow ADD CONSTRAINT NOT VALID → VALIDATE CONSTRAINT → ALTER COLUMN SET NOT NULL and annotate the SET NOT NULL line with '-- INV-DB: zero-downtime-verified'.",
+    "description": "Destructive migration operation (DELETE/TRUNCATE/DROP TABLE/DROP COLUMN/SET NOT NULL). Use soft-delete or non-blocking constraints (INV-DB: Zero-Downtime). Bypass: annotate the offending line with '-- INV-DB: zero-downtime-verified' after Council approval.",
     "severity": "BLOCK"
   },
   "INV6-TIMESTAMP-TZ": {
@@ -144,6 +144,18 @@
     "pattern": "CREATE\\s+TABLE",
     "path_filter": "supabase/migrations/",
     "description": "INV-2: Mandatory RLS and Policy pattern verification for new tables.",
+    "severity": "BLOCK"
+  },
+  "INFRA-LEAK-UI": {
+    "pattern": "import 'package:veraprob/infrastructure/(?!(observability|config)/)",
+    "path_filter": "lib/features/",
+    "description": "INV-13 violation: Features layer imports concrete infrastructure module. Route through IRepository interface or application service/use-case handler.",
+    "severity": "BLOCK"
+  },
+  "GENERIC-EXCEPTION-DOMAIN": {
+    "pattern": "throw\\s+(Exception|StateError|FormatException|TypeError)\\s*\\(",
+    "path_filter": "lib/(domain|application)/",
+    "description": "Generic exception thrown in domain/application layer. Use typed domain exceptions: IntegrityException, SovereigntyViolationException, ConflictException, AuthorizationException, etc.",
     "severity": "BLOCK"
   }
 }

@@ -4,25 +4,52 @@ on:
   pull_request:
     branches: [ main, develop ]
 
+concurrency:
+  group: forensic-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   forensic-audit:
+    name: Forensic Audit & Static Analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v4
         with:
-          channel: 'stable'
+          node-version: '24'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
 
       - name: Install Dependencies
         run: flutter pub get
 
-      - name: Create dummy .env
-        run: touch .env
+      - name: Create stub .env
+        run: echo "# CI stub — credentials injected via dart-define" > .env
 
       - name: Install dart_code_metrics
         run: |

@@ -45,7 +45,7 @@ void main() {
 
       final state = container.read(executiveDashboardProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
 
     test('provider initial state test structure', () {

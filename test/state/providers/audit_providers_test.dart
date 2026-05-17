@@ -25,7 +25,7 @@ void main() {
 
       final state = container.read(auditLogProjectionProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

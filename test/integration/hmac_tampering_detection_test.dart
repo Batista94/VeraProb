@@ -112,7 +112,7 @@ Future<void> _tamperRawPayload(
   required String recordId,
   required Map<String, dynamic> newPayload,
 }) async {
-  await client.rpc(
+  await client.rpc<dynamic>(
     'test_tamper_raw_telemetry_payload',
     params: {'p_record_id': recordId, 'p_new_payload': newPayload},
   );

@@ -507,7 +507,7 @@ class _ActionsSection extends ConsumerWidget {
     bool destructive = false,
     required VoidCallback onConfirm,
   }) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: VeraProbColors.surface,

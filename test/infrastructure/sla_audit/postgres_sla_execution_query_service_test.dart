@@ -23,7 +23,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_s
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Capturing HTTP Interceptor ───────────────────────────────────────────────
 
@@ -124,7 +124,7 @@ void main() {
     client = SupabaseClient(
       'https://test.supabase.co',
       'test-anon-key',
-      httpClient: _mockClient([]),
+      httpClient: _mockClient(<dynamic>[]),
     );
     service = SlaExecutionQueryServicePostgres(client, fakeClock);
   });
@@ -169,7 +169,7 @@ void main() {
     test(
       'findBySetId sends organization_id filter — proven by captured HTTP query',
       () async {
-        stubJson([]);
+        stubJson(<dynamic>[]);
 
         await service.findBySetId(setId, organizationId: orgId);
 
@@ -192,7 +192,7 @@ void main() {
     test(
       'listByStatus sends organization_id filter — proven by captured HTTP query',
       () async {
-        stubJson([]);
+        stubJson(<dynamic>[]);
 
         await service.listByStatus(
           ExecutionStatus.planned,
@@ -208,7 +208,7 @@ void main() {
     test(
       'getSummary sends organization_id filter — proven by captured HTTP query',
       () async {
-        stubJson([]);
+        stubJson(<dynamic>[]);
 
         await service.getSummary(organizationId: orgId);
 
@@ -254,7 +254,7 @@ void main() {
     test(
       'listByWindow sends organization_id filter — proven by captured HTTP query',
       () async {
-        stubJson([]);
+        stubJson(<dynamic>[]);
 
         await service.listByWindow(
           DateTime.utc(2026, 3, 1),
@@ -270,7 +270,7 @@ void main() {
     test(
       'REJECTS cross-tenant: uses exact passed org_id, not hardcoded',
       () async {
-        stubJson([]);
+        stubJson(<dynamic>[]);
 
         const intruderOrg = 'org-INTRUSO';
         await service.findBySetId(setId, organizationId: intruderOrg);
@@ -312,7 +312,7 @@ void main() {
     });
 
     test('generatedAtUtc uses IDateTimeProvider, not system clock', () async {
-      stubJson([]);
+      stubJson(<dynamic>[]);
 
       final result = await service.getSummary(organizationId: orgId);
 
@@ -504,7 +504,7 @@ void main() {
     });
 
     test('returns null when DB yields no rows', () async {
-      stubJson([]);
+      stubJson(<dynamic>[]);
 
       final result = await service.findBySetId(setId, organizationId: orgId);
 
@@ -512,7 +512,7 @@ void main() {
     });
 
     test('returns empty list when query yields no rows', () async {
-      stubJson([]);
+      stubJson(<dynamic>[]);
 
       final result = await service.listByStatus(
         ExecutionStatus.planned,

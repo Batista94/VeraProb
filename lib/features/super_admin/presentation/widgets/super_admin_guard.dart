@@ -72,7 +72,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
             '[SuperAdminGuard] AAL2 missing — redirecting to MFA challenge',
           );
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+            MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
             (_) => false,
           );
         }

@@ -472,9 +472,11 @@ void main() {
       ];
 
       // RPC succeeds
-      final rpcBuilder = _FakeBuilder<dynamic>({'updated_count': 1});
+      final rpcBuilder = _FakeBuilder<Map<String, dynamic>>({
+        'updated_count': 1,
+      });
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<Map<String, dynamic>>(
           'batch_update_vehicles',
           params: any(named: 'params'),
         ),
@@ -511,7 +513,7 @@ void main() {
           hint: null,
         );
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<Map<String, dynamic>>(
             'batch_update_vehicles',
             params: any(named: 'params'),
           ),
@@ -556,7 +558,7 @@ void main() {
           hint: null,
         );
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<Map<String, dynamic>>(
             'batch_update_vehicles',
             params: any(named: 'params'),
           ),
@@ -591,7 +593,7 @@ void main() {
           hint: null,
         );
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<Map<String, dynamic>>(
             'batch_update_vehicles',
             params: any(named: 'params'),
           ),

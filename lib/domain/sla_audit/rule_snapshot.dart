@@ -22,11 +22,13 @@ class RuleSnapshotItem extends Equatable {
 
   factory RuleSnapshotItem.fromJson(Map<String, dynamic> json) {
     return RuleSnapshotItem(
-      ruleId: json['ruleId'],
-      ruleType: SlaRuleType.fromString(json['ruleType']),
-      config: Map<String, dynamic>.from(json['config']),
-      ruleVersion: json['ruleVersion'],
-      evaluationOrder: json['evaluationOrder'],
+      ruleId: json['ruleId'] as String,
+      ruleType: SlaRuleType.fromString(json['ruleType'] as String),
+      config: Map<String, dynamic>.from(
+        json['config'] as Map<dynamic, dynamic>,
+      ),
+      ruleVersion: json['ruleVersion'] as int,
+      evaluationOrder: json['evaluationOrder'] as int,
     );
   }
 

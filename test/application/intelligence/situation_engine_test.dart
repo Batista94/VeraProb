@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/intelligence/situation_engine.dart';
 import 'package:veraprob/application/operational_control_service.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class MockOperationalControlService extends Mock
     implements OperationalControlService {}

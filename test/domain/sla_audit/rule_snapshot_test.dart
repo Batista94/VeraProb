@@ -85,14 +85,14 @@ void main() {
         {
           'ruleId': 'rule-1',
           'ruleType': 'EXCESSIVE_SPEED',
-          'config': {},
+          'config': <String, dynamic>{},
           'ruleVersion': 1,
           'evaluationOrder': 0,
         },
         {
           'ruleId': 'rule-2',
           'ruleType': 'NO_SHOW_PENALTY',
-          'config': {},
+          'config': <String, dynamic>{},
           'ruleVersion': 1,
           'evaluationOrder': 1,
         },

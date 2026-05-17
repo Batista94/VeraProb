@@ -15,7 +15,7 @@ void main() {
 
       final state = container.read(financialImpactProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

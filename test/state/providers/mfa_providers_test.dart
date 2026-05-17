@@ -25,7 +25,7 @@ void main() {
 
       final state = container.read(mfaStatusProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
 
     test('provider initial state test structure', () {

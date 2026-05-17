@@ -43,8 +43,18 @@ abstract class SuperAdminAuthHelper {
       MockStreamHandler.inline(onListen: (_, _) {}, onCancel: (_) {}),
     );
 
+    // ErrorBoundary (lib/features/shared/widgets/error_boundary.dart:23) reatribui
+    // ErrorWidget.builder global em initState sem restaurar. flutter_test verifica
+    // drift dentro de _runTestBody (antes dos teardowns), então addTearDown roda
+    // tarde demais. Captura o builder vigente (do flutter_test) antes de app.main()
+    // e restaura logo após pumpAndSettle — ErrorBoundary só mounta 1x na vida do
+    // app, não há risco de re-trigger.
+    final originalErrorWidgetBuilder = ErrorWidget.builder;
+
     app.main();
     await tester.pumpAndSettle();
+
+    ErrorWidget.builder = originalErrorWidgetBuilder;
 
     // Localizar campos de email e senha.
     // O padrão da UI usa TextField com InputDecoration contendo hintText

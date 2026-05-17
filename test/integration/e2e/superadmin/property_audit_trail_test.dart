@@ -92,7 +92,7 @@ void main() {
             // 2. Execute archive operation
             final archiveReason =
                 'PBT audit trail iter $i — archive ($numAdmins admins)';
-            await serviceRoleClient.rpc(
+            await serviceRoleClient.rpc<dynamic>(
               'super_admin_archive_organization',
               params: {
                 'p_org_id': org.orgId,
@@ -122,7 +122,7 @@ void main() {
             if (opType == 1) {
               final unarchiveReason =
                   'PBT audit trail iter $i — unarchive ($numAdmins admins)';
-              await serviceRoleClient.rpc(
+              await serviceRoleClient.rpc<dynamic>(
                 'super_admin_unarchive_organization',
                 params: {
                   'p_org_id': org.orgId,

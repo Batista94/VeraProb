@@ -89,7 +89,7 @@ void main() {
             // 2. Fire N concurrent archive RPC calls (simulating double-click)
             final futures = List.generate(numClicks, (clickIdx) async {
               try {
-                await serviceRoleClient.rpc(
+                await serviceRoleClient.rpc<dynamic>(
                   'super_admin_archive_organization',
                   params: {
                     'p_org_id': org.orgId,

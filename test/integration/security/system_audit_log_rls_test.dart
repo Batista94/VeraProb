@@ -212,7 +212,7 @@ void main() {
       markTestSkipped('local supabase stack offline');
       return;
     }
-    final res = await seedClient.rpc(
+    final res = await seedClient.rpc<dynamic>(
       'test_cleanup_system_audit_log',
       params: {'p_org_ids': const <String>[]},
     );

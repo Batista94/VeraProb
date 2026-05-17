@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 // ignore: depend_on_referenced_packages
 import 'package:fake_async/fake_async.dart';
 import 'package:veraprob/infrastructure/shared/gtfs_realtime_service.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 import 'package:veraprob/infrastructure/shared/vehicle_repository.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 

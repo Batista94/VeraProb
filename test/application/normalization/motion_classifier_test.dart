@@ -19,7 +19,7 @@ import 'package:veraprob/application/normalization/motion_classifier.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/domain/entities/stop.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Shared coordinate constants ───────────────────────────────────────────────
 

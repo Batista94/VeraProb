@@ -358,7 +358,7 @@ void main() {
           occurredAtUtc: DateTime.utc(2026, 3, 1),
           triggeredBy: 'user',
         ),
-        throwsA(isA()),
+        throwsA(isA<Object>()),
       );
     });
 
@@ -372,7 +372,7 @@ void main() {
           occurredAtUtc: DateTime(2026, 3, 1), // local time!
           triggeredBy: 'user',
         ),
-        throwsA(isA()),
+        throwsA(isA<Object>()),
       );
     });
 
