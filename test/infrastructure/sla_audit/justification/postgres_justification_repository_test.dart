@@ -334,6 +334,11 @@ _FakeBuilder<PostgrestList> _stubUpdate(
   return builder;
 }
 
+// ── Group-context getters (rebind to per-test fixtures from main scope) ───────
+
+typedef _ClientGetter = _MockSupabaseClient Function();
+typedef _SutGetter = PostgresJustificationRepository Function();
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TEST SUITE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -353,17 +358,39 @@ void main() {
     sut = PostgresJustificationRepository(mockClient);
   });
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G1 — create()
-  // ══════════════════════════════════════════════════════════════════════════
+  _MockSupabaseClient clientOf() => mockClient;
+  PostgresJustificationRepository sutOf() => sut;
 
+  _registerCreateGroup(clientOf, sutOf);
+  _registerFindByIdGroup(clientOf, sutOf);
+  _registerListByOrgGroup(clientOf, sutOf);
+  _registerUpdateStatusGroup(clientOf, sutOf);
+  _registerUpdateStatusWithAuditLogGroup(clientOf, sutOf);
+  _registerAddEvidenceGroup(clientOf, sutOf);
+  _registerGetEvidenceGroup(clientOf, sutOf);
+  _registerCreateTokenGroup(clientOf, sutOf);
+  _registerFindTokenGroup(clientOf, sutOf);
+  _registerUseTokenGroup(clientOf, sutOf);
+  _registerStatusMapperGroup(clientOf, sutOf);
+  _registerCategoryMapperGroup(clientOf, sutOf);
+  _registerStatusDbValueGroup();
+  _registerCategoryDbValueGroup();
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// G1 — create()
+// ══════════════════════════════════════════════════════════════════════════
+
+void _registerCreateGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('create()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -443,18 +470,22 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G2 — findById()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G2 — findById()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerFindByIdGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('findById()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -602,18 +633,22 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G3 — listByOrg()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G3 — listByOrg()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerListByOrgGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('listByOrg()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -713,18 +748,22 @@ void main() {
       expect(results[2].status, JustificationStatus.rejected);
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G4 — updateStatus()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G4 — updateStatus()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerUpdateStatusGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('updateStatus()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -820,13 +859,21 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G5 — updateStatusWithAuditLog()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G5 — updateStatusWithAuditLog()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerUpdateStatusWithAuditLogGroup(
+  _ClientGetter clientOf,
+  _SutGetter sutOf,
+) {
   group('updateStatusWithAuditLog()', () {
+    late PostgresJustificationRepository sut;
+
     setUp(() {
+      sut = sutOf();
       registerFallbackValue(<String, dynamic>{});
     });
 
@@ -834,7 +881,7 @@ void main() {
       'success — RPC called with exact 6-key param contract, returns 1',
       () async {
         when(
-          () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+          () => clientOf().rpc<int>(any(), params: any(named: 'params')),
         ).thenAnswer((_) => _FakeRpcBuilder<int>(1));
 
         final result = await sut.updateStatusWithAuditLog(
@@ -856,7 +903,7 @@ void main() {
     test('RPC — param keys match DB contract exactly', () async {
       final capturedParams = <Map<String, dynamic>>[];
       when(
-        () => mockClient.rpc<int>(
+        () => clientOf().rpc<int>(
           'update_justification_status_with_audit',
           params: captureAny(named: 'params'),
         ),
@@ -896,7 +943,7 @@ void main() {
     test('dbValue — status strings sent as UPPERCASE to RPC', () async {
       final capturedParams = <Map<String, dynamic>>[];
       when(
-        () => mockClient.rpc<int>(
+        () => clientOf().rpc<int>(
           'update_justification_status_with_audit',
           params: captureAny(named: 'params'),
         ),
@@ -925,7 +972,7 @@ void main() {
 
     test('OCC conflict — returns 0 when RPC signals no rows updated', () async {
       when(
-        () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+        () => clientOf().rpc<int>(any(), params: any(named: 'params')),
       ).thenAnswer((_) => _FakeRpcBuilder<int>(0));
 
       final result = await sut.updateStatusWithAuditLog(
@@ -949,7 +996,7 @@ void main() {
         code: 'P0001',
       );
       when(
-        () => mockClient.rpc<int>(any(), params: any(named: 'params')),
+        () => clientOf().rpc<int>(any(), params: any(named: 'params')),
       ).thenAnswer((_) => _FakeRpcBuilder<int>(null, error: pgErr));
 
       expect(
@@ -974,18 +1021,22 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G6 — addEvidence()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G6 — addEvidence()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerAddEvidenceGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('addEvidence()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('justification_evidence_uploads'),
+        () => clientOf().from('justification_evidence_uploads'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1050,18 +1101,22 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G7 — getEvidence()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G7 — getEvidence()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerGetEvidenceGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('getEvidence()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('justification_evidence_uploads'),
+        () => clientOf().from('justification_evidence_uploads'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1126,18 +1181,22 @@ void main() {
       expect(results, isEmpty);
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G8 — createToken()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G8 — createToken()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerCreateTokenGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('createToken()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('justification_submission_tokens'),
+        () => clientOf().from('justification_submission_tokens'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1176,18 +1235,22 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G9 — findToken()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G9 — findToken()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerFindTokenGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('findToken()', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('justification_submission_tokens'),
+        () => clientOf().from('justification_submission_tokens'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1267,15 +1330,23 @@ void main() {
       expect(result!.justificationId, _justId);
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G10 — useToken()
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G10 — useToken()
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerUseTokenGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('useToken()', () {
+    late PostgresJustificationRepository sut;
+
+    setUp(() {
+      sut = sutOf();
+    });
+
     test('success — returns justification ID from RPC', () async {
       when(
-        () => mockClient.rpc<String>(any(), params: any(named: 'params')),
+        () => clientOf().rpc<String>(any(), params: any(named: 'params')),
       ).thenAnswer((_) => _FakeRpcBuilder<String>(_justId));
 
       final result = await sut.useToken(
@@ -1292,7 +1363,7 @@ void main() {
       () async {
         final capturedParams = <Map<String, dynamic>>[];
         when(
-          () => mockClient.rpc<String>(
+          () => clientOf().rpc<String>(
             'use_justification_token',
             params: captureAny(named: 'params'),
           ),
@@ -1326,7 +1397,7 @@ void main() {
           code: 'P0001',
         );
         when(
-          () => mockClient.rpc<String>(any(), params: any(named: 'params')),
+          () => clientOf().rpc<String>(any(), params: any(named: 'params')),
         ).thenAnswer((_) => _FakeRpcBuilder<String>(null, error: pgErr));
 
         expect(
@@ -1346,18 +1417,22 @@ void main() {
       },
     );
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G11 — Mapper validation: enum round-trips
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G11 — Mapper validation: enum round-trips
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerStatusMapperGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('mapper — JustificationStatus round-trip', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1392,14 +1467,18 @@ void main() {
       );
     });
   });
+}
 
+void _registerCategoryMapperGroup(_ClientGetter clientOf, _SutGetter sutOf) {
   group('mapper — JustificationCategory round-trip', () {
     late _MockSupabaseQueryBuilder qb;
+    late PostgresJustificationRepository sut;
 
     setUp(() {
       qb = _MockSupabaseQueryBuilder();
+      sut = sutOf();
       when(
-        () => mockClient.from('contractor_justifications'),
+        () => clientOf().from('contractor_justifications'),
       ).thenAnswer((_) => qb);
     });
 
@@ -1436,11 +1515,13 @@ void main() {
       );
     });
   });
+}
 
-  // ══════════════════════════════════════════════════════════════════════════
-  // G12 — dbValue correctness (all enums)
-  // ══════════════════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════════
+// G12 — dbValue correctness (all enums)
+// ══════════════════════════════════════════════════════════════════════════
 
+void _registerStatusDbValueGroup() {
   group('JustificationStatus.dbValue', () {
     test(
       'pending → PENDING',
@@ -1459,7 +1540,9 @@ void main() {
       () => expect(JustificationStatus.expired.dbValue, 'EXPIRED'),
     );
   });
+}
 
+void _registerCategoryDbValueGroup() {
   group('JustificationCategory.dbValue', () {
     test(
       'mechanical → MECHANICAL',

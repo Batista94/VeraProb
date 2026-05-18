@@ -162,7 +162,10 @@
       "Bash(make docs-check *)",
       "Bash(make -n full-check)",
       "Bash(make format *)",
-      "Bash(MSYS_NO_PATHCONV=1 make format *)"
+      "Bash(MSYS_NO_PATHCONV=1 make format *)",
+      "Bash(awk *)",
+      "Bash(make -n test)",
+      "Bash(make -n test-integration)"
     ]
   },
   "enabledMcpjsonServers": [

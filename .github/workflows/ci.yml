@@ -356,9 +356,6 @@ jobs:
       - name: Start Supabase Local
         run: supabase start
 
-      - name: Seed local database
-        run: supabase db seed
-
       - name: Create stub .env
         run: echo "# CI stub" > .env
 
@@ -375,6 +372,13 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+
+      - name: Bootstrap Dev Data
+        run: node scripts/dev/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Check if integration tests should run
         id: should_run_integration
@@ -444,9 +448,6 @@ jobs:
       - name: Start Supabase Local
         run: supabase start
 
-      - name: Seed local database
-        run: supabase db seed
-
       - name: Create stub .env
         run: echo "# CI stub" > .env
 
@@ -464,9 +465,18 @@ jobs:
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
 
+      - name: Bootstrap Dev Data
+        run: node scripts/dev/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+
       - name: Flutter Test with Coverage
         run: |
           flutter test --no-pub -j 1 --coverage \
+            --dart-define=SKIP_MFA_DEV=true \
+            --dart-define=ENV=dev \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
 
