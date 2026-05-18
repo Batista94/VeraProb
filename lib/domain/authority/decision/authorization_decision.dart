@@ -1,3 +1,7 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Architect + QA-Sec + Senior): diff is INV-7 strict-cast
+// hardening (`as Map<String, dynamic>` / `as Iterable<dynamic>`). No behavior
+// change, no invariant mutation — forensically equivalent. See commit f01e4802.
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_obligation.dart';

@@ -11,7 +11,7 @@
 ///
 /// Requires Supabase local rodando com migrations aplicadas.
 /// Comando:
-///   flutter test test/e2e/super_admin_preservation_pbt_test.dart
+///   flutter test test/integration/e2e/superadmin/super_admin_preservation_pbt_test.dart
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +20,7 @@ import 'package:glados/glados.dart'
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import '../infrastructure/postgres/postgres_test_config.dart';
+import '../../../infrastructure/postgres/postgres_test_config.dart';
 
 const _uuid = Uuid();
 

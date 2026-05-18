@@ -201,8 +201,22 @@ class _CreateOrganizationWizardState
     final repo = ref.read(superAdminRepositoryProvider);
     final lookupService = ref.read(cnpjLookupServiceProvider);
 
-    final exists = await repo.checkCnpjExists(digits).catchError((_) => false);
-    final lookup = await lookupService.lookup(digits).catchError((_) => null);
+    // CI Block #6: per-call try/catch isola falhas. Defesa contra throw
+    // síncrono (mocks/clients HTTP em init estagiada). Tipo de `lookup`
+    // inferido — preserva INV-13 (sem import de domain em features).
+    var exists = false;
+    try {
+      exists = await repo.checkCnpjExists(digits);
+    } catch (_) {
+      exists = false;
+    }
+    final lookup = await () async {
+      try {
+        return await lookupService.lookup(digits);
+      } catch (_) {
+        return null;
+      }
+    }();
 
     if (!mounted) return;
 

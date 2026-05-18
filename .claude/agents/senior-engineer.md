@@ -34,8 +34,10 @@ Implementation authority for the VeraProb stack (Flutter, Riverpod, Supabase). B
 *   **IoT Chaos Simulator:** Invoke ONLY WHEN code involves time logic (DateTime), geographic coordinates, or event stream processing.
 *   **Supabase Best Practices:** Invoke for EVERY SQL migration or RLS policy change.
 
-## RUNTIME HEURISTICS (Lessons — bugs solved)
-*   **Auth Listener Global:** When introducing or modifying any role-gated guard (e.g., `SuperAdminGuard`), VERIFY `lib/main.dart` has a `ref.listen<AsyncValue<AuthState>>(authStateProvider, ...)` that intercepts `AuthChangeEvent.signedOut` and pushes the LockScreen via `navigatorKey.currentState.pushAndRemoveUntil(...)`. Without it, the guard renders `NotFoundPage` on signOut and traps the user. See CLAUDE.md Common CI Block #5 (AUTH-TRAP).
-*   **Async Chain Split:** Two independent `await` calls must NEVER share a single `try/catch` if one failure must not invalidate the other's result. Use per-call `.catchError((_) => fallback)`. Pattern caught: `checkCnpjExists()` + `lookupService.lookup()` unified catch dropped the duplicate check when ReceitaWS hung. See CI Block #6 (CATCH-SWALLOW).
-*   **Test Mocks via Riverpod Override, not HttpOverrides:** When asked to test transport failures (Supabase network errors, edge function timeouts), inject a fake `SupabaseClient` / fake repository via `ProviderScope(overrides: [...])` at the repository or application layer. NEVER use `HttpOverrides.global` against a `Supabase.initialize()`-created client — it is ignored. See CI Block #9 (E2E-HTTPMOCK).
-*   **Regression Ack Discipline:** Any modification to `lib/domain/**` or `supabase/migrations/**` triggers the scanner's `Regression Alert`. Either justify with `// pr_scanner: ignore-regression` (after Council review of the diff) or revert. Do not silently downgrade verdicts.
+## RUNTIME HEURISTICS (Lessons from solved bugs)
+
+See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) for full Why/How. Topics relevant to this persona:
+- Lesson 1 — Auth Lifecycle (global `signedOut` redirect required for any new guard).
+- Lesson 2 — Async Chain Isolation (per-call `.catchError`; never unified try/catch over independent awaits).
+- Lesson 6.3 — Test mocks via Riverpod `ProviderScope` override, NOT `HttpOverrides` against Supabase.
+- Lesson 7 — Regression Ack Discipline (`lib/domain/**` + `supabase/migrations/**` mutations require Council-reviewed `// pr_scanner: ignore-regression` OR revert).

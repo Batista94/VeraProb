@@ -27,6 +27,7 @@
 #     8.1  C4 leaky abstraction — domain imports in lib/features/ (BLOCK)
 #     8.2  E2 error parity      — throw Exception / return 401/403 (BLOCK)
 #     8.3  D1/D2 strict type-safety (BLOCK domain, WARN infra)
+#     8.4  Test Folder Parity Gate (BLOCK test/data & test/e2e)
 #   Step 9: Governance & Process Audit
 #     9.1  Mandatory Test Plan for Migrations
 #     9.2  Enterprise Complexity Analysis (dart_code_metrics)
@@ -458,6 +459,16 @@ STRICT_EOF
   else
     echo -e "  ${GREEN}D2: Infrastructure layer has 0 strict-type violations.${NC}"
   fi
+fi
+
+# 8.4: Test Folder Parity Gate (BLOCK on invalid test directory layout)
+echo -e "  [8.4] Test folder parity: checking for forbidden test directories (data/ e soltos em e2e/)..."
+if [[ -d "$PROJECT_DIR/test/data" || -d "$PROJECT_DIR/test/e2e" ]]; then
+  echo -e "  ${RED}${BOLD}[BLOCK]${NC} Forbidden test folder layout detected: test/data/ or test/e2e/ must not exist."
+  echo -e "          Data layer must be in test/infrastructure/. E2E tests must be in test/integration/e2e/."
+  TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+else
+  echo -e "  ${GREEN}Test folder layout is strictly compliant with Clean Architecture (C4).${NC}"
 fi
 
 # ── Step 9: Governance & Process Audit (Forensic Mode) ──────────────────────

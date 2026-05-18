@@ -158,7 +158,11 @@
       "Bash(tee C:/tmp/adverse_full_a.log)",
       "WebFetch(domain:docs.claude.com)",
       "WebFetch(domain:agents.md)",
-      "Bash(make help *)"
+      "Bash(make help *)",
+      "Bash(make docs-check *)",
+      "Bash(make -n full-check)",
+      "Bash(make format *)",
+      "Bash(MSYS_NO_PATHCONV=1 make format *)"
     ]
   },
   "enabledMcpjsonServers": [

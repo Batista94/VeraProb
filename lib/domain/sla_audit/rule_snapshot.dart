@@ -1,3 +1,8 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Architect + QA-Sec + Senior): diff is INV-7 strict-cast
+// hardening in `fromJson` (typed `as String` / `as int` /
+// `as Map<dynamic, dynamic>`). Frozen snapshot semantics preserved — forensically
+// equivalent. See commit f01e4802.
 import 'package:equatable/equatable.dart';
 import 'contractual_rule.dart';
 

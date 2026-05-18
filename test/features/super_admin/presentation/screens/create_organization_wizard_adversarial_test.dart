@@ -627,8 +627,12 @@ void main() {
       await tester.binding.setSurfaceSize(const Size(800, 1600));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
-      // Lookup throws but checkCnpjExists succeeds
-      when(() => mockLookup.lookup(any())).thenThrow(Exception('timeout'));
+      // Lookup throws but checkCnpjExists succeeds.
+      // Use async throw to simulate realistic network failure (real `async`
+      // methods always return a rejected Future, never throw sync).
+      when(
+        () => mockLookup.lookup(any()),
+      ).thenAnswer((_) async => throw Exception('timeout'));
       when(
         () => mockRepo.checkCnpjExists(any()),
       ).thenAnswer((_) async => false);

@@ -1,3 +1,8 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Architect + QA-Sec + Senior): diff is INV-7 strict-cast
+// hardening on `_deepCopyMap` (typed `as Map<String, dynamic>` /
+// `as Iterable<dynamic>`). No behavior change — forensically equivalent.
+// See commit f01e4802.
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/execution/execution_domain_exception.dart';
 

@@ -151,10 +151,11 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      // Tap add button
-      await tester.tap(find.text('Adicionar Administrador'));
+      // Tap add button (label 'Adicionar' + Tooltip 'Adicionar Administrador'
+      // — RENDERFLEX-NARROW pattern CI Block #7).
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       // Fill form
@@ -275,9 +276,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      await tester.tap(find.text('Adicionar Administrador'));
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       // Enter invalid email
@@ -312,9 +313,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      await tester.tap(find.text('Adicionar Administrador'));
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       await tester.enterText(

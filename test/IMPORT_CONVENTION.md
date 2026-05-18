@@ -23,7 +23,7 @@ placed in `lib/` without breaking the WASM/web build:
 - `test/infrastructure/postgres/postgres_test_config.dart`
 - `test/integration/e2e/helpers/superadmin_*.dart`
 
-Files in `test/infrastructure/`, `test/integration/`, and `test/e2e/` that import
+Files in `test/infrastructure/` and `test/integration/` that import
 these config helpers MAY use relative imports pointing to these specific files.
 No other relative imports are permitted.
 

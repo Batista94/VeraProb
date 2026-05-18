@@ -233,109 +233,152 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
     final reasonCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    final confirmed = await showDialog<bool>(
+    // INV-22 / Lesson #4: dialog gerencia submit/erro internamente.
+    // Só fecha em sucesso — em falha de rede/duplicidade o usuário mantém o
+    // contexto digitado e vê a mensagem inline + snackbar.
+    final result = await showDialog<({String email, String reason})>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Adicionar Administrador'),
-        content: SizedBox(
-          width: 400,
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: emailCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'E-mail do Administrador',
-                    border: OutlineInputBorder(),
+      barrierDismissible: false,
+      builder: (dialogCtx) {
+        var submitting = false;
+        String? serverError;
+
+        return StatefulBuilder(
+          builder: (sbCtx, setSbState) {
+            Future<void> submit() async {
+              if (!(formKey.currentState?.validate() ?? false)) return;
+              setSbState(() {
+                submitting = true;
+                serverError = null;
+              });
+              final emailValue = emailCtrl.text.trim();
+              final reasonValue = reasonCtrl.text.trim();
+              try {
+                final repo = ref.read(superAdminRepositoryProvider);
+                final userId =
+                    ref.read(authStateProvider).value?.session?.user.id ?? '';
+                const uuid = Uuid();
+                final now = ref.read(dateTimeProviderProvider).nowUtc();
+                await repo.addAdminToOrganization(
+                  orgId: widget.tenant.id,
+                  email: emailValue,
+                  invitationId: uuid.v4(),
+                  token: uuid.v4(),
+                  expiresAtUtc: now.add(const Duration(days: 7)),
+                  superAdminUserId: userId,
+                  reason: reasonValue,
+                );
+                if (dialogCtx.mounted) {
+                  Navigator.of(
+                    dialogCtx,
+                  ).pop((email: emailValue, reason: reasonValue));
+                }
+              } catch (e) {
+                // INV-10: Não silencia falhas. Mantém modal aberto para retry
+                // — mensagem inline preserva contexto digitado (INV-22).
+                if (!dialogCtx.mounted) return;
+                setSbState(() {
+                  submitting = false;
+                  serverError = e.toString();
+                });
+              }
+            }
+
+            return AlertDialog(
+              title: const Text('Adicionar Administrador'),
+              content: SizedBox(
+                width: 400,
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: emailCtrl,
+                        enabled: !submitting,
+                        decoration: const InputDecoration(
+                          labelText: 'E-mail do Administrador',
+                          border: OutlineInputBorder(),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        autofocus: true,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'E-mail obrigatório.';
+                          }
+                          final emailRegex = RegExp(
+                            r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}',
+                          );
+                          if (!emailRegex.hasMatch(v.trim())) {
+                            return 'E-mail inválido.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: reasonCtrl,
+                        enabled: !submitting,
+                        decoration: const InputDecoration(
+                          labelText: 'Justificativa',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Justificativa obrigatória.';
+                          }
+                          return null;
+                        },
+                      ),
+                      if (serverError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Erro: ${serverError!}',
+                          style: const TextStyle(
+                            color: VeraProbColors.error,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                  keyboardType: TextInputType.emailAddress,
-                  autofocus: true,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'E-mail obrigatório.';
-                    }
-                    final emailRegex = RegExp(r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}');
-                    if (!emailRegex.hasMatch(v.trim())) {
-                      return 'E-mail inválido.';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: reasonCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Justificativa',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Justificativa obrigatória.';
-                    }
-                    return null;
-                  },
+              ),
+              actions: [
+                TextButton(
+                  onPressed: submitting
+                      ? null
+                      : () => Navigator.of(dialogCtx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                FilledButton(
+                  onPressed: submitting ? null : submit,
+                  child: submitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Convidar'),
                 ),
               ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.of(context).pop(true);
-              }
-            },
-            child: const Text('Convidar'),
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
 
-    if (confirmed != true || !mounted) return;
+    if (result == null || !mounted) return;
 
-    try {
-      final repo = ref.read(superAdminRepositoryProvider);
-      final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
-      const uuid = Uuid();
-      final now = ref.read(dateTimeProviderProvider).nowUtc();
-      await repo.addAdminToOrganization(
-        orgId: widget.tenant.id,
-        email: emailCtrl.text.trim(),
-        invitationId: uuid.v4(),
-        token: uuid.v4(),
-        expiresAtUtc: now.add(const Duration(days: 7)),
-        superAdminUserId: userId,
-        reason: reasonCtrl.text.trim(),
-      );
-      if (mounted) {
-        // INV-22: Invalida snapshot para sincronizar status do painel pai.
-        ref.invalidate(tenantHealthSnapshotProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Convite enviado para ${emailCtrl.text.trim()}.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
-      await _loadMembers();
-    } catch (e) {
-      // INV-10: Não silencia falhas. 'on Exception' mascarava DomainException.
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
-    }
+    // INV-22: Invalida snapshot para sincronizar status do painel pai.
+    ref.invalidate(tenantHealthSnapshotProvider);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Convite enviado para ${result.email}.'),
+        backgroundColor: VeraProbColors.success,
+      ),
+    );
+    await _loadMembers();
   }
 
   @override

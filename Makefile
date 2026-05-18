@@ -15,7 +15,7 @@ DOCKER_RUN = docker run --rm -v "$(CURDIR)":/app -v veraprob_dart_tool:/app/.dar
 #   make help
 # =============================================================================
 
-.PHONY: help setup env run run-staging scan-secrets test-security pr-scan load-tokens index-advisor coverage goldens chaos-test format format-check test test-db test-e2e test-e2e-file test-all test-full full-check build-test-env check check-integrity
+.PHONY: help setup env run run-staging scan-secrets test-security pr-scan load-tokens index-advisor coverage goldens chaos-test format format-check test test-db test-e2e test-e2e-file test-all test-full full-check build-test-env check check-integrity docs-check
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
@@ -120,8 +120,11 @@ build-test-env: ## Constrói a imagem Docker de ambiente de testes e sincroniza 
 pr-scan: .docker_deps_synced ## [Lead Reviewer] Executa o scanner determinístico completo de PR
 	$(DOCKER_RUN) -e FULL_SCAN=$(FULL_SCAN) $(IMAGE_NAME) bash scripts/security/pr_full_scanner.sh
 
-check: check-integrity scan-secrets pr-scan index-advisor format-check ## Roda todas as verificações de segurança e lint locais
+docs-check: ## [Governance] Valida sync entre AGENTS.md index e SSOT (.claude/rules/ci-blocks.md + .kiro/steering/lessons.md)
+	bash scripts/governance/check_docs_sync.sh
 
-full-check: ## O "Veredito Supremo": Scanner forense (Full Scan) + Testes + Caos + Coverage
+check: check-integrity scan-secrets pr-scan index-advisor format-check docs-check ## Roda todas as verificações de segurança e lint locais
+
+full-check: ## O "Veredito Supremo": Scanner forense (Full Scan) + Testes (incl. E2E) + Caos + Coverage
 	@$(MAKE) check FULL_SCAN=1
-	@$(MAKE) test-all chaos-test coverage
+	@$(MAKE) test-full chaos-test coverage
