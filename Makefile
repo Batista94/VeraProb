@@ -3,6 +3,12 @@
 # =============================================================================
 
 # ── Environment ───────────────────────────────────────────────────────────────
+-include .env
+export
+
+SUPABASE_URL ?= http://127.0.0.1:54321
+SUPABASE_SERVICE_ROLE_KEY ?= LOCAL_DEV_SECRET_PLACEHOLDER
+
 IMAGE_NAME = veraprob-test-env
 # Em Windows/PowerShell, CURDIR precisa ser tratado para o Docker
 # Usamos um volume nomeado (veraprob_dart_tool) para isolar o cache do Linux do Windows
@@ -78,7 +84,9 @@ format-check: ## [Tier 1] Valida se o código segue o padrão de formatação (i
 	@echo synced > .local_deps_synced
 
 test: .local_deps_synced ## Executa a suite completa de testes (Sequencial -j 1 para evitar race conditions no DB)
-	flutter test -j 1
+	flutter test -j 1 \
+		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
+		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
 
 test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap)
 	supabase test db
@@ -86,13 +94,17 @@ test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap
 test-e2e: .local_deps_synced ## [E2E] Executa testes E2E SuperAdmin (auto-aplica dart-defines; ver .claude/rules/ci-blocks.md #8)
 	flutter test test/integration/e2e/ -j 1 \
 		--dart-define=SKIP_MFA_DEV=true \
-		--dart-define=ENV=dev
+		--dart-define=ENV=dev \
+		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
+		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
 
 test-e2e-file: .local_deps_synced ## [E2E] Executa um arquivo E2E específico: make test-e2e-file FILE=path/to/test.dart
 	@if [ -z "$(FILE)" ]; then echo "FILE=path/to/test.dart required"; exit 1; fi
 	flutter test $(FILE) \
 		--dart-define=SKIP_MFA_DEV=true \
-		--dart-define=ENV=dev
+		--dart-define=ENV=dev \
+		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
+		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
 
 # Nota: test-all NÃO inclui test-e2e (E2E exige Supabase rodando + service-role + tem ciclo lento).
 # Pipeline E2E é separado — rode `make test-e2e` quando o ambiente local estiver up.
@@ -126,5 +138,6 @@ docs-check: ## [Governance] Valida sync entre AGENTS.md index e SSOT (.claude/ru
 check: check-integrity scan-secrets pr-scan index-advisor format-check docs-check ## Roda todas as verificações de segurança e lint locais
 
 full-check: ## O "Veredito Supremo": Scanner forense (Full Scan) + Testes (incl. E2E) + Caos + Coverage
+	@$(MAKE) setup
 	@$(MAKE) check FULL_SCAN=1
 	@$(MAKE) test-full chaos-test coverage

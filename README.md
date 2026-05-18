@@ -64,6 +64,12 @@ Para cumprir a invariante de segurança **INV-2**, chaves e segredos nunca são 
 - **Credenciais de Teste**: O sistema utiliza credenciais determinísticas (`master@veraprob.dev`) exclusivamente para o bootstrap do ambiente local de desenvolvimento. Estas são credenciais públicas de teste e não possuem acesso a nenhum recurso real.
 - **Testes de Integração**: O `PostgresTestConfig` carrega automaticamente as credenciais do `.env` durante a execução dos testes.
 
+#### 4. Validação e Execução de Testes (`make full-check`)
+O comando `make full-check` executa a verificação máxima do sistema (scans de segurança, testes unitários, de integração, E2E, caos e cobertura). Para que a suíte seja validada por completo sem ignorar (skip) testes dependentes de infraestrutura:
+- **Supabase Local**: O stack de containers deve estar rodando (`supabase start`).
+- **Edge Functions**: As funções devem estar servidas localmente em background (`supabase functions serve --env-file .env` ou via `make run`).
+- **Provisionamento de Dados**: O Make executa automaticamente o `make setup` (`bootstrap_dev.mjs`) e injeta as credenciais do `.env` nos testes, garantindo que o usuário SuperAdmin (`master@veraprob.dev`) e os dados de telemetria estejam provisionados.
+
 ### Guia de Fluxo
 
 | Ação | Comando | Descrição |
@@ -71,7 +77,7 @@ Para cumprir a invariante de segurança **INV-2**, chaves e segredos nunca são 
 | **Ambiente** | `make build-test-env` | Constrói o container Linux de auditoria. |
 | **Execução** | `flutter run` | Desenvolvimento local com Hot Reload. |
 | **Check Forense** | `make check` | Valida integridade, segredos e padrões forenses. |
-| **Full Check** | `make full-check` | Executa o check completo + testes unitários e de banco. |
+| **Full Check** | `make full-check` | Executa o check completo + testes unitários, E2E e de banco (requer Supabase local e Edge Functions ativas). |
 | **Visual Regression** | `make goldens` | Gera/Valida capturas de tela em ambiente Linux. |
 
 Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, consulte [CLAUDE.md](CLAUDE.md).
@@ -136,6 +142,12 @@ To comply with the **INV-2** security invariant, keys and secrets are never kept
 - **Test Credentials**: The system uses deterministic credentials (`master@veraprob.dev`) exclusively for local development environment bootstrap. These are public test credentials and have no access to any real resources.
 - **Integration Tests**: `PostgresTestConfig` automatically loads credentials from `.env` during test execution.
 
+#### 4. Test Validation and Execution (`make full-check`)
+The `make full-check` command runs the ultimate validation suite (security scans, unit tests, integration, E2E, chaos, and coverage). To ensure the suite validates completely without skipping infrastructure-dependent tests:
+- **Local Supabase**: The container stack must be active (`supabase start`).
+- **Edge Functions**: Functions must be served locally in the background (`supabase functions serve --env-file .env` or via `make run`).
+- **Data Provisioning**: Make automatically runs `make setup` (`bootstrap_dev.mjs`) and injects `.env` credentials into test runners, ensuring the SuperAdmin user (`master@veraprob.dev`) and telemetry seed data are properly provisioned.
+
 ### Workflow Guide
 
 | Action | Command | Description |
@@ -143,7 +155,7 @@ To comply with the **INV-2** security invariant, keys and secrets are never kept
 | **Environment** | `make build-test-env` | Builds the Linux audit container. |
 | **Run** | `flutter run` | Local development with Hot Reload. |
 | **Forensic Check** | `make check` | Validates integrity, secrets, and forensic patterns. |
-| **Full Check** | `make full-check` | Runs the full check + unit and database tests. |
+| **Full Check** | `make full-check` | Runs the full check + unit, E2E, and database tests (requires local Supabase and running Edge Functions). |
 | **Visual Regression** | `make goldens` | Generates/Validates screenshots in Linux environment. |
 
 For development guidelines and quality standards, refer to [CLAUDE.md](CLAUDE.md).
