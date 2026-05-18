@@ -171,26 +171,32 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
               OrgStatusBadge(label: t.status?.label),
               PlanBadge(planType: t.planType),
               if (t.isOperational)
-                OutlinedButton.icon(
-                  onPressed: () => _archiveOrg(t),
-                  icon: const Icon(Icons.archive_outlined, size: 16),
-                  label: const Text('Arquivar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: VeraProbColors.warning,
-                    side: const BorderSide(color: VeraProbColors.warning),
-                    visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(fontSize: 12),
+                Tooltip(
+                  message: 'Arquivar',
+                  child: OutlinedButton.icon(
+                    onPressed: () => _archiveOrg(t),
+                    icon: const Icon(Icons.archive_outlined, size: 16),
+                    label: const Text('Arquivar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: VeraProbColors.warning,
+                      side: const BorderSide(color: VeraProbColors.warning),
+                      visualDensity: VisualDensity.compact,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
               if (t.isArchived)
-                FilledButton.icon(
-                  onPressed: () => _unarchiveOrg(t),
-                  icon: const Icon(Icons.unarchive_outlined, size: 16),
-                  label: const Text('Desarquivar'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VeraProbColors.success,
-                    visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(fontSize: 12),
+                Tooltip(
+                  message: 'Desarquivar',
+                  child: FilledButton.icon(
+                    onPressed: () => _unarchiveOrg(t),
+                    icon: const Icon(Icons.unarchive_outlined, size: 16),
+                    label: const Text('Desarquivar'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: VeraProbColors.success,
+                      visualDensity: VisualDensity.compact,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
             ],

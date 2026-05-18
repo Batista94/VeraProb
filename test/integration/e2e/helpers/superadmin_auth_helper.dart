@@ -35,6 +35,14 @@ abstract class SuperAdminAuthHelper {
   ///
   /// Lança [TestFailure] se o login não completar dentro do timeout.
   static Future<void> loginAsSuperAdmin(WidgetTester tester) async {
+    // Sessão residual entre testes sequenciais: Supabase.instance é singleton
+    // na Dart VM e preserva currentSession. Sem signOut, AdminLockScreen
+    // auto-redireciona ao SuperAdminShell e o helper não encontra os 2 campos
+    // de login (falso positivo em CT09/CT12/CT16).
+    if (await isSessionActive()) {
+      await forceTokenExpiry();
+    }
+
     SharedPreferences.setMockInitialValues({});
 
     // Mock app_links EventChannel — native plugin unavailable in flutter test VM.
