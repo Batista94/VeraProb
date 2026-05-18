@@ -56,6 +56,8 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 - **Prefer Const**: Utilize `const` em construtores e declarações sempre que possível.
 - **Universal UTC (INV-6)**: `DateTime.now()` deve SEMPRE ser seguido por `.toUtc()` para conformidade com a invariante forense global.
 
+> **Lições Aprendidas** (Auth Lifecycle, Async Chain Isolation, Narrow Panels, E2E Protocols, Test CNPJ Factory, Regression Ack): consulte [`.kiro/steering/lessons.md`](steering/lessons.md) — fonte oficial Kiro auto-carregada por todos os agentes.
+
 ---
 ## 8. COMPLEXITY GATE (Hard Limits)
 Limites impostos pelo scanner forense para evitar débitos técnicos e garantir auditabilidade.

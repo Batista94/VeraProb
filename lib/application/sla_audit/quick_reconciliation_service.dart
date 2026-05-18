@@ -1,5 +1,6 @@
 import 'package:veraprob/application/sla_audit/alert_service.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
@@ -36,7 +37,7 @@ class QuickReconciliationService {
   /// 3. Inserts link in telegram_evidence_links (source='reconciliation_shortcut')
   /// 4. Acknowledges then resolves the alert
   ///
-  /// Throws [StateError] if alert not found, missing context, or no SET found.
+  /// Throws [IntegrityException] if alert not found, missing context, or no SET found.
   /// [evidenceIds] — full list from `context['evidence_ids']`.
   /// When provided, all items are linked. Falls back to deep_link (legacy).
   Future<void> reconcileQuick({
@@ -47,7 +48,7 @@ class QuickReconciliationService {
   }) async {
     final alert = await _alertRepo.findById(alertId);
     if (alert == null) {
-      throw StateError('Alert not found: $alertId');
+      throw IntegrityException('Alert not found: $alertId', field: 'alertId');
     }
 
     // Prefer the caller-supplied list; fall back to legacy deep_link extraction
@@ -59,9 +60,10 @@ class QuickReconciliationService {
           }();
 
     if (allEvidenceIds.isEmpty) {
-      throw StateError(
+      throw const IntegrityException(
         'Cannot extract evidence_upload_id from alert context. '
         'evidence_ids empty and deep_link missing or malformed.',
+        field: 'evidence_ids',
       );
     }
 
@@ -70,9 +72,10 @@ class QuickReconciliationService {
 
     final driverId = alert.context['driver_id'] as String?;
     if (driverId == null) {
-      throw StateError(
+      throw IntegrityException(
         'Alert $alertId has no driver_id in context. '
         'Cannot find matching execution.',
+        field: 'driver_id',
       );
     }
 
@@ -89,9 +92,10 @@ class QuickReconciliationService {
     );
 
     if (setId == null) {
-      throw StateError(
+      throw IntegrityException(
         'No matching execution found for driver $driverId. '
         'Manual reconciliation required.',
+        field: 'execution_set_id',
       );
     }
 

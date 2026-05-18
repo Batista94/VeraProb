@@ -5,6 +5,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthChangeEvent, AuthState;
 import 'infrastructure/config/environment.dart';
 import 'core/theme/app_theme.dart';
 import 'domain/shared/brazil_time.dart';
@@ -105,6 +107,11 @@ class VeraProbAdminApp extends ConsumerStatefulWidget {
 }
 
 class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
+  // INV-8.5: Global auth-redirect on signedOut. Without this, when token
+  // expires SuperAdminGuard renders NotFoundPage (since super_admin claim
+  // disappears) and user is trapped with no path back to login.
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
   @override
   Widget build(BuildContext context) {
     // FASE 8 — Start the ContractualEvaluationSubscriber reactively.
@@ -116,10 +123,27 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       }
     });
 
+    // INV-8.5 anti "Flash de Dados": on signedOut (token expiry / manual
+    // logout / server invalidation), fully reset the route stack back to
+    // AdminLockScreen. AdminLockScreen pushReplacement on login wipes itself
+    // from the stack, so popUntil would not reach a login route.
+    // Suppress on the initial `initialSession` emission (previous == null).
+    ref.listen<AsyncValue<AuthState>>(authStateProvider, (previous, next) {
+      if (previous == null) return;
+      if (next.value?.event != AuthChangeEvent.signedOut) return;
+      final navigator = _navigatorKey.currentState;
+      if (navigator == null) return;
+      navigator.pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
+        (_) => false,
+      );
+    });
+
     return MaterialApp(
       title: 'veraprob — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
+      navigatorKey: _navigatorKey,
       // 8.4 — Sentry route tracking (no-op when Sentry is disabled in dev)
       navigatorObservers: [SentryNavigatorObserver()],
       localizationsDelegates: const [

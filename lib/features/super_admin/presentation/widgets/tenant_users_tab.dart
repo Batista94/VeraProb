@@ -347,20 +347,26 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Administradores',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+              Flexible(
+                child: Text(
+                  'Administradores',
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
               ),
               if (!widget.tenant.isArchived)
-                FilledButton.icon(
-                  onPressed: _addAdmin,
-                  icon: const Icon(Icons.person_add_outlined, size: 16),
-                  label: const Text('Adicionar Administrador'),
-                  style: FilledButton.styleFrom(
-                    visualDensity: VisualDensity.compact,
-                    textStyle: const TextStyle(fontSize: 12),
+                Tooltip(
+                  message: 'Adicionar Administrador',
+                  child: FilledButton.icon(
+                    onPressed: _addAdmin,
+                    icon: const Icon(Icons.person_add_outlined, size: 16),
+                    label: const Text('Adicionar'),
+                    style: FilledButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
                   ),
                 ),
             ],

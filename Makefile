@@ -15,12 +15,12 @@ DOCKER_RUN = docker run --rm -v "$(CURDIR)":/app -v veraprob_dart_tool:/app/.dar
 #   make help
 # =============================================================================
 
-.PHONY: help setup run scan-secrets test-security pr-scan load-tokens index-advisor test test-db test-all full-check goldens build-test-env check-integrity
+.PHONY: help setup env run run-staging scan-secrets test-security pr-scan load-tokens index-advisor coverage goldens chaos-test format format-check test test-db test-e2e test-e2e-file test-all test-full full-check build-test-env check check-integrity
 
 help: ## Mostra este menu de ajuda
 	@echo "VeraProb — Comandos Disponíveis:"
 	@echo "-----------------------------------------------------------------------------"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "-----------------------------------------------------------------------------"
 
 # ── Desenvolvimento ───────────────────────────────────────────────────────────
@@ -59,7 +59,7 @@ load-tokens: ## Gera tokens JWT para testes de estresse (K6)
 coverage: ## Gera relatório de cobertura de testes Dart/Flutter
 	dart scripts/qa/coverage_report.dart
 
-goldens: ## [Tier 1] Gera/Atualiza Goldens herméticos via Docker (Linux)
+goldens: ## [Tier 1] Gera/Atualiza Goldens herméticos via Docker Linux (paridade CI — NUNCA atualize goldens fora deste target)
 	bash scripts/generate_goldens.sh
 
 chaos-test: ## Executa a suite de testes de caos (resiliência)
@@ -83,7 +83,22 @@ test: .local_deps_synced ## Executa a suite completa de testes (Sequencial -j 1 
 test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap)
 	supabase test db
 
-test-all: test test-db ## Roda todos os testes (Flutter + DB)
+test-e2e: .local_deps_synced ## [E2E] Executa testes E2E SuperAdmin (auto-aplica dart-defines; ver .claude/rules/ci-blocks.md #8)
+	flutter test test/integration/e2e/ -j 1 \
+		--dart-define=SKIP_MFA_DEV=true \
+		--dart-define=ENV=dev
+
+test-e2e-file: .local_deps_synced ## [E2E] Executa um arquivo E2E específico: make test-e2e-file FILE=path/to/test.dart
+	@if [ -z "$(FILE)" ]; then echo "FILE=path/to/test.dart required"; exit 1; fi
+	flutter test $(FILE) \
+		--dart-define=SKIP_MFA_DEV=true \
+		--dart-define=ENV=dev
+
+# Nota: test-all NÃO inclui test-e2e (E2E exige Supabase rodando + service-role + tem ciclo lento).
+# Pipeline E2E é separado — rode `make test-e2e` quando o ambiente local estiver up.
+test-all: test test-db ## Roda testes não-E2E (Flutter unit/widget + DB pgTap)
+
+test-full: test-all test-e2e ## Roda TUDO incluindo E2E (exige Supabase local up)
 
 # ── Sincronização de Ambiente (Automação) ───────────────────────────────────
 

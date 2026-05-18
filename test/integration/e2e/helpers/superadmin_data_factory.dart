@@ -215,16 +215,34 @@ abstract class SuperAdminDataFactory {
 
   // ── Geradores de Dados ────────────────────────────────────────────────────
 
-  /// Gera um CNPJ único de 14 dígitos para testes.
+  /// Gera um CNPJ único e estruturalmente válido (modulo-11) para testes.
   ///
-  /// Combina `DateTime.now().microsecondsSinceEpoch` com um componente
-  /// aleatório para garantir unicidade entre execuções paralelas.
+  /// Gera 12 dígitos da base + 2 check digits via algoritmo brasileiro.
+  /// CNPJs válidos são exigidos pelo wizard (`CnpjValidator.isValid`); sem
+  /// check digits corretos, o wizard rejeita por "CNPJ inválido" antes de
+  /// chegar à verificação de duplicidade (Req 9.6).
   static String generateUniqueCnpj() {
     final timestamp = DateTime.now().toUtc().microsecondsSinceEpoch;
     final randomPart = _random.nextInt(99999).toString().padLeft(5, '0');
     final raw = '$timestamp$randomPart';
-    // Pegar os últimos 14 dígitos para garantir formato correto
-    return raw.substring(raw.length - 14);
+    // Tomar 12 dígitos base (positions 0–11).
+    final base = raw.substring(raw.length - 12);
+    final baseDigits = base.split('').map(int.parse).toList();
+
+    int checkDigit(List<int> digits, List<int> weights) {
+      final sum = List.generate(
+        digits.length,
+        (i) => digits[i] * weights[i],
+      ).fold<int>(0, (a, b) => a + b);
+      final rem = sum % 11;
+      return rem < 2 ? 0 : 11 - rem;
+    }
+
+    const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    final d1 = checkDigit(baseDigits, w1);
+    final d2 = checkDigit([...baseDigits, d1], w2);
+    return '$base$d1$d2';
   }
 
   /// Gera um nome longo com caracteres brasileiros para testes de overflow.

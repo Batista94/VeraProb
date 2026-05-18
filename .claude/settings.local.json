@@ -154,7 +154,11 @@
       "Bash(PGPASSWORD=postgres psql -h 127.0.0.1 -p 54322 -U postgres -d postgres -c \"UPDATE public.organizations SET status = 'ACTIVE' WHERE name LIKE 'Adverse%' AND status = 'ARCHIVED';\")",
       "Bash(docker exec *)",
       "Bash(bash scripts/sync_db_types.sh)",
-      "Bash(echo \"exit=$?\")"
+      "Bash(echo \"exit=$?\")",
+      "Bash(tee C:/tmp/adverse_full_a.log)",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:agents.md)",
+      "Bash(make help *)"
     ]
   },
   "enabledMcpjsonServers": [

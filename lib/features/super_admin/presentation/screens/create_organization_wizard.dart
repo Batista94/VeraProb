@@ -192,46 +192,41 @@ class _CreateOrganizationWizardState
 
   Future<void> _checkCnpjExists() async {
     final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
-    try {
-      // Uniqueness check and ReceitaWS lookup run in parallel.
-      setState(() => _cnpjLookingUp = true);
-      final checkFuture = ref
-          .read(superAdminRepositoryProvider)
-          .checkCnpjExists(digits);
-      final lookupFuture = ref.read(cnpjLookupServiceProvider).lookup(digits);
-      final exists = await checkFuture;
-      // lookup() returns CnpjCompanyData? — destructure to primitives immediately
-      // so the domain VO never persists as widget state or widget parameter.
-      final lookup = await lookupFuture;
-      final autoFilled = lookup != null;
-      final autoInactive = lookup != null && !lookup.isActive;
-      if (!mounted) return;
+    setState(() => _cnpjLookingUp = true);
 
-      setState(() {
-        _cnpjChecking = false;
-        _cnpjLookingUp = false;
-        _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
-        _cnpjAutoFilled = autoFilled;
-        _cnpjAutoInactive = autoInactive;
-      });
+    // Duas operações independentes: a verificação de duplicidade jamais
+    // pode ser descartada por falha do ReceitaWS (que é opcional, só
+    // serve para autofill). Antes, um catch unificado engolia o resultado
+    // de checkCnpjExists quando o lookup falhava — duplicatas passavam.
+    final repo = ref.read(superAdminRepositoryProvider);
+    final lookupService = ref.read(cnpjLookupServiceProvider);
 
-      // Auto-fill only when CNPJ is not already registered.
-      if (!exists && lookup != null) {
-        if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
-          _legalNameCtrl.text = lookup.legalName!;
-        }
-        if (lookup.tradeName != null && _tradeNameCtrl.text.trim().isEmpty) {
-          _tradeNameCtrl.text = lookup.tradeName!.isNotEmpty
-              ? lookup.tradeName!
-              : lookup.legalName ?? '';
-        }
+    final exists = await repo.checkCnpjExists(digits).catchError((_) => false);
+    final lookup = await lookupService.lookup(digits).catchError((_) => null);
+
+    if (!mounted) return;
+
+    final autoFilled = lookup != null;
+    final autoInactive = lookup != null && !lookup.isActive;
+
+    setState(() {
+      _cnpjChecking = false;
+      _cnpjLookingUp = false;
+      _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
+      _cnpjAutoFilled = autoFilled;
+      _cnpjAutoInactive = autoInactive;
+    });
+
+    // Auto-fill only when CNPJ is not already registered.
+    if (!exists && lookup != null) {
+      if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
+        _legalNameCtrl.text = lookup.legalName!;
       }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _cnpjChecking = false;
-        _cnpjLookingUp = false;
-      });
+      if (lookup.tradeName != null && _tradeNameCtrl.text.trim().isEmpty) {
+        _tradeNameCtrl.text = lookup.tradeName!.isNotEmpty
+            ? lookup.tradeName!
+            : lookup.legalName ?? '';
+      }
     }
   }
 

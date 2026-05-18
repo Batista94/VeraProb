@@ -115,17 +115,35 @@ abstract class SuperAdminNavigationHelper {
   /// Pré-condição: o painel de detalhes de uma organização está visível
   /// (chamar [goToTenantDetail] antes).
   static Future<void> goToUsersTab(WidgetTester tester) async {
-    final usersTab = find.text('Usuários');
+    // Escopo para TabBar — sem isso, find.text('Usuários') pode capturar
+    // outros widgets (sidebar/etc) ou Tab fora do scroll viewport.
+    final usersTabText = find.descendant(
+      of: find.byType(TabBar),
+      matching: find.text('Usuários'),
+    );
 
     expect(
-      usersTab,
+      usersTabText,
       findsAtLeast(1),
       reason: 'A aba "Usuários" deve estar visível no TabBar do detalhe da org',
     );
 
-    // A tab "Usuários" é um widget Tab dentro do TabBar.
-    // Toca no texto para selecionar a aba.
-    await tester.tap(usersTab.first);
+    // TabBar é scrollable (tenant_detail_panel.dart:214 isScrollable: true).
+    // Em viewport 800x600, tab "Usuários" (índice 4) fica off-screen — log
+    // mostrava Offset(877.8, 208.0) fora de Size(800, 600). Tap no texto
+    // direto falha hittest. Subir até Tab widget + ensureVisible (rola
+    // TabBar interno) antes de tocar.
+    final tabFinder = find
+        .ancestor(of: usersTabText.first, matching: find.byType(Tab))
+        .first;
+    await tester.ensureVisible(tabFinder);
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      SuperAdminTestConfig.defaultTimeout,
+    );
+
+    await tester.tap(tabFinder);
     await tester.pumpAndSettle(
       const Duration(milliseconds: 100),
       EnginePhase.sendSemanticsUpdate,
