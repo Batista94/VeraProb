@@ -11,8 +11,8 @@
 
 VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto explora a construção de sistemas de alta performance capazes de converter Telemetria bruta em verdade contratual, eliminando o atrito entre contratos B2B e execução operacional.
 
-> [!CAUTION]
-> **Propriedade Intelectual Restrita**: Este código é um estudo de engenharia proprietário de Weslei Batista. A cópia, fork, redistribuição ou uso comercial não são autorizados. Este repositório não aceita Pull Requests ou Issues externas.
+> [!WARNING]
+> **Projeto Educacional / Estudo de Engenharia (Build to Learn)**: Este repositório é estritamente um laboratório de aprendizado e experimentação técnica com rigor profissional. O código não foi auditado, não possui clientes ou ambiente de produção real, e **não deve ser utilizado em sistemas reais ou de produção**. Pode conter vulnerabilidades, bugs de implementação e comportamentos inesperados.
 
 ### Objetivos (Build to Learn)
 Este repositório é um laboratório de aprendizado pessoal dedicado a exercitar o rigor de sistemas Enterprise em um contexto de desenvolvimento solo. O foco está na aplicação de arquiteturas amplamente utilizadas em cenários de alta criticidade:
@@ -89,8 +89,8 @@ Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, co
 
 VeraProb is an engineering study focused on **Forensic Contract Governance**. The project explores the construction of high-performance systems capable of converting Raw Telemetry into Verifiable Contractual Truth, eliminating friction between B2B contracts and operational execution.
 
-> [!CAUTION]
-> **Restricted Intellectual Property**: This code is a proprietary engineering study by Weslei Batista. Copying, forking, redistribution, or commercial use is not authorized. This repository does not accept external Pull Requests or Issues.
+> [!WARNING]
+> **Educational Project / Engineering Study (Build to Learn)**: This repository is strictly a learning lab and senior-level technical experimentation ground. The code has not been audited, has no real clients or live production environment, and **must not be used in live or production systems**. It may contain vulnerabilities, implementation bugs, and unexpected behaviors.
 
 ### Objectives (Build to Learn)
 This repository is a personal learning lab for exercising production-level rigor in solo projects. It focuses on proven architectural patterns for critical systems:

@@ -472,16 +472,31 @@ jobs:
           SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Flutter Test with Coverage
+      - name: Install lcov
+        run: sudo apt-get install -y lcov
+
+      - name: Flutter Test (Unit/Widget) with Coverage
+        run: |
+          flutter test --no-pub -j 1 --coverage \
+            --dart-define=ENV=dev \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            test/application test/compliance test/core test/domain test/features test/infrastructure test/presentation test/security test/smoke test/state test/utils test/validation test/widget
+          mv coverage/lcov.info coverage/lcov_unit.info
+
+      - name: Flutter Test (Integration) with Coverage
         run: |
           flutter test --no-pub -j 1 --coverage \
             --dart-define=SKIP_MFA_DEV=true \
             --dart-define=ENV=dev \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            test/integration
+          mv coverage/lcov.info coverage/lcov_integration.info
 
-      - name: Install lcov
-        run: sudo apt-get install -y lcov
+      - name: Merge Coverage Reports
+        run: |
+          lcov -a coverage/lcov_unit.info -a coverage/lcov_integration.info -o coverage/lcov.info
 
       - name: Remove generated files from coverage report
         run: |

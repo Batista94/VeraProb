@@ -95,7 +95,6 @@ format-check: ## [Tier 1] Valida se o código segue o padrão de formatação (i
 
 test: .local_deps_synced ## Unit + widget (escopo restrito; NÃO inclui test/integration/ — evita loop E2E sem SKIP_MFA_DEV; ver ci-blocks.md #8)
 	flutter test -j 1 $(TEST_UNIT_DIRS) \
-		--dart-define=SKIP_MFA_DEV=true \
 		--dart-define=ENV=dev \
 		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
 		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
