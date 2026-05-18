@@ -39,6 +39,7 @@ class Step1FiscalData extends StatelessWidget {
   final bool cnpjChecking;
   final bool cnpjAutoFilled;
   final bool cnpjAutoInactive;
+  final bool cnpjTradeNameMissing;
   final ValueChanged<PlanType> onPlanChanged;
   final ValueChanged<String> onTimezoneChanged;
   final ValueChanged<String> onCurrencyChanged;
@@ -61,6 +62,7 @@ class Step1FiscalData extends StatelessWidget {
     required this.cnpjChecking,
     required this.cnpjAutoFilled,
     required this.cnpjAutoInactive,
+    required this.cnpjTradeNameMissing,
     required this.onPlanChanged,
     required this.onTimezoneChanged,
     required this.onCurrencyChanged,
@@ -130,54 +132,106 @@ class Step1FiscalData extends StatelessWidget {
               return null;
             },
           ),
-          if (cnpjAutoFilled && cnpjApiError == null)
+          if (cnpjAutoInactive && cnpjApiError == null)
             Padding(
-              padding: const EdgeInsets.only(top: 6, left: 4),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  const Row(
-                    mainAxisSize: MainAxisSize.min,
+              padding: const EdgeInsets.only(top: 8),
+              child: Semantics(
+                label:
+                    'Alerta crítico: empresa inativa na base da Receita Federal.',
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: VeraProbColors.error.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.check_circle,
-                        size: 14,
-                        color: VeraProbColors.success,
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Dados preenchidos via ReceitaWS',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: VeraProbColors.success,
+                      Icon(Icons.block, size: 16, color: VeraProbColors.error),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Alerta Crítico: Esta empresa consta como INATIVA na base da Receita Federal.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: VeraProbColors.error,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                  if (cnpjAutoInactive)
+                ),
+              ),
+            ),
+          if (cnpjAutoFilled && cnpjApiError == null) ...[
+            const SizedBox(height: 8),
+            Semantics(
+              label:
+                  'Alerta de auditoria fiscal: Dados importados da Receita Federal. '
+                  'Verifique e confirme a exatidão da Razão Social e Nome Fantasia antes de avançar.',
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: VeraProbColors.warning.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: VeraProbColors.warning.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     const Row(
-                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Icon(
-                          Icons.warning_amber,
-                          size: 14,
+                          Icons.verified_user_outlined,
+                          size: 16,
                           color: VeraProbColors.warning,
                         ),
-                        SizedBox(width: 4),
-                        Text(
-                          'Empresa inativa na Receita Federal',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: VeraProbColors.warning,
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Dados importados da Receita Federal. Verifique e confirme a exatidão da Razão Social e Nome Fantasia antes de avançar.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: VeraProbColors.warning,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                ],
+                    if (cnpjTradeNameMissing) ...[
+                      const SizedBox(height: 6),
+                      const Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 14,
+                            color: VeraProbColors.warning,
+                          ),
+                          SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'Nome Fantasia não informado pela Receita Federal. Preencha o campo manualmente.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: VeraProbColors.warning,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
+          ],
           const SizedBox(height: 16),
           Text('Plano *', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 8),
@@ -760,7 +814,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
     final email = raw.trim().toLowerCase();
     if (email.isEmpty) return;
     if (!email.contains('@')) {
-      setState(() => _inputError = 'E-mail invalido');
+      setState(() => _inputError = 'E-mail inválido');
       return;
     }
     if (widget.adminEmails.contains(email)) {
@@ -806,12 +860,12 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
                 ),
                 WizardSummaryRow(
                   icon: Icons.directions_car,
-                  label: 'Max. Veiculos',
+                  label: 'Máx. Veículos',
                   value: widget.maxVehicles,
                 ),
                 WizardSummaryRow(
                   icon: Icons.description_outlined,
-                  label: 'Max. Contratos',
+                  label: 'Máx. Contratos',
                   value: widget.maxContracts,
                 ),
               ],
@@ -877,7 +931,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
                   color: VeraProbColors.warning,
                 ),
                 Text(
-                  'Convites validos por 7 dias serao enviados para cada e-mail com permissao de Administrador.',
+                  'Convites válidos por 7 dias serão enviados para cada e-mail com permissão de Administrador.',
                   style: TextStyle(fontSize: 12),
                 ),
               ],

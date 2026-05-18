@@ -105,6 +105,14 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
                         notifier.setStatusFilter(TenantStatusFilter.suspended),
                     color: VeraProbColors.error,
                   ),
+                  const SizedBox(width: 6),
+                  _StatusChip(
+                    label: TenantStatusFilter.archived.label,
+                    selected: statusFilter == TenantStatusFilter.archived,
+                    onSelected: () =>
+                        notifier.setStatusFilter(TenantStatusFilter.archived),
+                    color: VeraProbColors.neutral,
+                  ),
                 ],
               ),
             ),
@@ -239,7 +247,11 @@ class _TenantListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = tenant.isActive ? 'Ativo' : 'Suspenso';
+    final statusLabel = tenant.isActive
+        ? 'Ativo'
+        : tenant.isArchived
+        ? 'Arquivado'
+        : 'Suspenso';
     return Semantics(
       label: '${tenant.name}, $statusLabel',
       child: ListTile(
@@ -253,12 +265,20 @@ class _TenantListTile extends StatelessWidget {
           radius: 14,
           backgroundColor: tenant.isActive
               ? VeraProbColors.success.withValues(alpha: 0.15)
+              : tenant.isArchived
+              ? VeraProbColors.neutral.withValues(alpha: 0.15)
               : VeraProbColors.error.withValues(alpha: 0.15),
           child: Icon(
-            tenant.isActive ? Icons.check : Icons.pause,
+            tenant.isActive
+                ? Icons.check
+                : tenant.isArchived
+                ? Icons.archive_outlined
+                : Icons.pause,
             size: 14,
             color: tenant.isActive
                 ? VeraProbColors.success
+                : tenant.isArchived
+                ? VeraProbColors.neutral
                 : VeraProbColors.error,
           ),
         ),

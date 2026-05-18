@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/super_admin/org_api_secret_view_model.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 /// Widget for managing per-org HMAC secrets (INV-28).
@@ -86,7 +87,9 @@ class _OrgSecretCardState extends ConsumerState<OrgSecretCard> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = e.toString();
+        _errorMessage = e is DomainException
+            ? e.message
+            : 'Falha ao gerar secret. Tente novamente.';
         _isGenerating = false;
       });
     }

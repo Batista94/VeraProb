@@ -211,7 +211,9 @@ void main() async {
       group('createOrganization', () {
         test('insere organização e retorna UUID válido', () async {
           final cnpj = _uniqueCnpj();
-          final orgId = await repo.createOrganization(_testCmd(cnpj));
+          final (:orgId, plaintextSecret: _) = await repo.createOrganization(
+            _testCmd(cnpj),
+          );
 
           expect(orgId, isNotEmpty);
           // UUID v4 format
@@ -237,11 +239,36 @@ void main() async {
           expect(row['is_active'], isTrue);
         });
 
+        test('popula org_api_secrets atomicamente (INV-28)', () async {
+          final cnpj = _uniqueCnpj();
+          final (:orgId, :plaintextSecret) = await repo.createOrganization(
+            _testCmd(cnpj),
+          );
+
+          expect(plaintextSecret, isNotEmpty);
+          expect(plaintextSecret.length, equals(64)); // 32 bytes → hex
+
+          final secrets = await serviceRoleClient
+              .from('org_api_secrets')
+              .select()
+              .eq('organization_id', orgId);
+
+          expect(
+            secrets,
+            isNotEmpty,
+            reason: 'org_api_secrets deve ter registro para toda org criada',
+          );
+          expect(secrets.first['version'], equals(1));
+          expect(secrets.first['secret_hash'], isNotEmpty);
+        });
+
         test(
           'registra billing event com event_type ORG_CREATED (INV-1)',
           () async {
             final cnpj = _uniqueCnpj();
-            final orgId = await repo.createOrganization(_testCmd(cnpj));
+            final (:orgId, plaintextSecret: _) = await repo.createOrganization(
+              _testCmd(cnpj),
+            );
 
             final events = await serviceRoleClient
                 .from('tenant_billing_events')
@@ -272,7 +299,9 @@ void main() async {
           'billing event é imutável — UPDATE é bloqueado por trigger (INV-1)',
           () async {
             final cnpj = _uniqueCnpj();
-            final orgId = await repo.createOrganization(_testCmd(cnpj));
+            final (:orgId, plaintextSecret: _) = await repo.createOrganization(
+              _testCmd(cnpj),
+            );
 
             final events = await serviceRoleClient
                 .from('tenant_billing_events')
@@ -298,7 +327,7 @@ void main() async {
         test('updates plan_type and quotas on existing org', () async {
           final cnpj = _uniqueCnpj();
           final superAdminId = _uuid.v4();
-          final orgId = await repo.createOrganization(
+          final (:orgId, plaintextSecret: _) = await repo.createOrganization(
             CreateOrganizationCommand(
               legalName: 'Quota Test Ltda.',
               tradeName: 'QuotaCo',
@@ -339,7 +368,7 @@ void main() async {
         test('records PLAN_CHANGED billing event (INV-7)', () async {
           final cnpj = _uniqueCnpj();
           final superAdminId = _uuid.v4();
-          final orgId = await repo.createOrganization(
+          final (:orgId, plaintextSecret: _) = await repo.createOrganization(
             CreateOrganizationCommand(
               legalName: 'Event Test Ltda.',
               tradeName: 'EventCo',
@@ -381,7 +410,7 @@ void main() async {
         test('PLAN_CHANGED billing event is immutable (INV-7)', () async {
           final cnpj = _uniqueCnpj();
           final superAdminId = _uuid.v4();
-          final orgId = await repo.createOrganization(
+          final (:orgId, plaintextSecret: _) = await repo.createOrganization(
             CreateOrganizationCommand(
               legalName: 'Immutable Test Ltda.',
               tradeName: 'ImmutCo',
@@ -430,7 +459,7 @@ void main() async {
         test('vehicle insert blocked when vehicle quota exceeded', () async {
           final cnpj = _uniqueCnpj();
           final superAdminId = _uuid.v4();
-          final orgId = await repo.createOrganization(
+          final (:orgId, plaintextSecret: _) = await repo.createOrganization(
             CreateOrganizationCommand(
               legalName: 'Quota Veh Test Ltda.',
               tradeName: 'VehQuotaCo',
@@ -472,7 +501,7 @@ void main() async {
           () async {
             final cnpj = _uniqueCnpj();
             final superAdminId = _uuid.v4();
-            final orgId = await repo.createOrganization(
+            final (:orgId, plaintextSecret: _) = await repo.createOrganization(
               CreateOrganizationCommand(
                 legalName: 'Quota Ctr Test Ltda.',
                 tradeName: 'CtrQuotaCo',
@@ -549,7 +578,8 @@ void main() async {
             skip: 'Requires MFA (AAL2) configuration',
             () async {
               final cnpj = _uniqueCnpj();
-              final orgId = await repo.createOrganization(_testCmd(cnpj));
+              final (:orgId, plaintextSecret: _) = await repo
+                  .createOrganization(_testCmd(cnpj));
 
               final snapshots = await superAdminRepo.getAllTenantHealth();
               final match = snapshots.where((s) => s.id == orgId).toList();
@@ -589,7 +619,8 @@ void main() async {
             skip: 'Requires MFA (AAL2) configuration',
             () async {
               final cnpj = _uniqueCnpj();
-              final orgId = await repo.createOrganization(_testCmd(cnpj));
+              final (:orgId, plaintextSecret: _) = await repo
+                  .createOrganization(_testCmd(cnpj));
 
               // Insere entrada de log vinculada à org de teste
               await serviceRoleClient.from('system_audit_log').insert({

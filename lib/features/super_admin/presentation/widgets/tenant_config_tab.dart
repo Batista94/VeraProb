@@ -53,9 +53,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     _maxContractsCtrl.text = t.maxActiveContracts == 0
         ? ''
         : t.maxActiveContracts.toString();
-    _costCtrl.text = t.toolCostCents != null
-        ? (t.toolCostCents! / 100).toStringAsFixed(2)
-        : '';
+    _costCtrl.text = _costString(t.toolCostCents);
     _dwellTimeCtrl.text = t.dwellTimeSeconds.toString();
     _billingDayCtrl.text = t.billingDay?.toString() ?? '';
     _contactEmailCtrl.text = t.contactEmail ?? '';
@@ -65,8 +63,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   @override
   void didUpdateWidget(covariant TenantConfigTab oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Re-init only when switching tenant or when a committed snapshot arrives.
+    // TenantHealthView has no value equality, so reference != is always true;
+    // comparing id + updatedAt avoids clobbering in-progress edits on
+    // unrelated parent rebuilds.
     if (oldWidget.tenant.id != widget.tenant.id ||
-        oldWidget.tenant != widget.tenant) {
+        oldWidget.tenant.updatedAt != widget.tenant.updatedAt) {
       _initValues(widget.tenant);
     }
   }
@@ -84,6 +86,36 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     _externalIdCtrl.dispose();
     super.dispose();
   }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+
+  static String _costString(int? cents) =>
+      cents != null ? (cents / 100).toStringAsFixed(2) : '';
+
+  bool get _isDisabled => widget.tenant.isArchived;
+
+  bool get _capabilitiesChanged => _capabilities != widget.tenant.capabilities;
+
+  bool get _paramsChanged {
+    final t = widget.tenant;
+    return _planType != t.planType ||
+        _orgType != t.organizationType ||
+        _tradeNameCtrl.text != t.name ||
+        _legalNameCtrl.text != (t.legalName ?? '') ||
+        _maxVehiclesCtrl.text !=
+            (t.maxVehicles == 0 ? '' : t.maxVehicles.toString()) ||
+        _maxContractsCtrl.text !=
+            (t.maxActiveContracts == 0
+                ? ''
+                : t.maxActiveContracts.toString()) ||
+        _costCtrl.text != _costString(t.toolCostCents) ||
+        _dwellTimeCtrl.text != t.dwellTimeSeconds.toString() ||
+        _billingDayCtrl.text != (t.billingDay?.toString() ?? '') ||
+        _contactEmailCtrl.text != (t.contactEmail ?? '') ||
+        _externalIdCtrl.text != (t.externalId ?? '');
+  }
+
+  bool get _isDirty => _capabilitiesChanged || _paramsChanged;
 
   bool get _isFormValid {
     final cost = double.tryParse(_costCtrl.text.replaceAll(',', '.'));
@@ -106,43 +138,36 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
       final n = int.tryParse(_dwellTimeCtrl.text);
       if (n == null || n < 300) return false;
     }
+    if (_contactEmailCtrl.text.isNotEmpty) {
+      final e = _contactEmailCtrl.text;
+      if (!e.contains('@') || !e.contains('.')) return false;
+    }
     return true;
   }
 
-  bool get _isDirty {
-    final t = widget.tenant;
-    final costStr = t.toolCostCents != null
-        ? (t.toolCostCents! / 100).toStringAsFixed(2)
-        : '';
-    final mvStr = t.maxVehicles == 0 ? '' : t.maxVehicles.toString();
-    final mcStr = t.maxActiveContracts == 0
-        ? ''
-        : t.maxActiveContracts.toString();
+  String _savePromptMessage() {
+    if (_capabilitiesChanged && _paramsChanged) {
+      return 'Informe o motivo das alterações na configuração da organização. '
+          'Este registro será gravado no log de auditoria.';
+    }
+    if (_capabilitiesChanged) {
+      return 'Informe o motivo da alteração de capabilities. '
+          'Este registro será gravado no log de auditoria.';
+    }
+    return 'Informe o motivo da alteração dos parâmetros operacionais/financeiros. '
+        'Este registro será gravado no log de auditoria.';
+  }
 
-    return _capabilities != t.capabilities ||
-        _planType != t.planType ||
-        _orgType != t.organizationType ||
-        _tradeNameCtrl.text != t.name ||
-        _legalNameCtrl.text != (t.legalName ?? '') ||
-        _maxVehiclesCtrl.text != mvStr ||
-        _maxContractsCtrl.text != mcStr ||
-        _costCtrl.text != costStr ||
-        _dwellTimeCtrl.text != t.dwellTimeSeconds.toString() ||
-        _billingDayCtrl.text != (t.billingDay?.toString() ?? '') ||
-        _contactEmailCtrl.text != (t.contactEmail ?? '') ||
-        _externalIdCtrl.text != (t.externalId ?? '');
+  void _showSnackBar(String message, {Color? backgroundColor}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: backgroundColor),
+    );
   }
 
   Future<void> _copyToClipboard(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Copiado para a área de transferência'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
+    _showSnackBar('Copiado para a área de transferência');
   }
 
   Future<void> _save() async {
@@ -150,7 +175,8 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
 
     final reason = await showDialog<String>(
       context: context,
-      builder: (_) => const ReasonConfirmationDialog(),
+      builder: (_) =>
+          ReasonConfirmationDialog(promptMessage: _savePromptMessage()),
     );
     if (reason == null || !mounted) return;
 
@@ -184,54 +210,21 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
       await ref.read(updateOrganizationQuotaHandlerProvider).handle(cmd);
       ref.invalidate(tenantHealthSnapshotProvider);
       await ref.read(tenantHealthSnapshotProvider.future);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Configurações atualizadas com sucesso.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      _showSnackBar(
+        'Configurações atualizadas com sucesso.',
+        backgroundColor: VeraProbColors.success,
+      );
     } on ProviderException catch (e) {
       // Riverpod v3: unwrap ProviderException to get original error
       final original = e.exception;
-      if (original is DomainException) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(original.message),
-              backgroundColor: VeraProbColors.error,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro: $original'),
-              backgroundColor: VeraProbColors.error,
-            ),
-          );
-        }
-      }
+      final msg = original is DomainException
+          ? original.message
+          : 'Erro: $original';
+      _showSnackBar(msg, backgroundColor: VeraProbColors.error);
     } on DomainException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.message),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+      _showSnackBar(e.message, backgroundColor: VeraProbColors.error);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+      _showSnackBar('Erro: $e', backgroundColor: VeraProbColors.error);
     }
   }
 
@@ -285,6 +278,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _tradeNameCtrl,
+              enabled: !_isDisabled,
               decoration: const InputDecoration(
                 labelText: 'Nome Fantasia',
                 border: OutlineInputBorder(),
@@ -294,6 +288,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _legalNameCtrl,
+              enabled: !_isDisabled,
               decoration: const InputDecoration(
                 labelText: 'Razão Social',
                 border: OutlineInputBorder(),
@@ -321,7 +316,9 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                   child: Text('Enterprise'),
                 ),
               ],
-              onChanged: (v) => setState(() => _planType = v),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(() => _planType = v),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -342,7 +339,9 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                   child: Text('Logística Urbana'),
                 ),
               ],
-              onChanged: (v) => setState(() => _orgType = v),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(() => _orgType = v),
             ),
             const SizedBox(height: 16),
             Row(
@@ -350,11 +349,13 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _maxVehiclesCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'Max Veículos (Vazio=Ilimitado)',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
                     validator: (v) {
                       if (v == null || v.isEmpty) return null;
@@ -368,11 +369,13 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _maxContractsCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'Max Contratos (Vazio=Ilimitado)',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
                     validator: (v) {
                       if (v == null || v.isEmpty) return null;
@@ -390,6 +393,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _costCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'Custo Ferramenta (R\$)',
                       border: OutlineInputBorder(),
@@ -412,11 +416,13 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _dwellTimeCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'Dwell Time (Segundos)',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
                     validator: (v) {
                       if (v == null || v.isEmpty) return 'Obrigatório';
@@ -436,14 +442,16 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _billingDayCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'Dia de Faturamento (1-28)',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     onChanged: (_) => setState(() {}),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return null; // optional
+                      if (v == null || v.isEmpty) return null;
                       final n = int.tryParse(v);
                       if (n == null || n < 1 || n > 28) {
                         return 'Dia inválido (1-28)';
@@ -456,12 +464,20 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
                 Expanded(
                   child: TextFormField(
                     controller: _contactEmailCtrl,
+                    enabled: !_isDisabled,
                     decoration: const InputDecoration(
                       labelText: 'E-mail de Contato',
                       border: OutlineInputBorder(),
                     ),
                     keyboardType: TextInputType.emailAddress,
                     onChanged: (_) => setState(() {}),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return null;
+                      if (!v.contains('@') || !v.contains('.')) {
+                        return 'E-mail inválido';
+                      }
+                      return null;
+                    },
                   ),
                 ),
               ],
@@ -469,6 +485,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
             const SizedBox(height: 16),
             TextFormField(
               controller: _externalIdCtrl,
+              enabled: !_isDisabled,
               decoration: const InputDecoration(
                 labelText: 'ID Externo (CRM/ERP)',
                 border: OutlineInputBorder(),
@@ -481,50 +498,72 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
             SwitchListTile(
               title: const Text('Lacre'),
               value: _capabilities.allowsSealing,
-              onChanged: (v) => setState(
-                () => _capabilities = _capabilities.copyWith(allowsSealing: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () => _capabilities = _capabilities.copyWith(
+                        allowsSealing: v,
+                      ),
+                    ),
               dense: true,
             ),
             SwitchListTile(
               title: const Text('Carregamento'),
               value: _capabilities.allowsLoading,
-              onChanged: (v) => setState(
-                () => _capabilities = _capabilities.copyWith(allowsLoading: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () => _capabilities = _capabilities.copyWith(
+                        allowsLoading: v,
+                      ),
+                    ),
               dense: true,
             ),
             SwitchListTile(
               title: const Text('Cargo Check'),
               value: _capabilities.allowsCargoCheck,
-              onChanged: (v) => setState(
-                () =>
-                    _capabilities = _capabilities.copyWith(allowsCargoCheck: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () => _capabilities = _capabilities.copyWith(
+                        allowsCargoCheck: v,
+                      ),
+                    ),
               dense: true,
             ),
             SwitchListTile(
               title: const Text('Incidente'),
               value: _capabilities.allowsIncident,
-              onChanged: (v) => setState(
-                () => _capabilities = _capabilities.copyWith(allowsIncident: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () => _capabilities = _capabilities.copyWith(
+                        allowsIncident: v,
+                      ),
+                    ),
               dense: true,
             ),
             SwitchListTile(
               title: const Text('Doc'),
               value: _capabilities.allowsDoc,
-              onChanged: (v) => setState(
-                () => _capabilities = _capabilities.copyWith(allowsDoc: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () =>
+                          _capabilities = _capabilities.copyWith(allowsDoc: v),
+                    ),
               dense: true,
             ),
             SwitchListTile(
               title: const Text('Smart Classify'),
               value: _capabilities.smartClassify,
-              onChanged: (v) => setState(
-                () => _capabilities = _capabilities.copyWith(smartClassify: v),
-              ),
+              onChanged: _isDisabled
+                  ? null
+                  : (v) => setState(
+                      () => _capabilities = _capabilities.copyWith(
+                        smartClassify: v,
+                      ),
+                    ),
               dense: true,
             ),
             if (_isDirty && !widget.tenant.isArchived) ...[

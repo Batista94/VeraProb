@@ -1,20 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/super_admin/tenant_status_filter.dart';
 
-// Regras de Escrita:
-// 1. Use DateTime.now().toUtc() em mocks (mesma linha).
-// 2. Use int para valores monetários e taxas (BPS).
-// 3. Proibido importar lib/infrastructure em testes de application.
-
 void main() {
   group('TenantStatusFilter', () {
     group('all', () {
       test('matches active tenant', () {
-        expect(TenantStatusFilter.all.matches(isActive: true), isTrue);
+        expect(
+          TenantStatusFilter.all.matches(isActive: true, isArchived: false),
+          isTrue,
+        );
       });
 
-      test('matches inactive tenant', () {
-        expect(TenantStatusFilter.all.matches(isActive: false), isTrue);
+      test('matches suspended tenant', () {
+        expect(
+          TenantStatusFilter.all.matches(isActive: false, isArchived: false),
+          isTrue,
+        );
+      });
+
+      test('matches archived tenant', () {
+        expect(
+          TenantStatusFilter.all.matches(isActive: false, isArchived: true),
+          isTrue,
+        );
       });
 
       test('label is non-empty', () {
@@ -24,11 +32,24 @@ void main() {
 
     group('active', () {
       test('matches active tenant', () {
-        expect(TenantStatusFilter.active.matches(isActive: true), isTrue);
+        expect(
+          TenantStatusFilter.active.matches(isActive: true, isArchived: false),
+          isTrue,
+        );
       });
 
-      test('does not match inactive tenant', () {
-        expect(TenantStatusFilter.active.matches(isActive: false), isFalse);
+      test('does not match suspended tenant', () {
+        expect(
+          TenantStatusFilter.active.matches(isActive: false, isArchived: false),
+          isFalse,
+        );
+      });
+
+      test('does not match archived tenant', () {
+        expect(
+          TenantStatusFilter.active.matches(isActive: false, isArchived: true),
+          isFalse,
+        );
       });
 
       test('label is non-empty', () {
@@ -38,15 +59,73 @@ void main() {
 
     group('suspended', () {
       test('does not match active tenant', () {
-        expect(TenantStatusFilter.suspended.matches(isActive: true), isFalse);
+        expect(
+          TenantStatusFilter.suspended.matches(
+            isActive: true,
+            isArchived: false,
+          ),
+          isFalse,
+        );
       });
 
-      test('matches inactive tenant', () {
-        expect(TenantStatusFilter.suspended.matches(isActive: false), isTrue);
+      test('matches suspended tenant', () {
+        expect(
+          TenantStatusFilter.suspended.matches(
+            isActive: false,
+            isArchived: false,
+          ),
+          isTrue,
+        );
+      });
+
+      test('does not match archived tenant', () {
+        expect(
+          TenantStatusFilter.suspended.matches(
+            isActive: false,
+            isArchived: true,
+          ),
+          isFalse,
+        );
       });
 
       test('label is non-empty', () {
         expect(TenantStatusFilter.suspended.label, isNotEmpty);
+      });
+    });
+
+    group('archived', () {
+      test('matches archived tenant', () {
+        expect(
+          TenantStatusFilter.archived.matches(
+            isActive: false,
+            isArchived: true,
+          ),
+          isTrue,
+        );
+      });
+
+      test('does not match active tenant', () {
+        expect(
+          TenantStatusFilter.archived.matches(
+            isActive: true,
+            isArchived: false,
+          ),
+          isFalse,
+        );
+      });
+
+      test('does not match suspended tenant', () {
+        expect(
+          TenantStatusFilter.archived.matches(
+            isActive: false,
+            isArchived: false,
+          ),
+          isFalse,
+        );
+      });
+
+      test('label is non-empty', () {
+        expect(TenantStatusFilter.archived.label, isNotEmpty);
       });
     });
 
@@ -55,24 +134,41 @@ void main() {
       expect(labels.length, equals(TenantStatusFilter.values.length));
     });
 
-    test('covers all status scenarios — active + suspended = all', () {
-      // A tenant must match exactly one of (active, suspended) and always all.
-      for (final isActive in [true, false]) {
-        expect(TenantStatusFilter.all.matches(isActive: isActive), isTrue);
+    test('each valid tenant state matches exactly one specific filter', () {
+      // Valid states: active, suspended, archived.
+      final states = [
+        (isActive: true, isArchived: false), // active
+        (isActive: false, isArchived: false), // suspended
+        (isActive: false, isArchived: true), // archived
+      ];
+      final specific = [
+        TenantStatusFilter.active,
+        TenantStatusFilter.suspended,
+        TenantStatusFilter.archived,
+      ];
 
-        final matchesActive = TenantStatusFilter.active.matches(
-          isActive: isActive,
-        );
-        final matchesSuspended = TenantStatusFilter.suspended.matches(
-          isActive: isActive,
-        );
-
-        // Exactly one of active/suspended should match for any given state.
+      for (final state in states) {
         expect(
-          matchesActive ^ matchesSuspended,
+          TenantStatusFilter.all.matches(
+            isActive: state.isActive,
+            isArchived: state.isArchived,
+          ),
           isTrue,
+        );
+
+        final matchCount = specific
+            .where(
+              (f) => f.matches(
+                isActive: state.isActive,
+                isArchived: state.isArchived,
+              ),
+            )
+            .length;
+        expect(
+          matchCount,
+          equals(1),
           reason:
-              'isActive=$isActive should match exactly one of active/suspended',
+              'isActive=${state.isActive}, isArchived=${state.isArchived} must match exactly one specific filter',
         );
       }
     });
@@ -80,9 +176,10 @@ void main() {
     test(
       'no OrgStatus domain import required — filter operates on primitives',
       () {
-        // Evidence: the test only imports TenantStatusFilter. The matches()
-        // signature takes a plain bool, not OrgStatus.
-        expect(TenantStatusFilter.active.matches(isActive: true), isA<bool>());
+        expect(
+          TenantStatusFilter.active.matches(isActive: true, isArchived: false),
+          isA<bool>(),
+        );
       },
     );
   });

@@ -64,6 +64,7 @@ class _CreateOrganizationWizardState
   bool _cnpjLookingUp = false;
   bool _cnpjAutoFilled = false;
   bool _cnpjAutoInactive = false;
+  bool _cnpjTradeNameMissing = false;
   Timer? _cnpjDebounceTimer;
 
   // Step 2 controllers
@@ -158,23 +159,25 @@ class _CreateOrganizationWizardState
     _cnpjDebounceTimer?.cancel();
     final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length != 14) {
-      if (_cnpjApiError != null || _cnpjChecking) {
-        setState(() {
-          _cnpjApiError = null;
-          _cnpjChecking = false;
-        });
-      }
+      setState(() {
+        _cnpjApiError = null;
+        _cnpjChecking = false;
+        _cnpjAutoFilled = false;
+        _cnpjAutoInactive = false;
+        _cnpjTradeNameMissing = false;
+      });
       return;
     }
 
     // Structural validation (immediate check-digit check)
     if (!CnpjValidator.isValid(digits)) {
-      if (_cnpjApiError != null || _cnpjChecking) {
-        setState(() {
-          _cnpjApiError = null;
-          _cnpjChecking = false;
-        });
-      }
+      setState(() {
+        _cnpjApiError = null;
+        _cnpjChecking = false;
+        _cnpjAutoFilled = false;
+        _cnpjAutoInactive = false;
+        _cnpjTradeNameMissing = false;
+      });
       return;
     }
 
@@ -183,6 +186,7 @@ class _CreateOrganizationWizardState
       _cnpjApiError = null;
       _cnpjAutoFilled = false;
       _cnpjAutoInactive = false;
+      _cnpjTradeNameMissing = false;
     });
     _cnpjDebounceTimer = Timer(
       const Duration(milliseconds: 600),
@@ -222,6 +226,9 @@ class _CreateOrganizationWizardState
 
     final autoFilled = lookup != null;
     final autoInactive = lookup != null && !lookup.isActive;
+    final tradeNameMissing =
+        autoFilled &&
+        (lookup.tradeName == null || lookup.tradeName!.trim().isEmpty);
 
     setState(() {
       _cnpjChecking = false;
@@ -229,19 +236,25 @@ class _CreateOrganizationWizardState
       _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
       _cnpjAutoFilled = autoFilled;
       _cnpjAutoInactive = autoInactive;
-    });
+      _cnpjTradeNameMissing = tradeNameMissing;
 
-    // Auto-fill only when CNPJ is not already registered.
-    if (!exists && lookup != null) {
-      if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
-        _legalNameCtrl.text = lookup.legalName!;
+      // Auto-fill inside setState so controller updates and banner flag
+      // are applied in the same dirty-mark cycle. Using TextEditingValue
+      // instead of .text ensures immediate repaint on Flutter Web/Desktop
+      // without requiring a focus/blur event to trigger the field rebuild.
+      if (!exists && lookup != null) {
+        if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
+          _legalNameCtrl.value = TextEditingValue(text: lookup.legalName!);
+        }
+        // Only fill tradeName when the API returned a non-empty value.
+        // When empty/null (common for S.A.), leave field empty so the operator
+        // is forced to fill it manually — the audit banner explains why.
+        final apiTradeName = lookup.tradeName?.trim() ?? '';
+        if (apiTradeName.isNotEmpty && _tradeNameCtrl.text.trim().isEmpty) {
+          _tradeNameCtrl.value = TextEditingValue(text: apiTradeName);
+        }
       }
-      if (lookup.tradeName != null && _tradeNameCtrl.text.trim().isEmpty) {
-        _tradeNameCtrl.text = lookup.tradeName!.isNotEmpty
-            ? lookup.tradeName!
-            : lookup.legalName ?? '';
-      }
-    }
+    });
   }
 
   bool _validateStep1() {
@@ -626,6 +639,7 @@ class _CreateOrganizationWizardState
             cnpjChecking: _cnpjChecking || _cnpjLookingUp,
             cnpjAutoFilled: _cnpjAutoFilled,
             cnpjAutoInactive: _cnpjAutoInactive,
+            cnpjTradeNameMissing: _cnpjTradeNameMissing,
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
@@ -769,7 +783,7 @@ class _SecretRevealSection extends StatelessWidget {
               Icon(Icons.warning_amber, size: 16, color: VeraProbColors.error),
               SizedBox(width: 6),
               Text(
-                'Chave de API da Organização (única exibição)',
+                'Segredo inicial (exibido apenas uma vez)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,

@@ -279,7 +279,10 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                 if (!dialogCtx.mounted) return;
                 setSbState(() {
                   submitting = false;
-                  serverError = e.toString();
+                  serverError = e
+                      .toString()
+                      .replaceAll(RegExp(r'^.*Exception: '), '')
+                      .trim();
                 });
               }
             }
@@ -333,7 +336,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                       if (serverError != null) ...[
                         const SizedBox(height: 12),
                         Text(
-                          'Erro: ${serverError!}',
+                          serverError!,
                           style: const TextStyle(
                             color: VeraProbColors.error,
                             fontSize: 12,
@@ -442,11 +445,14 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       );
     }
     if (_members == null || _members!.isEmpty) {
-      return const Center(
+      final message = widget.tenant.isArchived
+          ? 'Nenhum usuário ou convite pendente encontrado nesta organização arquivada.'
+          : 'Nenhum usuário ou convite pendente encontrado.\nUse o botão acima para adicionar um administrador.';
+      return Center(
         child: Text(
-          'Nenhum usuário ou convite pendente encontrado.\nUse o botão acima para adicionar um administrador.',
+          message,
           textAlign: TextAlign.center,
-          style: TextStyle(color: VeraProbColors.textSecondary),
+          style: const TextStyle(color: VeraProbColors.textSecondary),
         ),
       );
     }

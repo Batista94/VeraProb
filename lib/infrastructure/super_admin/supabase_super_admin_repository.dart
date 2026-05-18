@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
@@ -27,7 +28,9 @@ class SupabaseSuperAdminRepository
   SupabaseSuperAdminRepository(this._authenticatedClient);
 
   @override
-  Future<String> createOrganization(CreateOrganizationCommand cmd) async {
+  Future<({String orgId, String plaintextSecret})> createOrganization(
+    CreateOrganizationCommand cmd,
+  ) async {
     try {
       final result = await _authenticatedClient.rpc(
         'super_admin_create_organization',
@@ -52,7 +55,31 @@ class SupabaseSuperAdminRepository
           'p_allowed_domains': cmd.allowedDomains,
         },
       );
-      return result as String;
+      // RPC returns TABLE(org_id UUID, plaintext_secret TEXT) — PostgREST
+      // wraps RETURNS TABLE as List<Map>. Exactly one row expected.
+      final rows = result as List<dynamic>;
+      if (rows.isEmpty) {
+        throw const IntegrityException(
+          'super_admin_create_organization returned no rows',
+          field: 'org_id',
+        );
+      }
+      final row = rows.first as Map<String, dynamic>;
+      final orgId = row['org_id'] as String?;
+      final secret = row['plaintext_secret'] as String?;
+      if (orgId == null || orgId.isEmpty) {
+        throw const IntegrityException(
+          'super_admin_create_organization: org_id missing',
+          field: 'org_id',
+        );
+      }
+      if (secret == null || secret.isEmpty) {
+        throw const IntegrityException(
+          'super_admin_create_organization: plaintext_secret missing (INV-28)',
+          field: 'plaintext_secret',
+        );
+      }
+      return (orgId: orgId, plaintextSecret: secret);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'super_admin');
     }

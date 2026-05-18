@@ -96,7 +96,12 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   Future<void> _unarchiveOrg(TenantHealthView t) async {
     final reason = await showDialog<String>(
       context: context,
-      builder: (_) => const ReasonConfirmationDialog(),
+      builder: (_) => const ReasonConfirmationDialog(
+        title: 'Desarquivar Organização',
+        promptMessage:
+            'Informe o motivo para o desarquivamento desta organização. '
+            'Este registro será gravado no log de auditoria.',
+      ),
     );
     if (reason == null || !mounted) return;
 

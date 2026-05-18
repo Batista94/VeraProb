@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -328,5 +329,65 @@ void main() {
         reason: 'Empty resourceOrgId must never grant access',
       );
     });
+  });
+
+  // ─── SuperAdminBypassTenantValidator ──────────────────────────────────────
+  //
+  // SuperAdmin JWT carries super_admin: true with null org_id.
+  // The bypass is a no-op satisfying the structural INV-1 contract without
+  // enforcing tenant equality — SuperAdmin has sovereignty over all orgs.
+
+  group('SuperAdminBypassTenantValidator', () {
+    late SuperAdminBypassTenantValidator bypass;
+
+    setUp(() {
+      bypass = const SuperAdminBypassTenantValidator();
+    });
+
+    // ── 13: Cross-tenant assertTenantMatches → no exception ──────────────────
+    test('assertTenantMatches completes silently for any payloadOrgId '
+        '— SuperAdmin has sovereignty over all orgs (INV-1 bypass)', () async {
+      await expectLater(
+        bypass.assertTenantMatches(
+          payloadOrgId: _orgAttacker,
+          sessionId: _sessionValid,
+        ),
+        completes,
+        reason: 'Bypass must never throw SovereigntyViolationException',
+      );
+    });
+
+    // ── 14: Empty payloadOrgId → no exception (bypass is unconditional) ──────
+    test('assertTenantMatches completes even for empty payloadOrgId '
+        '— bypass does not validate structural correctness', () async {
+      await expectLater(
+        bypass.assertTenantMatches(payloadOrgId: '', sessionId: _sessionValid),
+        completes,
+      );
+    });
+
+    // ── 15: verifySourceOwnership → no exception (bypass is unconditional) ───
+    test('verifySourceOwnership completes silently for mismatched orgs '
+        '— SuperAdmin owns all resources', () {
+      expect(
+        () => bypass.verifySourceOwnership(
+          resourceOrgId: _orgOwner,
+          requesterOrgId: _orgAttacker,
+          resourceType: 'org_api_secret',
+          resourceId: 'secret-001',
+        ),
+        returnsNormally,
+        reason: 'Bypass must never throw for cross-tenant resource access',
+      );
+    });
+
+    // ── 16: Structural contract — bypass implements TenantValidationService ──
+    test(
+      'SuperAdminBypassTenantValidator satisfies the TenantValidationService '
+      'interface contract (Liskov substitution)',
+      () {
+        expect(bypass, isA<TenantValidationService>());
+      },
+    );
   });
 }

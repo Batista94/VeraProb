@@ -132,9 +132,7 @@ final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((
 ) {
   return GenerateOrgSecretHandler(
     ref.watch(supabaseClientProvider),
-    tenantValidator: TenantValidationService(
-      authRepository: ref.watch(authRepositoryProvider),
-    ),
+    tenantValidator: const SuperAdminBypassTenantValidator(),
   );
 });
 

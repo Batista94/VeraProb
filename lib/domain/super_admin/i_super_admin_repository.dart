@@ -13,10 +13,15 @@ import 'update_organization_quota_command.dart';
 /// (INV-3, INV-14). Write RPCs use the authenticated session JWT.
 /// INV-4: Pure Dart interface — zero infrastructure dependencies.
 abstract class ISuperAdminRepository {
-  /// Atomically creates a new organization and records an 'ORG_CREATED' billing factEvent.
+  /// Atomically creates a new organization, billing event, and org API secret
+  /// in a single transaction (INV-28).
   ///
-  /// Returns the new organization's UUID.
-  Future<String> createOrganization(CreateOrganizationCommand command);
+  /// Returns a record of `(orgId, plaintextSecret)`.
+  /// `plaintextSecret` is the raw 64-char hex value shown exactly once
+  /// — the caller must surface it to the operator and discard it.
+  Future<({String orgId, String plaintextSecret})> createOrganization(
+    CreateOrganizationCommand command,
+  );
 
   /// Inserts an invitation for the org's first admin.
   ///

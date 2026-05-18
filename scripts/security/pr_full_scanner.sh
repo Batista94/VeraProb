@@ -168,7 +168,7 @@ DART_CHANGED=""
 
 # ── Step 2: Migration Append-Only Gate (INV-DB) ──────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 2: Migration Append-Only Gate (INV-DB)...${NC}"
-MODIFIED_MIGRATIONS=$(echo "$REGRESSION_FILES" | grep "supabase/migrations/.*\.sql" || true)
+MODIFIED_MIGRATIONS=$(git diff --diff-filter=M --name-only "$BASE_BRANCH" 2>/dev/null | grep "supabase/migrations/.*\.sql" || true)
 if [[ -n "$MODIFIED_MIGRATIONS" ]]; then
   echo -e "  ${RED}${BOLD}[BLOCK]${NC} Existing migration file(s) modified — Append-Only invariant violated (INV-DB):"
   echo "$MODIFIED_MIGRATIONS" | while IFS= read -r line; do

@@ -165,7 +165,16 @@
       "Bash(MSYS_NO_PATHCONV=1 make format *)",
       "Bash(awk *)",
       "Bash(make -n test)",
-      "Bash(make -n test-integration)"
+      "Bash(make -n test-integration)",
+      "mcp__playwright__browser_network_requests",
+      "mcp__playwright__browser_network_request",
+      "Bash(Sort-Object Name)",
+      "Bash(Select-Object -Last 20 -Property Name)",
+      "Bash(git -C \"C:/Users/wes_b/Projects/VeraProb\" status --short)",
+      "Bash(git -C \"C:/Users/wes_b/Projects/VeraProb\" show HEAD:lib/features/super_admin/presentation/widgets/tenant_config_tab.dart)",
+      "Bash(git *)",
+      "Skill(veraprob-pr-scanner)",
+      "Skill(ui-ux-pro-max)"
     ]
   },
   "enabledMcpjsonServers": [

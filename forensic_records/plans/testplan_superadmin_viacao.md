@@ -101,7 +101,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Persistência dos dados no banco de dados (incluindo CRM, Dia de Faturamento e Custo).
   * Criação do TenantID único para a organização.
   * Status inicial da organização como "Ativo".
-* **Requisito de Sucesso:** Modal de sucesso exibido com o link de convite e a chave de API da organização. O modal deve permitir o fechamento via botão "Concluir", ícone "X" ou clique fora (barrier dismissal), redirecionando sempre para a listagem de Tenants.
+* **Requisito de Sucesso:** Modal de sucesso exibido com o link de convite da organização. O modal deve permitir o fechamento via botão "Concluir", ícone "X" ou clique fora (barrier dismissal), redirecionando sempre para a listagem de Tenants.
 
 #### CT02: Cadastro de Organização - Viação B (Sucesso)
 
@@ -313,17 +313,17 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   * Mensagem "CNPJ já cadastrado no sistema" aparece via debounce, sem necessidade de clicar em "Próximo".
   * O botão "Próximo" deve ser desabilitado enquanto a verificação está em curso ou se houver erro.
 
-#### CT20: Revelação de Segredo HMAC (Exibição Única - INV-28)
+#### CT20: Geração e Revelação de Segredo HMAC (Exibição Única - INV-28)
 
-* **Objetivo:** Garantir a segurança da chave de API da organização.
-* **Pré-condições:** Finalizar o CT01 ou CT02 (Sucesso no cadastro).
+* **Objetivo:** Garantir a segurança e o isolamento Zero-Trust da chave de API (HMAC) da organização.
+* **Pré-condições:** Organização cadastrada e acesso à gestão de chaves/segredos na aba de Segurança.
 * **Passos:**
-  1. No modal de sucesso, localizar a seção "Chave de API da Organização".
+  1. Na aba de Segurança, solicitar a geração ou exibição da chave de API da Organização.
   2. Clicar no botão de copiar.
-  3. Fechar o modal (via botão "Concluir", "X" ou clique fora) e tentar localizar a chave novamente nos detalhes da organização.
+  3. Fechar o modal ou sair da tela e tentar localizar a chave em texto claro novamente na UI.
 * **Cenário Esperado:**
-  * A chave deve ser exibida em texto claro apenas uma vez no modal de sucesso.
-  * Após fechar o modal, a chave **não deve ser mais visível** em nenhum lugar da UI (apenas via API/DB se necessário, mas não no front-end por padrão).
+  * A chave deve ser exibida em texto claro apenas uma vez no momento de sua geração.
+  * Após fechar ou sair, a chave **não deve ser mais visível** em nenhum lugar da UI (sendo mantida de forma isolada no backend, sem exposição desnecessária).
 
 ---
 
@@ -429,7 +429,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Objetivo:** Validar a leitura e filtragem da base de dados.
 * **Passos:**
   1. Na tela principal, alternar entre os filtros: "Todas", "Ativas" e "Arquivadas".
-  2. Verificar se o contador de organizações no topo reflete a realidade do grid.
+  2. Verificar se a listagem de organizações no painel reflete instantaneamente a realidade dos filtros e buscas selecionados.
 * **Cenário Esperado:**
   * O grid deve atualizar instantaneamente ao mudar o filtro.
 

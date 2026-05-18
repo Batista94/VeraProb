@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/application/shared/super_admin_bypass_tenant_validator.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -540,6 +541,92 @@ void main() {
           ),
         ).called(1);
       });
+    },
+  );
+
+  // ── Scenario 6: SuperAdmin Cross-Tenant Bypass (INV-28 + INV-1) ───────────
+  //
+  // When GenerateOrgSecretHandler is wired with SuperAdminBypassTenantValidator,
+  // it must succeed for ANY organizationId — the bypass is the correct
+  // validator for SuperAdmin flows (all other SuperAdmin handlers use it too).
+  //
+  // This proves the provider-level fix is architecturally sound:
+  // no SovereigntyViolationException fires for cross-tenant secret generation.
+
+  group(
+    'Scenario 6 — SuperAdmin Cross-Tenant Bypass: bypass validator allows all orgs',
+    () {
+      late GenerateOrgSecretHandler bypassHandler;
+
+      setUp(() {
+        bypassHandler = GenerateOrgSecretHandler(
+          mockClient,
+          tenantValidator: const SuperAdminBypassTenantValidator(),
+        );
+      });
+
+      test(
+        'SuperAdminBypassTenantValidator — no exception for any organizationId',
+        () async {
+          stubFunctionResponse(200, {
+            'secret': _kSecret,
+            'version': _kVersion,
+            'organization_id': 'org-client-tenant-b',
+          });
+
+          final result = await bypassHandler.handle(
+            organizationId: 'org-client-tenant-b',
+            sessionId: 'super-admin-session',
+          );
+
+          expect(result.organizationId, equals('org-client-tenant-b'));
+          expect(result.secret, equals(_kSecret));
+        },
+      );
+
+      test(
+        'bypass validator — Edge Function called with correct org',
+        () async {
+          stubFunctionResponse(200, {
+            'secret': _kSecret,
+            'version': _kVersion,
+            'organization_id': 'org-client-tenant-b',
+          });
+
+          await bypassHandler.handle(
+            organizationId: 'org-client-tenant-b',
+            sessionId: 'super-admin-session',
+          );
+
+          verify(
+            () => mockFunctions.invoke(
+              'generate-org-secret',
+              body: {'organization_id': 'org-client-tenant-b'},
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'bypass validator — never throws SovereigntyViolationException',
+        () async {
+          stubFunctionResponse(200, {
+            'secret': _kSecret,
+            'version': _kVersion,
+            'organization_id': 'org-any-tenant',
+          });
+
+          // completes = no exception of any kind (including SovereigntyViolation)
+          await expectLater(
+            bypassHandler.handle(
+              organizationId: 'org-any-tenant',
+              sessionId: 'super-admin-session',
+            ),
+            completes,
+            reason: 'Bypass must not throw SovereigntyViolationException',
+          );
+        },
+      );
     },
   );
 }

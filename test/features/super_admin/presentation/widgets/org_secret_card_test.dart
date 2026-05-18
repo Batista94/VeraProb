@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/org_api_secret_view_model.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_secret_card.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
@@ -310,8 +311,8 @@ void main() {
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
-      // Error displayed
-      expect(find.textContaining('Network timeout'), findsOneWidget);
+      // Error displayed as user-friendly message (INV-10: no class names)
+      expect(find.textContaining('Falha ao gerar secret'), findsOneWidget);
 
       // Secret container NOT shown
       expect(find.byIcon(Icons.copy), findsNothing);
@@ -345,7 +346,7 @@ void main() {
       // First attempt — fails
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
-      expect(find.textContaining('Transient failure'), findsOneWidget);
+      expect(find.textContaining('Falha ao gerar secret'), findsOneWidget);
 
       // Retry — succeeds
       await _tapGenerateButton(tester);
@@ -550,8 +551,8 @@ void main() {
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
-      // Error shown, no crash
-      expect(find.textContaining('Unexpected corruption'), findsOneWidget);
+      // Error shown as friendly message (INV-10: no internal class names)
+      expect(find.textContaining('Falha ao gerar secret'), findsOneWidget);
       expect(find.byIcon(Icons.copy), findsNothing);
 
       // Widget tree intact
@@ -816,7 +817,7 @@ void main() {
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
-      expect(find.textContaining('Server unavailable'), findsOneWidget);
+      expect(find.textContaining('Falha ao gerar secret'), findsOneWidget);
       expect(find.byIcon(Icons.copy), findsNothing);
     });
   });
@@ -885,5 +886,74 @@ void main() {
       // No exception
       await tester.pumpAndSettle();
     });
+  });
+
+  // ═══════════════════════════════════════════════════════════════
+  // GROUP 6: INV-10 — DOMAIN-LANGUAGE ERROR DISPLAY
+  // ═══════════════════════════════════════════════════════════════
+
+  group('[INV-10] Error message never leaks internal class names', () {
+    testWidgets(
+      'DomainException shows e.message directly — no "DomainException:" prefix',
+      (tester) async {
+        when(
+          () => mockHandler.handle(
+            organizationId: any(named: 'organizationId'),
+            sessionId: any(named: 'sessionId'),
+          ),
+        ).thenThrow(
+          const DomainException(
+            'Cota de secrets excedida para esta organização',
+          ),
+        );
+
+        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await _tapGenerateButton(tester);
+        await _confirmDialog(tester);
+
+        expect(
+          find.text('Cota de secrets excedida para esta organização'),
+          findsOneWidget,
+          reason: 'DomainException.message must be shown verbatim',
+        );
+        expect(
+          find.textContaining('DomainException'),
+          findsNothing,
+          reason: 'Internal class name must never appear in the UI (INV-10)',
+        );
+      },
+    );
+
+    testWidgets(
+      'non-domain exception shows generic message — no raw exception class leaked',
+      (tester) async {
+        when(
+          () => mockHandler.handle(
+            organizationId: any(named: 'organizationId'),
+            sessionId: any(named: 'sessionId'),
+          ),
+        ).thenThrow(StateError('internal db constraint violation'));
+
+        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await _tapGenerateButton(tester);
+        await _confirmDialog(tester);
+
+        expect(
+          find.text('Falha ao gerar secret. Tente novamente.'),
+          findsOneWidget,
+          reason: 'Generic exceptions must surface as a safe user message',
+        );
+        expect(
+          find.textContaining('StateError'),
+          findsNothing,
+          reason: 'Internal class name must never appear in the UI (INV-10)',
+        );
+        expect(
+          find.textContaining('internal db constraint violation'),
+          findsNothing,
+          reason: 'Raw exception message must not leak to the UI (INV-10)',
+        );
+      },
+    );
   });
 }
