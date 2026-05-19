@@ -17,6 +17,12 @@
 -- INV-28: org secret generated atomically at creation. Plaintext returned once, hash stored.
 -- =============================================================================
 
+-- ── Guard: pgcrypto required for gen_random_bytes / digest (INV-28) ─────────
+-- Idempotent. Supabase hosted pre-installs it; fresh local/CI envs (db reset)
+-- may not. Declaring it here makes this migration self-contained regardless of
+-- whether 20200101000000_enable_extensions.sql ran in the same session.
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
+
 -- ── Step 1: Drop old overload (return type UUID — cannot change via OR REPLACE) ─
 
 DROP FUNCTION IF EXISTS public.super_admin_create_organization(
@@ -49,7 +55,7 @@ CREATE OR REPLACE FUNCTION public.super_admin_create_organization(
 RETURNS TABLE(org_id UUID, plaintext_secret TEXT)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth
+SET search_path = public, auth, extensions
 AS $fn$
 DECLARE
   v_org_id         UUID := gen_random_uuid();
@@ -132,8 +138,8 @@ BEGIN
   -- ── Generate and store org secret atomically (INV-28) ──────────────────────
   -- Plaintext derived from 32 cryptographically random bytes via pgcrypto.
   -- Only the SHA-256 hex digest is persisted; plaintext is returned once and discarded.
-  v_raw_secret  := encode(gen_random_bytes(32), 'hex');
-  v_secret_hash := encode(digest(v_raw_secret, 'sha256'), 'hex');
+  v_raw_secret  := encode(extensions.gen_random_bytes(32), 'hex');
+  v_secret_hash := encode(extensions.digest(v_raw_secret, 'sha256'), 'hex');
 
   INSERT INTO public.org_api_secrets (
     organization_id,

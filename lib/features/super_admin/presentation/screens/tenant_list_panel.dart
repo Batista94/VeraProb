@@ -80,44 +80,42 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
           ),
 
           // ── Status filter chips ────────────────────────────────────
+          // Wrap instead of SingleChildScrollView — avoids unexpected
+          // horizontal Scrollable in narrow panels (maxWidth <= 320px).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _StatusChip(
-                    label: TenantStatusFilter.all.label,
-                    selected: statusFilter == TenantStatusFilter.all,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.all),
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.active.label,
-                    selected: statusFilter == TenantStatusFilter.active,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.active),
-                    color: VeraProbColors.success,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.suspended.label,
-                    selected: statusFilter == TenantStatusFilter.suspended,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.suspended),
-                    color: VeraProbColors.error,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.archived.label,
-                    selected: statusFilter == TenantStatusFilter.archived,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.archived),
-                    color: VeraProbColors.neutral,
-                  ),
-                ],
-              ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                _StatusChip(
+                  label: TenantStatusFilter.all.label,
+                  selected: statusFilter == TenantStatusFilter.all,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.all),
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.active.label,
+                  selected: statusFilter == TenantStatusFilter.active,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.active),
+                  color: VeraProbColors.success,
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.suspended.label,
+                  selected: statusFilter == TenantStatusFilter.suspended,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.suspended),
+                  color: VeraProbColors.error,
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.archived.label,
+                  selected: statusFilter == TenantStatusFilter.archived,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.archived),
+                  color: VeraProbColors.neutral,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -286,17 +284,23 @@ class _TenantListTile extends StatelessWidget {
                 : VeraProbColors.error,
           ),
         ),
-        title: Text(
-          tenant.name,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        title: Tooltip(
+          message: tenant.name,
+          child: Text(
+            tenant.name,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           tenant.planType?.toUpperCase() ?? '—',
           style: const TextStyle(fontSize: 11),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         trailing: tenant.hasCriticalAlerts
             ? const Icon(
