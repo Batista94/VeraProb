@@ -10,9 +10,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   migration-guard:
     name: Migration Append-Only Guard
@@ -22,12 +19,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -78,12 +75,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -98,7 +95,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -112,6 +109,11 @@ jobs:
       # Real credentials are injected via --dart-define at build time — never here.
       - name: Create stub .env for asset resolution
         run: echo "# CI stub — credentials injected via dart-define" > .env
+
+      - name: Install dart_code_metrics
+        run: |
+          dart pub global activate dart_code_metrics
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
 
       - name: Flutter Analyze (zero warnings policy)
         run: flutter analyze --no-pub
@@ -183,10 +185,10 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -201,7 +203,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -227,10 +229,10 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -245,7 +247,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -271,10 +273,10 @@ jobs:
     needs: analyze
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -289,7 +291,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -313,12 +315,12 @@ jobs:
     needs: [test-phase-1, test-phase-2, test-phase-3]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -333,7 +335,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -351,9 +353,6 @@ jobs:
       - name: Start Supabase Local
         run: supabase start
 
-      - name: Seed local database
-        run: supabase db seed
-
       - name: Create stub .env
         run: echo "# CI stub" > .env
 
@@ -370,6 +369,13 @@ jobs:
           echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+
+      - name: Bootstrap Dev Data
+        run: node scripts/dev/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Check if integration tests should run
         id: should_run_integration
@@ -387,7 +393,7 @@ jobs:
       - name: Phase 4 — Integration Tests
         if: steps.should_run_integration.outputs.run-tests == 'true'
         run: |
-          flutter test --no-pub -d flutter-tester \
+          flutter test --no-pub -j 1 -d flutter-tester \
             test/integration/security/ \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
@@ -403,10 +409,10 @@ jobs:
     needs: [test-phase-1, test-phase-2]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -421,7 +427,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -438,9 +444,6 @@ jobs:
 
       - name: Start Supabase Local
         run: supabase start
-
-      - name: Seed local database
-        run: supabase db seed
 
       - name: Create stub .env
         run: echo "# CI stub" > .env
@@ -459,14 +462,38 @@ jobs:
           echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
           echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
 
-      - name: Flutter Test with Coverage
-        run: |
-          flutter test --no-pub --coverage \
-            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
-            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY"
+      - name: Bootstrap Dev Data
+        run: node scripts/dev/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
       - name: Install lcov
         run: sudo apt-get install -y lcov
+
+      - name: Flutter Test (Unit/Widget) with Coverage
+        run: |
+          flutter test --no-pub -j 1 --coverage \
+            --dart-define=ENV=dev \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            test/application test/compliance test/core test/domain test/features test/infrastructure test/presentation test/security test/smoke test/state test/utils test/validation test/widget
+          mv coverage/lcov.info coverage/lcov_unit.info
+
+      - name: Flutter Test (Integration) with Coverage
+        run: |
+          flutter test --no-pub -j 1 --coverage \
+            --dart-define=SKIP_MFA_DEV=true \
+            --dart-define=ENV=dev \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            test/integration
+          mv coverage/lcov.info coverage/lcov_integration.info
+
+      - name: Merge Coverage Reports
+        run: |
+          lcov -a coverage/lcov_unit.info -a coverage/lcov_integration.info -o coverage/lcov.info
 
       - name: Remove generated files from coverage report
         run: |
@@ -492,10 +519,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (v24)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 
@@ -510,7 +537,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.pub-cache
           key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
@@ -537,7 +564,7 @@ jobs:
           echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
 
       - name: Upload WASM build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-build-${{ github.sha }}
           path: build/web/
@@ -553,10 +580,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js (for bootstrap)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '24'
 

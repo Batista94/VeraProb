@@ -51,7 +51,7 @@ void main() {
 
       // Act
       await provider.connect();
-      await Future.delayed(Duration.zero); // Aguarda microtask queue
+      await Future<void>.delayed(Duration.zero); // Aguarda microtask queue
 
       // Assert
       expect(statuses, [
@@ -65,14 +65,14 @@ void main() {
     test('disconnect() emite disconnected', () async {
       // Arrange
       await provider.connect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final statuses = <ConnectionStatus>[];
       final subscription = provider.connectionStatus.listen(statuses.add);
 
       // Act
       await provider.disconnect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Assert
       expect(statuses, contains(ConnectionStatus.disconnected));
@@ -85,11 +85,11 @@ void main() {
       expect(provider.status, ConnectionStatus.disconnected);
 
       await provider.connect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
       expect(provider.status, ConnectionStatus.connected);
 
       await provider.disconnect();
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
       expect(provider.status, ConnectionStatus.disconnected);
     });
   });

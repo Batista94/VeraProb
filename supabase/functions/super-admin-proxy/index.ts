@@ -98,14 +98,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return sovereigntyErrorResponse();
   }
 
-  // Authenticated client to verify the caller's identity
+  // Authenticated client to verify the caller's identity.
+  // INV-22: pass the user JWT explicitly to getUser() — the global Authorization
+  // header is overridden by auth-js for /auth/v1/user calls (it sends the apikey
+  // as Bearer), which produces "missing sub claim" against ES256-signed JWTs
+  // issued by the new sb_publishable_*/sb_secret_* keys.
   const authClient = createClient(supabaseUrl, supabaseAnonKey, {
     global: { headers: { Authorization: authHeader } },
   });
+  const bearerToken = authHeader.replace("Bearer ", "");
 
   let user;
   try {
-    const { data: authData, error: authError } = await authClient.auth.getUser();
+    const { data: authData, error: authError } =
+      await authClient.auth.getUser(bearerToken);
     if (authError || !authData.user) {
       console.error("[super-admin-proxy] Auth verification failed:", authError);
       return sovereigntyErrorResponse();

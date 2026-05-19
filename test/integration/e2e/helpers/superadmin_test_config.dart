@@ -42,10 +42,22 @@ class SuperAdminTestConfig {
 
   // ── Convenience methods ───────────────────────────────────────────────────
 
-  /// Verifica se o Supabase local está rodando.
-  /// Delega ao [PostgresTestConfig.isSupabaseRunning].
-  static Future<bool> isSupabaseRunning() =>
-      PostgresTestConfig.isSupabaseRunning();
+  /// Verifica se o Supabase local está rodando E o usuário SuperAdmin foi
+  /// provisionado (requer `node scripts/dev/bootstrap_dev.mjs`).
+  static Future<bool> isSupabaseRunning() async {
+    if (!await PostgresTestConfig.isSupabaseRunning()) return false;
+    try {
+      final client = createServiceRoleClient();
+      final List<dynamic> result = await client
+          .from('super_admin_users')
+          .select('user_id')
+          .eq('email', superAdminEmail)
+          .limit(1);
+      return result.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Verifica se as Edge Functions estão rodando localmente.
   /// Necessário para testes que dependem de `super-admin-proxy`.

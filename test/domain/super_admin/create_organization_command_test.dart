@@ -337,9 +337,13 @@ void main() {
       'validation passes through to invite step — non-DomainException proves '
       'all guards cleared (repo returns uuid, client throws on invite)',
       () async {
-        when(
-          () => mockRepo.createOrganization(any()),
-        ).thenAnswer((_) async => 'org-uuid-generated-abc');
+        when(() => mockRepo.createOrganization(any())).thenAnswer(
+          (_) async => (
+            orgId: 'org-uuid-generated-abc',
+            plaintextSecret:
+                'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2',
+          ),
+        );
 
         await expectLater(
           handler.handle(_validCmd()),

@@ -148,7 +148,7 @@ class PostgresJustificationRepository extends BasePostgresRepository
     required List<String> evidenceUrls,
   }) async {
     try {
-      final result = await client.rpc(
+      final result = await client.rpc<int>(
         'update_justification_status_with_audit',
         params: {
           'p_justification_id': id,
@@ -159,7 +159,7 @@ class PostgresJustificationRepository extends BasePostgresRepository
           'p_evidence_urls': evidenceUrls,
         },
       );
-      return result as int;
+      return result;
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'justification');
     }
@@ -262,7 +262,7 @@ class PostgresJustificationRepository extends BasePostgresRepository
     required String description,
   }) async {
     try {
-      final result = await client.rpc(
+      final result = await client.rpc<String>(
         'use_justification_token',
         params: {
           'p_token': tokenValue,
@@ -270,7 +270,7 @@ class PostgresJustificationRepository extends BasePostgresRepository
           'p_description': description,
         },
       );
-      return result as String;
+      return result;
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'justification');
     }

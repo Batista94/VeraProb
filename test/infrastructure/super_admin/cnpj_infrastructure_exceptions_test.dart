@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/application/super_admin/cnpj_service_exceptions.dart';
 
 void main() {
-  group('CnpjInfrastructureException Subtypes', () {
+  group('CnpjServiceException Subtypes', () {
     group('ExternalApiException', () {
       test('fromStatusCode maps 5xx to upstream_server_error', () {
         final ex = ExternalApiException.fromStatusCode(500);

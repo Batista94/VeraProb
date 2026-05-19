@@ -51,7 +51,7 @@ class SimulationControlService implements OperationalControlService {
             newValue: newStatus.name,
             reason: reason ?? 'Mudança de status via painel',
           )
-          .catchError((e) {
+          .catchError((Object e) {
             // In production, log to crashlytics/sentry
             debugPrint('Failed to log audit action: $e');
           }),
@@ -118,7 +118,7 @@ class SimulationControlService implements OperationalControlService {
             newValue: trip?.status.name,
             reason: notes ?? 'Incidente reportado manualmente',
           )
-          .catchError((e) {
+          .catchError((Object e) {
             // In production, log to crashlytics/sentry
             debugPrint('Failed to log audit action: $e');
           }),
@@ -176,7 +176,7 @@ class SimulationControlService implements OperationalControlService {
             newValue: newValueCents.toString(),
             reason: 'Atualização de contrato via barramento autorizado',
           )
-          .catchError((e) {
+          .catchError((Object e) {
             debugPrint('Failed to log audit action: $e');
           }),
     );

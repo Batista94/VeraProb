@@ -132,7 +132,7 @@ void main() {
             'config': {'threshold': 0.8, 'enabled': true},
           },
         });
-        expect(payload.before['config'], isA<Map>());
+        expect(payload.before['config'], isA<Map<dynamic, dynamic>>());
         expect((payload.before['config'] as Map)['threshold'], 0.5);
         expect((payload.after['config'] as Map)['threshold'], 0.8);
       });

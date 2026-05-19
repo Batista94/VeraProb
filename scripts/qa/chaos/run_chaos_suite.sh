@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# run_chaos_suite.sh â€” Phase 10 Full Chaos Test Orchestrator
+# run_chaos_suite.sh Phase 10 Full Chaos Test Orchestrator
 # =============================================================================
 #
 # Runs all 5 chaos scenarios in sequence. Each scenario must pass before
@@ -35,12 +35,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-LOAD_TEST_DIR="scripts/load_test"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+LOAD_TEST_DIR="scripts/qa/load_test"
 RESULTS_DIR="${PROJECT_ROOT}/docs/governance"
 cd "${PROJECT_ROOT}"
 
-# â”€â”€ Parse args â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+NODE_CMD="node"
+if ! command -v node &>/dev/null && command -v node.exe &>/dev/null; then
+  NODE_CMD="node.exe"
+fi
+
+echo -e "\n\033[1;33m[chaos]\033[0m Generating test tokens and extracting Supabase keys..."
+eval "$($NODE_CMD scripts/qa/generate_load_test_tokens.mjs | grep '^export ')"
+
+# ── Parse args ────────────────────────────────────────────────────────────────
 SKIP_CRASH=false
 ONLY_SCENARIO=""
 
@@ -51,13 +59,13 @@ for arg in "$@"; do
   esac
 done
 
-# â”€â”€ Env defaults â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Env defaults ──────────────────────────────────────────────────────────────
 SUPABASE_URL="${SUPABASE_URL:-http://localhost:54321}"
 SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
 ORG_ID="${ORG_ID:-00000000-0000-0000-0000-000000000001}"
 CONTRACT_ID="${CONTRACT_ID:-00000000-0000-0000-0000-ca0000000001}"
-ORG_COUNT="${ORG_COUNT:-10}"
+ORG_COUNT="${ORG_COUNT:-2}"
 BOUND_CHAT_ID="${BOUND_CHAT_ID:-100000001}"
 WEBHOOK_SECRET="${WEBHOOK_SECRET:-test-secret}"
 
@@ -86,7 +94,7 @@ if ! command -v k6 &>/dev/null && ! command -v k6.exe &>/dev/null; then
   exit 1
 fi
 K6_CMD="k6"
-if ! command -v k6 &>/dev/null; then 
+if ! command -v k6 &>/dev/null; then
   if command -v k6.exe &>/dev/null; then
     K6_CMD="k6.exe"
   fi

@@ -7,9 +7,6 @@ concurrency:
   group: deploy-staging
   cancel-in-progress: true
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   migrate-staging:
     name: Apply Migrations → Staging
@@ -20,6 +17,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -59,12 +61,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v6
         with:
-          flutter-version: "3.41.5"
+          node-version: '24'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: "3.41.9"
           channel: stable
           cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
 
       - name: Cache pub dependencies
         uses: actions/cache@v5

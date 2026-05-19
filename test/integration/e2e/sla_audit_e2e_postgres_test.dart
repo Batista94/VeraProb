@@ -39,7 +39,7 @@ import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
-import '../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -849,7 +849,7 @@ void main() {
 
         // When: A new request tries to acquire the same key
         // The RPC should detect it's stale (>5 min) and allow reclamation
-        final result = await client.rpc(
+        final result = await client.rpc<Map<String, dynamic>>(
           'try_acquire_idempotency_key',
           params: {
             'p_id': idempotencyKey,
@@ -859,7 +859,7 @@ void main() {
           },
         );
 
-        final response = result as Map<String, dynamic>;
+        final response = result;
 
         // Then: The key should be reclaimed (not rejected)
         expect(response['hit'], isFalse, reason: 'Should NOT be a cache hit');
@@ -876,7 +876,7 @@ void main() {
 
         // Cleanup: transition processingâ†’error first to unblock the
         // prevent_idempotency_processing_delete trigger, then delete.
-        await client.rpc(
+        await client.rpc<void>(
           'fail_idempotency_key',
           params: {
             'p_id': idempotencyKey,

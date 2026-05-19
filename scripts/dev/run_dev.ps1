@@ -54,7 +54,11 @@ $efJob = Start-Job -ScriptBlock {
 $pubspecHash = ""
 $cacheFile = ".dart_tool/.pubget_hash"
 if (Test-Path "pubspec.lock") {
-    $pubspecHash = (Get-FileHash "pubspec.lock" -Algorithm MD5).Hash
+    try {
+        $pubspecHash = (Get-FileHash "pubspec.lock" -Algorithm MD5 -ErrorAction Stop).Hash
+    } catch {
+        $pubspecHash = (Get-Item "pubspec.lock").LastWriteTimeUtc.Ticks.ToString()
+    }
 }
 
 $needsPubGet = $true

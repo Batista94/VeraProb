@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web/web.dart' as web;
+import 'package:veraprob/core/utils/web_redirect.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
@@ -114,7 +114,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       if (!mounted) return;
       // Force clean URL redirect via browser API to clear '?token=...'
       if (kIsWeb) {
-        web.window.location.replace('/');
+        replaceWindowLocation('/');
       } else {
         unawaited(
           Navigator.of(context).pushReplacement(

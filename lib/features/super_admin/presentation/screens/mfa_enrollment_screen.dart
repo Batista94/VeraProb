@@ -58,7 +58,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
       if (e.isNotEnabled && kDebugMode) {
         if (!mounted) return;
         await Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+          MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
           (_) => false,
         );
         return;
@@ -119,7 +119,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
 
   Future<void> _navigateToShell() async {
     await Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+      MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
       (_) => false,
     );
   }
@@ -172,7 +172,9 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           ElevatedButton(
             onPressed: () async =>
                 await Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+                  MaterialPageRoute<void>(
+                    builder: (_) => const AdminLockScreen(),
+                  ),
                   (_) => false,
                 ),
             child: const Text('Voltar ao Login'),

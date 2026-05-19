@@ -790,7 +790,7 @@ class _EvidencePeekWidget extends ConsumerWidget {
     final overflow = evidenceIds.length - _kMaxThumbs;
 
     return GestureDetector(
-      onTap: () => showModalBottomSheet(
+      onTap: () => showModalBottomSheet<void>(
         context: context,
         backgroundColor: Colors.transparent,
         isScrollControlled: true,

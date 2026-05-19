@@ -21,7 +21,7 @@ import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Coordinate constants ──────────────────────────────────────────────────────
 const double kStopALat = -23.5612;
@@ -45,7 +45,7 @@ class FakeMotionClassifier extends MotionClassifier {
     String vehicleId,
     double smoothedSpeed,
     (double, double) position,
-    List stops,
+    List<dynamic> stops,
     DateTime now, {
     (double, double)? previousPosition,
     DateTime? previousTimestamp,

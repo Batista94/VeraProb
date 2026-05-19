@@ -167,7 +167,7 @@ void main() {
           supabase.AuthState(supabase.AuthChangeEvent.signedIn, secureSession),
         );
 
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
         expect(emissions, equals([true, false, true]));
 
         await sub.cancel();

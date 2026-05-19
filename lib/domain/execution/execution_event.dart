@@ -1,3 +1,8 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Architect + QA-Sec + Senior): diff is INV-7 strict-cast
+// hardening on `_deepCopyMap` (typed `as Map<String, dynamic>` /
+// `as Iterable<dynamic>`). No behavior change — forensically equivalent.
+// See commit f01e4802.
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/execution/execution_domain_exception.dart';
 
@@ -97,9 +102,11 @@ class ExecutionEvent extends Equatable {
     final result = <String, dynamic>{};
     for (final entry in map.entries) {
       if (entry.value is Map<String, dynamic>) {
-        result[entry.key] = _deepCopyMap(entry.value);
+        result[entry.key] = _deepCopyMap(entry.value as Map<String, dynamic>);
       } else if (entry.value is List) {
-        result[entry.key] = List.from(entry.value);
+        result[entry.key] = List<dynamic>.from(
+          entry.value as Iterable<dynamic>,
+        );
       } else {
         result[entry.key] = entry.value;
       }

@@ -79,6 +79,11 @@ enabled    = true
 policy     = "oneshot"
 inspector_port = 8083
 
+# Injected into every Edge Function process. ENVIRONMENT=dev unlocks the local
+# AAL2 bypass in super-admin-proxy (line 137-143). Mirrors supabase/.env.local.
+[edge_runtime.secrets]
+ENVIRONMENT = "dev"
+
 # ── Per-function overrides ──────────────────────────────────────────────────
 # ingest-sascar uses its own API key auth (provider_api_keys table lookup),
 # not Supabase JWT. Disable gateway JWT verification so the raw Bearer token

@@ -30,7 +30,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
 
   void _highlightDriver(String id) {
     setState(() => _highlightedDriverId = id);
-    Future.delayed(const Duration(seconds: 3), () {
+    Future<void>.delayed(const Duration(seconds: 3), () {
       if (mounted) setState(() => _highlightedDriverId = null);
     });
   }

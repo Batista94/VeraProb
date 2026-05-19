@@ -183,7 +183,7 @@ void main() {
   group('Scenario 1 — Multi-tenant Isolation (INV-1)', () {
     test('findById injects organization_id into eq filter', () async {
       final builder = _FakeFilterBuilder<PostgrestList>(
-        [],
+        <Map<String, dynamic>>[],
         singleResult: _validRow(),
       );
       when(() => mockQb.select()).thenAnswer((_) => builder);
@@ -375,7 +375,7 @@ void main() {
       'findById remaps P0001 RAISE EXCEPTION to IntegrityException',
       () async {
         final builder = _FakeFilterBuilder<PostgrestList>(
-          [],
+          <Map<String, dynamic>>[],
           error: makeErr('P0001'),
         );
         when(() => mockQb.select()).thenAnswer((_) => builder);
@@ -390,7 +390,7 @@ void main() {
 
     test('findPending remaps PGRST116 to ResourceNotFoundException', () async {
       final builder = _FakeFilterBuilder<PostgrestList>(
-        [],
+        <Map<String, dynamic>>[],
         error: makeErr('PGRST116'),
       );
       when(() => mockQb.select()).thenAnswer((_) => builder);
@@ -430,7 +430,10 @@ void main() {
         reviewedBy: 'reviewer-42',
         rejectionReason: null,
       );
-      final builder = _FakeFilterBuilder<PostgrestList>([], singleResult: row);
+      final builder = _FakeFilterBuilder<PostgrestList>(
+        <Map<String, dynamic>>[],
+        singleResult: row,
+      );
       when(() => mockQb.select()).thenAnswer((_) => builder);
 
       final result = await repo.findById('entry-1', organizationId: _orgId);
@@ -461,7 +464,10 @@ void main() {
     });
 
     test('returns null when maybeSingle returns null (not found)', () async {
-      final builder = _FakeFilterBuilder<PostgrestList>([], singleResult: null);
+      final builder = _FakeFilterBuilder<PostgrestList>(
+        <Map<String, dynamic>>[],
+        singleResult: null,
+      );
       when(() => mockQb.select()).thenAnswer((_) => builder);
 
       final result = await repo.findById('nonexistent', organizationId: _orgId);
@@ -471,7 +477,7 @@ void main() {
 
     test('maps optional nullable fields as null when absent', () async {
       final builder = _FakeFilterBuilder<PostgrestList>(
-        [],
+        <Map<String, dynamic>>[],
         singleResult: _validRow(),
       );
       when(() => mockQb.select()).thenAnswer((_) => builder);
@@ -489,7 +495,7 @@ void main() {
       () async {
         final row = _validRow()..['status'] = 'invalid_status_xyz';
         final builder = _FakeFilterBuilder<PostgrestList>(
-          [],
+          <Map<String, dynamic>>[],
           singleResult: row,
         );
         when(() => mockQb.select()).thenAnswer((_) => builder);

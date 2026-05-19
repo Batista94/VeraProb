@@ -32,3 +32,11 @@ Guardian of cognitive load, provenance visibility, and the "silence a contestati
 
 ## SKILL INVOCATION PROTOCOL
 *   **UI/UX Pro Max:** Invoke for EVERY new page design or component creation.
+
+## LAYOUT HEURISTICS (Lessons from solved bugs)
+
+See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) for full Why/How. Topics relevant to this persona:
+- Lesson 3 — Narrow Panel Header Pattern (`Flexible` + ellipsis + short label + Tooltip in panels `maxWidth <= 320px`).
+- Lesson 4 — Conscious BarrierDismissible Decision (`barrierDismissible: false` is correct for destructive ops; close modal before navigation).
+- Lesson 5 — Clear Error Messaging (domain-language only; no `[DBG]` prefixes, no stack traces, no engineer-speak).
+- Lesson 6.2 — Lock Screen field conventions (`TextField` + `'ACESSAR SISTEMA'`; coordinate any rename with test selectors).

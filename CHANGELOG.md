@@ -19,6 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Potential revenue leakage in Shadow Executions via strict Notifier lifecycle guards.
 
+## [Unreleased] - Architectural Integrity Enforcement
+
+### Added
+- **Scanner rule `INFRA-LEAK-UI`** (BLOCK, INV-13): Prevents `lib/features/` from importing concrete `lib/infrastructure/` modules. Cross-cutting concerns (`observability/`, `config/`) are exempted. Enforces routing through application services and IRepository interfaces.
+- **Scanner rule `GENERIC-EXCEPTION-DOMAIN`** (BLOCK, INV-10): Blocks `throw Exception(...)`, `throw StateError(...)`, `throw FormatException(...)`, and `throw TypeError(...)` in `lib/domain/` and `lib/application/`. Enforces typed domain exceptions (`IntegrityException`, `SovereigntyViolationException`, `ConflictException`, etc.).
+- **`lib/infrastructure/analysis_options.yaml`**: Temporary per-directory strict-mode exemption for ~80 `Map<dynamic,dynamic>` cast violations in the infrastructure layer. Delete once violations are resolved via `scripts/audit_dynamic_types.sh`.
+
+### Changed
+- **`analysis_options.yaml`**: Activated `strict-casts`, `strict-inference`, and `strict-raw-types` globally (INV-7: Type Sovereignty). Domain, application, features, and state layers are now fully strict.
+- **`CLAUDE.md` / `.kiro/rules.md`**: QUALITY CODE PROTOCOLS updated to document strict mode, layer shielding, and typed exception policies with scanner rule cross-references.
+
 ## [Unreleased] - Red Team v2.1 Remediation
 
 ### Security

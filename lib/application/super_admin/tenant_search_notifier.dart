@@ -73,7 +73,12 @@ class TenantSearchNotifier
 
     if (_statusFilter != TenantStatusFilter.all) {
       filtered = filtered
-          .where((t) => _statusFilter.matches(isActive: t.isActive))
+          .where(
+            (t) => _statusFilter.matches(
+              isActive: t.isActive,
+              isArchived: t.isArchived,
+            ),
+          )
           .toList();
     }
 

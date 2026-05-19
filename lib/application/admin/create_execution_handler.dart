@@ -21,7 +21,7 @@ class CreateExecutionHandler {
       sessionId: cmd.sessionId,
     );
 
-    final data = await _client.rpc(
+    final data = await _client.rpc<String>(
       'create_execution_for_operator',
       params: {
         'p_organization_id': cmd.organizationId,
@@ -34,6 +34,6 @@ class CreateExecutionHandler {
         'p_window_end_utc': cmd.windowEndUtc.toUtc().toIso8601String(),
       },
     );
-    return data as String;
+    return data;
   }
 }

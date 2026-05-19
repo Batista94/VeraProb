@@ -398,7 +398,7 @@ void main() async {
               .toIso8601String(),
           'window_end': DateTime.now().toUtc().toIso8601String(),
           'risk_score': 0.5,
-          'signals': [],
+          'signals': <dynamic>[],
           'facts_analyzed': 1,
           'fact_ids': [_uuid.v4()],
           'content_hash': 'rls-test-hash-${entryId.substring(0, 8)}',
@@ -451,7 +451,7 @@ void main() async {
           // The key invariant: they must NOT see data from arbitrary orgs
           expect(
             result,
-            isA<List>(),
+            isA<List<dynamic>>(),
             reason: 'Should return list (possibly empty) not throw',
           );
         } finally {
@@ -621,7 +621,7 @@ void main() async {
 
         Future<void> acceptOnce() async {
           try {
-            await adminClient.rpc(
+            await adminClient.rpc<dynamic>(
               'accept_invitation',
               params: {'p_token': token, 'p_user_id': inviteeId},
             );

@@ -4,7 +4,7 @@ import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
-import '../../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryContractualExecutionStateRepository repo;

@@ -206,11 +206,11 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
     }).toList();
 
     try {
-      final result = await client.rpc(
+      final result = await client.rpc<Map<String, dynamic>>(
         rpcFunction,
         params: {'p_updates': jsonUpdates},
       );
-      final resultMap = result as Map<String, dynamic>;
+      final resultMap = result;
       return resultMap['updated_count'] as int;
     } on PostgrestException catch (e) {
       if (e.code == 'PGRST116' ||

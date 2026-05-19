@@ -25,21 +25,83 @@
 -- NOTE: `is_active` is a GENERATED ALWAYS column (status = 'ACTIVE') since
 -- migration 20260427010001_org_status_enum.sql — do NOT insert it explicitly.
 -- `status` defaults to 'ACTIVE', so is_active will be TRUE automatically.
-INSERT INTO public.organizations (id, name)
+INSERT INTO public.organizations (
+  id, name, legal_name, cnpj, timezone, currency_code,
+  plan_type, max_vehicles, max_active_contracts, tool_cost_cents,
+  dwell_time_seconds, billing_day, contact_email, external_id,
+  organization_type, allowed_domains
+)
 VALUES
   (
     '00000000-0000-0000-0000-000000000001',
-    'Org Alpha (Test Tenant A)'
+    'Org Alpha (Test Tenant A)',
+    'Alpha Logística S.A.',
+    '00000000000191',
+    'America/Sao_Paulo',
+    'BRL',
+    'enterprise',
+    1000,
+    50,
+    15000,
+    300,
+    15,
+    'billing@org-alpha.com',
+    'EXT_ALPHA_001',
+    'LOGISTICS',
+    ARRAY['org-alpha.com', 'veraprob.dev']
   ),
   (
     '00000000-0000-0000-0000-000000000002',
-    'Org Beta (Test Tenant B)'
+    'Org Beta (Test Tenant B)',
+    'Beta Transportes Ltda.',
+    '00000000000272',
+    'America/Sao_Paulo',
+    'BRL',
+    'enterprise',
+    1000,
+    50,
+    15000,
+    300,
+    15,
+    'billing@org-beta.com',
+    'EXT_BETA_002',
+    'TRANSPORT',
+    ARRAY['org-beta.com', 'veraprob.dev']
   ),
   (
     '00000000-0000-0000-0000-000000000003',
-    'Org Gamma (Test Tenant C)'
+    'Org Gamma (Test Tenant C)',
+    'Gamma Distribuidora S.A.',
+    '00000000000353',
+    'America/Sao_Paulo',
+    'BRL',
+    'enterprise',
+    1000,
+    50,
+    15000,
+    300,
+    15,
+    'billing@org-gamma.com',
+    'EXT_GAMMA_003',
+    'DISTRIBUTION',
+    ARRAY['org-gamma.com', 'veraprob.dev']
   )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  name = EXCLUDED.name,
+  legal_name = EXCLUDED.legal_name,
+  cnpj = EXCLUDED.cnpj,
+  timezone = EXCLUDED.timezone,
+  currency_code = EXCLUDED.currency_code,
+  plan_type = EXCLUDED.plan_type,
+  max_vehicles = EXCLUDED.max_vehicles,
+  max_active_contracts = EXCLUDED.max_active_contracts,
+  tool_cost_cents = EXCLUDED.tool_cost_cents,
+  dwell_time_seconds = EXCLUDED.dwell_time_seconds,
+  billing_day = EXCLUDED.billing_day,
+  contact_email = EXCLUDED.contact_email,
+  external_id = EXCLUDED.external_id,
+  organization_type = EXCLUDED.organization_type,
+  allowed_domains = EXCLUDED.allowed_domains;
 
 
 -- ── 2. Auth Users + User Roles ────────────────────────────────────────────────

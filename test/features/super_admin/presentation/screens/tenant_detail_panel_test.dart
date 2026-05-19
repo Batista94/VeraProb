@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/features/super_admin/presentation/keys/tenant_tab_keys.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/tenant_detail_panel.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
@@ -10,9 +11,10 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 const _orgId = 'org-smoke-001';
 
-TenantHealthView _makeTenant() => const TenantHealthView(
+TenantHealthView _makeTenant({OrgStatus? status}) => TenantHealthView(
   id: _orgId,
   name: 'Smoke Corp',
+  status: status,
   maxVehicles: 10,
   maxActiveContracts: 5,
   activeContractCount: 2,
@@ -144,6 +146,69 @@ void main() {
           reason: 'Semantics label for ${type.name} not found',
         );
       }
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Impersonation Button Visibility — Bug 1 fix
+  // ════════════════════════════════════════════════════════════════════════
+
+  group('TenantDetailPanel — Impersonation Button Visibility', () {
+    testWidgets('"Impersonar" button visible for operational (active) tenant', (
+      tester,
+    ) async {
+      _setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _buildTestWidget(tenant: _makeTenant(status: OrgStatus.active)),
+      );
+      await tester.pump();
+
+      expect(
+        find.byTooltip('Iniciar Personificação'),
+        findsOneWidget,
+        reason: 'Impersonation button MUST be visible for operational orgs',
+      );
+    });
+
+    testWidgets('"Impersonar" button visible for trial tenant', (tester) async {
+      _setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _buildTestWidget(tenant: _makeTenant(status: OrgStatus.trial)),
+      );
+      await tester.pump();
+
+      expect(
+        find.byTooltip('Iniciar Personificação'),
+        findsOneWidget,
+        reason: 'Impersonation button MUST be visible for trial orgs',
+      );
+    });
+
+    testWidgets('"Impersonar" button absent for archived tenant', (
+      tester,
+    ) async {
+      _setLargeScreen(tester);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(
+        _buildTestWidget(tenant: _makeTenant(status: OrgStatus.archived)),
+      );
+      await tester.pump();
+
+      expect(
+        find.byTooltip('Iniciar Personificação'),
+        findsNothing,
+        reason:
+            'Impersonation button MUST NOT appear for archived orgs '
+            '(INV-22: no impersonation into archived tenants)',
+      );
     });
   });
 }

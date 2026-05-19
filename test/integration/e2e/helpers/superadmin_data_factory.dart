@@ -56,6 +56,11 @@ abstract class SuperAdminDataFactory {
   }) async {
     final client = SuperAdminTestConfig.createServiceRoleClient();
     try {
+      // Idempotência: purga remanescentes de runs anteriores que tenham
+      // o mesmo nome (cnpj varia a cada run). Determinismo > tolerância
+      // (INV-15). Caso contrário, status='ARCHIVED' órfão envenena a UI.
+      await _purgeOrgsByName(client, orgName);
+
       // 1. Criar organização
       final orgId = _uuid.v4();
       await client.from('organizations').insert({
@@ -210,16 +215,34 @@ abstract class SuperAdminDataFactory {
 
   // ── Geradores de Dados ────────────────────────────────────────────────────
 
-  /// Gera um CNPJ único de 14 dígitos para testes.
+  /// Gera um CNPJ único e estruturalmente válido (modulo-11) para testes.
   ///
-  /// Combina `DateTime.now().microsecondsSinceEpoch` com um componente
-  /// aleatório para garantir unicidade entre execuções paralelas.
+  /// Gera 12 dígitos da base + 2 check digits via algoritmo brasileiro.
+  /// CNPJs válidos são exigidos pelo wizard (`CnpjValidator.isValid`); sem
+  /// check digits corretos, o wizard rejeita por "CNPJ inválido" antes de
+  /// chegar à verificação de duplicidade (Req 9.6).
   static String generateUniqueCnpj() {
     final timestamp = DateTime.now().toUtc().microsecondsSinceEpoch;
     final randomPart = _random.nextInt(99999).toString().padLeft(5, '0');
     final raw = '$timestamp$randomPart';
-    // Pegar os últimos 14 dígitos para garantir formato correto
-    return raw.substring(raw.length - 14);
+    // Tomar 12 dígitos base (positions 0–11).
+    final base = raw.substring(raw.length - 12);
+    final baseDigits = base.split('').map(int.parse).toList();
+
+    int checkDigit(List<int> digits, List<int> weights) {
+      final sum = List.generate(
+        digits.length,
+        (i) => digits[i] * weights[i],
+      ).fold<int>(0, (a, b) => a + b);
+      final rem = sum % 11;
+      return rem < 2 ? 0 : 11 - rem;
+    }
+
+    const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    const w2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    final d1 = checkDigit(baseDigits, w1);
+    final d2 = checkDigit([...baseDigits, d1], w2);
+    return '$base$d1$d2';
   }
 
   /// Gera um nome longo com caracteres brasileiros para testes de overflow.
@@ -328,5 +351,78 @@ abstract class SuperAdminDataFactory {
   static void _log(String message) {
     // ignore: avoid_print
     print('[SuperAdminDataFactory] $message');
+  }
+
+  /// Remove orgs remanescentes (qualquer status) com o nome dado.
+  ///
+  /// Reutilizado por [createOrgWithAdmins] para garantir idempotência
+  /// quando uma run anterior abortou e deixou rows com status='ARCHIVED'.
+  /// Mesma ordem de FK do [cleanup]: invitations → user_roles → auth.users
+  /// → organizations. Todas falhas são logadas e ignoradas — purge é
+  /// best-effort.
+  static Future<void> _purgeOrgsByName(
+    SupabaseClient client,
+    String orgName,
+  ) async {
+    try {
+      final rows = await client
+          .from('organizations')
+          .select('id')
+          .eq('name', orgName);
+      if (rows.isEmpty) return;
+
+      final orgIds = rows.map((r) => r['id'] as String).toList(growable: false);
+
+      for (final orgId in orgIds) {
+        // 1. Coletar user_ids da org antes de deletar user_roles
+        List<String> userIds = const [];
+        try {
+          final roleRows = await client
+              .from('user_roles')
+              .select('user_id')
+              .eq('organization_id', orgId);
+          userIds = roleRows
+              .map((r) => r['user_id'] as String)
+              .toList(growable: false);
+        } catch (e) {
+          _log('purge: falha ao listar user_roles de $orgId: $e');
+        }
+
+        // 2. invitations
+        try {
+          await client
+              .from('invitations')
+              .delete()
+              .eq('organization_id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar invitations de $orgId: $e');
+        }
+
+        // 3. user_roles
+        try {
+          await client.from('user_roles').delete().eq('organization_id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar user_roles de $orgId: $e');
+        }
+
+        // 4. auth.users
+        for (final userId in userIds) {
+          try {
+            await client.auth.admin.deleteUser(userId);
+          } catch (e) {
+            _log('purge: falha ao deletar user $userId: $e');
+          }
+        }
+
+        // 5. organização
+        try {
+          await client.from('organizations').delete().eq('id', orgId);
+        } catch (e) {
+          _log('purge: falha ao deletar org $orgId: $e');
+        }
+      }
+    } catch (e) {
+      _log('purge: falha ao buscar orgs por nome "$orgName": $e');
+    }
   }
 }

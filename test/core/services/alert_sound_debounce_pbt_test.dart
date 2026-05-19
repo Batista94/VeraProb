@@ -7,7 +7,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/infrastructure/audio/alert_sound_service.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 /// **Validates: Requirements 6.2**
 ///

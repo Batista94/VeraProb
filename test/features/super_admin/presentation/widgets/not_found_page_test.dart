@@ -86,7 +86,9 @@ void main() {
               return ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const NotFoundPage()),
+                    MaterialPageRoute<void>(
+                      builder: (_) => const NotFoundPage(),
+                    ),
                   );
                 },
                 child: const Text('Go'),

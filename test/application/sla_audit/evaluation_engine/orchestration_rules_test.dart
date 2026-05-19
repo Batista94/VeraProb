@@ -6,14 +6,14 @@ import '_engine_test_helpers.dart';
 
 /// Helper for capping/audit tests — returns trace after bind commit.
 Future<EvaluationTrace> processAndGetTrace({
-  required dynamic deps,
+  required dynamic deps, // ignore: inference_failure_on_untyped_parameter
   int toleranceMinutes = 0,
   int penaltyPerMinuteCents = 200,
   int? maxPenaltyCapCents,
   required int delayMinutes,
 }) async {
   await seedPlanWithDelayRule(
-    deps.planRepo,
+    deps.planRepo as InMemoryPlanDeclarationRepository,
     'c-1',
     1,
     toleranceMinutes: toleranceMinutes,
@@ -27,35 +27,36 @@ Future<EvaluationTrace> processAndGetTrace({
     windowStart: windowStart,
     windowEnd: nowUtc.add(const Duration(hours: 1)),
   );
-  await deps.repo.save(state);
+  await (deps.repo as InMemoryContractualExecutionStateRepository).save(state);
 
   // First ping: enters geofence (starts dwell tracking)
-  await deps.engine.processVehicleState(
+  await (deps.engine as ContractualEvaluationEngine).processVehicleState(
     makeVehicleState(),
     nowUtc: windowStart,
     organizationId: 'org-1',
   );
 
   // Second ping: satisfies dwell → triggers commit with delay decision
-  await deps.engine.processVehicleState(
+  await (deps.engine as ContractualEvaluationEngine).processVehicleState(
     makeVehicleState(),
     nowUtc: nowUtc,
     organizationId: 'org-1',
   );
 
-  final traces = await deps.traceRepo.findByEntityId(state.setId);
+  final traces = await (deps.traceRepo as InMemoryEvaluationTraceRepository)
+      .findByEntityId(state.setId);
   expect(traces, isNotEmpty, reason: 'Expected trace after commit');
   return traces.first;
 }
 
 /// Helper for grace period tests (no DELAY decision expected).
 Future<EvaluationTrace> processAndGetTraceForGrace({
-  required dynamic deps,
+  required dynamic deps, // ignore: inference_failure_on_untyped_parameter
   required int toleranceMinutes,
   required int delayMinutes,
 }) async {
   await seedPlanWithDelayRule(
-    deps.planRepo,
+    deps.planRepo as InMemoryPlanDeclarationRepository,
     'c-1',
     1,
     toleranceMinutes: toleranceMinutes,
@@ -68,23 +69,24 @@ Future<EvaluationTrace> processAndGetTraceForGrace({
     windowStart: windowStart,
     windowEnd: nowUtc.add(const Duration(hours: 1)),
   );
-  await deps.repo.save(state);
+  await (deps.repo as InMemoryContractualExecutionStateRepository).save(state);
 
   // First ping: enters geofence
-  await deps.engine.processVehicleState(
+  await (deps.engine as ContractualEvaluationEngine).processVehicleState(
     makeVehicleState(),
     nowUtc: windowStart,
     organizationId: 'org-1',
   );
 
   // Second ping: satisfies dwell → triggers commit
-  await deps.engine.processVehicleState(
+  await (deps.engine as ContractualEvaluationEngine).processVehicleState(
     makeVehicleState(),
     nowUtc: nowUtc,
     organizationId: 'org-1',
   );
 
-  final traces = await deps.traceRepo.findByEntityId(state.setId);
+  final traces = await (deps.traceRepo as InMemoryEvaluationTraceRepository)
+      .findByEntityId(state.setId);
   expect(traces, isNotEmpty, reason: 'Expected trace after commit');
   return traces.first;
 }

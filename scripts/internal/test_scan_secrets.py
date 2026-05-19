@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 Validation test for scan_secrets.py — tests all 3 detection levels in isolation.
 Run: python scripts/test_scan_secrets.py

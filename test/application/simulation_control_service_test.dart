@@ -9,7 +9,7 @@ import 'package:veraprob/domain/entities/trip_event.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 
-import '../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class _MockFleetSimulationService extends Mock
     implements FleetSimulationService {}

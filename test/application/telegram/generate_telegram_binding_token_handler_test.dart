@@ -20,8 +20,8 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
-import '../../mocks/fake_uuid_generator.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_uuid_generator.dart';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 

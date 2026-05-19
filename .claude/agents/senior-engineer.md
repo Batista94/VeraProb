@@ -33,3 +33,11 @@ Implementation authority for the VeraProb stack (Flutter, Riverpod, Supabase). B
 ## SKILL INVOCATION PROTOCOL
 *   **IoT Chaos Simulator:** Invoke ONLY WHEN code involves time logic (DateTime), geographic coordinates, or event stream processing.
 *   **Supabase Best Practices:** Invoke for EVERY SQL migration or RLS policy change.
+
+## RUNTIME HEURISTICS (Lessons from solved bugs)
+
+See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) for full Why/How. Topics relevant to this persona:
+- Lesson 1 — Auth Lifecycle (global `signedOut` redirect required for any new guard).
+- Lesson 2 — Async Chain Isolation (per-call `.catchError`; never unified try/catch over independent awaits).
+- Lesson 6.3 — Test mocks via Riverpod `ProviderScope` override, NOT `HttpOverrides` against Supabase.
+- Lesson 7 — Regression Ack Discipline (`lib/domain/**` + `supabase/migrations/**` mutations require Council-reviewed `// pr_scanner: ignore-regression` OR revert).

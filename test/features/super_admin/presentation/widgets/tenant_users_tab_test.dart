@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
+import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_users_tab.dart';
@@ -24,10 +25,15 @@ class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 const _orgId = 'org-001';
 const _orgId2 = 'org-002';
 
-TenantHealthView _makeTenant({String id = _orgId, String name = 'Acme'}) {
+TenantHealthView _makeTenant({
+  String id = _orgId,
+  String name = 'Acme',
+  OrgStatus? status,
+}) {
   return TenantHealthView(
     id: id,
     name: name,
+    status: status,
     maxVehicles: 10,
     maxActiveContracts: 5,
     activeContractCount: 2,
@@ -151,10 +157,11 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      // Tap add button
-      await tester.tap(find.text('Adicionar Administrador'));
+      // Tap add button (label 'Adicionar' + Tooltip 'Adicionar Administrador'
+      // — RENDERFLEX-NARROW pattern CI Block #7).
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       // Fill form
@@ -275,9 +282,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      await tester.tap(find.text('Adicionar Administrador'));
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       // Enter invalid email
@@ -312,9 +319,9 @@ void main() {
       await tester.pumpWidget(
         _buildTestWidget(repo: mockRepo, auditSvc: mockAudit, dateTime: mockDt),
       );
-      await _pumpUntilFound(tester, find.text('Adicionar Administrador'));
+      await _pumpUntilFound(tester, find.byTooltip('Adicionar Administrador'));
 
-      await tester.tap(find.text('Adicionar Administrador'));
+      await tester.tap(find.byTooltip('Adicionar Administrador'));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -327,6 +334,58 @@ void main() {
 
       // Error snackbar shown
       expect(find.textContaining('P0005'), findsOneWidget);
+    });
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Empty State: conditional message based on archived status
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('Empty State', () {
+    testWidgets('non-archived org shows add-button hint', (tester) async {
+      when(() => mockRepo.getTenantMembers(_orgId)).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          repo: mockRepo,
+          auditSvc: mockAudit,
+          dateTime: mockDt,
+          tenant: _makeTenant(status: OrgStatus.active),
+        ),
+      );
+      await _pumpUntilFound(tester, find.textContaining('Use o botão acima'));
+
+      expect(
+        find.textContaining(
+          'Use o botão acima para adicionar um administrador',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('archived org shows archived message without button hint', (
+      tester,
+    ) async {
+      when(() => mockRepo.getTenantMembers(_orgId)).thenAnswer((_) async => []);
+
+      await tester.pumpWidget(
+        _buildTestWidget(
+          repo: mockRepo,
+          auditSvc: mockAudit,
+          dateTime: mockDt,
+          tenant: _makeTenant(status: OrgStatus.archived),
+        ),
+      );
+      await _pumpUntilFound(
+        tester,
+        find.textContaining('organização arquivada'),
+      );
+
+      expect(
+        find.textContaining('nesta organização arquivada'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Use o botão acima'), findsNothing);
     });
   });
 

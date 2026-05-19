@@ -71,9 +71,9 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
 
       if (!isSuperAdmin) {
         if (!mounted) return;
-        await Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => const AdminHome()));
+        await Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => const AdminHome()),
+        );
         return;
       }
 
@@ -88,7 +88,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
         );
         if (!mounted) return;
         await Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const SuperAdminShell()),
+          MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
         );
         return;
       }
@@ -110,7 +110,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
 
         await Navigator.of(
           context,
-        ).pushReplacement(MaterialPageRoute(builder: (_) => destination));
+        ).pushReplacement(MaterialPageRoute<void>(builder: (_) => destination));
       } catch (e) {
         if (kDebugMode) {
           debugPrint('[AUTH] MFA status check failed: $e');
@@ -118,7 +118,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
         // Fallback: send to challenge screen (safe default).
         if (!mounted) return;
         await Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const MfaChallengeScreen()),
+          MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
         );
       }
     } finally {

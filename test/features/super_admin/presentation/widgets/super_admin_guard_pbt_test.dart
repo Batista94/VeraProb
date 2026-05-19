@@ -20,6 +20,7 @@ import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/super_admin_guard.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/impersonation_banner.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/impersonation_session_provider.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
@@ -87,9 +88,13 @@ Override _authStateWithUserId(String userId) {
 }
 
 /// Builds the guard under test with the given provider overrides.
+///
+/// [isRealAal2] overrides [isSuperAdminRealAal2Provider]. Defaults to [isAal2]
+/// so existing tests continue to pass unchanged.
 Widget _buildGuard({
   required bool isSuperAdmin,
   required bool isAal2,
+  bool? isRealAal2,
   ImpersonationSessionInfo? impersonationSession,
   _FakeSecurityIncidentLogger? logger,
   Override? authOverride,
@@ -100,6 +105,7 @@ Widget _buildGuard({
     overrides: [
       isSuperAdminProvider.overrideWithValue(isSuperAdmin),
       isSuperAdminAal2Provider.overrideWithValue(isAal2),
+      isSuperAdminRealAal2Provider.overrideWithValue(isRealAal2 ?? isAal2),
       activeImpersonationSessionProvider.overrideWithBuild(
         (ref, notifier) => impersonationSession,
       ),
@@ -563,6 +569,97 @@ void main() {
               'invalidation is in progress (iter $i)',
         );
       });
+    }
+  });
+
+  // ════════════════════════════════════════════════════════════════════════
+  // Property 7: ImpersonationBanner mounted in Step 4 when session active
+  // Feature: superadmin-impersonation-ui, Property 7
+  // **Validates: Bug 1 fix — banner must appear in guard output**
+  // ════════════════════════════════════════════════════════════════════════
+  group('Feature: superadmin-impersonation-ui, '
+      'Property 7: ImpersonationBanner mounted in Step 4', () {
+    testWidgets('banner renders when active impersonation session present', (
+      tester,
+    ) async {
+      final userId = _uuidFromSeed(1);
+      final activeSession = ImpersonationSessionInfo(
+        sessionId: 'session-active',
+        targetOrgId: 'org-001',
+        targetOrgName: 'Acme Corp',
+        impersonatorId: userId,
+        issuedAt: now.subtract(const Duration(minutes: 5)),
+        expiresAt: now.add(const Duration(minutes: 25)),
+        dateTimeProvider: dateTimeProvider,
+      );
+
+      await tester.pumpWidget(
+        _buildGuard(
+          isSuperAdmin: true,
+          isAal2: true,
+          impersonationSession: activeSession,
+          authOverride: _authStateWithUserId(userId),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.byType(ImpersonationBanner),
+        findsOneWidget,
+        reason:
+            'ImpersonationBanner MUST render in guard Step 4 when '
+            'an active impersonation session is present (Bug 1 fix)',
+      );
+      // Child MUST also render (banner + child together).
+      expect(find.text('CHILD_RENDERED'), findsOneWidget);
+    });
+
+    testWidgets('banner absent when no impersonation session', (tester) async {
+      await tester.pumpWidget(_buildGuard(isSuperAdmin: true, isAal2: true));
+      await tester.pump();
+
+      expect(
+        find.byType(ImpersonationBanner),
+        findsNothing,
+        reason: 'ImpersonationBanner MUST NOT render without an active session',
+      );
+      expect(find.text('CHILD_RENDERED'), findsOneWidget);
+    });
+
+    for (var i = 0; i < 30; i++) {
+      final seed = i + 200;
+      final testUserId = _uuidFromSeed(seed);
+
+      testWidgets(
+        'iter $i: banner present for any valid active session (seed=$seed)',
+        (tester) async {
+          final activeSession = ImpersonationSessionInfo(
+            sessionId: 'session-$seed',
+            targetOrgId: 'org-$seed',
+            targetOrgName: 'Org $seed',
+            impersonatorId: testUserId,
+            issuedAt: now.subtract(Duration(minutes: i)),
+            expiresAt: now.add(Duration(minutes: 30 - i % 10)),
+            dateTimeProvider: dateTimeProvider,
+          );
+
+          await tester.pumpWidget(
+            _buildGuard(
+              isSuperAdmin: true,
+              isAal2: true,
+              impersonationSession: activeSession,
+              authOverride: _authStateWithUserId(testUserId),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            find.byType(ImpersonationBanner),
+            findsOneWidget,
+            reason: 'Banner MUST render for active session (iter $i)',
+          );
+        },
+      );
     }
   });
 }

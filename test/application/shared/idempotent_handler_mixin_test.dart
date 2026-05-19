@@ -7,7 +7,7 @@ import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Test doubles

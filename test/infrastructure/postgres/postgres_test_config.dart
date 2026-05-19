@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import 'dart:io';
@@ -67,7 +66,7 @@ class PostgresTestConfig {
     if (_schemaReloaded) return;
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc('notify_pgrst_reload');
+      await seedClient.rpc<void>('notify_pgrst_reload');
       await Future<void>.delayed(const Duration(milliseconds: 500));
     } finally {
       await seedClient.dispose();
@@ -114,13 +113,11 @@ class PostgresTestConfig {
   }
 
   static Future<SupabaseClient> createClient() async {
-    // Integration tests run against the local Supabase stack with service_role
-    // so that RLS does not interfere with seeding and querying test data.
-    // The anon key is unsuitable here — it gets blocked by all RLS policies.
-    SharedPreferences.setMockInitialValues({});
-
-    await Supabase.initialize(url: supabaseUrl, anonKey: serviceRoleKey);
-    return Supabase.instance.client;
+    // Return a fresh SupabaseClient per test — not the Supabase singleton.
+    // The singleton's JSON isolate gets disposed when any test calls
+    // client.dispose(), breaking subsequent tests with "Already cancelled".
+    // service_role key bypasses RLS so tests can seed and query freely.
+    return SupabaseClient(supabaseUrl, serviceRoleKey);
   }
 
   /// Insere os pré-requisitos para criar um [ContractualExecutionState]:
@@ -386,7 +383,7 @@ class PostgresTestConfig {
   }) async {
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc(
+      await seedClient.rpc<void>(
         'test_cleanup_forensic_data',
         params: {'p_org_id': orgId},
       );
@@ -589,7 +586,7 @@ class PostgresTestConfig {
   }) async {
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
-      await seedClient.rpc(
+      await seedClient.rpc<void>(
         'test_cleanup_system_audit_log',
         params: {'p_org_ids': orgIds},
       );

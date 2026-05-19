@@ -198,7 +198,8 @@ void main() {
             actorId: const ActorId('bad-context'),
             roleId: const RoleId('none'),
             tenantId: null,
-            capturedAt: null as dynamic, // Provoca TypeError (não-nulo)
+            capturedAt:
+                (null as Object?) as DateTime, // Provoca TypeError (não-nulo)
           ),
           controlService,
           mockDateTime,

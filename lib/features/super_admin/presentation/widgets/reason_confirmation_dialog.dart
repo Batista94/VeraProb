@@ -2,7 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 class ReasonConfirmationDialog extends StatefulWidget {
-  const ReasonConfirmationDialog({super.key});
+  final String title;
+  final String promptMessage;
+
+  const ReasonConfirmationDialog({
+    super.key,
+    this.title = 'Justificativa',
+    this.promptMessage =
+        'Informe o motivo da alteração. '
+        'Este registro será gravado no log de auditoria.',
+  });
 
   @override
   State<ReasonConfirmationDialog> createState() =>
@@ -23,16 +32,15 @@ class _ReasonConfirmationDialogState extends State<ReasonConfirmationDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Justificativa'),
+      title: Text(widget.title),
       content: SizedBox(
         width: 420,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              'Informe o motivo da alteracao de capabilities. '
-              'Este registro sera gravado no log de auditoria.',
-              style: TextStyle(
+            Text(
+              widget.promptMessage,
+              style: const TextStyle(
                 fontSize: 13,
                 color: VeraProbColors.textSecondary,
               ),
@@ -42,7 +50,7 @@ class _ReasonConfirmationDialogState extends State<ReasonConfirmationDialog> {
               controller: _reasonCtrl,
               decoration: const InputDecoration(
                 labelText: 'Motivo *',
-                hintText: 'Minimo 10 caracteres',
+                hintText: 'Mínimo 10 caracteres',
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,

@@ -112,13 +112,16 @@ void main() {
         final rpcBuilder = _FakeBuilder<dynamic>(null);
 
         when(
-          () => mockClient.rpc('offboard_driver', params: any(named: 'params')),
+          () => mockClient.rpc<void>(
+            'offboard_driver',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer((_) => rpcBuilder);
 
         await repo.archiveDriver(_driverId);
 
         final captured = verify(
-          () => mockClient.rpc(
+          () => mockClient.rpc<void>(
             'offboard_driver',
             params: captureAny(named: 'params'),
           ),
@@ -140,7 +143,10 @@ void main() {
         final rpcBuilder = _FakeBuilder<dynamic>(null, error: pgError);
 
         when(
-          () => mockClient.rpc('offboard_driver', params: any(named: 'params')),
+          () => mockClient.rpc<void>(
+            'offboard_driver',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer((_) => rpcBuilder);
 
         await expectLater(
@@ -155,13 +161,16 @@ void main() {
     test('archiveDriver uses JWT org_id, not external input', () async {
       final rpcBuilder = _FakeBuilder<dynamic>(null);
       when(
-        () => mockClient.rpc('offboard_driver', params: any(named: 'params')),
+        () => mockClient.rpc<void>(
+          'offboard_driver',
+          params: any(named: 'params'),
+        ),
       ).thenAnswer((_) => rpcBuilder);
 
       await repo.archiveDriver(_driverId);
 
       final captured = verify(
-        () => mockClient.rpc(
+        () => mockClient.rpc<void>(
           'offboard_driver',
           params: captureAny(named: 'params'),
         ),
@@ -198,13 +207,16 @@ void main() {
       () async {
         final rpcBuilder = _FakeBuilder<dynamic>(null);
         when(
-          () => mockClient.rpc('offboard_driver', params: any(named: 'params')),
+          () => mockClient.rpc<void>(
+            'offboard_driver',
+            params: any(named: 'params'),
+          ),
         ).thenAnswer((_) => rpcBuilder);
 
         await repo.archiveDriver(_driverId);
 
         final captured = verify(
-          () => mockClient.rpc(
+          () => mockClient.rpc<void>(
             'offboard_driver',
             params: captureAny(named: 'params'),
           ),

@@ -17,13 +17,13 @@ import 'package:veraprob/application/super_admin/super_admin_invitation_command_
 ///   1. RBAC gate
 ///   2. Organization data validation
 ///   3. Plan quota defaults resolution
-///   4. Atomic DB provisioning
+///   4. Atomic DB provisioning (org + billing event + api secret via single RPC — INV-28)
 ///   5. Admin invitation
-///   6. API secret generation (INV-28)
 ///
 /// INV-4:  Pure orchestration — no direct DB access.
 /// INV-7:  IDs generated in Dart (via InviteUserHandler), not in SQL.
 /// INV-22: Each provisioning step reinforces tenant isolation barriers.
+/// INV-28: org secret generated atomically in the RPC; plaintext returned once.
 class CreateOrganizationHandler {
   final ISuperAdminRepository _repository;
   final SupabaseClient _authenticatedClient;
@@ -42,15 +42,14 @@ class CreateOrganizationHandler {
     _assertSuperAdminRbac(); // Step 1 (INV-22)
     _validateOrganizationData(cmd); // Step 2 (INV-10, INV-18)
     final effectiveCmd = _applyPlanDefaults(cmd); // Step 3 (INV-19)
-    final orgId = await _provisionOrganization(effectiveCmd); // Step 4 (INV-4)
+    final (:orgId, :plaintextSecret) = await _provisionOrganization(
+      effectiveCmd,
+    ); // Step 4 (INV-4, INV-28)
     final tokens = await _inviteAdministrators(orgId, cmd); // Step 5 (INV-7)
-    final orgApiSecret = await _setupOrganizationSecret(
-      orgId,
-    ); // Step 6 (INV-28)
     return CreateOrganizationResult(
       orgId: orgId,
       invitationTokens: tokens,
-      orgApiSecret: orgApiSecret,
+      orgApiSecret: plaintextSecret,
     );
   }
 
@@ -96,13 +95,13 @@ class CreateOrganizationHandler {
   void _validateAdminEmails(List<String> adminEmails) {
     if (adminEmails.isEmpty) {
       throw const DomainException(
-        'Pelo menos um e-mail de admin e obrigatorio.',
+        'Pelo menos um e-mail de admin é obrigatório.',
       );
     }
     for (final email in adminEmails) {
       final trimmed = email.trim().toLowerCase();
       if (trimmed.isEmpty || !trimmed.contains('@')) {
-        throw DomainException('E-mail invalido: $email');
+        throw DomainException('E-mail inválido: $email');
       }
     }
   }
@@ -197,10 +196,13 @@ class CreateOrganizationHandler {
 
   // ── Step 4: Provision ────────────────────────────────────────────────────────
 
-  /// Creates org + billing event atomically via service_role RPC.
+  /// Creates org + billing event + api secret atomically via service_role RPC.
   /// Translates PostgrestException 23505 (CNPJ duplicate) to DomainException.
+  /// Returns typed record — org UUID and plaintext secret (INV-28).
   /// INV-22: Org provisioned with isolated UUID — no cross-tenant leakage.
-  Future<String> _provisionOrganization(CreateOrganizationCommand cmd) async {
+  Future<({String orgId, String plaintextSecret})> _provisionOrganization(
+    CreateOrganizationCommand cmd,
+  ) async {
     try {
       return await _repository.createOrganization(cmd);
     } on PostgrestException catch (e) {
@@ -248,23 +250,6 @@ class CreateOrganizationHandler {
       tokens.add(token);
     }
     return tokens;
-  }
-
-  // ── Step 6: API Secret ───────────────────────────────────────────────────────
-
-  /// Generates org API secret via Edge Function (INV-28).
-  /// Returns null on failure — silent degradation by design.
-  /// Wizard UI shows a warning when orgApiSecret is null.
-  Future<String?> _setupOrganizationSecret(String orgId) async {
-    try {
-      final secretResponse = await _authenticatedClient.functions.invoke(
-        'generate-org-secret',
-        body: {'organization_id': orgId},
-      );
-      return secretResponse.data?['secret'] as String?;
-    } catch (_) {
-      return null;
-    }
   }
 
   // ── Notification (unchanged) ─────────────────────────────────────────────────

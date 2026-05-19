@@ -66,7 +66,7 @@ void main() {
 
         final batch = [makePosition('trip-1')];
         fakeService.emit(batch);
-        await Future.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
 
         expect(positions, hasLength(1));
         expect(positions.first, batch);

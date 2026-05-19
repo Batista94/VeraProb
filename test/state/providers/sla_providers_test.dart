@@ -55,7 +55,7 @@ void main() {
 
       final state = container.read(slaSummaryProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
   });
 }

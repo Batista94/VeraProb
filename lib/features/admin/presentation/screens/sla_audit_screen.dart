@@ -290,7 +290,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
   }
 
   void _showDetail(BuildContext context, SlaExecutionItemView item) {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

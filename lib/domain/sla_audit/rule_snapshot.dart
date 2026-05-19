@@ -1,3 +1,8 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Architect + QA-Sec + Senior): diff is INV-7 strict-cast
+// hardening in `fromJson` (typed `as String` / `as int` /
+// `as Map<dynamic, dynamic>`). Frozen snapshot semantics preserved — forensically
+// equivalent. See commit f01e4802.
 import 'package:equatable/equatable.dart';
 import 'contractual_rule.dart';
 
@@ -22,11 +27,13 @@ class RuleSnapshotItem extends Equatable {
 
   factory RuleSnapshotItem.fromJson(Map<String, dynamic> json) {
     return RuleSnapshotItem(
-      ruleId: json['ruleId'],
-      ruleType: SlaRuleType.fromString(json['ruleType']),
-      config: Map<String, dynamic>.from(json['config']),
-      ruleVersion: json['ruleVersion'],
-      evaluationOrder: json['evaluationOrder'],
+      ruleId: json['ruleId'] as String,
+      ruleType: SlaRuleType.fromString(json['ruleType'] as String),
+      config: Map<String, dynamic>.from(
+        json['config'] as Map<dynamic, dynamic>,
+      ),
+      ruleVersion: json['ruleVersion'] as int,
+      evaluationOrder: json['evaluationOrder'] as int,
     );
   }
 

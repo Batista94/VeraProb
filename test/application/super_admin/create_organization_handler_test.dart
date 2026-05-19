@@ -10,6 +10,7 @@ import 'package:veraprob/domain/super_admin/plan_limits.dart';
 import 'package:veraprob/domain/super_admin/plan_type.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -20,6 +21,10 @@ class MockSupabaseClient extends Mock implements SupabaseClient {}
 class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+const _kFakeOrgId = 'test-org-id-abc123';
+const _kFakeSecret =
+    'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
 CreateOrganizationCommand _validCmd({
   String cnpj = '11222333000181', // 14 digits
@@ -405,6 +410,70 @@ void main() {
       );
     });
 
+    group('atomic secret provisioning (INV-28)', () {
+      test(
+        'handle() propagates plaintextSecret from repo to orgApiSecret',
+        () async {
+          when(() => mockRepo.createOrganization(any())).thenAnswer(
+            (_) async => (orgId: _kFakeOrgId, plaintextSecret: _kFakeSecret),
+          );
+          // mockClient.rpc for InviteUserHandler — stop at invite step
+          // by throwing a sentinel from the invite chain
+          when(
+            () => mockClient.rpc<dynamic>(any(), params: any(named: 'params')),
+          ).thenThrow(Exception('invite-stop'));
+
+          await expectLater(
+            handler.handle(_validCmd()),
+            throwsA(isNot(isA<DomainException>())),
+          );
+
+          // Verify repo was called and secret was requested
+          verify(() => mockRepo.createOrganization(any())).called(1);
+        },
+      );
+
+      test(
+        'repo IntegrityException on missing secret propagates as-is (INV-10)',
+        () async {
+          when(() => mockRepo.createOrganization(any())).thenThrow(
+            const IntegrityException(
+              'plaintext_secret missing',
+              field: 'plaintext_secret',
+            ),
+          );
+
+          await expectLater(
+            handler.handle(_validCmd()),
+            throwsA(isA<IntegrityException>()),
+          );
+        },
+      );
+
+      test(
+        'repo IntegrityException on empty secret propagates as-is (INV-10)',
+        () async {
+          when(() => mockRepo.createOrganization(any())).thenThrow(
+            const IntegrityException(
+              'super_admin_create_organization: plaintext_secret missing (INV-28)',
+              field: 'plaintext_secret',
+            ),
+          );
+
+          await expectLater(
+            handler.handle(_validCmd()),
+            throwsA(
+              isA<IntegrityException>().having(
+                (e) => e.field,
+                'field',
+                'plaintext_secret',
+              ),
+            ),
+          );
+        },
+      );
+    });
+
     group('CreateOrganizationResult — orgApiSecret field (INV-28)', () {
       test('result type carries orgApiSecret — null for missing secret', () {
         const result = CreateOrganizationResult(
@@ -418,12 +487,10 @@ void main() {
       test(
         'result type carries orgApiSecret — non-null 64-char hex when generated',
         () {
-          const secret =
-              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'; // 64 hex chars
           const result = CreateOrganizationResult(
             orgId: 'test-org-id',
             invitationTokens: ['test-token'],
-            orgApiSecret: secret,
+            orgApiSecret: _kFakeSecret,
           );
           expect(result.orgApiSecret, isNotNull);
           expect(result.orgApiSecret!.length, 64);

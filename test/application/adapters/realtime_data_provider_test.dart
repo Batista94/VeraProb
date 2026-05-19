@@ -33,7 +33,7 @@ void main() {
         eventType: PostgresChangeEvent.insert,
         oldRecord: {},
         newRecord: {},
-        errors: [],
+        errors: <String>[],
       );
 
       // Should not throw or crash
@@ -60,14 +60,14 @@ void main() {
           'timestamp': DateTime.now().toUtc().toIso8601String(),
           'source': 'gps',
         },
-        errors: [],
+        errors: <String>[],
       );
 
       provider.onPayloadReceived(validPayload);
       // StreamController.broadcast() delivers events asynchronously via the
       // microtask queue. Awaiting here lets the event loop process the queued
       // emission before the assertion runs.
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1);
     });
 
@@ -85,7 +85,7 @@ void main() {
           'id': '1', 'trip_id': 'trip1',
           'latitude': 'invalid_string', // This will crash cast to num
         },
-        errors: [],
+        errors: <String>[],
       );
 
       // Should catch the error internally and not emit
@@ -110,17 +110,17 @@ void main() {
           'longitude': -40.0,
           'timestamp': now.toIso8601String(),
         },
-        errors: [],
+        errors: <String>[],
       );
 
       // First emission
       provider.onPayloadReceived(payload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1);
 
       // Second emission with same data
       provider.onPayloadReceived(payload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       expect(emitCount, 1, reason: 'Should not emit duplicate snapshot');
     });
 
@@ -148,7 +148,7 @@ void main() {
           'longitude': -40.0,
           'timestamp': freshTimestamp.toIso8601String(),
         },
-        errors: [],
+        errors: <String>[],
       );
 
       final stalePayload = PostgresChangePayload(
@@ -164,18 +164,18 @@ void main() {
           'longitude': -40.0,
           'timestamp': staleTimestamp.toIso8601String(),
         },
-        errors: [],
+        errors: <String>[],
       );
 
       // Add fresh one
       provider.onPayloadReceived(firstPayload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       expect(emissions.last, hasLength(1));
 
       // Add another fresh one but with a stale timestamp internally
       // In the real world, this would be an update or another trip that is actually old data.
       provider.onPayloadReceived(stalePayload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
       // Since stalePayload is 5 mins old, it should be evicted immediately after being added to buffer.
       // So the snapshot will still only have trip-fresh.
@@ -195,11 +195,11 @@ void main() {
           'longitude': -41.0,
           'timestamp': freshTimestamp.toIso8601String(),
         },
-        errors: [],
+        errors: <String>[],
       );
 
       provider.onPayloadReceived(secondFreshPayload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
       expect(emissions.last, hasLength(2));
       expect(emissions.last.map((p) => p.tripId), contains('trip-fresh-2'));
     });
@@ -227,11 +227,11 @@ void main() {
           'longitude': -40.0,
           'timestamp': nonUtcIso,
         },
-        errors: [],
+        errors: <String>[],
       );
 
       provider.onPayloadReceived(payload);
-      await Future.delayed(const Duration(milliseconds: 60));
+      await Future<void>.delayed(const Duration(milliseconds: 60));
 
       expect(emissions.last.single.timestamp.isUtc, isTrue);
     });

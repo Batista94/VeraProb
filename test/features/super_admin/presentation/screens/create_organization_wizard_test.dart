@@ -421,6 +421,181 @@ void main() {
       expect(find.byType(CreateOrganizationWizard), findsOneWidget);
       expect(find.text('Razão Social *'), findsOneWidget);
     });
+    testWidgets(
+      'Forensic Autofill: Audit banner shown after successful CNPJ autofill',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockData = CnpjCompanyData(
+          cnpj: '11444777000161',
+          legalName: 'Omni Consorcio Ltda',
+          tradeName: 'Omni Digital',
+          situation: 'ATIVA',
+        );
+        when(
+          () => mockLookup.lookup('11444777000161'),
+        ).thenAnswer((_) async => mockData);
+
+        await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+        await tester.pump();
+
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('CNPJ *'),
+            matching: find.byType(TextFormField),
+          ),
+          '11.444.777/0001-61',
+        );
+
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pumpAndSettle();
+
+        // Audit banner must be visible with forensic confirmation message
+        expect(
+          find.textContaining('Dados importados da Receita Federal'),
+          findsOneWidget,
+        );
+        // Semantics label must expose the audit warning for accessibility
+        expect(
+          find.bySemanticsLabel(RegExp('Verifique e confirme')),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Forensic Autofill: Trade name missing warning when API returns empty tradeName',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockData = CnpjCompanyData(
+          cnpj: '11444777000161',
+          legalName: 'Omni SA',
+          tradeName: '',
+          situation: 'ATIVA',
+        );
+        when(
+          () => mockLookup.lookup('11444777000161'),
+        ).thenAnswer((_) async => mockData);
+
+        await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+        await tester.pump();
+
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('CNPJ *'),
+            matching: find.byType(TextFormField),
+          ),
+          '11.444.777/0001-61',
+        );
+
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Nome Fantasia não informado'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'Repaint: auto-fill and audit banner appear in same frame, no focus needed',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockData = CnpjCompanyData(
+          cnpj: '11444777000161',
+          legalName: 'Omni Consorcio Ltda',
+          tradeName: 'Omni Digital',
+          situation: 'ATIVA',
+        );
+        when(
+          () => mockLookup.lookup('11444777000161'),
+        ).thenAnswer((_) async => mockData);
+
+        await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+        await tester.pump();
+
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('CNPJ *'),
+            matching: find.byType(TextFormField),
+          ),
+          '11.444.777/0001-61',
+        );
+
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pumpAndSettle();
+
+        // No focus change — banner and controller.value must both be set
+        // in the same pumpAndSettle. Regression guard for repaint lag where
+        // text only appeared after blur/focus on Flutter Web/Desktop.
+        expect(
+          find.textContaining('Dados importados da Receita Federal'),
+          findsOneWidget,
+        );
+
+        final legalNameFinder = find.ancestor(
+          of: find.text('Razão Social *'),
+          matching: find.byType(TextFormField),
+        );
+        expect(
+          tester.widget<TextFormField>(legalNameFinder).controller?.value.text,
+          equals('Omni Consorcio Ltda'),
+        );
+
+        final tradeNameFinder = find.ancestor(
+          of: find.text('Nome Fantasia *'),
+          matching: find.byType(TextFormField),
+        );
+        expect(
+          tester.widget<TextFormField>(tradeNameFinder).controller?.value.text,
+          equals('Omni Digital'),
+        );
+      },
+    );
+
+    testWidgets(
+      'Forensic Autofill: Trade name missing warning when API returns null tradeName',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(800, 1200));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        final mockData = CnpjCompanyData(
+          cnpj: '11444777000161',
+          legalName: 'Omni SA',
+          tradeName: null,
+          situation: 'ATIVA',
+        );
+        when(
+          () => mockLookup.lookup('11444777000161'),
+        ).thenAnswer((_) async => mockData);
+
+        await tester.pumpWidget(createWizard(mockRepo, mockLookup));
+        await tester.pump();
+
+        await tester.enterText(
+          find.ancestor(
+            of: find.text('CNPJ *'),
+            matching: find.byType(TextFormField),
+          ),
+          '11.444.777/0001-61',
+        );
+
+        await tester.pump(const Duration(milliseconds: 800));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Nome Fantasia não informado'),
+          findsOneWidget,
+        );
+      },
+    );
+
     testWidgets('CT07: DomainException mapping and UI persistence', (
       tester,
     ) async {

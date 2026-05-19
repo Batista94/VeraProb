@@ -101,6 +101,48 @@ void main() {
       expect(state.value?.first.name, 'Hydra Corp');
     });
 
+    test('archived filter shows only archived orgs', () async {
+      const archivedTenant = TenantHealthView(
+        id: 'org-archived',
+        name: 'Defunct SA',
+        planType: 'Basic',
+        status: OrgStatus.archived,
+        maxVehicles: 10,
+        maxActiveContracts: 5,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      container = createContainer(tenants: [...mockTenants, archivedTenant]);
+      await container.read(tenantHealthSnapshotProvider.future);
+      container
+          .read(tenantSearchProvider.notifier)
+          .setStatusFilter(TenantStatusFilter.archived);
+      final state = container.read(tenantSearchProvider);
+      expect(state.value?.length, 1);
+      expect(state.value?.first.name, 'Defunct SA');
+    });
+
+    test('suspended filter excludes archived orgs', () async {
+      const archivedTenant = TenantHealthView(
+        id: 'org-archived',
+        name: 'Defunct SA',
+        planType: 'Basic',
+        status: OrgStatus.archived,
+        maxVehicles: 10,
+        maxActiveContracts: 5,
+        activeContractCount: 0,
+        openCriticalAlertCount: 0,
+      );
+      container = createContainer(tenants: [...mockTenants, archivedTenant]);
+      await container.read(tenantHealthSnapshotProvider.future);
+      container
+          .read(tenantSearchProvider.notifier)
+          .setStatusFilter(TenantStatusFilter.suspended);
+      final state = container.read(tenantSearchProvider);
+      expect(state.value?.length, 1);
+      expect(state.value?.first.name, 'Hydra Corp');
+    });
+
     test('combination: search + status filter', () async {
       container = createContainer();
       await container.read(tenantHealthSnapshotProvider.future);

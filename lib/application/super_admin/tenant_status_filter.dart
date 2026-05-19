@@ -6,19 +6,14 @@
 ///
 /// The mapping to actual domain status is performed inside
 /// [TenantStatusFilter.matches], which knows how to evaluate a
-/// [TenantHealthView]'s `isActive` flag without exposing [OrgStatus] to the
-/// presentation layer.
+/// [TenantHealthView]'s `isActive` and `isArchived` flags without exposing
+/// [OrgStatus] to the presentation layer.
 enum TenantStatusFilter {
-  /// Show all tenants regardless of status.
   all,
-
-  /// Show only currently active organizations.
   active,
+  suspended,
+  archived;
 
-  /// Show only suspended organizations.
-  suspended;
-
-  /// Human-readable label for display in filter chips.
   String get label {
     switch (this) {
       case TenantStatusFilter.all:
@@ -27,21 +22,21 @@ enum TenantStatusFilter {
         return 'Ativos';
       case TenantStatusFilter.suspended:
         return 'Suspensos';
+      case TenantStatusFilter.archived:
+        return 'Arquivadas';
     }
   }
 
-  /// Returns `true` when a tenant should be included in the filtered list.
-  ///
-  /// Uses only presentation-level primitives (`isActive` bool from
-  /// [TenantHealthView]) — no domain enum comparison needed.
-  bool matches({required bool isActive}) {
+  bool matches({required bool isActive, required bool isArchived}) {
     switch (this) {
       case TenantStatusFilter.all:
         return true;
       case TenantStatusFilter.active:
         return isActive;
       case TenantStatusFilter.suspended:
-        return !isActive;
+        return !isActive && !isArchived;
+      case TenantStatusFilter.archived:
+        return isArchived;
     }
   }
 }

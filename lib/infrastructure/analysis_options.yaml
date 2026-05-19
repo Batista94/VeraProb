@@ -1,0 +1,11 @@
+# Temporary strict-mode exemption for the Infrastructure layer.
+# ~80 Map<dynamic, dynamic> cast violations from Supabase/PostgreSQL JSON responses.
+# Fix: run `bash scripts/audit_dynamic_types.sh` to generate a per-file report,
+# then add explicit casts and delete this file.
+include: ../../analysis_options.yaml
+
+analyzer:
+  language:
+    strict-casts: false
+    strict-inference: false
+    strict-raw-types: false

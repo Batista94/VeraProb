@@ -281,7 +281,7 @@ class _LogoutButton extends ConsumerWidget {
         await ref.read(authRepositoryProvider).signOut();
         if (context.mounted) {
           await Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const AdminLockScreen()),
+            MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
             (_) => false,
           );
         }

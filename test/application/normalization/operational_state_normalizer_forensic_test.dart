@@ -15,7 +15,7 @@ import 'package:veraprob/application/normalization/models/vehicle_operational_st
 import 'package:veraprob/application/normalization/operational_state_normalizer.dart';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
 
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // Constante top-level para uso em contextos const
 final _kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);

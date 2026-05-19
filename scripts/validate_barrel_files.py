@@ -172,13 +172,24 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--branch", default="dev")
+    parser.add_argument("--full", action="store_true", help="Scan all files in lib/ instead of only changed ones")
     args = parser.parse_args()
     
     # is_strict is true only on main/CI
     is_strict = args.branch == "main" or os.getenv("GITHUB_ACTIONS") == "true"
     
     try:
-        changed_files = get_changed_files(args.branch)
+        if args.full:
+            print(f"{BLUE}Full Scan Mode enabled.{NC}")
+            all_files = []
+            for root, _, files in os.walk(LIB_DIR):
+                for f in files:
+                    if f.endswith(".dart") and not any(p in f for p in IGNORE_PATTERNS):
+                        all_files.append(os.path.join(root, f).replace("\\", "/"))
+            changed_files = all_files
+        else:
+            changed_files = get_changed_files(args.branch)
+            
         if not changed_files:
             # Silent success if no files to check
             sys.exit(0)

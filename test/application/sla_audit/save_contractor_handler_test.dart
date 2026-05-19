@@ -8,7 +8,7 @@ import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
 

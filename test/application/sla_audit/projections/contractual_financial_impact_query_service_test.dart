@@ -3,7 +3,7 @@ import 'package:veraprob/application/sla_audit/projections/contractual_financial
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_daily_snapshot.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_financial_snapshot_repository.dart';
-import '../../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 void main() {
   late InMemoryContractualFinancialSnapshotRepository snapshotRepo;

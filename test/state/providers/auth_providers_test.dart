@@ -15,7 +15,7 @@ void main() {
 
       final state = container.read(authStateProvider);
 
-      expect(state, isA<AsyncError>());
+      expect(state, isA<AsyncError<Object?>>());
     });
 
     test('provider initial state test structure', () {
@@ -33,7 +33,7 @@ void main() {
 
       final state = container.read(organizationIdFetcherProvider);
 
-      expect(state, isA<AsyncLoading>());
+      expect(state, isA<AsyncLoading<Object?>>());
     });
 
     test('provider initial state test structure', () {

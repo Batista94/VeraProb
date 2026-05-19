@@ -133,7 +133,7 @@ void main() {
 
       // First ping — enters geofence
       streamController.add([vehicle]);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Verify engine ran — state transitions to inTransit on first geofence entry
       final result = await repo.findBySetId('set-1');
@@ -162,7 +162,7 @@ void main() {
         makeVehicle(vehicleId: 'v-1'),
         makeVehicle(vehicleId: 'v-2'),
       ]);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Both should have been processed (inTransit after first geofence entry)
       final r1 = await repo.findBySetId('set-1');
@@ -201,7 +201,7 @@ void main() {
       await subscriber.start();
 
       // Wait for at least one sweep tick
-      await Future.delayed(const Duration(milliseconds: 250));
+      await Future<void>.delayed(const Duration(milliseconds: 250));
 
       final result = await repo.findBySetId('set-expired');
       expect(result!.status, ExecutionStatus.failed);
@@ -246,7 +246,7 @@ void main() {
       // Emit data — should only be processed once per vehicle per batch
       final vehicle = makeVehicle();
       streamController.add([vehicle]);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       final result = await repo.findBySetId('set-1');
       expect(result!.status, ExecutionStatus.inTransit);
@@ -269,7 +269,7 @@ void main() {
 
       // Emit a normal vehicle — processed without error
       streamController.add([makeVehicle()]);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Subscriber should still be active
       expect(subscriber.isActive, isTrue);
@@ -300,7 +300,7 @@ void main() {
       // Emit the exact same positions twice in a row
       streamController.add([vehicle]);
       streamController.add([vehicle]);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Assert it only processes once if identical (business logic dependent,
       // but subscriber shouldn't crash or duplicate state improperly).

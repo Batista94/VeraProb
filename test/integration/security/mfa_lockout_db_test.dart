@@ -52,21 +52,29 @@ Future<String> _createOrGetAuthUser(String email, String password) async {
   }
 
   // 422 / already exists → look up by email.
+  // GoTrue ignores unknown query params; the supported filter is `filter`
+  // (ILIKE search on email). Use per_page=1000 to avoid pagination misses
+  // in local stacks that accumulate many test users across runs.
+  final encodedFilter = Uri.encodeQueryComponent(email);
   final lookup = await http.get(
-    Uri.parse('$base/auth/v1/admin/users?email=$email'),
+    Uri.parse('$base/auth/v1/admin/users?filter=$encodedFilter&per_page=1000'),
     headers: headers,
   );
   final lookupBody = jsonDecode(lookup.body);
-  final users = (lookupBody is Map && lookupBody['users'] is List)
+  final allUsers = (lookupBody is Map && lookupBody['users'] is List)
       ? lookupBody['users'] as List
-      : (lookupBody is List ? lookupBody : const []);
+      : (lookupBody is List ? lookupBody : const <dynamic>[]);
+  final users = allUsers
+      .cast<Map<String, dynamic>>()
+      .where((u) => u['email'] == email)
+      .toList();
   if (users.isEmpty) {
     throw StateError(
       '_createOrGetAuthUser: no user found for $email after admin create '
       '(${create.statusCode}: ${create.body})',
     );
   }
-  return (users.first as Map<String, dynamic>)['id'] as String;
+  return users.first['id'] as String;
 }
 
 void main() {
@@ -89,17 +97,25 @@ void main() {
 
   setUp(() async {
     if (!await _stackOnline()) return;
-    await PostgresTestConfig.cleanupMfaLockouts(userIds: [userA, userB]);
+    // Guard: setUpAll may have thrown before initializing userA/userB.
+    try {
+      await PostgresTestConfig.cleanupMfaLockouts(userIds: [userA, userB]);
+    } on Error catch (_) {}
   });
 
   tearDownAll(() async {
     if (!await _stackOnline()) return;
-    await PostgresTestConfig.cleanupMfaLockouts(userIds: [userA, userB]);
-    await seedClient.dispose();
+    // Guard: setUpAll may have thrown before initializing userA/userB.
+    try {
+      await PostgresTestConfig.cleanupMfaLockouts(userIds: [userA, userB]);
+    } on Error catch (_) {}
+    try {
+      await seedClient.dispose();
+    } on Error catch (_) {}
   });
 
   Future<Map<String, dynamic>> recordFailure(String uid) async {
-    final raw = await seedClient.rpc(
+    final raw = await seedClient.rpc<dynamic>(
       'record_mfa_failure',
       params: {'p_user_id': uid},
     );
@@ -107,7 +123,7 @@ void main() {
   }
 
   Future<Map<String, dynamic>> checkLockout(String uid) async {
-    final raw = await seedClient.rpc(
+    final raw = await seedClient.rpc<dynamic>(
       'check_mfa_lockout',
       params: {'p_user_id': uid},
     );
@@ -189,7 +205,10 @@ void main() {
       await recordFailure(userA);
       await recordFailure(userA);
       await recordFailure(userA);
-      await seedClient.rpc('reset_mfa_lockout', params: {'p_user_id': userA});
+      await seedClient.rpc<dynamic>(
+        'reset_mfa_lockout',
+        params: {'p_user_id': userA},
+      );
 
       final after = await checkLockout(userA);
       expect(after['failed_attempts'], equals(0));

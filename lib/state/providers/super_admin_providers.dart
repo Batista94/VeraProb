@@ -8,6 +8,7 @@ import 'package:veraprob/application/super_admin/archive_organization_handler.da
 import 'package:veraprob/application/super_admin/create_organization_handler.dart';
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/revoke_impersonation_handler.dart';
+import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 import 'package:veraprob/application/super_admin/update_organization_quota_handler.dart';
 import 'package:veraprob/application/super_admin/evidence_volume_view.dart';
 import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
@@ -132,9 +133,7 @@ final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((
 ) {
   return GenerateOrgSecretHandler(
     ref.watch(supabaseClientProvider),
-    tenantValidator: TenantValidationService(
-      authRepository: ref.watch(authRepositoryProvider),
-    ),
+    tenantValidator: const SuperAdminBypassTenantValidator(),
   );
 });
 
@@ -157,6 +156,18 @@ final revokeImpersonationHandlerProvider = Provider<RevokeImpersonationHandler>(
     );
   },
 );
+
+final startImpersonationHandlerProvider = Provider<StartImpersonationHandler>((
+  ref,
+) {
+  return StartImpersonationHandler(
+    ref.watch(supabaseClientProvider),
+    tenantValidator: TenantValidationService(
+      authRepository: ref.watch(authRepositoryProvider),
+    ),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
+  );
+});
 
 /// Provider de saúde técnica por tenant (Req 9.1, 9.2).
 ///

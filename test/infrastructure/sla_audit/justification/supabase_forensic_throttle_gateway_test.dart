@@ -79,7 +79,7 @@ void main() {
   group('SupabaseForensicThrottleGateway — assertAllowed', () {
     test('returns without throw when RPC replies allowed=true', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'check_forensic_throttle',
           params: any(named: 'params'),
         ),
@@ -92,7 +92,7 @@ void main() {
       await gateway.assertAllowed(organizationId: orgId);
 
       verify(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'check_forensic_throttle',
           params: {'p_org_id': orgId},
         ),
@@ -103,7 +103,7 @@ void main() {
       'throws ThrottleBlockedException(wait_seconds) when allowed=false',
       () async {
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<dynamic>(
             'check_forensic_throttle',
             params: any(named: 'params'),
           ),
@@ -128,7 +128,7 @@ void main() {
 
     test('handles empty RPC response as allowed (no state row yet)', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'check_forensic_throttle',
           params: any(named: 'params'),
         ),
@@ -141,7 +141,7 @@ void main() {
   group('SupabaseForensicThrottleGateway — recordFailure', () {
     test('invokes record_forensic_failure with p_org_id', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<void>(
           'record_forensic_failure',
           params: any(named: 'params'),
         ),
@@ -150,7 +150,7 @@ void main() {
       await gateway.recordFailure(organizationId: orgId);
 
       verify(
-        () => mockClient.rpc(
+        () => mockClient.rpc<void>(
           'record_forensic_failure',
           params: {'p_org_id': orgId},
         ),
@@ -161,7 +161,7 @@ void main() {
   group('SupabaseForensicThrottleGateway — recordSuccess', () {
     test('invokes reset_forensic_throttle with p_org_id', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<void>(
           'reset_forensic_throttle',
           params: any(named: 'params'),
         ),
@@ -170,7 +170,7 @@ void main() {
       await gateway.recordSuccess(organizationId: orgId);
 
       verify(
-        () => mockClient.rpc(
+        () => mockClient.rpc<void>(
           'reset_forensic_throttle',
           params: {'p_org_id': orgId},
         ),

@@ -11,7 +11,7 @@ class TripRepositoryMock implements ITripRepository {
 
   @override
   Future<Trip> startTrip(String driverId, String routeId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     final trip = Trip(
       id: _dateTimeProvider.nowUtc().millisecondsSinceEpoch.toString(),
       driverId: driverId,
@@ -25,7 +25,7 @@ class TripRepositoryMock implements ITripRepository {
 
   @override
   Future<void> endTrip(String tripId) async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     final index = _trips.indexWhere((t) => t.id == tripId);
     if (index != -1) {
       _trips[index] = _trips[index].copyWith(
@@ -37,7 +37,7 @@ class TripRepositoryMock implements ITripRepository {
 
   @override
   Future<List<Trip>> getTrips() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
     return List.from(_trips);
   }
 }

@@ -76,7 +76,7 @@ void main() async {
         ledgerEntryId = row['id'] as String;
 
         // Give the trigger time to populate the queue.
-        await Future.delayed(const Duration(milliseconds: 400));
+        await Future<void>.delayed(const Duration(milliseconds: 400));
 
         final queueRows = await client
             .from('sanction_review_queue')

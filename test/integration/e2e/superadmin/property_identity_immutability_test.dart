@@ -97,7 +97,7 @@ void main() {
           try {
             // 2. Execute operation(s) based on opType
             // --- Archive ---
-            await serviceRoleClient.rpc(
+            await serviceRoleClient.rpc<dynamic>(
               'super_admin_archive_organization',
               params: {
                 'p_org_id': org.orgId,
@@ -115,7 +115,7 @@ void main() {
 
             // --- Unarchive (if opType >= 1) ---
             if (opType >= 1) {
-              await serviceRoleClient.rpc(
+              await serviceRoleClient.rpc<dynamic>(
                 'super_admin_unarchive_organization',
                 params: {
                   'p_org_id': org.orgId,
@@ -134,7 +134,7 @@ void main() {
 
             // --- Archive again (if opType == 2) ---
             if (opType == 2) {
-              await serviceRoleClient.rpc(
+              await serviceRoleClient.rpc<dynamic>(
                 'super_admin_archive_organization',
                 params: {
                   'p_org_id': org.orgId,

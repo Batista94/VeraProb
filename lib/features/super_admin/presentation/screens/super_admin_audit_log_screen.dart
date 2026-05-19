@@ -248,7 +248,7 @@ class _LogList extends StatelessWidget {
     String? actorType,
     String? reason,
   ) {
-    showDialog(
+    showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Detalhes do Evento'),

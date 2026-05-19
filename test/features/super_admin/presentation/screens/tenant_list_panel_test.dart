@@ -82,12 +82,12 @@ void main() {
       });
     } else if (error != null) {
       when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         throw error;
       });
     } else {
       when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
-        await Future.delayed(const Duration(milliseconds: 50));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
         return (tenants ?? mockTenants).map((t) => t.toSnapshot()).toList();
       });
     }
@@ -504,7 +504,7 @@ void main() {
 
         // Override mock for second call — returns only Alpha Trans
         when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
-          await Future.delayed(const Duration(milliseconds: 50));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
           return [mockTenants[2].toSnapshot()];
         });
 

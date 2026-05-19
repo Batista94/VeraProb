@@ -67,7 +67,7 @@ void main() {
 
         // Attempt to invoke a SuperAdmin only RPC
         try {
-          await client.rpc(
+          await client.rpc<dynamic>(
             'super_admin_archive_organization',
             params: {'p_org_id': orgBId},
           );
@@ -154,7 +154,7 @@ void main() {
         // changing the user role in the DB to Org_Admin, and then trying to use the JWT.
         // Since we don't have a full auth setup in this test, we simulate the DB constraint check.
         try {
-          await client.rpc(
+          await client.rpc<dynamic>(
             'super_admin_archive_organization',
             params: {'p_org_id': orgBId},
           );

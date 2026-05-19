@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
 import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 import 'package:veraprob/domain/sla_audit/telegram/i_telegram_repository.dart';
@@ -134,7 +135,7 @@ void main() {
           organizationId: 'org-1',
           userId: 'user-1',
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -156,7 +157,7 @@ void main() {
           organizationId: 'org-1',
           userId: 'user-1',
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -178,7 +179,7 @@ void main() {
           organizationId: 'org-1',
           userId: 'user-1',
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 

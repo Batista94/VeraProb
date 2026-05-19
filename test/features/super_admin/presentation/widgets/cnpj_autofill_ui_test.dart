@@ -69,7 +69,7 @@ void main() {
       (tester) async {
         // Simulate API delay
         when(mockService.lookup(any)).thenAnswer((_) async {
-          await Future.delayed(const Duration(milliseconds: 500));
+          await Future<void>.delayed(const Duration(milliseconds: 500));
           return CnpjCompanyData(
             cnpj: '45518855000147',
             legalName: 'Estrela Dalva Transportes Ltda',
@@ -138,6 +138,65 @@ void main() {
 
       // Should NOT have called lookup (less than 14 digits)
       verifyNever(mockService.lookup(any));
+    });
+
+    group('Módulo 11 Validation (CT-MOD11-UI)', () {
+      testWidgets('CNPJ inválido (Módulo 11): não chama API e exibe erro', (
+        tester,
+      ) async {
+        // 12.345.678/0001-00 has 14 digits but fails Módulo 11
+        await tester.pumpWidget(buildWidget());
+        final textField = find.byType(TextFormField).first;
+
+        await tester.enterText(textField, '12.345.678/0001-00');
+        await tester.pump(const Duration(milliseconds: 700));
+        await tester.pump();
+
+        verifyNever(mockService.lookup(any));
+        expect(
+          find.text('CNPJ inválido ou não encontrado na Receita.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets(
+        'CNPJ inválido (Módulo 11): não exibe spinner de carregamento',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          final textField = find.byType(TextFormField).first;
+
+          await tester.enterText(textField, '12.345.678/0001-00');
+          await tester.pump(const Duration(milliseconds: 700));
+          await tester.pump();
+
+          expect(find.byType(CircularProgressIndicator), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'CNPJ inválido (Módulo 11): re-edição limpa o erro imediatamente',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+          final textField = find.byType(TextFormField).first;
+
+          // Trigger the invalid state
+          await tester.enterText(textField, '12.345.678/0001-00');
+          await tester.pump(const Duration(milliseconds: 700));
+          await tester.pump();
+          expect(
+            find.text('CNPJ inválido ou não encontrado na Receita.'),
+            findsOneWidget,
+          );
+
+          // User starts editing again — error must vanish immediately
+          await tester.enterText(textField, '12.345.678/0001-0');
+          await tester.pump();
+          expect(
+            find.text('CNPJ inválido ou não encontrado na Receita.'),
+            findsNothing,
+          );
+        },
+      );
     });
   });
 }

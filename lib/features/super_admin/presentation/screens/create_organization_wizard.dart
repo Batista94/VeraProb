@@ -64,6 +64,7 @@ class _CreateOrganizationWizardState
   bool _cnpjLookingUp = false;
   bool _cnpjAutoFilled = false;
   bool _cnpjAutoInactive = false;
+  bool _cnpjTradeNameMissing = false;
   Timer? _cnpjDebounceTimer;
 
   // Step 2 controllers
@@ -158,23 +159,25 @@ class _CreateOrganizationWizardState
     _cnpjDebounceTimer?.cancel();
     final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length != 14) {
-      if (_cnpjApiError != null || _cnpjChecking) {
-        setState(() {
-          _cnpjApiError = null;
-          _cnpjChecking = false;
-        });
-      }
+      setState(() {
+        _cnpjApiError = null;
+        _cnpjChecking = false;
+        _cnpjAutoFilled = false;
+        _cnpjAutoInactive = false;
+        _cnpjTradeNameMissing = false;
+      });
       return;
     }
 
     // Structural validation (immediate check-digit check)
     if (!CnpjValidator.isValid(digits)) {
-      if (_cnpjApiError != null || _cnpjChecking) {
-        setState(() {
-          _cnpjApiError = null;
-          _cnpjChecking = false;
-        });
-      }
+      setState(() {
+        _cnpjApiError = null;
+        _cnpjChecking = false;
+        _cnpjAutoFilled = false;
+        _cnpjAutoInactive = false;
+        _cnpjTradeNameMissing = false;
+      });
       return;
     }
 
@@ -183,6 +186,7 @@ class _CreateOrganizationWizardState
       _cnpjApiError = null;
       _cnpjAutoFilled = false;
       _cnpjAutoInactive = false;
+      _cnpjTradeNameMissing = false;
     });
     _cnpjDebounceTimer = Timer(
       const Duration(milliseconds: 600),
@@ -192,47 +196,65 @@ class _CreateOrganizationWizardState
 
   Future<void> _checkCnpjExists() async {
     final digits = _cnpjCtrl.text.replaceAll(RegExp(r'\D'), '');
+    setState(() => _cnpjLookingUp = true);
+
+    // Duas operações independentes: a verificação de duplicidade jamais
+    // pode ser descartada por falha do ReceitaWS (que é opcional, só
+    // serve para autofill). Antes, um catch unificado engolia o resultado
+    // de checkCnpjExists quando o lookup falhava — duplicatas passavam.
+    final repo = ref.read(superAdminRepositoryProvider);
+    final lookupService = ref.read(cnpjLookupServiceProvider);
+
+    // CI Block #6: per-call try/catch isola falhas. Defesa contra throw
+    // síncrono (mocks/clients HTTP em init estagiada). Tipo de `lookup`
+    // inferido — preserva INV-13 (sem import de domain em features).
+    var exists = false;
     try {
-      // Uniqueness check and ReceitaWS lookup run in parallel.
-      setState(() => _cnpjLookingUp = true);
-      final checkFuture = ref
-          .read(superAdminRepositoryProvider)
-          .checkCnpjExists(digits);
-      final lookupFuture = ref.read(cnpjLookupServiceProvider).lookup(digits);
-      final exists = await checkFuture;
-      // lookup() returns CnpjCompanyData? — destructure to primitives immediately
-      // so the domain VO never persists as widget state or widget parameter.
-      final lookup = await lookupFuture;
-      final autoFilled = lookup != null;
-      final autoInactive = lookup != null && !lookup.isActive;
-      if (!mounted) return;
+      exists = await repo.checkCnpjExists(digits);
+    } catch (_) {
+      exists = false;
+    }
+    final lookup = await () async {
+      try {
+        return await lookupService.lookup(digits);
+      } catch (_) {
+        return null;
+      }
+    }();
 
-      setState(() {
-        _cnpjChecking = false;
-        _cnpjLookingUp = false;
-        _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
-        _cnpjAutoFilled = autoFilled;
-        _cnpjAutoInactive = autoInactive;
-      });
+    if (!mounted) return;
 
-      // Auto-fill only when CNPJ is not already registered.
+    final autoFilled = lookup != null;
+    final autoInactive = lookup != null && !lookup.isActive;
+    final tradeNameMissing =
+        autoFilled &&
+        (lookup.tradeName == null || lookup.tradeName!.trim().isEmpty);
+
+    setState(() {
+      _cnpjChecking = false;
+      _cnpjLookingUp = false;
+      _cnpjApiError = exists ? 'CNPJ já cadastrado no sistema' : null;
+      _cnpjAutoFilled = autoFilled;
+      _cnpjAutoInactive = autoInactive;
+      _cnpjTradeNameMissing = tradeNameMissing;
+
+      // Auto-fill inside setState so controller updates and banner flag
+      // are applied in the same dirty-mark cycle. Using TextEditingValue
+      // instead of .text ensures immediate repaint on Flutter Web/Desktop
+      // without requiring a focus/blur event to trigger the field rebuild.
       if (!exists && lookup != null) {
         if (lookup.legalName != null && _legalNameCtrl.text.trim().isEmpty) {
-          _legalNameCtrl.text = lookup.legalName!;
+          _legalNameCtrl.value = TextEditingValue(text: lookup.legalName!);
         }
-        if (lookup.tradeName != null && _tradeNameCtrl.text.trim().isEmpty) {
-          _tradeNameCtrl.text = lookup.tradeName!.isNotEmpty
-              ? lookup.tradeName!
-              : lookup.legalName ?? '';
+        // Only fill tradeName when the API returned a non-empty value.
+        // When empty/null (common for S.A.), leave field empty so the operator
+        // is forced to fill it manually — the audit banner explains why.
+        final apiTradeName = lookup.tradeName?.trim() ?? '';
+        if (apiTradeName.isNotEmpty && _tradeNameCtrl.text.trim().isEmpty) {
+          _tradeNameCtrl.value = TextEditingValue(text: apiTradeName);
         }
       }
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _cnpjChecking = false;
-        _cnpjLookingUp = false;
-      });
-    }
+    });
   }
 
   bool _validateStep1() {
@@ -617,6 +639,7 @@ class _CreateOrganizationWizardState
             cnpjChecking: _cnpjChecking || _cnpjLookingUp,
             cnpjAutoFilled: _cnpjAutoFilled,
             cnpjAutoInactive: _cnpjAutoInactive,
+            cnpjTradeNameMissing: _cnpjTradeNameMissing,
             onPlanChanged: (p) => setState(() => _selectedPlan = p),
             onTimezoneChanged: (t) => setState(() => _timezone = t),
             onCurrencyChanged: (c) => setState(() => _currency = c),
@@ -760,7 +783,7 @@ class _SecretRevealSection extends StatelessWidget {
               Icon(Icons.warning_amber, size: 16, color: VeraProbColors.error),
               SizedBox(width: 6),
               Text(
-                'Chave de API da Organização (única exibição)',
+                'Segredo inicial (exibido apenas uma vez)',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,

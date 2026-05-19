@@ -1,6 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Application handler for generating per-org HMAC secrets (INV-28).
 ///
@@ -41,12 +40,12 @@ class GenerateOrgSecretHandler {
       if (response.status != 200) {
         final data = response.data as Map<String, dynamic>?;
         final error = data?['error'] as String? ?? 'Unknown error';
-        throw DomainException('Falha ao gerar secret: $error');
+        throw OrgSecretException('Falha ao gerar secret: $error');
       }
 
       final data = response.data;
       if (data is! Map<String, dynamic>) {
-        throw const DomainException(
+        throw const OrgSecretException(
           'Falha ao gerar secret: resposta inválida do servidor',
         );
       }
@@ -56,7 +55,7 @@ class GenerateOrgSecretHandler {
       final orgId = data['organization_id'];
 
       if (secret is! String || version is! int || orgId is! String) {
-        throw const DomainException(
+        throw const OrgSecretException(
           'Falha ao gerar secret: campos obrigatórios ausentes ou inválidos',
         );
       }
@@ -73,11 +72,11 @@ class GenerateOrgSecretHandler {
       final sanitized = details is String && details.isNotEmpty
           ? details
           : (e.reasonPhrase ?? 'erro desconhecido');
-      throw DomainException('Falha ao gerar secret: $sanitized');
-    } on DomainException {
+      throw OrgSecretException('Falha ao gerar secret: $sanitized');
+    } on OrgSecretException {
       rethrow;
     } on Exception catch (_) {
-      throw const DomainException(
+      throw const OrgSecretException(
         'Falha ao gerar secret: erro inesperado no mapeamento da resposta',
       );
     }
@@ -95,4 +94,14 @@ class GenerateOrgSecretResult {
     required this.version,
     required this.organizationId,
   });
+}
+
+/// Application-layer exception for HMAC secret generation failures (INV-28).
+class OrgSecretException implements Exception {
+  final String message;
+
+  const OrgSecretException(this.message);
+
+  @override
+  String toString() => 'OrgSecretException: $message';
 }

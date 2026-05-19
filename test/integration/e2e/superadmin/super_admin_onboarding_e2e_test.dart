@@ -5,7 +5,7 @@
 /// Se o Supabase não estiver rodando, o teste é marcado como SKIP (não FAIL).
 ///
 /// Comando:
-///   flutter test test/e2e/super_admin_onboarding_e2e_test.dart
+///   flutter test test/integration/e2e/superadmin/super_admin_onboarding_e2e_test.dart
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +20,7 @@ import 'package:veraprob/infrastructure/super_admin/supabase_super_admin_reposit
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/shared/utils/cnpj_validator.dart';
 
-import '../infrastructure/postgres/postgres_test_config.dart';
+import '../../../infrastructure/postgres/postgres_test_config.dart';
 
 const _uuid = Uuid();
 

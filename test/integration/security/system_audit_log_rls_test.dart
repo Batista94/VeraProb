@@ -123,8 +123,11 @@ void main() {
           .select('severity')
           .eq('id', seededId!)
           .single();
-      expect(after['severity'], equals('critical'),
-          reason: 'Immutability check: severity must remain unchanged');
+      expect(
+        after['severity'],
+        equals('critical'),
+        reason: 'Immutability check: severity must remain unchanged',
+      );
     });
 
     test('11 DELETE rejected (INSTEAD NOTHING rule)', () async {
@@ -209,7 +212,7 @@ void main() {
       markTestSkipped('local supabase stack offline');
       return;
     }
-    final res = await seedClient.rpc(
+    final res = await seedClient.rpc<dynamic>(
       'test_cleanup_system_audit_log',
       params: {'p_org_ids': const <String>[]},
     );

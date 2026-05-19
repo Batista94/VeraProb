@@ -81,7 +81,7 @@ void main() {
 
           try {
             // 2. Execute archive via RPC (service_role bypasses JWT check)
-            await serviceRoleClient.rpc(
+            await serviceRoleClient.rpc<dynamic>(
               'super_admin_archive_organization',
               params: {
                 'p_org_id': org.orgId,

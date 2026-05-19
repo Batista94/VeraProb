@@ -9,7 +9,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
-import '../../mocks/fake_date_time_provider.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
 
