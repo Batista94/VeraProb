@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Application handler for generating per-org HMAC secrets (INV-28).
 ///
@@ -20,7 +21,7 @@ class GenerateOrgSecretHandler {
   }) : _tenantValidator = tenantValidator;
 
   /// Returns the plain-text secret (64-hex chars, 256 bits).
-  /// Throws [DomainException] on failure.
+  /// Throws [OrgSecretException] on failure.
   Future<GenerateOrgSecretResult> handle({
     required String organizationId,
     required String sessionId,
@@ -97,11 +98,6 @@ class GenerateOrgSecretResult {
 }
 
 /// Application-layer exception for HMAC secret generation failures (INV-28).
-class OrgSecretException implements Exception {
-  final String message;
-
-  const OrgSecretException(this.message);
-
-  @override
-  String toString() => 'OrgSecretException: $message';
+class OrgSecretException extends DomainException {
+  const OrgSecretException(super.message);
 }

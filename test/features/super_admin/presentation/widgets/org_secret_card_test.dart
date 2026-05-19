@@ -8,7 +8,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/org_api_secret_view_model.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_secret_card.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
@@ -894,7 +893,7 @@ void main() {
 
   group('[INV-10] Error message never leaks internal class names', () {
     testWidgets(
-      'DomainException shows e.message directly — no "DomainException:" prefix',
+      'OrgSecretException shows e.message directly — no class prefix in UI',
       (tester) async {
         when(
           () => mockHandler.handle(
@@ -902,7 +901,7 @@ void main() {
             sessionId: any(named: 'sessionId'),
           ),
         ).thenThrow(
-          const DomainException(
+          const OrgSecretException(
             'Cota de secrets excedida para esta organização',
           ),
         );
@@ -914,10 +913,10 @@ void main() {
         expect(
           find.text('Cota de secrets excedida para esta organização'),
           findsOneWidget,
-          reason: 'DomainException.message must be shown verbatim',
+          reason: 'OrgSecretException.message must be shown verbatim',
         );
         expect(
-          find.textContaining('DomainException'),
+          find.textContaining('OrgSecretException'),
           findsNothing,
           reason: 'Internal class name must never appear in the UI (INV-10)',
         );
