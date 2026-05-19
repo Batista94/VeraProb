@@ -174,7 +174,9 @@
       "Bash(git -C \"C:/Users/wes_b/Projects/VeraProb\" show HEAD:lib/features/super_admin/presentation/widgets/tenant_config_tab.dart)",
       "Bash(git *)",
       "Skill(veraprob-pr-scanner)",
-      "Skill(ui-ux-pro-max)"
+      "Skill(ui-ux-pro-max)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\infrastructure\\\\super_admin\\\\cnpj_infrastructure_exceptions.dart\")",
+      "Bash(Remove-Item \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\domain\\\\super_admin\\\\cnpj_validator.dart\")"
     ]
   },
   "enabledMcpjsonServers": [

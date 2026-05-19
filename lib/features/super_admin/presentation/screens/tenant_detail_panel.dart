@@ -14,6 +14,7 @@ import 'package:veraprob/features/super_admin/presentation/widgets/tenant_securi
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_audit_tab.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_users_tab.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/impersonation_session_provider.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 /// Right panel: detail view for a selected tenant organization.
@@ -135,6 +136,94 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
     }
   }
 
+  Future<void> _startImpersonation(TenantHealthView t) async {
+    final ticketController = TextEditingController();
+    final reasonController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Iniciar Personificação'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: ticketController,
+              decoration: const InputDecoration(
+                labelText: 'ID do Ticket (obrigatório)',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: 'Justificativa (mín. 10 caracteres)',
+              ),
+              maxLines: 3,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final handler = ref.read(startImpersonationHandlerProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
+      final session = await handler.handle(
+        targetOrgId: t.id,
+        ticketId: ticketController.text,
+        reason: reasonController.text,
+        callerRole: UserRole.superAdmin,
+        sessionId: sessionId,
+      );
+      ref.read(activeImpersonationSessionProvider.notifier).set(session);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Personificando "${t.name}". Sessão expira em 30 minutos.',
+            ),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      }
+    } on DomainException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erro ao iniciar personificação: $e'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    } finally {
+      ticketController.dispose();
+      reasonController.dispose();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = widget.tenant;
@@ -185,6 +274,21 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     style: OutlinedButton.styleFrom(
                       foregroundColor: VeraProbColors.warning,
                       side: const BorderSide(color: VeraProbColors.warning),
+                      visualDensity: VisualDensity.compact,
+                      textStyle: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+              if (t.isOperational)
+                Tooltip(
+                  message: 'Iniciar Personificação',
+                  child: OutlinedButton.icon(
+                    onPressed: () => _startImpersonation(t),
+                    icon: const Icon(Icons.person_search_outlined, size: 16),
+                    label: const Text('Impersonar'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: VeraProbColors.secondary,
+                      side: const BorderSide(color: VeraProbColors.secondary),
                       visualDensity: VisualDensity.compact,
                       textStyle: const TextStyle(fontSize: 12),
                     ),

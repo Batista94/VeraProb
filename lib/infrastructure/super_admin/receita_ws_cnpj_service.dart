@@ -5,7 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
 import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
 import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
-import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/application/super_admin/cnpj_service_exceptions.dart';
 
 /// ReceitaWS implementation of [ICnpjLookupService].
 ///

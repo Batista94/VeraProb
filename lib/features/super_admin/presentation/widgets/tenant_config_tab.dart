@@ -228,6 +228,39 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     }
   }
 
+  List<Widget> _buildImmutableIdentitySection() {
+    final createdAtStr = widget.tenant.createdAt != null
+        ? DateFormat('dd/MM/yyyy HH:mm').format(widget.tenant.createdAt!)
+        : null;
+    return [
+      const _SectionTitle('Identidade Imutável'),
+      const SizedBox(height: 16),
+      LockedFieldTile(
+        label: 'Slug',
+        value: widget.tenant.id,
+        onCopy: () => _copyToClipboard(widget.tenant.id),
+      ),
+      const SizedBox(height: 12),
+      LockedFieldTile(
+        label: 'CNPJ',
+        value: widget.tenant.cnpj,
+        placeholder: 'Não informado',
+        onCopy: widget.tenant.cnpj != null
+            ? () => _copyToClipboard(widget.tenant.cnpj!)
+            : null,
+      ),
+      const SizedBox(height: 12),
+      LockedFieldTile(
+        label: 'Data de Criação',
+        value: createdAtStr,
+        placeholder: 'Não disponível',
+        onCopy: createdAtStr != null
+            ? () => _copyToClipboard(createdAtStr)
+            : null,
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -238,333 +271,42 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const _SectionTitle('Identidade Imutável'),
-            const SizedBox(height: 16),
-            LockedFieldTile(
-              label: 'Slug',
-              value: widget.tenant.id,
-              onCopy: () => _copyToClipboard(widget.tenant.id),
-            ),
-            const SizedBox(height: 12),
-            LockedFieldTile(
-              label: 'CNPJ',
-              value: widget.tenant.cnpj,
-              placeholder: 'Não informado',
-              onCopy: widget.tenant.cnpj != null
-                  ? () => _copyToClipboard(widget.tenant.cnpj!)
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            LockedFieldTile(
-              label: 'Data de Criação',
-              value: widget.tenant.createdAt != null
-                  ? DateFormat(
-                      'dd/MM/yyyy HH:mm',
-                    ).format(widget.tenant.createdAt!)
-                  : null,
-              placeholder: 'Não disponível',
-              onCopy: widget.tenant.createdAt != null
-                  ? () => _copyToClipboard(
-                      DateFormat(
-                        'dd/MM/yyyy HH:mm',
-                      ).format(widget.tenant.createdAt!),
-                    )
-                  : null,
-            ),
+            ..._buildImmutableIdentitySection(),
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 24),
-            const _SectionTitle('Identificação'),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _tradeNameCtrl,
+            _IdentificationSection(
+              tradeNameCtrl: _tradeNameCtrl,
+              legalNameCtrl: _legalNameCtrl,
               enabled: !_isDisabled,
-              decoration: const InputDecoration(
-                labelText: 'Nome Fantasia',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _legalNameCtrl,
-              enabled: !_isDisabled,
-              decoration: const InputDecoration(
-                labelText: 'Razão Social',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
+              onFieldChanged: () => setState(() {}),
             ),
             const SizedBox(height: 24),
-            const _SectionTitle('Plano & Limites'),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _planType,
-              decoration: const InputDecoration(
-                labelText: 'Plano',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('Não Definido')),
-                DropdownMenuItem(value: 'starter', child: Text('Starter')),
-                DropdownMenuItem(
-                  value: 'professional',
-                  child: Text('Professional'),
-                ),
-                DropdownMenuItem(
-                  value: 'enterprise',
-                  child: Text('Enterprise'),
-                ),
-              ],
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(() => _planType = v),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: _orgType,
-              decoration: const InputDecoration(
-                labelText: 'Tipo de Organização',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(value: null, child: Text('Não Definido')),
-                DropdownMenuItem(value: 'CARGO', child: Text('Cargas (Cargo)')),
-                DropdownMenuItem(
-                  value: 'PASSENGER',
-                  child: Text('Passageiros'),
-                ),
-                DropdownMenuItem(
-                  value: 'URBAN_LOGISTICS',
-                  child: Text('Logística Urbana'),
-                ),
-              ],
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(() => _orgType = v),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _maxVehiclesCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'Max Veículos (Vazio=Ilimitado)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final n = int.tryParse(v);
-                      if (n == null || n < 1) return 'Mínimo: 1';
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _maxContractsCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'Max Contratos (Vazio=Ilimitado)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final n = int.tryParse(v);
-                      if (n == null || n < 1) return 'Mínimo: 1';
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _costCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'Custo Ferramenta (R\$)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Obrigatório';
-                      final n = double.tryParse(v.replaceAll(',', '.'));
-                      if (n == null || n.isNaN || n < 0) {
-                        return 'Valor inválido (≥ 0)';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _dwellTimeCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'Dwell Time (Segundos)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return 'Obrigatório';
-                      final n = int.tryParse(v);
-                      if (n == null || n < 300) return 'Mínimo: 300s (5min)';
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            const _SectionTitle('Faturamento & Integracao'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _billingDayCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'Dia de Faturamento (1-28)',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      final n = int.tryParse(v);
-                      if (n == null || n < 1 || n > 28) {
-                        return 'Dia inválido (1-28)';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: TextFormField(
-                    controller: _contactEmailCtrl,
-                    enabled: !_isDisabled,
-                    decoration: const InputDecoration(
-                      labelText: 'E-mail de Contato',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    onChanged: (_) => setState(() {}),
-                    validator: (v) {
-                      if (v == null || v.isEmpty) return null;
-                      if (!v.contains('@') || !v.contains('.')) {
-                        return 'E-mail inválido';
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _externalIdCtrl,
+            _PlanLimitsSection(
+              planType: _planType,
+              orgType: _orgType,
+              maxVehiclesCtrl: _maxVehiclesCtrl,
+              maxContractsCtrl: _maxContractsCtrl,
+              costCtrl: _costCtrl,
+              dwellTimeCtrl: _dwellTimeCtrl,
               enabled: !_isDisabled,
-              decoration: const InputDecoration(
-                labelText: 'ID Externo (CRM/ERP)',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (_) => setState(() {}),
+              onPlanTypeChanged: (v) => setState(() => _planType = v),
+              onOrgTypeChanged: (v) => setState(() => _orgType = v),
+              onFieldChanged: () => setState(() {}),
             ),
             const SizedBox(height: 24),
-            const _SectionTitle('Capabilities'),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              title: const Text('Lacre'),
-              value: _capabilities.allowsSealing,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () => _capabilities = _capabilities.copyWith(
-                        allowsSealing: v,
-                      ),
-                    ),
-              dense: true,
+            _BillingIntegrationSection(
+              billingDayCtrl: _billingDayCtrl,
+              contactEmailCtrl: _contactEmailCtrl,
+              externalIdCtrl: _externalIdCtrl,
+              enabled: !_isDisabled,
+              onFieldChanged: () => setState(() {}),
             ),
-            SwitchListTile(
-              title: const Text('Carregamento'),
-              value: _capabilities.allowsLoading,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () => _capabilities = _capabilities.copyWith(
-                        allowsLoading: v,
-                      ),
-                    ),
-              dense: true,
-            ),
-            SwitchListTile(
-              title: const Text('Cargo Check'),
-              value: _capabilities.allowsCargoCheck,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () => _capabilities = _capabilities.copyWith(
-                        allowsCargoCheck: v,
-                      ),
-                    ),
-              dense: true,
-            ),
-            SwitchListTile(
-              title: const Text('Incidente'),
-              value: _capabilities.allowsIncident,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () => _capabilities = _capabilities.copyWith(
-                        allowsIncident: v,
-                      ),
-                    ),
-              dense: true,
-            ),
-            SwitchListTile(
-              title: const Text('Doc'),
-              value: _capabilities.allowsDoc,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () =>
-                          _capabilities = _capabilities.copyWith(allowsDoc: v),
-                    ),
-              dense: true,
-            ),
-            SwitchListTile(
-              title: const Text('Smart Classify'),
-              value: _capabilities.smartClassify,
-              onChanged: _isDisabled
-                  ? null
-                  : (v) => setState(
-                      () => _capabilities = _capabilities.copyWith(
-                        smartClassify: v,
-                      ),
-                    ),
-              dense: true,
+            const SizedBox(height: 24),
+            _CapabilitiesSection(
+              capabilities: _capabilities,
+              enabled: !_isDisabled,
+              onChanged: (caps) => setState(() => _capabilities = caps),
             ),
             if (_isDirty && !widget.tenant.isArchived) ...[
               const SizedBox(height: 24),
@@ -582,6 +324,348 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
       ),
     );
   }
+}
+
+// ── Form Section Widgets ─────────────────────────────────────────────────────
+
+class _IdentificationSection extends StatelessWidget {
+  final TextEditingController tradeNameCtrl;
+  final TextEditingController legalNameCtrl;
+  final bool enabled;
+  final VoidCallback onFieldChanged;
+
+  const _IdentificationSection({
+    required this.tradeNameCtrl,
+    required this.legalNameCtrl,
+    required this.enabled,
+    required this.onFieldChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Identificação'),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: tradeNameCtrl,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          labelText: 'Nome Fantasia',
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (_) => onFieldChanged(),
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: legalNameCtrl,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          labelText: 'Razão Social',
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (_) => onFieldChanged(),
+      ),
+    ],
+  );
+}
+
+class _PlanLimitsSection extends StatelessWidget {
+  final String? planType;
+  final String? orgType;
+  final TextEditingController maxVehiclesCtrl;
+  final TextEditingController maxContractsCtrl;
+  final TextEditingController costCtrl;
+  final TextEditingController dwellTimeCtrl;
+  final bool enabled;
+  final ValueChanged<String?> onPlanTypeChanged;
+  final ValueChanged<String?> onOrgTypeChanged;
+  final VoidCallback onFieldChanged;
+
+  const _PlanLimitsSection({
+    required this.planType,
+    required this.orgType,
+    required this.maxVehiclesCtrl,
+    required this.maxContractsCtrl,
+    required this.costCtrl,
+    required this.dwellTimeCtrl,
+    required this.enabled,
+    required this.onPlanTypeChanged,
+    required this.onOrgTypeChanged,
+    required this.onFieldChanged,
+  });
+
+  static String? _validatePositiveInt(String? v) {
+    if (v == null || v.isEmpty) return null;
+    final n = int.tryParse(v);
+    if (n == null || n < 1) return 'Mínimo: 1';
+    return null;
+  }
+
+  static String? _validateCost(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = double.tryParse(v.replaceAll(',', '.'));
+    if (n == null || n.isNaN || n < 0) return 'Valor inválido (≥ 0)';
+    return null;
+  }
+
+  static String? _validateDwellTime(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = int.tryParse(v);
+    if (n == null || n < 300) return 'Mínimo: 300s (5min)';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Plano & Limites'),
+      const SizedBox(height: 16),
+      DropdownButtonFormField<String>(
+        initialValue: planType,
+        decoration: const InputDecoration(
+          labelText: 'Plano',
+          border: OutlineInputBorder(),
+        ),
+        items: const [
+          DropdownMenuItem(value: null, child: Text('Não Definido')),
+          DropdownMenuItem(value: 'starter', child: Text('Starter')),
+          DropdownMenuItem(value: 'professional', child: Text('Professional')),
+          DropdownMenuItem(value: 'enterprise', child: Text('Enterprise')),
+        ],
+        onChanged: enabled ? onPlanTypeChanged : null,
+      ),
+      const SizedBox(height: 16),
+      DropdownButtonFormField<String>(
+        initialValue: orgType,
+        decoration: const InputDecoration(
+          labelText: 'Tipo de Organização',
+          border: OutlineInputBorder(),
+        ),
+        items: const [
+          DropdownMenuItem(value: null, child: Text('Não Definido')),
+          DropdownMenuItem(value: 'CARGO', child: Text('Cargas (Cargo)')),
+          DropdownMenuItem(value: 'PASSENGER', child: Text('Passageiros')),
+          DropdownMenuItem(
+            value: 'URBAN_LOGISTICS',
+            child: Text('Logística Urbana'),
+          ),
+        ],
+        onChanged: enabled ? onOrgTypeChanged : null,
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: maxVehiclesCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Max Veículos (Vazio=Ilimitado)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => onFieldChanged(),
+              validator: _validatePositiveInt,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: maxContractsCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Max Contratos (Vazio=Ilimitado)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => onFieldChanged(),
+              validator: _validatePositiveInt,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: costCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Custo Ferramenta (R\$)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              onChanged: (_) => onFieldChanged(),
+              validator: _validateCost,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: dwellTimeCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Dwell Time (Segundos)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => onFieldChanged(),
+              validator: _validateDwellTime,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+class _BillingIntegrationSection extends StatelessWidget {
+  final TextEditingController billingDayCtrl;
+  final TextEditingController contactEmailCtrl;
+  final TextEditingController externalIdCtrl;
+  final bool enabled;
+  final VoidCallback onFieldChanged;
+
+  const _BillingIntegrationSection({
+    required this.billingDayCtrl,
+    required this.contactEmailCtrl,
+    required this.externalIdCtrl,
+    required this.enabled,
+    required this.onFieldChanged,
+  });
+
+  static String? _validateBillingDay(String? v) {
+    if (v == null || v.isEmpty) return null;
+    final n = int.tryParse(v);
+    if (n == null || n < 1 || n > 28) return 'Dia inválido (1-28)';
+    return null;
+  }
+
+  static String? _validateEmail(String? v) {
+    if (v == null || v.isEmpty) return null;
+    if (!v.contains('@') || !v.contains('.')) return 'E-mail inválido';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Faturamento & Integracao'),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: billingDayCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Dia de Faturamento (1-28)',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (_) => onFieldChanged(),
+              validator: _validateBillingDay,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              controller: contactEmailCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'E-mail de Contato',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              onChanged: (_) => onFieldChanged(),
+              validator: _validateEmail,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: externalIdCtrl,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          labelText: 'ID Externo (CRM/ERP)',
+          border: OutlineInputBorder(),
+        ),
+        onChanged: (_) => onFieldChanged(),
+      ),
+    ],
+  );
+}
+
+class _CapabilitiesSection extends StatelessWidget {
+  final OrgCapabilitiesViewModel capabilities;
+  final bool enabled;
+  final ValueChanged<OrgCapabilitiesViewModel> onChanged;
+
+  const _CapabilitiesSection({
+    required this.capabilities,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  Widget _switch(
+    String title,
+    bool value,
+    OrgCapabilitiesViewModel Function(bool) updater,
+  ) => SwitchListTile(
+    title: Text(title),
+    value: value,
+    onChanged: enabled ? (v) => onChanged(updater(v)) : null,
+    dense: true,
+  );
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Capabilities'),
+      const SizedBox(height: 8),
+      _switch(
+        'Lacre',
+        capabilities.allowsSealing,
+        (v) => capabilities.copyWith(allowsSealing: v),
+      ),
+      _switch(
+        'Carregamento',
+        capabilities.allowsLoading,
+        (v) => capabilities.copyWith(allowsLoading: v),
+      ),
+      _switch(
+        'Cargo Check',
+        capabilities.allowsCargoCheck,
+        (v) => capabilities.copyWith(allowsCargoCheck: v),
+      ),
+      _switch(
+        'Incidente',
+        capabilities.allowsIncident,
+        (v) => capabilities.copyWith(allowsIncident: v),
+      ),
+      _switch(
+        'Doc',
+        capabilities.allowsDoc,
+        (v) => capabilities.copyWith(allowsDoc: v),
+      ),
+      _switch(
+        'Smart Classify',
+        capabilities.smartClassify,
+        (v) => capabilities.copyWith(smartClassify: v),
+      ),
+    ],
+  );
 }
 
 class _SectionTitle extends StatelessWidget {

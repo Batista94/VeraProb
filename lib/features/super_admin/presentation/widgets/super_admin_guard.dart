@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/impersonation_banner.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/mfa_disabled_banner.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -57,15 +58,10 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
     }
 
     // ── Step 2: Validate AAL2 (MFA) ────────────────────────────────────
+    // isSuperAdminAal2Provider returns true when bypass active (dev) or JWT aal=aal2.
     final isAal2 = ref.watch(isSuperAdminAal2Provider);
 
     if (!isAal2) {
-      // Dev environment with MFA skip → render child with warning banner.
-      if (EnvironmentConfig.skipMfaForSuperAdmin) {
-        return MfaDisabledBanner(child: widget.child);
-      }
-
-      // Production: redirect to MFA challenge (Fail-Fast — no child rendered).
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_impersonationInvalidated) {
           debugPrint(
@@ -78,6 +74,14 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
         }
       });
       return const Scaffold();
+    }
+
+    // ── Step 2b: Dev banner when bypass masks absent real AAL2 ──────────
+    if (EnvironmentConfig.skipMfaForSuperAdmin) {
+      final hasRealAal2 = ref.watch(isSuperAdminRealAal2Provider);
+      if (!hasRealAal2) {
+        return MfaDisabledBanner(child: widget.child);
+      }
     }
 
     // ── Step 3: Validate impersonation session (if active) ─────────────
@@ -116,6 +120,17 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
     }
 
     // ── Step 4: All validations passed — render child ──────────────────
+    if (impersonationSession != null) {
+      return Column(
+        children: [
+          ImpersonationBanner(
+            session: impersonationSession,
+            onSessionEnded: _invalidateImpersonationSession,
+          ),
+          Expanded(child: widget.child),
+        ],
+      );
+    }
     return widget.child;
   }
 

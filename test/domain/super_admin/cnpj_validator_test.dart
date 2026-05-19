@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/super_admin/cnpj_validator.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 
 void main() {
   group('CnpjValidator.isValid — Módulo 11 (CT-MOD11)', () {

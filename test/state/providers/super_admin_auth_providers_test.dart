@@ -624,6 +624,94 @@ void main() {
       expect(semantics.label, contains('Acesso Padrão'));
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // isSuperAdminRealAal2Provider — JWT-only, never bypassed
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('isSuperAdminRealAal2Provider: JWT-only check, never bypassed', () {
+    test('returns false when not super admin (aal2 present)', () async {
+      final jwt = _buildFakeJwt({
+        'app_metadata': {'super_admin': false},
+        'aal': 'aal2',
+      });
+      final container = _containerWithToken(jwt);
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+    });
+
+    test('returns false when super admin but aal is aal1', () async {
+      final jwt = _buildFakeJwt({
+        'app_metadata': {'super_admin': true},
+        'aal': 'aal1',
+      });
+      final container = _containerWithToken(jwt);
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+    });
+
+    test('returns false when super admin but aal claim absent', () async {
+      final jwt = _buildFakeJwt({
+        'app_metadata': {'super_admin': true},
+      });
+      final container = _containerWithToken(jwt);
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+    });
+
+    test('returns true when super admin AND aal is aal2', () async {
+      final jwt = _buildFakeJwt({
+        'app_metadata': {'super_admin': true},
+        'aal': 'aal2',
+      });
+      final container = _containerWithToken(jwt);
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isTrue);
+    });
+
+    test('returns false when session is null', () async {
+      final container = _containerSignedOut();
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+    });
+
+    test(
+      'is independent from isSuperAdminAal2Provider when bypass would activate',
+      () async {
+        // Even in test env (bypass inactive), verify the two providers are
+        // logically independent: RealAal2 never relies on EnvironmentConfig.
+        expect(EnvironmentConfig.skipMfaForSuperAdmin, isFalse);
+
+        final jwt = _buildFakeJwt({
+          'app_metadata': {'super_admin': true},
+          'aal': 'aal1',
+        });
+        final container = _containerWithToken(jwt);
+        await _pumpAuth(container);
+
+        // isSuperAdminAal2Provider would return false in test env (bypass off)
+        expect(container.read(isSuperAdminAal2Provider), isFalse);
+        // isSuperAdminRealAal2Provider also returns false (JWT-only, aal1)
+        expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+      },
+    );
+
+    test('case-sensitive: "AAL2" does not satisfy the aal2 check', () async {
+      final jwt = _buildFakeJwt({
+        'app_metadata': {'super_admin': true},
+        'aal': 'AAL2',
+      });
+      final container = _containerWithToken(jwt);
+      await _pumpAuth(container);
+
+      expect(container.read(isSuperAdminRealAal2Provider), isFalse);
+    });
+  });
 }
 
 // ─── Test Widget for Accessibility ──────────────────────────────────────────

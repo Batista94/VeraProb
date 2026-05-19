@@ -2,8 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/super_admin/cnpj_lookup_exceptions.dart';
-import 'package:veraprob/domain/super_admin/cnpj_validator.dart';
-import 'package:veraprob/infrastructure/super_admin/cnpj_infrastructure_exceptions.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 enum _CnpjLookupState {

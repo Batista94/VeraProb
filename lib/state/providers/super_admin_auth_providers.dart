@@ -43,6 +43,17 @@ final isSuperAdminAal2Provider = Provider<bool>((ref) {
   return claims['aal'] == 'aal2';
 });
 
+/// JWT-only AAL2 check — never bypassed by [EnvironmentConfig.skipMfaForSuperAdmin].
+/// Used to show [MfaDisabledBanner] in dev when bypass masks absent real AAL2.
+final isSuperAdminRealAal2Provider = Provider<bool>((ref) {
+  final isSuperAdmin = ref.watch(isSuperAdminProvider);
+  if (!isSuperAdmin) return false;
+  final session = ref.watch(authStateProvider).value?.session;
+  if (session == null) return false;
+  final claims = decodeJwtPayload(session.accessToken);
+  return claims['aal'] == 'aal2';
+});
+
 /// Convenience alias — derives [UserRole.superAdmin] for RBAC use in handlers.
 final superAdminRoleProvider = Provider<UserRole?>((ref) {
   final isSuperAdmin = ref.watch(isSuperAdminProvider);
