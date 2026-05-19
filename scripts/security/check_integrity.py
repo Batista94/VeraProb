@@ -7,7 +7,7 @@ TARGET_EXTENSIONS = {".dart", ".py", ".sh", ".sql", ".yaml", ".yml", ".json", ".
 IGNORE_DIRS = {
     ".git", ".dart_tool", "build", ".veraprob", "ios", "android", 
     "linux", "windows", "macos", ".docker-mcp", "node_modules", 
-    "vendor", ".idea", ".vscode"
+    "vendor", ".idea", ".vscode", ".venv", "venv"
 }
 
 # ── Colors ───────────────────────────────────────────────────────────────────
