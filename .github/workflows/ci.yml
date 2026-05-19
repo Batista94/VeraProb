@@ -483,12 +483,24 @@ jobs:
 
       - name: Flutter Test (Integration) with Coverage
         run: |
+          # Exclude test/integration/e2e/ SuperAdmin E2E because it requires a separate pipeline
+          # with explicit SKIP_MFA_DEV=true and is not part of the normal integration coverage gate.
           flutter test --no-pub -j 1 --coverage \
-            --dart-define=SKIP_MFA_DEV=true \
             --dart-define=ENV=dev \
             --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
             --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
-            test/integration
+            test/integration/hmac_tampering_detection_test.dart \
+            test/integration/invariants_mt9_test.dart \
+            test/integration/jwt_hook_e2e_test.dart \
+            test/integration/multi_tenant_validation_test.dart \
+            test/integration/query_services_integration_test.dart \
+            test/integration/rls_cross_org_test.dart \
+            test/integration/rls_isolation_test.dart \
+            test/integration/rls_red_team_audit_test.dart \
+            test/integration/sanction_escalation_log_test.dart \
+            test/integration/sanction_review_queue_test.dart \
+            test/integration/shadow_comparison_service_postgres_test.dart \
+            test/integration/security
           mv coverage/lcov.info coverage/lcov_integration.info
 
       - name: Merge Coverage Reports
@@ -510,6 +522,98 @@ jobs:
         with:
           path: coverage/lcov_filtered.info
           min_coverage: 70
+
+  superadmin-e2e:
+    name: SuperAdmin E2E Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [test-phase-1, test-phase-2, test-phase-3]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (v24)
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2.18.0
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+          cache: true
+
+      - name: Install System Dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Cache pub dependencies
+        uses: actions/cache@v5
+        with:
+          path: ~/.pub-cache
+          key: pub-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            pub-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase Local
+        run: supabase start
+
+      - name: Create stub .env
+        run: echo "# CI stub" > .env
+
+      - name: Capture Supabase Keys
+        run: |
+          SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d '=' -f 2- | tr -d '"' | tr -d '\r')
+          if [ -z "$SERVICE_ROLE_KEY" ] || [ -z "$ANON_KEY" ]; then
+            echo "::error::Critical failure: Could not capture Supabase keys. Aborting CI."
+            exit 1
+          fi
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> $GITHUB_ENV
+          echo "SUPABASE_URL=http://127.0.0.1:54321" >> $GITHUB_ENV
+
+      - name: Bootstrap Dev Data
+        run: node scripts/dev/bootstrap_dev.mjs
+        env:
+          SUPABASE_URL: "http://127.0.0.1:54321"
+          SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Check if SuperAdmin E2E should run
+        id: should_run_e2e
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          if echo "$CHANGED_FILES" | grep -qE 'test/integration/e2e/superadmin/|lib/features/super_admin/|lib/infrastructure/super_admin/|supabase/migrations/'; then
+            echo "run-e2e=true" >> $GITHUB_OUTPUT
+          else
+            echo "run-e2e=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run SuperAdmin E2E
+        if: steps.should_run_e2e.outputs.run-e2e == 'true'
+        run: |
+          flutter test --no-pub -j 1 \
+            --dart-define=SKIP_MFA_DEV=true \
+            --dart-define=ENV=dev \
+            --dart-define=SUPABASE_URL="http://127.0.0.1:54321" \
+            --dart-define=SUPABASE_KEY="$SUPABASE_SERVICE_ROLE_KEY" \
+            test/integration/e2e/superadmin/
+
+      - name: SuperAdmin E2E Skipped
+        if: steps.should_run_e2e.outputs.run-e2e == 'false'
+        run: echo "SuperAdmin E2E skipped because no relevant changes were detected."
 
   wasm-build:
     name: WASM Build Validation
