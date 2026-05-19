@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:veraprob/application/ad_hoc_cost/shadow_execution_summary.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
 
 // ── Widget ────────────────────────────────────────────────────────────────────
@@ -227,11 +228,12 @@ class _CandidateRow extends ConsumerWidget {
 
   Future<void> _reconcile(WidgetRef ref) async {
     final repo = ref.read(shadowRepoProvider);
+    final userId = ref.read(currentOperatorIdProvider) ?? 'occ-operator';
     await repo.reconcile(
       id: shadowId,
       organizationId: orgId,
       reconciledExecutionId: setId,
-      reconciledByUserId: 'occ-operator', // TODO: wire real user ID
+      reconciledByUserId: userId,
       atUtc: DateTime.now().toUtc(),
     );
     ref.invalidate(unlinkedShadowsProvider);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
 
 import 'superadmin_test_config.dart';
 
@@ -62,6 +63,19 @@ abstract class SuperAdminNavigationHelper {
       SuperAdminTestConfig.defaultTimeout,
     );
 
+    // Fail fast when the panel is in error state (GoTrue HTTP 500 / banned_until=infinity).
+    // Without this guard the test fails with a misleading "org not found in list"
+    // instead of the real cause: the API call failed before the list rendered.
+    final errorPanel = find.byKey(TenantListPanel.tenantListErrorKey);
+    if (errorPanel.evaluate().isNotEmpty) {
+      fail(
+        'TenantListPanel is in error state while navigating to "$orgName". '
+        'GoTrue may be returning HTTP 500 — verify no auth.users rows have '
+        'banned_until = infinity (run migration '
+        '20260519000001_fix_banned_until_infinity).',
+      );
+    }
+
     // Buscar o texto da organização na lista.
     final orgFinder = find.text(orgName);
 
@@ -71,7 +85,7 @@ abstract class SuperAdminNavigationHelper {
     // before layout completes, causing scrollUntilVisible to throw
     // "Bad state: No element").
     if (orgFinder.evaluate().isEmpty) {
-      final listView = find.byKey(const ValueKey('tenant-list-view'));
+      final listView = find.byKey(TenantListPanel.tenantListViewKey);
       if (listView.evaluate().isNotEmpty) {
         final scrollableFinder = find.descendant(
           of: listView.first,

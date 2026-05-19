@@ -14,6 +14,9 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 /// **INV-4 / Lens 2:** No domain types are imported here.
 /// All filtering logic lives in [TenantSearchNotifier].
 class TenantListPanel extends ConsumerStatefulWidget {
+  static const tenantListViewKey = ValueKey('tenant-list-view');
+  static const tenantListErrorKey = ValueKey('tenant-list-error');
+
   final String? selectedOrgId;
   final ValueChanged<TenantHealthView> onOrgSelected;
 
@@ -138,6 +141,7 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            key: TenantListPanel.tenantListErrorKey,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -192,7 +196,7 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
 
   Widget _buildListView(List<TenantHealthView> filtered) {
     return ListView.builder(
-      key: const ValueKey('tenant-list-view'),
+      key: TenantListPanel.tenantListViewKey,
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final t = filtered[index];

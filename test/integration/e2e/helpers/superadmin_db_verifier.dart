@@ -1,7 +1,4 @@
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'superadmin_test_config.dart';
@@ -61,12 +58,11 @@ abstract class SuperAdminDbVerifier {
   /// Verifica `banned_until` para todos os usuários de uma org.
   ///
   /// Quando [shouldBeBanned] é `true`, espera `banned_until` não-nulo
-  /// (tipicamente `'infinity'` representado como data futura distante).
+  /// (tipicamente o sentinel `'9999-12-31 23:59:59+00'`).
   /// Quando `false`, espera `banned_until = null`.
   ///
-  /// Usa a Admin REST API diretamente (`GET /auth/v1/admin/users/{id}`)
-  /// porque o SDK Dart (gotrue 2.20.0) não expõe `banned_until` no modelo
-  /// `User`. A service_role key é usada como Bearer token.
+  /// Reads directly from `auth.users` via `test_get_user_banned_until` RPC
+  /// (SECURITY DEFINER) — bypasses GoTrue Admin REST API.
   ///
   /// **Validates: Requirements 9.1, 9.5**
   static Future<void> assertAllUsersBannedStatus({
@@ -117,43 +113,26 @@ abstract class SuperAdminDbVerifier {
     }
   }
 
-  /// Obtém o valor de `banned_until` de um usuário via Admin REST API.
+  /// Returns `banned_until` for a user via SQL RPC — no GoTrue REST API.
   ///
-  /// Retorna a string raw do campo (ex: `'infinity'`, uma data ISO, ou `null`).
-  /// Usa service_role key como apikey + Authorization header.
+  /// Uses `test_get_user_banned_until` (SECURITY DEFINER, service_role only).
+  /// Avoids GoTrue Admin REST API which returns HTTP 500 when any auth.users
+  /// row has banned_until='infinity' (migration 20260519000002_test_helpers_e2e).
   static Future<String?> _getUserBannedUntil(String userId) async {
-    final url = Uri.parse(
-      '${SuperAdminTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
-    );
-
-    final response = await http.get(
-      url,
-      headers: {
-        'apikey': SuperAdminTestConfig.serviceRoleKey,
-        'Authorization': 'Bearer ${SuperAdminTestConfig.serviceRoleKey}',
-        'Content-Type': 'application/json',
-      },
-    );
-
-    expect(
-      response.statusCode,
-      equals(200),
-      reason:
-          'Admin API GET /auth/v1/admin/users/$userId retornou '
-          '${response.statusCode}: ${response.body}',
-    );
-
-    final json = jsonDecode(response.body) as Map<String, dynamic>;
-    final bannedUntil = json['banned_until'];
-
-    // O Supabase retorna null, uma string ISO, ou a string literal "infinity".
-    if (bannedUntil == null ||
-        bannedUntil == '' ||
-        bannedUntil == '0001-01-01T00:00:00Z') {
-      return null;
+    final client = SuperAdminTestConfig.createServiceRoleClient();
+    try {
+      final result = await client.rpc<String?>(
+        'test_get_user_banned_until',
+        params: {'p_user_id': userId},
+      );
+      if (result == null) return null;
+      final str = result.toString();
+      // Postgres epoch default / empty → treat as null (not banned)
+      if (str.isEmpty || str == '0001-01-01 00:00:00.000Z') return null;
+      return str;
+    } finally {
+      await client.dispose();
     }
-
-    return bannedUntil.toString();
   }
 
   // ── Audit Log ─────────────────────────────────────────────────────────────

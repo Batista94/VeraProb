@@ -1,8 +1,5 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 
 import '../helpers/superadmin_auth_helper.dart';
@@ -190,6 +187,17 @@ void main() {
         return;
       }
 
+      // Guard: CT13.5.2 must have run and succeeded (org must be ACTIVE).
+      final precondStatus = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      if (precondStatus != 'ACTIVE') {
+        markTestSkipped(
+          'CT13.5.3 skipped: org is $precondStatus — CT13.5.2 must pass first.',
+        );
+        return;
+      }
+
       // A org já foi desarquivada no teste 5.2.
       // Verificar que TODOS os admins estão desbloqueados.
 
@@ -330,6 +338,17 @@ void main() {
     ) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+
+      // Guard: CT13.5.4 must have run and succeeded (org must be ACTIVE).
+      final precondStatus = await SuperAdminDbVerifier.getOrgStatus(
+        testOrg.orgId,
+      );
+      if (precondStatus != 'ACTIVE') {
+        markTestSkipped(
+          'CT13.5.5 skipped: org is $precondStatus — CT13.5.4 must pass first.',
+        );
         return;
       }
 
@@ -546,62 +565,21 @@ Finder _findUnarchiveButton(WidgetTester tester) {
   return find.textContaining('Desarquivar');
 }
 
-/// Arquiva uma organização diretamente no banco de dados via service_role.
+/// Archives an org directly in the DB via the `test_archive_org_for_e2e` RPC.
 ///
-/// Usado no `setUpAll` e entre testes para criar o estado inicial de org
-/// arquivada sem depender da UI. Também bloqueia todos os admins (cascata).
-///
-/// Fluxo:
-/// 1. Atualiza `organizations.status` para `'ARCHIVED'`
-/// 2. Atualiza `user_roles.is_active` para `false` para todos os admins
-/// 3. Bane todos os admins via Admin REST API (`banned_until ≈ infinity`)
+/// Single SQL round-trip: sets organizations.status='ARCHIVED',
+/// user_roles.is_active=false, and auth.users.banned_until to the GoTrue-safe
+/// finite sentinel '9999-12-31 23:59:59+00'. Bypasses GoTrue Admin REST API —
+/// which returns HTTP 500 when any auth.users row has banned_until='infinity'
+/// (migration 20260519000002_test_helpers_e2e).
 Future<void> _archiveOrgInDb(TestOrgData org) async {
   final client = SuperAdminTestConfig.createServiceRoleClient();
   try {
-    // 1. Atualizar status da organização para ARCHIVED
-    await client
-        .from('organizations')
-        .update({'status': 'ARCHIVED'})
-        .eq('id', org.orgId);
-
-    // 2. Bloquear todos os admins (is_active=false)
-    await client
-        .from('user_roles')
-        .update({'is_active': false})
-        .eq('organization_id', org.orgId);
-
-    // 3. Banir todos os admins via Admin REST API
-    for (final admin in org.admins) {
-      await _banUserViaAdminApi(admin.userId);
-    }
+    await client.rpc<void>(
+      'test_archive_org_for_e2e',
+      params: {'p_org_id': org.orgId},
+    );
   } finally {
     await client.dispose();
-  }
-}
-
-/// Bane um usuário via Admin REST API (banned_until ≈ infinity).
-///
-/// Usa `ban_duration: '876000h'` (~100 anos) como equivalente a infinity,
-/// pois o SDK Dart não expõe `banned_until` diretamente.
-Future<void> _banUserViaAdminApi(String userId) async {
-  final url = Uri.parse(
-    '${SuperAdminTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
-  );
-
-  final response = await http.put(
-    url,
-    headers: {
-      'apikey': SuperAdminTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${SuperAdminTestConfig.serviceRoleKey}',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({'ban_duration': '876000h'}),
-  );
-
-  if (response.statusCode != 200) {
-    throw Exception(
-      'Falha ao banir user $userId via Admin API: '
-      '${response.statusCode} ${response.body}',
-    );
   }
 }

@@ -27,6 +27,14 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
   final _reasonCtrl = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
+  bool get _isValid => _reasonCtrl.text.trim().length >= 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _reasonCtrl.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
     _reasonCtrl.dispose();
@@ -93,11 +101,13 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: VeraProbColors.error),
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              Navigator.of(context).pop(_reasonCtrl.text.trim());
-            }
-          },
+          onPressed: _isValid
+              ? () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    Navigator.of(context).pop(_reasonCtrl.text.trim());
+                  }
+                }
+              : null,
           child: const Text('Confirmar Arquivamento'),
         ),
       ],

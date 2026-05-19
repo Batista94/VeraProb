@@ -123,6 +123,10 @@ void main() {
       expect(find.text('Alpha Trans'), findsOneWidget);
       expect(find.text('ENTERPRISE'), findsAtLeast(2));
       expect(find.text('BASIC'), findsOneWidget);
+      // E2E navigation helper depends on this key — must stay attached to the ListView
+      expect(find.byKey(TenantListPanel.tenantListViewKey), findsOneWidget);
+      // Error key must NOT be present when data loaded successfully
+      expect(find.byKey(TenantListPanel.tenantListErrorKey), findsNothing);
     });
 
     testWidgets('Selects a tenant and calls onOrgSelected', (tester) async {
@@ -224,6 +228,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.textContaining('API Error'), findsOneWidget);
+      // E2E navigation helper uses this key to detect error state and fail fast
+      expect(find.byKey(TenantListPanel.tenantListErrorKey), findsOneWidget);
+      expect(find.byKey(TenantListPanel.tenantListViewKey), findsNothing);
     });
   });
 
