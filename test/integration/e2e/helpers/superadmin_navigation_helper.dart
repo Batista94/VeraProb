@@ -56,12 +56,20 @@ abstract class SuperAdminNavigationHelper {
     WidgetTester tester,
     String orgName,
   ) async {
-    // Wait for async data load / any pending frames before searching.
-    await tester.pumpAndSettle(
-      const Duration(milliseconds: 100),
-      EnginePhase.sendSemanticsUpdate,
-      SuperAdminTestConfig.defaultTimeout,
-    );
+    // Settle any pending navigation animations.
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Wait until the tenant list finishes loading.
+    // pumpAndSettle can return "settled" before the Supabase FutureProvider
+    // resolves: HTTP in-flight = no Flutter work pending → early settle,
+    // leaving the skeleton visible and tenantListViewKey absent. An explicit
+    // pump loop gives the real HTTP call time to complete.
+    final sw = Stopwatch()..start();
+    while (find.byKey(TenantListPanel.tenantListViewKey).evaluate().isEmpty &&
+        find.byKey(TenantListPanel.tenantListErrorKey).evaluate().isEmpty &&
+        sw.elapsed < SuperAdminTestConfig.defaultTimeout) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
 
     // Fail fast when the panel is in error state (GoTrue HTTP 500 / banned_until=infinity).
     // Without this guard the test fails with a misleading "org not found in list"
@@ -80,23 +88,15 @@ abstract class SuperAdminNavigationHelper {
     final orgFinder = find.text(orgName);
 
     // Se não encontrar imediatamente, pode ser necessário scroll.
-    // Use the specific key to avoid matching TenantSkeletonList (which uses
-    // NeverScrollableScrollPhysics and may have no Scrollable descendant
-    // before layout completes, causing scrollUntilVisible to throw
-    // "Bad state: No element").
+    // Drag the keyed ListView directly — avoids scrollUntilVisible's
+    // Scrollable stability requirement (which throws "Bad state: No element"
+    // when the list rebuilds mid-scroll, e.g. on first data arrival).
     if (orgFinder.evaluate().isEmpty) {
       final listView = find.byKey(TenantListPanel.tenantListViewKey);
       if (listView.evaluate().isNotEmpty) {
-        final scrollableFinder = find.descendant(
-          of: listView.first,
-          matching: find.byType(Scrollable),
-        );
-        if (scrollableFinder.evaluate().isNotEmpty) {
-          await tester.scrollUntilVisible(
-            orgFinder,
-            200,
-            scrollable: scrollableFinder,
-          );
+        for (int i = 0; i < 20 && orgFinder.evaluate().isEmpty; i++) {
+          await tester.drag(listView.first, const Offset(0, -300));
+          await tester.pump(const Duration(milliseconds: 50));
         }
       }
     }
@@ -184,12 +184,13 @@ abstract class SuperAdminNavigationHelper {
   ///
   /// Pré-condição: a lista de tenants está visível.
   static Future<void> filterArchived(WidgetTester tester) async {
-    final archivedChip = find.widgetWithText(FilterChip, 'Suspensos');
+    final archivedChip = find.widgetWithText(FilterChip, 'Arquivadas');
 
     expect(
       archivedChip,
       findsOneWidget,
-      reason: 'O FilterChip "Suspensos" deve estar visível na lista de tenants',
+      reason:
+          'O FilterChip "Arquivadas" deve estar visível na lista de tenants',
     );
 
     await tester.tap(archivedChip);

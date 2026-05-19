@@ -66,22 +66,15 @@ class FakePostgrestFilterBuilder extends Fake
 PostgrestException _pgError(String code, {String message = 'db error'}) =>
     PostgrestException(message: message, code: code);
 
-// ── Tests ──────────────────────────────────────────────────────────────────────
+// ── File-level state ──────────────────────────────────────────────────────────
 
-void main() {
-  late MockSupabaseClient mockClient;
-  late MockFunctionsClient mockFunctions;
-  late SupabaseSuperAdminRepository repo;
+late MockSupabaseClient _mockClient;
+late MockFunctionsClient _mockFunctions;
+late SupabaseSuperAdminRepository _repo;
 
-  setUp(() {
-    mockClient = MockSupabaseClient();
-    mockFunctions = MockFunctionsClient();
-    when(() => mockClient.functions).thenReturn(mockFunctions);
-    repo = SupabaseSuperAdminRepository(mockClient);
-  });
+// ── Test groups ───────────────────────────────────────────────────────────────
 
-  // ── createOrganization ──────────────────────────────────────────────────────
-
+void _testCreateOrganization() {
   group('createOrganization', () {
     const cmd = CreateOrganizationCommand(
       legalName: 'Acme Ltda',
@@ -97,7 +90,7 @@ void main() {
 
     void stubRpc(dynamic result) {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_create_organization',
           params: any(named: 'params'),
         ),
@@ -109,7 +102,7 @@ void main() {
         {'org_id': 'org-1', 'plaintext_secret': 'abc123'},
       ]);
 
-      final result = await repo.createOrganization(cmd);
+      final result = await _repo.createOrganization(cmd);
 
       expect(result.orgId, 'org-1');
       expect(result.plaintextSecret, 'abc123');
@@ -120,11 +113,11 @@ void main() {
         {'org_id': 'org-2', 'plaintext_secret': 'secret'},
       ]);
 
-      await repo.createOrganization(cmd);
+      await _repo.createOrganization(cmd);
 
       final captured =
           verify(
-                () => mockClient.rpc<dynamic>(
+                () => _mockClient.rpc<dynamic>(
                   'super_admin_create_organization',
                   params: captureAny(named: 'params'),
                 ),
@@ -137,7 +130,7 @@ void main() {
       stubRpc(<dynamic>[]);
 
       await expectLater(
-        repo.createOrganization(cmd),
+        _repo.createOrganization(cmd),
         throwsA(
           isA<IntegrityException>().having((e) => e.field, 'field', 'org_id'),
         ),
@@ -150,7 +143,7 @@ void main() {
       ]);
 
       await expectLater(
-        repo.createOrganization(cmd),
+        _repo.createOrganization(cmd),
         throwsA(isA<IntegrityException>()),
       );
     });
@@ -161,7 +154,7 @@ void main() {
       ]);
 
       await expectLater(
-        repo.createOrganization(cmd),
+        _repo.createOrganization(cmd),
         throwsA(
           isA<IntegrityException>().having((e) => e.field, 'field', 'org_id'),
         ),
@@ -176,7 +169,7 @@ void main() {
         ]);
 
         await expectLater(
-          repo.createOrganization(cmd),
+          _repo.createOrganization(cmd),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.field,
@@ -196,7 +189,7 @@ void main() {
         ]);
 
         await expectLater(
-          repo.createOrganization(cmd),
+          _repo.createOrganization(cmd),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.field,
@@ -210,14 +203,14 @@ void main() {
 
     test('maps PostgrestException P0001 → IntegrityException', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_create_organization',
           params: any(named: 'params'),
         ),
       ).thenThrow(_pgError('P0001', message: 'CNPJ already registered'));
 
       await expectLater(
-        repo.createOrganization(cmd),
+        _repo.createOrganization(cmd),
         throwsA(isA<IntegrityException>()),
       );
     });
@@ -226,14 +219,14 @@ void main() {
       'maps PostgrestException 42501 → SovereigntyViolationException',
       () async {
         when(
-          () => mockClient.rpc<dynamic>(
+          () => _mockClient.rpc<dynamic>(
             'super_admin_create_organization',
             params: any(named: 'params'),
           ),
         ).thenThrow(_pgError('42501'));
 
         await expectLater(
-          repo.createOrganization(cmd),
+          _repo.createOrganization(cmd),
           throwsA(isA<SovereigntyViolationException>()),
         );
       },
@@ -241,25 +234,25 @@ void main() {
 
     test('maps PostgrestException 22P02 → ResourceNotFoundException', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_create_organization',
           params: any(named: 'params'),
         ),
       ).thenThrow(_pgError('22P02'));
 
       await expectLater(
-        repo.createOrganization(cmd),
+        _repo.createOrganization(cmd),
         throwsA(isA<ResourceNotFoundException>()),
       );
     });
   });
+}
 
-  // ── checkCnpjExists ─────────────────────────────────────────────────────────
-
+void _testCheckCnpjExists() {
   group('checkCnpjExists', () {
     void stubRpc(dynamic result) {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_check_cnpj_exists',
           params: any(named: 'params'),
         ),
@@ -268,36 +261,38 @@ void main() {
 
     test('returns true when CNPJ exists', () async {
       stubRpc(true);
-      expect(await repo.checkCnpjExists('12345678000190'), isTrue);
+      expect(await _repo.checkCnpjExists('12345678000190'), isTrue);
     });
 
     test('returns false when CNPJ does not exist', () async {
       stubRpc(false);
-      expect(await repo.checkCnpjExists('99999999000191'), isFalse);
+      expect(await _repo.checkCnpjExists('99999999000191'), isFalse);
     });
 
     test('maps PostgrestException to domain exception', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_check_cnpj_exists',
           params: any(named: 'params'),
         ),
       ).thenThrow(_pgError('PGRST116'));
 
       await expectLater(
-        repo.checkCnpjExists('00000000000000'),
+        _repo.checkCnpjExists('00000000000000'),
         throwsA(isA<ResourceNotFoundException>()),
       );
     });
   });
+}
 
-  // ── getAllTenantHealth ───────────────────────────────────────────────────────
-
+void _testGetAllTenantHealth() {
   group('getAllTenantHealth', () {
     test('returns parsed TenantHealthSnapshot list', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => FunctionResponse(
           status: 200,
@@ -317,7 +312,7 @@ void main() {
         ),
       );
 
-      final result = await repo.getAllTenantHealth();
+      final result = await _repo.getAllTenantHealth();
 
       expect(result, hasLength(1));
       expect(result.first.id, 'org-1');
@@ -326,24 +321,28 @@ void main() {
 
     test('wraps Edge Function error in DomainException', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('network failure'));
 
       await expectLater(
-        repo.getAllTenantHealth(),
+        _repo.getAllTenantHealth(),
         throwsA(isA<DomainException>()),
       );
     });
   });
+}
 
-  // ── getSystemAuditLog ───────────────────────────────────────────────────────
-
+void _testGetSystemAuditLog() {
   group('getSystemAuditLog', () {
     test('returns parsed SystemAuditLogEntry list', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => FunctionResponse(
           status: 200,
@@ -359,7 +358,7 @@ void main() {
         ),
       );
 
-      final result = await repo.getSystemAuditLog();
+      final result = await _repo.getSystemAuditLog();
 
       expect(result, hasLength(1));
       expect(result.first.eventType, 'ORG_CREATED');
@@ -367,19 +366,21 @@ void main() {
 
     test('wraps Edge Function error in DomainException', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('timeout'));
 
       await expectLater(
-        repo.getSystemAuditLog(),
+        _repo.getSystemAuditLog(),
         throwsA(isA<DomainException>()),
       );
     });
   });
+}
 
-  // ── updateOrganizationQuota ─────────────────────────────────────────────────
-
+void _testUpdateOrganizationQuota() {
   group('updateOrganizationQuota', () {
     const cmd = UpdateOrganizationQuotaCommand(
       organizationId: 'org-1',
@@ -390,25 +391,25 @@ void main() {
 
     test('calls RPC with correct params', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_update_organization_quota',
           params: any(named: 'params'),
         ),
       ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-      await repo.updateOrganizationQuota(cmd);
+      await _repo.updateOrganizationQuota(cmd);
 
       verify(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_update_organization_quota',
           params: any(named: 'params'),
         ),
       ).called(1);
     });
   });
+}
 
-  // ── archiveOrganization ─────────────────────────────────────────────────────
-
+void _testArchiveOrganization() {
   group('archiveOrganization', () {
     const cmd = ArchiveOrganizationCommand(
       orgId: 'org-1',
@@ -420,16 +421,16 @@ void main() {
 
     test('calls super_admin_archive_organization RPC', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_archive_organization',
           params: any(named: 'params'),
         ),
       ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-      await repo.archiveOrganization(cmd);
+      await _repo.archiveOrganization(cmd);
 
       verify(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_archive_organization',
           params: any(named: 'params'),
         ),
@@ -438,23 +439,23 @@ void main() {
 
     test('maps PostgrestException to domain exception', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_archive_organization',
           params: any(named: 'params'),
         ),
       ).thenThrow(_pgError('P0001', message: 'Org not found'));
 
       await expectLater(
-        repo.archiveOrganization(cmd),
+        _repo.archiveOrganization(cmd),
         throwsA(isA<IntegrityException>()),
       );
     });
   });
+}
 
-  // ── addAdminToOrganization ──────────────────────────────────────────────────
-
+void _testAddAdminToOrganization() {
   group('addAdminToOrganization', () {
-    Future<void> callAdd() => repo.addAdminToOrganization(
+    Future<void> callAdd() => _repo.addAdminToOrganization(
       orgId: 'org-1',
       email: 'admin@acme.com',
       invitationId: 'inv-uuid',
@@ -466,7 +467,7 @@ void main() {
 
     test('calls super_admin_add_org_admin RPC on success', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_add_org_admin',
           params: any(named: 'params'),
         ),
@@ -475,7 +476,7 @@ void main() {
       await callAdd();
 
       verify(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_add_org_admin',
           params: any(named: 'params'),
         ),
@@ -486,7 +487,7 @@ void main() {
       'P0005 (pending invite) → DomainException with descriptive message',
       () async {
         when(
-          () => mockClient.rpc<dynamic>(
+          () => _mockClient.rpc<dynamic>(
             'super_admin_add_org_admin',
             params: any(named: 'params'),
           ),
@@ -509,7 +510,7 @@ void main() {
       'P0006 (active member) → DomainException with descriptive message',
       () async {
         when(
-          () => mockClient.rpc<dynamic>(
+          () => _mockClient.rpc<dynamic>(
             'super_admin_add_org_admin',
             params: any(named: 'params'),
           ),
@@ -528,11 +529,11 @@ void main() {
       },
     );
   });
+}
 
-  // ── revokeInvitation ────────────────────────────────────────────────────────
-
+void _testRevokeInvitation() {
   group('revokeInvitation', () {
-    Future<void> callRevoke() => repo.revokeInvitation(
+    Future<void> callRevoke() => _repo.revokeInvitation(
       orgId: 'org-1',
       email: 'admin@acme.com',
       superAdminUserId: 'sa-uuid',
@@ -541,7 +542,7 @@ void main() {
 
     test('calls super_admin_revoke_invitation RPC on success', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_revoke_invitation',
           params: any(named: 'params'),
         ),
@@ -550,7 +551,7 @@ void main() {
       await callRevoke();
 
       verify(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_revoke_invitation',
           params: any(named: 'params'),
         ),
@@ -559,7 +560,7 @@ void main() {
 
     test('P0008 (no pending invite) → DomainException', () async {
       when(
-        () => mockClient.rpc<dynamic>(
+        () => _mockClient.rpc<dynamic>(
           'super_admin_revoke_invitation',
           params: any(named: 'params'),
         ),
@@ -577,21 +578,21 @@ void main() {
       );
     });
   });
+}
 
-  // ── updateAllowedDomains ────────────────────────────────────────────────────
-
+void _testUpdateAllowedDomains() {
   group('updateAllowedDomains', () {
     test(
       'normalizes domains: lowercase, trim, deduplicate before RPC',
       () async {
         when(
-          () => mockClient.rpc<dynamic>(
+          () => _mockClient.rpc<dynamic>(
             'super_admin_update_allowed_domains',
             params: any(named: 'params'),
           ),
         ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-        await repo.updateAllowedDomains('org-1', [
+        await _repo.updateAllowedDomains('org-1', [
           'ACME.COM',
           ' acme.com ',
           'FLEET.IO',
@@ -599,7 +600,7 @@ void main() {
 
         final captured =
             verify(
-                  () => mockClient.rpc<dynamic>(
+                  () => _mockClient.rpc<dynamic>(
                     'super_admin_update_allowed_domains',
                     params: captureAny(named: 'params'),
                   ),
@@ -611,14 +612,16 @@ void main() {
       },
     );
   });
+}
 
-  // ── Edge Function proxy methods ─────────────────────────────────────────────
-
+void _testGetTenantTechnicalHealth() {
   group('getTenantTechnicalHealth', () {
     test('returns data map from Edge Function', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => FunctionResponse(
           status: 200,
@@ -628,28 +631,34 @@ void main() {
         ),
       );
 
-      final result = await repo.getTenantTechnicalHealth('org-1');
+      final result = await _repo.getTenantTechnicalHealth('org-1');
       expect(result['schema_ok'], isTrue);
     });
 
     test('wraps Edge Function error in DomainException', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('503'));
 
       await expectLater(
-        repo.getTenantTechnicalHealth('org-1'),
+        _repo.getTenantTechnicalHealth('org-1'),
         throwsA(isA<DomainException>()),
       );
     });
   });
+}
 
+void _testGetEvidenceVolume() {
   group('getEvidenceVolume', () {
     test('returns volume metrics map', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => FunctionResponse(
           status: 200,
@@ -659,28 +668,34 @@ void main() {
         ),
       );
 
-      final result = await repo.getEvidenceVolume('org-1');
+      final result = await _repo.getEvidenceVolume('org-1');
       expect(result['total'], 1000);
     });
 
     test('wraps Edge Function error in DomainException', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('unavailable'));
 
       await expectLater(
-        repo.getEvidenceVolume('org-1'),
+        _repo.getEvidenceVolume('org-1'),
         throwsA(isA<DomainException>()),
       );
     });
   });
+}
 
+void _testCheckSchemaIntegrity() {
   group('checkSchemaIntegrity', () {
     test('returns integrity check result map', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenAnswer(
         (_) async => FunctionResponse(
           status: 200,
@@ -690,20 +705,46 @@ void main() {
         ),
       );
 
-      final result = await repo.checkSchemaIntegrity('org-1');
+      final result = await _repo.checkSchemaIntegrity('org-1');
       expect(result['ok'], isTrue);
     });
 
     test('wraps Edge Function error in DomainException', () async {
       when(
-        () =>
-            mockFunctions.invoke('super-admin-proxy', body: any(named: 'body')),
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
       ).thenThrow(Exception('edge fn down'));
 
       await expectLater(
-        repo.checkSchemaIntegrity('org-1'),
+        _repo.checkSchemaIntegrity('org-1'),
         throwsA(isA<DomainException>()),
       );
     });
   });
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
+void main() {
+  setUp(() {
+    _mockClient = MockSupabaseClient();
+    _mockFunctions = MockFunctionsClient();
+    when(() => _mockClient.functions).thenReturn(_mockFunctions);
+    _repo = SupabaseSuperAdminRepository(_mockClient);
+  });
+
+  _testCreateOrganization();
+  _testCheckCnpjExists();
+  _testGetAllTenantHealth();
+  _testGetSystemAuditLog();
+  _testUpdateOrganizationQuota();
+  _testArchiveOrganization();
+  _testAddAdminToOrganization();
+  _testRevokeInvitation();
+  _testUpdateAllowedDomains();
+  _testGetTenantTechnicalHealth();
+  _testGetEvidenceVolume();
+  _testCheckSchemaIntegrity();
 }

@@ -33,47 +33,10 @@ class GenerateOrgSecretHandler {
     );
 
     try {
-      final response = await _client.functions.invoke(
-        'generate-org-secret',
-        body: {'organization_id': organizationId},
-      );
-
-      if (response.status != 200) {
-        final data = response.data as Map<String, dynamic>?;
-        final error = data?['error'] as String? ?? 'Unknown error';
-        throw OrgSecretException('Falha ao gerar secret: $error');
-      }
-
-      final data = response.data;
-      if (data is! Map<String, dynamic>) {
-        throw const OrgSecretException(
-          'Falha ao gerar secret: resposta inválida do servidor',
-        );
-      }
-
-      final secret = data['secret'];
-      final version = data['version'];
-      final orgId = data['organization_id'];
-
-      if (secret is! String || version is! int || orgId is! String) {
-        throw const OrgSecretException(
-          'Falha ao gerar secret: campos obrigatórios ausentes ou inválidos',
-        );
-      }
-
-      return GenerateOrgSecretResult(
-        secret: secret,
-        version: version,
-        organizationId: orgId,
-      );
+      final data = await _invokeEdgeFunction(organizationId);
+      return _parseSuccessResponse(data);
     } on FunctionException catch (e) {
-      // Sanitize details: only use string details or reasonPhrase.
-      // Complex objects (Map, List) may contain sensitive internal data.
-      final details = e.details;
-      final sanitized = details is String && details.isNotEmpty
-          ? details
-          : (e.reasonPhrase ?? 'erro desconhecido');
-      throw OrgSecretException('Falha ao gerar secret: $sanitized');
+      throw OrgSecretException('Falha ao gerar secret: ${_sanitizeDetails(e)}');
     } on OrgSecretException {
       rethrow;
     } on Exception catch (_) {
@@ -81,6 +44,55 @@ class GenerateOrgSecretHandler {
         'Falha ao gerar secret: erro inesperado no mapeamento da resposta',
       );
     }
+  }
+
+  Future<Map<String, dynamic>> _invokeEdgeFunction(
+    String organizationId,
+  ) async {
+    final response = await _client.functions.invoke(
+      'generate-org-secret',
+      body: {'organization_id': organizationId},
+    );
+
+    if (response.status != 200) {
+      final body = response.data as Map<String, dynamic>?;
+      final error = body?['error'] as String? ?? 'Unknown error';
+      throw OrgSecretException('Falha ao gerar secret: $error');
+    }
+
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw const OrgSecretException(
+        'Falha ao gerar secret: resposta inválida do servidor',
+      );
+    }
+    return data;
+  }
+
+  GenerateOrgSecretResult _parseSuccessResponse(Map<String, dynamic> data) {
+    final secret = data['secret'];
+    final version = data['version'];
+    final orgId = data['organization_id'];
+
+    if (secret is! String || version is! int || orgId is! String) {
+      throw const OrgSecretException(
+        'Falha ao gerar secret: campos obrigatórios ausentes ou inválidos',
+      );
+    }
+
+    return GenerateOrgSecretResult(
+      secret: secret,
+      version: version,
+      organizationId: orgId,
+    );
+  }
+
+  // Sanitize FunctionException details: only forward String details to avoid
+  // leaking internal Map/List structures that may contain sensitive data.
+  String _sanitizeDetails(FunctionException e) {
+    final details = e.details;
+    if (details is String && details.isNotEmpty) return details;
+    return e.reasonPhrase ?? 'erro desconhecido';
   }
 }
 

@@ -59,7 +59,15 @@ STRICT MEMORY PROTOCOL para todos os agentes:
 > **Lições Aprendidas** (Auth Lifecycle, Async Chain Isolation, Narrow Panels, E2E Protocols, Test CNPJ Factory, Regression Ack): consulte [`.kiro/steering/lessons.md`](steering/lessons.md) — fonte oficial Kiro auto-carregada por todos os agentes.
 
 ---
-## 8. COMPLEXITY GATE (Hard Limits)
+## 8. DIRETRIZES DE TESTES E2E (MANDATÓRIO)
+- **Execução via Makefile**: Todos os testes em `test/integration/e2e/**` devem ser executados através de `make test-e2e` ou `make test-e2e-file FILE=...`. Nunca execute `flutter test` direto nessas pastas para evitar timeouts de `pumpAndSettle` provocados pela falta de `--dart-define=SKIP_MFA_DEV=true`.
+- **Gerenciamento de Modais**: Modais com `barrierDismissible: false` bloqueiam interações externas. Feche o modal via `cancelModal(tester)` antes de tentar qualquer navegação (como clicar no NavRail ou abas).
+- **Precisão de Seletores**: Valide no arquivo da tela o tipo exato do widget (`TextField` vs `TextFormField`) e o texto literal exato do botão/label. Prefira seletores por `ValueKey` quando disponíveis.
+- **Massa de Dados Válida**: Use geradores adequados como `SuperAdminDataFactory.generateUniqueCnpj()` para CNPJs válidos, caso contrário o formulário falhará na validação do dígito verificador.
+- **Sem Warnings**: Remova imports e variáveis não utilizadas nos arquivos de teste antes de commitar para passar no linter estrito.
+
+---
+## 9. COMPLEXITY GATE (Hard Limits)
 Limites impostos pelo scanner forense para evitar débitos técnicos e garantir auditabilidade.
 
 | Camada | Linhas/Método (Aviso/Block) | Complexidade (Aviso/Block) | Aninhamento (Aviso/Block) |
