@@ -533,7 +533,7 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
   # 9.3: Test Presence Gate (70% Threshold for Critical Files)
   # BLOCK on main / PR-to-main; WARN on feature branches.
   CRITICAL_FILES=$(echo "$CHANGED_FILES" | grep -E "^lib/(domain|application|infrastructure)/" | grep -vE "\.(g|freezed)\.dart$" || true)
-  TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v "^$" | wc -l | tr -d ' ')
+  TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v '^[[:space:]]*$' | grep -c . || echo "0")
 
   if [[ "$TOTAL_CRITICAL" -gt 0 ]]; then
     if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
@@ -545,15 +545,19 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
     COVERED_COUNT=0
     MISSING_FILES=""
     while IFS= read -r f; do
-      [[ -z "$f" ]] && continue
+      [[ -z "$f" || "$f" =~ ^[[:space:]]*$ ]] && continue
       TEST_FILE=$(echo "$f" | sed 's|^lib/|test/|' | sed 's|\.dart$|_test.dart|')
       if echo "$CHANGED_FILES" | grep -q "$TEST_FILE" || [[ -f "$TEST_FILE" ]]; then
         COVERED_COUNT=$((COVERED_COUNT + 1))
       else
-        # Fallback: import-based detection — search test/ for any _test.dart
-        # that imports this source file (covers cross-folder test organization).
+        # Fallback: import-based detection — only valid when the importing test
+        # file is named after the source file (<basename>_test.dart), preventing
+        # false positives from barrel or integration tests that happen to import
+        # this file as a dependency.
         PACKAGE_PATH=$(echo "$f" | sed 's|^lib/|package:veraprob/|')
-        IMPORT_HIT=$(grep -rl "import '$PACKAGE_PATH'" test/ 2>/dev/null | grep "_test\.dart$" | head -1 || true)
+        SRC_BASENAME=$(basename "$f" .dart)
+        SRC_BASENAME_ESC=$(printf '%s' "$SRC_BASENAME" | sed 's/[]\[.^$*?+{}()|\\]/\\&/g')
+        IMPORT_HIT=$(grep -rl "import '$PACKAGE_PATH'" test/ 2>/dev/null | grep "_test\.dart$" | grep -E "(^|/)${SRC_BASENAME_ESC}_test\.dart$" | head -1 || true)
         if [[ -n "$IMPORT_HIT" ]]; then
           COVERED_COUNT=$((COVERED_COUNT + 1))
         else
