@@ -55,23 +55,35 @@ abstract class SuperAdminNavigationHelper {
     WidgetTester tester,
     String orgName,
   ) async {
+    // Wait for async data load / any pending frames before searching.
+    await tester.pumpAndSettle(
+      const Duration(milliseconds: 100),
+      EnginePhase.sendSemanticsUpdate,
+      SuperAdminTestConfig.defaultTimeout,
+    );
+
     // Buscar o texto da organização na lista.
     final orgFinder = find.text(orgName);
 
     // Se não encontrar imediatamente, pode ser necessário scroll.
-    // Primeiro, verificar se está visível.
+    // Use the specific key to avoid matching TenantSkeletonList (which uses
+    // NeverScrollableScrollPhysics and may have no Scrollable descendant
+    // before layout completes, causing scrollUntilVisible to throw
+    // "Bad state: No element").
     if (orgFinder.evaluate().isEmpty) {
-      // Tentar scroll na lista para encontrar o item.
-      final listView = find.byType(ListView);
+      final listView = find.byKey(const ValueKey('tenant-list-view'));
       if (listView.evaluate().isNotEmpty) {
-        await tester.scrollUntilVisible(
-          orgFinder,
-          200,
-          scrollable: find.descendant(
-            of: listView.first,
-            matching: find.byType(Scrollable),
-          ),
+        final scrollableFinder = find.descendant(
+          of: listView.first,
+          matching: find.byType(Scrollable),
         );
+        if (scrollableFinder.evaluate().isNotEmpty) {
+          await tester.scrollUntilVisible(
+            orgFinder,
+            200,
+            scrollable: scrollableFinder,
+          );
+        }
       }
     }
 

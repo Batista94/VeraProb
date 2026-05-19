@@ -64,6 +64,27 @@ abstract class SuperAdminAuthHelper {
 
     ErrorWidget.builder = originalErrorWidgetBuilder;
 
+    // Fail fast: empty dart-defines cause SupabaseConfig.initialize() to return
+    // silently. PostgresTestConfig falls back to .env via dart:io, so
+    // isSupabaseRunning() returns true and tests are not skipped — but
+    // Supabase.instance is never initialized. Detect this here and emit an
+    // actionable message instead of a cryptic AssertionError later.
+    try {
+      Supabase.instance.client;
+    } catch (_) {
+      fail(
+        'Supabase singleton not initialized after app.main().\n'
+        'Run E2E tests via the Makefile:\n'
+        '  make test-e2e\n'
+        '  make test-e2e-file FILE=<path>\n'
+        'or pass all required dart-defines explicitly:\n'
+        '  --dart-define=SUPABASE_URL=<url>\n'
+        '  --dart-define=SUPABASE_KEY=<anon_key>\n'
+        '  --dart-define=SKIP_MFA_DEV=true\n'
+        '  --dart-define=ENV=dev',
+      );
+    }
+
     // Localizar campos de email e senha.
     // O padrão da UI usa TextField com InputDecoration contendo hintText
     // ou labelText. Buscamos por tipo e posição (primeiro = email, segundo = senha).
@@ -144,9 +165,16 @@ abstract class SuperAdminAuthHelper {
   ///
   /// Retorna `true` se `currentSession` não é nulo e o token de acesso
   /// ainda está presente. Não valida expiração do JWT — apenas presença.
+  ///
+  /// Retorna `false` se o singleton ainda não foi inicializado (dart-defines
+  /// ausentes / SupabaseConfig.initialize() pulado silenciosamente).
   static Future<bool> isSessionActive() async {
-    final session = Supabase.instance.client.auth.currentSession;
-    return session != null && session.accessToken.isNotEmpty;
+    try {
+      final session = Supabase.instance.client.auth.currentSession;
+      return session != null && session.accessToken.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Força a expiração/invalidação da sessão para cenários adversos.

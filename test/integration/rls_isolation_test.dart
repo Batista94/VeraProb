@@ -79,9 +79,18 @@ Future<String> _ensureUser(
         'Authorization': 'Bearer $serviceRoleKey',
       },
     );
-    final list =
-        (jsonDecode(listResponse.body) as Map<String, dynamic>)['users']
-            as List<dynamic>;
+    if (listResponse.statusCode != 200) {
+      throw Exception(
+        'Admin list users failed (${listResponse.statusCode}): ${listResponse.body}',
+      );
+    }
+    final body = jsonDecode(listResponse.body) as Map<String, dynamic>;
+    final list = body['users'] as List<dynamic>?;
+    if (list == null || list.isEmpty) {
+      throw Exception(
+        'User $email not found in admin list (body: ${listResponse.body})',
+      );
+    }
     return (list.first as Map<String, dynamic>)['id'] as String;
   }
 
