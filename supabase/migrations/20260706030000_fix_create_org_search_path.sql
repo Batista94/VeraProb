@@ -1,5 +1,5 @@
 -- =============================================================================
--- Migration: Atomic org_api_secrets population on org creation (INV-28)
+-- Migration: Add extensions schema to search_path for organization creation (INV-DB)
 -- =============================================================================
 -- Problem: secret generation was a separate HTTP call to Edge Function
 -- generate-org-secret, which silently failed under AAL2/MFA in local envs.
@@ -8,23 +8,19 @@
 -- insert into org_api_secrets, and return the plaintext secret exactly once
 -- in the result set. Plain-text is never stored.
 --
--- Breaking change: return type changes from UUID → TABLE(org_id, plaintext_secret).
--- The old overload MUST be dropped first; CREATE OR REPLACE cannot change return type.
---
 -- INV-3:  org_api_secrets is append-only (immutability trigger already in place).
 -- INV-6:  All datetimes TIMESTAMPTZ via NOW() (session is UTC-pinned).
 -- INV-22: Secret bound to org UUID at creation — cross-tenant HMAC mismatch = quarantine.
 -- INV-28: org secret generated atomically at creation. Plaintext returned once, hash stored.
 -- =============================================================================
 
--- ── Step 1: Drop old overload (return type UUID — cannot change via OR REPLACE) ─
+-- ── Guard: pgcrypto required for gen_random_bytes / digest (INV-28) ─────────
+-- Idempotent. Supabase hosted pre-installs it; fresh local/CI envs (db reset)
+-- may not. Declaring it here makes this migration self-contained regardless of
+-- whether 20200101000000_enable_extensions.sql ran in the same session.
+CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
-DROP FUNCTION IF EXISTS public.super_admin_create_organization(
-  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INT, INT, UUID,
-  JSONB, INT, INT, INT, TEXT, TEXT, TEXT, TEXT, text[]
-);
-
--- ── Step 2: Recreate with new return type TABLE(org_id, plaintext_secret) ──────
+-- ── Step 1: Recreate function with new search_path including extensions ──────
 
 CREATE OR REPLACE FUNCTION public.super_admin_create_organization(
   p_legal_name            TEXT,
@@ -49,7 +45,7 @@ CREATE OR REPLACE FUNCTION public.super_admin_create_organization(
 RETURNS TABLE(org_id UUID, plaintext_secret TEXT)
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, auth
+SET search_path = public, auth, extensions
 AS $fn$
 DECLARE
   v_org_id         UUID := gen_random_uuid();
@@ -132,8 +128,8 @@ BEGIN
   -- ── Generate and store org secret atomically (INV-28) ──────────────────────
   -- Plaintext derived from 32 cryptographically random bytes via pgcrypto.
   -- Only the SHA-256 hex digest is persisted; plaintext is returned once and discarded.
-  v_raw_secret  := encode(gen_random_bytes(32), 'hex');
-  v_secret_hash := encode(digest(v_raw_secret, 'sha256'), 'hex');
+  v_raw_secret  := encode(extensions.gen_random_bytes(32), 'hex');
+  v_secret_hash := encode(extensions.digest(v_raw_secret, 'sha256'), 'hex');
 
   INSERT INTO public.org_api_secrets (
     organization_id,
@@ -179,7 +175,7 @@ BEGIN
 END;
 $fn$;
 
--- ── Step 3: Permissions ───────────────────────────────────────────────────────
+-- ── Step 2: Permissions ───────────────────────────────────────────────────────
 REVOKE ALL ON FUNCTION public.super_admin_create_organization(
   TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, INT, INT, UUID,
   JSONB, INT, INT, INT, TEXT, TEXT, TEXT, TEXT, text[]
