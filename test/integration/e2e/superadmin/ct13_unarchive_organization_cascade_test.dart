@@ -331,13 +331,10 @@ void _test55() {
     await SuperAdminNavigationHelper.goToTenantDetail(tester, _testOrg.orgName);
     await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-    // Verificar presença do botão "Adicionar Admin" (ou equivalente)
-    final addAdminButton = find.byTooltip('Adicionar Admin');
-    final addAdminText = find.widgetWithText(FilledButton, 'Adicionar Admin');
-    final addAdminElevated = find.widgetWithText(
-      ElevatedButton,
-      'Adicionar Admin',
-    );
+    // Verificar presença do botão "Adicionar Administrador" (ou equivalente)
+    final addAdminButton = find.byTooltip('Adicionar Administrador');
+    final addAdminText = find.widgetWithText(FilledButton, 'Adicionar');
+    final addAdminElevated = find.widgetWithText(ElevatedButton, 'Adicionar');
     final addAdminIcon = find.byTooltip('Adicionar');
 
     final addAdminPresent =
@@ -350,7 +347,7 @@ void _test55() {
       addAdminPresent,
       isTrue,
       reason:
-          'O botão "Adicionar Admin" deve estar visível após '
+          'O botão "Adicionar Administrador" deve estar visível após '
           'desarquivamento da org (Req 5.5)',
     );
 

@@ -104,7 +104,7 @@ void main() {
             // 3. Verify audit log exists for ARCHIVE operation
             final archiveLog = await SuperAdminDbVerifier.assertAuditLogExists(
               orgId: org.orgId,
-              eventType: 'ARCHIVE_ORGANIZATION',
+              eventType: 'ORG_ARCHIVED',
               reasonNotNull: true,
               client: serviceRoleClient,
             );
@@ -135,7 +135,7 @@ void main() {
               final unarchiveLog =
                   await SuperAdminDbVerifier.assertAuditLogExists(
                     orgId: org.orgId,
-                    eventType: 'UNARCHIVE_ORGANIZATION',
+                    eventType: 'ORG_UNARCHIVED',
                     reasonNotNull: true,
                     client: serviceRoleClient,
                   );

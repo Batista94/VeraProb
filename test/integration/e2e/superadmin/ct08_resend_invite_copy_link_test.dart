@@ -1,10 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:veraprob/main.dart' as app;
+import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
+import '../helpers/failing_super_admin_repository.dart';
 import '../helpers/superadmin_auth_helper.dart';
 import '../helpers/superadmin_data_factory.dart';
 import '../helpers/superadmin_navigation_helper.dart';
@@ -79,7 +81,11 @@ void main() {
         );
 
         // Verificar que o botão está habilitado (IconButton com onPressed != null)
-        final iconButton = tester.widget<IconButton>(copyButton.first);
+        final iconButton = tester.widget<IconButton>(
+          find
+              .ancestor(of: copyButton, matching: find.byType(IconButton))
+              .first,
+        );
         expect(
           iconButton.onPressed,
           isNotNull,
@@ -114,7 +120,11 @@ void main() {
         );
 
         // Verificar que o botão está habilitado
-        final iconButton = tester.widget<IconButton>(resendButton.first);
+        final iconButton = tester.widget<IconButton>(
+          find
+              .ancestor(of: resendButton, matching: find.byType(IconButton))
+              .first,
+        );
         expect(
           iconButton.onPressed,
           isNotNull,
@@ -210,6 +220,14 @@ void main() {
       final resendButton = find.byTooltip('Reenviar Convite');
       expect(resendButton, findsAtLeast(1));
       await tester.tap(resendButton.first);
+      await tester.pumpAndSettle();
+
+      // Preencher justificativa e confirmar
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Reenvio justificável',
+      );
+      await SuperAdminWidgetHelpers.confirmModal(tester);
 
       // Aguardar feedback visual de sucesso (snackbar)
       await SuperAdminWidgetHelpers.waitForSnackbar(
@@ -250,12 +268,6 @@ void main() {
             'O botão "Copiar link de convite" NÃO deve estar presente '
             'quando não há convites pendentes (Req 2.5)',
       );
-
-      // O botão "Reenviar Convite" pode estar presente para admins que
-      // não fizeram login ainda (!hasSignedIn), mas não para admins ativos
-      // que já logaram. Verificamos que não há botão associado a pendentes.
-      // Como todos os admins são ativos nesta org, verificamos a ausência
-      // do ícone de copiar (que é exclusivo de pendentes com token).
     });
 
     testWidgets('2.6 Exibição de erro em caso de falha de rede ao reenviar', (
@@ -266,22 +278,35 @@ void main() {
         return;
       }
 
-      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-      await SuperAdminNavigationHelper.goToTenantDetail(
-        tester,
-        testOrg.orgName,
-      );
-      await SuperAdminNavigationHelper.goToUsersTab(tester);
-
-      // Simular falha de rede via HttpOverrides
-      final originalOverrides = HttpOverrides.current;
-      HttpOverrides.global = _FailingHttpOverrides();
-
       try {
+        app.testProviderOverrides = [
+          superAdminRepositoryProvider.overrideWith((ref) {
+            return FailingSuperAdminRepository(
+              ref.watch(supabaseClientProvider),
+              failResend: true,
+            );
+          }),
+        ];
+
+        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+        await SuperAdminNavigationHelper.goToTenantDetail(
+          tester,
+          testOrg.orgName,
+        );
+        await SuperAdminNavigationHelper.goToUsersTab(tester);
+
         // Tocar no botão de reenviar convite
         final resendButton = find.byTooltip('Reenviar Convite');
         expect(resendButton, findsAtLeast(1));
         await tester.tap(resendButton.first);
+        await tester.pumpAndSettle();
+
+        // Preencher justificativa e confirmar
+        await SuperAdminWidgetHelpers.fillJustification(
+          tester,
+          'Reenvio falho',
+        );
+        await SuperAdminWidgetHelpers.confirmModal(tester);
 
         // Aguardar feedback de erro (snackbar com mensagem de erro)
         await SuperAdminWidgetHelpers.waitForSnackbar(
@@ -307,146 +332,8 @@ void main() {
               'de rede (Req 2.6)',
         );
       } finally {
-        // Restaurar HttpOverrides original
-        HttpOverrides.global = originalOverrides;
+        app.testProviderOverrides = [];
       }
     });
   });
-}
-
-/// HttpOverrides que simula falha de rede para todos os requests.
-///
-/// Usado pelo teste 2.6 para verificar o comportamento da UI quando
-/// a operação de reenvio falha por erro de rede.
-class _FailingHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return _FailingHttpClient();
-  }
-}
-
-/// HttpClient que rejeita todas as conexões simulando falha de rede.
-class _FailingHttpClient implements HttpClient {
-  @override
-  bool autoUncompress = true;
-
-  @override
-  Duration? connectionTimeout = const Duration(seconds: 1);
-
-  @override
-  Duration idleTimeout = const Duration(seconds: 1);
-
-  @override
-  int? maxConnectionsPerHost;
-
-  @override
-  String? userAgent;
-
-  @override
-  void addCredentials(
-    Uri url,
-    String realm,
-    HttpClientCredentials credentials,
-  ) {}
-
-  @override
-  void addProxyCredentials(
-    String host,
-    int port,
-    String realm,
-    HttpClientCredentials credentials,
-  ) {}
-
-  @override
-  set authenticate(
-    Future<bool> Function(Uri url, String scheme, String? realm)? f,
-  ) {}
-
-  @override
-  set authenticateProxy(
-    Future<bool> Function(String host, int port, String scheme, String? realm)?
-    f,
-  ) {}
-
-  @override
-  set badCertificateCallback(
-    bool Function(X509Certificate cert, String host, int port)? callback,
-  ) {}
-
-  @override
-  set connectionFactory(
-    Future<ConnectionTask<Socket>> Function(
-      Uri url,
-      String? proxyHost,
-      int? proxyPort,
-    )?
-    f,
-  ) {}
-
-  @override
-  set findProxy(String Function(Uri url)? f) {}
-
-  @override
-  set keyLog(void Function(String line)? callback) {}
-
-  @override
-  void close({bool force = false}) {}
-
-  @override
-  Future<HttpClientRequest> delete(String host, int port, String path) =>
-      _fail();
-
-  @override
-  Future<HttpClientRequest> deleteUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> get(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> getUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> head(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> headUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> open(
-    String method,
-    String host,
-    int port,
-    String path,
-  ) => _fail();
-
-  @override
-  Future<HttpClientRequest> openUrl(String method, Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> patch(String host, int port, String path) =>
-      _fail();
-
-  @override
-  Future<HttpClientRequest> patchUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> post(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> postUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> put(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> putUrl(Uri url) => _fail();
-
-  Future<HttpClientRequest> _fail() {
-    return Future.error(
-      const SocketException('Simulated network failure (CT08 test)'),
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
 }

@@ -592,7 +592,11 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
   }
 
   Widget _buildLinkDialog(BuildContext context) {
-    final inviteUrl = '${Uri.base.origin}/accept-invite?token=$_generatedToken';
+    final baseUri = Uri.base;
+    final origin = (baseUri.scheme == 'http' || baseUri.scheme == 'https')
+        ? baseUri.origin
+        : 'http://localhost:3000';
+    final inviteUrl = '$origin/accept-invite?token=$_generatedToken';
     return AlertDialog(
       title: const Text('Convite Gerado'),
       content: SizedBox(
@@ -671,7 +675,11 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 
       try {
         final email = _emailController.text;
-        final inviteUrl = '${Uri.base.origin}/accept-invite?token=$token';
+        final baseUri = Uri.base;
+        final origin = (baseUri.scheme == 'http' || baseUri.scheme == 'https')
+            ? baseUri.origin
+            : 'http://localhost:3000';
+        final inviteUrl = '$origin/accept-invite?token=$token';
         final orgName =
             (await widget.parentRef.read(orgSettingsProvider.future))?.name ??
             '';

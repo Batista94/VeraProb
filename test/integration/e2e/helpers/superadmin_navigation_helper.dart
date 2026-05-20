@@ -84,8 +84,19 @@ abstract class SuperAdminNavigationHelper {
       );
     }
 
+    // Filter using the search bar to locate the organization deterministically
+    final searchField = find.byType(TextField);
+    if (searchField.evaluate().isNotEmpty) {
+      await tester.enterText(searchField.first, orgName);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+    }
+
     // Buscar o texto da organização na lista.
-    final orgFinder = find.text(orgName);
+    final orgFinder = find.descendant(
+      of: find.byKey(TenantListPanel.tenantListViewKey),
+      matching: find.text(orgName),
+    );
 
     // Se não encontrar imediatamente, pode ser necessário scroll.
     // Drag the keyed ListView directly — avoids scrollUntilVisible's

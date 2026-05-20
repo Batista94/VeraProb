@@ -242,8 +242,31 @@ abstract class SuperAdminWidgetHelpers {
           )
           .evaluate()
           .isNotEmpty;
+      final isInsideTextField = find
+          .ancestor(of: find.byWidget(widget), matching: find.byType(TextField))
+          .evaluate()
+          .isNotEmpty;
+      final isInsideTextFormField = find
+          .ancestor(
+            of: find.byWidget(widget),
+            matching: find.byType(TextFormField),
+          )
+          .evaluate()
+          .isNotEmpty;
+      final isInsideEditableText = find
+          .ancestor(
+            of: find.byWidget(widget),
+            matching: find.byType(EditableText),
+          )
+          .evaluate()
+          .isNotEmpty;
 
-      if (!isInsideTabBar && !isInsidePageView && !isInsideListView) {
+      if (!isInsideTabBar &&
+          !isInsidePageView &&
+          !isInsideListView &&
+          !isInsideTextField &&
+          !isInsideTextFormField &&
+          !isInsideEditableText) {
         fail(
           'Scrollable horizontal inesperado encontrado fora de '
           'componentes legítimos (TabBar, PageView, ListView horizontal). '

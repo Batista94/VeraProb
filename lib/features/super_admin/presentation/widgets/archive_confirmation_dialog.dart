@@ -33,6 +33,8 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
     super.dispose();
   }
 
+  bool get _isValid => _reasonCtrl.text.trim().length >= 10;
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -74,12 +76,14 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
               TextFormField(
                 controller: _reasonCtrl,
                 autofocus: true,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 decoration: const InputDecoration(
                   labelText: 'Motivo *',
                   hintText: 'Mínimo 10 caracteres',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
+                onChanged: (_) => setState(() {}),
                 validator: (v) {
                   final val = v?.trim() ?? '';
                   if (val.isEmpty) return 'Motivo obrigatório.';
@@ -98,11 +102,13 @@ class _ArchiveConfirmationDialogState extends State<ArchiveConfirmationDialog> {
         ),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: VeraProbColors.error),
-          onPressed: () {
-            if (_formKey.currentState?.validate() ?? false) {
-              Navigator.of(context).pop(_reasonCtrl.text.trim());
-            }
-          },
+          onPressed: _isValid
+              ? () {
+                  if (_formKey.currentState?.validate() ?? false) {
+                    Navigator.of(context).pop(_reasonCtrl.text.trim());
+                  }
+                }
+              : null,
           child: const Text('Confirmar Arquivamento'),
         ),
       ],
