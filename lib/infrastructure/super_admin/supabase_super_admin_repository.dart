@@ -199,6 +199,11 @@ class SupabaseSuperAdminRepository
           'p_trade_name': cmd.tradeName,
           'p_legal_name': cmd.legalName,
           'p_expected_updated_at': cmd.expectedUpdatedAt?.toIso8601String(),
+          // CT10 — Motor Forense, Compliance, Infraestrutura
+          'p_clock_drift_tolerance_s': cmd.clockDriftToleranceS,
+          'p_data_retention_days': cmd.dataRetentionDays,
+          'p_connection_pool_limit': cmd.connectionPoolLimit,
+          'p_storage_quota_gb': cmd.storageQuotaGb,
         },
       );
     } on PostgrestException catch (e) {

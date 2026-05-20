@@ -49,6 +49,23 @@ class TenantHealthView {
   /// Data de criação da organização — campo de identidade core imutável.
   final DateTime? createdAt;
 
+  /// Domínios permitidos para autenticação (lista de baixo nivel de email).
+  final List<String> allowedDomains;
+
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+
+  /// Tolerância de clock drift em segundos. Padrão: 300.
+  final int clockDriftToleranceS;
+
+  /// Dias de retenção de evidências online. Padrão: 1825 (5 anos).
+  final int dataRetentionDays;
+
+  /// Limite de conexões Postgres por tenant. Padrão: 60.
+  final int connectionPoolLimit;
+
+  /// Quota de armazenamento em GB. Padrão: 100.
+  final int storageQuotaGb;
+
   const TenantHealthView({
     required this.id,
     required this.name,
@@ -70,6 +87,12 @@ class TenantHealthView {
     this.updatedAt,
     this.cnpj,
     this.createdAt,
+    this.allowedDomains = const [],
+    // CT10 — Motor Forense, Compliance, Infraestrutura
+    this.clockDriftToleranceS = 300,
+    this.dataRetentionDays = 1825,
+    this.connectionPoolLimit = 60,
+    this.storageQuotaGb = 100,
   });
 
   /// Derived from [status] — ACTIVE orgs are operational.
@@ -109,18 +132,46 @@ class TenantHealthView {
       updatedAt: snapshot.updatedAt,
       cnpj: snapshot.cnpj,
       createdAt: snapshot.createdAt,
+      allowedDomains: snapshot.allowedDomains,
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS: snapshot.clockDriftToleranceS,
+      dataRetentionDays: snapshot.dataRetentionDays,
+      connectionPoolLimit: snapshot.connectionPoolLimit,
+      storageQuotaGb: snapshot.storageQuotaGb,
     );
   }
 
-  factory TenantHealthView.fromJson(Map<String, Object?> json) {
-    final rawCaps = json['capabilities'];
-    OrgCapabilities domainCaps = OrgCapabilities.defaults;
-    if (rawCaps is Map<String, dynamic>) {
-      domainCaps = OrgCapabilities.fromJson(rawCaps);
-    } else if (rawCaps is Map) {
-      domainCaps = OrgCapabilities.fromJson(Map<String, dynamic>.from(rawCaps));
-    }
+  static int _parseInt(Object? val, int defaultValue) {
+    if (val is num) return val.toInt();
+    return defaultValue;
+  }
 
+  static int? _parseNullableInt(Object? val) {
+    if (val is num) return val.toInt();
+    return null;
+  }
+
+  static DateTime? _parseDateTime(Object? val) {
+    if (val is String) return DateTime.parse(val);
+    return null;
+  }
+
+  static List<String> _parseAllowedDomains(Object? val) {
+    if (val is List) return val.cast<String>();
+    return const [];
+  }
+
+  static OrgCapabilitiesViewModel _parseCapabilities(Object? raw) {
+    OrgCapabilities domainCaps = OrgCapabilities.defaults;
+    if (raw is Map<String, dynamic>) {
+      domainCaps = OrgCapabilities.fromJson(raw);
+    } else if (raw is Map) {
+      domainCaps = OrgCapabilities.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return OrgCapabilitiesViewModel.fromDomain(domainCaps);
+  }
+
+  factory TenantHealthView.fromJson(Map<String, Object?> json) {
     final rawStatus = json['status'] as String?;
     return TenantHealthView(
       id: json['id'] as String,
@@ -128,30 +179,28 @@ class TenantHealthView {
       legalName: json['legal_name'] as String?,
       planType: json['plan_type'] as String?,
       status: rawStatus != null ? OrgStatus.fromString(rawStatus) : null,
-      maxVehicles: (json['max_vehicles'] as num?)?.toInt() ?? 0,
-      maxActiveContracts: (json['max_active_contracts'] as num?)?.toInt() ?? 0,
-      activeContractCount:
-          (json['active_contract_count'] as num?)?.toInt() ?? 0,
-      lastTelemetryAt: json['last_telemetry_at'] != null
-          ? DateTime.parse(json['last_telemetry_at'] as String)
-          : null,
-      openCriticalAlertCount:
-          (json['open_critical_alert_count'] as num?)?.toInt() ?? 0,
+      maxVehicles: _parseInt(json['max_vehicles'], 0),
+      maxActiveContracts: _parseInt(json['max_active_contracts'], 0),
+      activeContractCount: _parseInt(json['active_contract_count'], 0),
+      lastTelemetryAt: _parseDateTime(json['last_telemetry_at']),
+      openCriticalAlertCount: _parseInt(json['open_critical_alert_count'], 0),
       // Map domain caps → ViewModel at the application boundary
-      capabilities: OrgCapabilitiesViewModel.fromDomain(domainCaps),
-      toolCostCents: (json['tool_cost_cents'] as num?)?.toInt(),
-      dwellTimeSeconds: (json['dwell_time_seconds'] as num?)?.toInt() ?? 300,
-      billingDay: (json['billing_day'] as num?)?.toInt(),
+      capabilities: _parseCapabilities(json['capabilities']),
+      toolCostCents: _parseNullableInt(json['tool_cost_cents']),
+      dwellTimeSeconds: _parseInt(json['dwell_time_seconds'], 300),
+      billingDay: _parseNullableInt(json['billing_day']),
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
       organizationType: json['organization_type'] as String?,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
+      updatedAt: _parseDateTime(json['updated_at']),
       cnpj: json['cnpj'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
+      createdAt: _parseDateTime(json['created_at']),
+      allowedDomains: _parseAllowedDomains(json['allowed_domains']),
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS: _parseInt(json['clock_drift_tolerance_s'], 300),
+      dataRetentionDays: _parseInt(json['data_retention_days'], 1825),
+      connectionPoolLimit: _parseInt(json['connection_pool_limit'], 60),
+      storageQuotaGb: _parseInt(json['storage_quota_gb'], 100),
     );
   }
 }

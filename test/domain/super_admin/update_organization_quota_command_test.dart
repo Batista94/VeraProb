@@ -30,6 +30,11 @@ UpdateOrganizationQuotaCommand _cmd({
   String? tradeName,
   String? legalName,
   DateTime? expectedUpdatedAt,
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+  int? clockDriftToleranceS,
+  int? dataRetentionDays,
+  int? connectionPoolLimit,
+  int? storageQuotaGb,
 }) => UpdateOrganizationQuotaCommand(
   organizationId: organizationId,
   newPlanType: newPlanType,
@@ -47,6 +52,10 @@ UpdateOrganizationQuotaCommand _cmd({
   tradeName: tradeName,
   legalName: legalName,
   expectedUpdatedAt: expectedUpdatedAt,
+  clockDriftToleranceS: clockDriftToleranceS,
+  dataRetentionDays: dataRetentionDays,
+  connectionPoolLimit: connectionPoolLimit,
+  storageQuotaGb: storageQuotaGb,
 );
 
 void main() {
@@ -392,6 +401,91 @@ void main() {
 
         expect(captured.tradeName, 'Logística Verde SA');
         expect(captured.legalName, 'Logística Verde Sociedade Anônima');
+      },
+    );
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CT10 — Novos campos: Motor Forense, Compliance, Infraestrutura
+  // ══════════════════════════════════════════════════════════════════════════
+
+  group('CT10 — campos avançados de configuração', () {
+    setUp(() {
+      when(
+        () => mockRepo.updateOrganizationQuota(any()),
+      ).thenAnswer((_) async {});
+    });
+
+    test('clockDriftToleranceS flui para o repositório', () async {
+      await handler.handle(_cmd(clockDriftToleranceS: 300));
+
+      final captured =
+          verify(
+                () => mockRepo.updateOrganizationQuota(captureAny()),
+              ).captured.single
+              as UpdateOrganizationQuotaCommand;
+
+      expect(captured.clockDriftToleranceS, 300);
+    });
+
+    test('dataRetentionDays flui para o repositório', () async {
+      await handler.handle(_cmd(dataRetentionDays: 1825));
+
+      final captured =
+          verify(
+                () => mockRepo.updateOrganizationQuota(captureAny()),
+              ).captured.single
+              as UpdateOrganizationQuotaCommand;
+
+      expect(captured.dataRetentionDays, 1825);
+    });
+
+    test('connectionPoolLimit flui para o repositório', () async {
+      await handler.handle(_cmd(connectionPoolLimit: 50));
+
+      final captured =
+          verify(
+                () => mockRepo.updateOrganizationQuota(captureAny()),
+              ).captured.single
+              as UpdateOrganizationQuotaCommand;
+
+      expect(captured.connectionPoolLimit, 50);
+    });
+
+    test('storageQuotaGb flui para o repositório', () async {
+      await handler.handle(_cmd(storageQuotaGb: 500));
+
+      final captured =
+          verify(
+                () => mockRepo.updateOrganizationQuota(captureAny()),
+              ).captured.single
+              as UpdateOrganizationQuotaCommand;
+
+      expect(captured.storageQuotaGb, 500);
+    });
+
+    test(
+      'null nos 4 campos passa como null — DB COALESCE preserva existente',
+      () async {
+        await handler.handle(
+          _cmd(
+            clockDriftToleranceS: null,
+            dataRetentionDays: null,
+            connectionPoolLimit: null,
+            storageQuotaGb: null,
+          ),
+        );
+
+        final captured =
+            verify(
+                  () => mockRepo.updateOrganizationQuota(captureAny()),
+                ).captured.single
+                as UpdateOrganizationQuotaCommand;
+
+        expect(captured.clockDriftToleranceS, isNull);
+        expect(captured.dataRetentionDays, isNull);
+        expect(captured.connectionPoolLimit, isNull);
+        expect(captured.storageQuotaGb, isNull);
       },
     );
   });

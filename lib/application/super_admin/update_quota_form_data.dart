@@ -33,6 +33,12 @@ class UpdateQuotaFormData {
   final String? legalName;
   final DateTime? expectedUpdatedAt;
 
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+  final int? clockDriftToleranceS;
+  final int? dataRetentionDays;
+  final int? connectionPoolLimit;
+  final int? storageQuotaGb;
+
   const UpdateQuotaFormData({
     required this.organizationId,
     required this.newPlanType,
@@ -50,6 +56,11 @@ class UpdateQuotaFormData {
     this.tradeName,
     this.legalName,
     this.expectedUpdatedAt,
+    // CT10 — Motor Forense, Compliance, Infraestrutura
+    this.clockDriftToleranceS,
+    this.dataRetentionDays,
+    this.connectionPoolLimit,
+    this.storageQuotaGb,
   });
 
   UpdateOrganizationQuotaCommand toCommand() {
@@ -77,6 +88,11 @@ class UpdateQuotaFormData {
       tradeName: tradeName,
       legalName: legalName,
       expectedUpdatedAt: expectedUpdatedAt,
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS: clockDriftToleranceS,
+      dataRetentionDays: dataRetentionDays,
+      connectionPoolLimit: connectionPoolLimit,
+      storageQuotaGb: storageQuotaGb,
     );
   }
 }

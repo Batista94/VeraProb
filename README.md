@@ -122,6 +122,66 @@ graph TB
 - **Infrastructure** (`lib/infrastructure/`): Postgres, Telegram, MapTiler (isolado por Ports/Adapters)
 
 ---
+### Decisões Arquiteturais ("Why This Architecture?")
+
+A complexidade arquitetural do VeraPrab justifica-se pela necessidade de **rigor forense, não-repúdio e integridade sob falhas**, operando como um motor de governança financeira.
+
+- **Clean Architecture + DDD (C4 Boundaries)**
+  - *Decisão*: Isolamento do core de validação (`lib/domain/`) contra dependências de infraestrutura (Supabase, Postgres, MapTiler).
+  - *Motivação*: Garantir que regras de negócio e SLAs contratuais sejam independentes de mudanças em serviços externos e banco de dados.
+  - *Trade-off*: Aumento de boilerplate inicial devido à introdução de DTOs e mapeadores de limites. Decisão assumida para viabilizar testabilidade em isolamento e mitigar vazamento de infraestrutura (**INV-13**).
+
+- **Event-Sourcing Core**
+  - *Decisão*: Persistência de telemetria bruta como fatos imutáveis e cálculo de vereditos via replay sob demanda, abdicando do armazenamento de estados mutáveis pré-compilados.
+  - *Motivação*: Vereditos de quebra de SLA exigem auditabilidade matemática. A reconstrução determinística da linha do tempo mitiga contestações e habilita depuração de estados históricos (*Time-Travel Debugging*).
+  - *Trade-off*: Maior custo computacional em leituras e reconstituição de agregados. Impacto mitigado pela implementação de *Snapshots* periódicos de estado e índices otimizados.
+
+- **Ledger Append-Only**
+  - *Decisão*: Bloqueio de comandos `UPDATE` ou `DELETE` a nível de banco de dados para registros financeiros e vereditos.
+  - *Motivação*: Garantia de rastreabilidade forense. Correções ou contestações de valores exigem lançamentos compensatórios (estornos ou novas transações), preservando o histórico original imutável.
+
+- **Ingestão Zero-Trust**
+  - *Decisão*: Validação de assinatura criptográfica (HMAC per-org — **INV-28**) e geração de hash SHA-256 de toda telemetria na camada de borda (Edge Functions), antes do processamento do motor.
+  - *Motivação*: Dispositivos periféricos e web clients estão expostos a interceptações e spoofing. O não-repúdio é estabelecido imediatamente no ponto de entrada do sistema.
+
+---
+
+### Matriz de Invariantes Forenses
+
+O sistema implementa 28 invariantes determinísticos para proteção de estado, mapeados em 4 pilares:
+
+#### 1. Isolamento de Tenant e Identidade
+- **INV-1 & INV-2 (Escopo Mandatório & RLS Hardening)**: Toda query aplica filtro por `organization_id`. As políticas de Row Level Security (RLS) utilizam estritamente a claim do JWT (`auth.jwt() ->> 'organization_id'`), isolando o contexto transacional.
+- **INV-22 (Isolamento de Tenants)**: Garantia de segregação de dados entre organizações distintas, validada via testes automatizados de intrusão.
+- **INV-26 & INV-27 (Defesa Contra Ataques Oráculo)**: Endpoints sensíveis retornam `404 Not Found` para recursos inexistentes ou pertencentes a outros tenants, mitigando a enumeração de recursos por inferência de código HTTP.
+
+#### 2. Integridade do Ledger e Precisão Matemática
+- **INV-3 (Registro Append-Only)**: Bloqueio nativo de mutabilidade ou exclusão física em tabelas financeiras e de vereditos.
+- **INV-4 & INV-5 (Precisão Monetária e BPS)**: Valores financeiros utilizam tipo `BIGINT` (centavos) em persistência, `int` em transporte e Value Object `Money` no domínio para evitar erros de ponto flutuante. Operações com Basis Points (BPS) aplicam lógica simétrica de arredondamento.
+- **INV-21 (Rastro por Snapshot ID)**: Vereditos emitidos carregam o identificador criptográfico único do estado gerador, permitindo reprodução determinística byte a byte.
+
+#### 3. Sincronismo Temporal e Espacial
+- **INV-6 & INV-20 (UTC Mandatório & Normalização de Janelas)**: Manipulação temporal restrita ao tipo `TIMESTAMPTZ` e injetada via provedor selado (`IDateTimeProvider.nowUtc()`). Variações de relógio local de dispositivos externos (clock drifts) são calculadas e seladas na ingestão.
+
+#### 4. Segurança de Execução e Tipagem
+- **INV-7 & INV-10 (Tipagem Estrita e Exceções de Domínio)**: Proibição do tipo `dynamic`. Violações de integridade disparam exceções tipadas de aplicação (`IntegrityException`), impedindo a exposição de stack traces genéricos de infraestrutura.
+- **INV-24 & INV-28 (Isolamento HMAC)**: Validação de telemetria baseada em chave secreta HMAC única por organização, armazenada de forma isolada e rotacionada de forma programática.
+
+---
+
+### Modelo de Ameaças & Controles de Segurança
+
+Mapeamento de vetores de ataque contra o motor forense e respectivos mecanismos estruturais de mitigação:
+
+| Vetor de Ameaça | Impacto do Ataque | Controles Arquiteturais (Mitigação) |
+| :--- | :--- | :--- |
+| **Vazamento Cruzado (Cross-Tenant Leak)** | Acesso ou adulteração de dados entre tenants distintos. | RLS ativo baseado em claim de organização no JWT (**INV-2**), escopo mandatório de `organization_id` em queries (**INV-1**) e testes automatizados de intrusão (**INV-22**). |
+| **Ataque de Enumeração (Oracle Attack)** | Mapeamento de registros de terceiros por variação de resposta HTTP (ex: 403 vs 404). | Paridade de erro estrita (**INV-26** & **INV-27**): acessos não autorizados ou IDs inválidos retornam código unificado `404 Not Found` para mitigar inferências. |
+| **Adulteração de Histórico** | Modificação retroativa de telemetria ou vereditos para burlar penalidades de SLA. | Restrição append-only em banco de dados (**INV-3**), selagem por hash SHA-256 na ingestão e vinculação de vereditos a Snapshot IDs imutáveis (**INV-21**). |
+| **Spoofing / Replay de Telemetria** | Injeção de dados falsos em nome de um dispositivo ou reenvio de pacotes capturados. | Validação de assinatura digital via HMAC individualizado por Tenant (**INV-28**) e tratamento de idempotência na camada de borda. |
+| **Manipulação Temporal (Clock Spoofing)** | Envio de telemetria com data retroativa ou futura para fraudar janelas contratuais. | Cálculo de variação (drift) e rejeição de relógio local de dispositivos não validados (**INV-6**), armazenamento em `TIMESTAMPTZ` e relógio canônico em UTC. |
+
+---
 
 ### Stack Tecnológica
 - **Frontend**: Flutter (WASM), Riverpod, Design System focado em densidade de dados.
@@ -294,6 +354,67 @@ graph TB
 - **Domain** (`lib/domain/`): Pure logic (SLA Rules, Authority, Execution) — **AGNOSTIC**
 - **Infrastructure** (`lib/infrastructure/`): Postgres, Telegram, MapTiler (isolated via Ports/Adapters)
 
+---
+### Architectural Decisions ("Why This Architecture?")
+
+VeraProb's architectural complexity is driven by the requirements of **forensic rigor, non-repudiation, and runtime integrity under failure**, serving as a robust financial governance engine.
+
+- **Clean Architecture + DDD (C4 Boundaries)**
+  - *Decision*: Strict isolation of the validation core (`lib/domain/`) from volatile infrastructure dependencies (Supabase, Postgres, MapTiler).
+  - *Motivation*: To ensure contractual SLAs and core business rules remain unaffected by database migrations, framework upgrades, or third-party API changes. 
+  - *Trade-off*: Increases initial boilerplate due to the introduction of DTOs and boundary mappers. This is an explicit trade-off to enable pure, isolated testability and prevent infrastructure leaks (**INV-13**).
+
+- **Event-Sourcing Core**
+  - *Decision*: Raw telemetry is persisted as immutable facts, computing verdicts via on-demand replay instead of storing pre-compiled mutable states.
+  - *Motivation*: SLA breach verdicts require mathematical auditability. Reconstructing the exact event timeline mitigates commercial or legal disputes and enables historical debugging (*Time-Travel Debugging*).
+  - *Trade-off*: Higher computational overhead during reads and aggregate reconstitution. This is mitigated through periodic state *Snapshots* and highly optimized query paths.
+
+- **Append-Only Ledger**
+  - *Decision*: Database-level lockdown prohibiting `UPDATE` or `DELETE` execution on financial records and engine verdicts.
+  - *Motivation*: To guarantee structural forensic traceability. Historical corrections or state adjustments require compensatory ledger entries (reversals), leaving the original timeline untouched.
+
+- **Zero-Trust Ingestion**
+  - *Decision*: Telemetry payloads are treated as hostile until normalized, validated against tenant-specific HMAC signatures (**INV-28**), and cryptographically sealed using SHA-256 at the edge (Edge Functions).
+  - *Motivation*: Peripheral devices and web clients are vulnerable to intercept attacks and spoofing. Non-repudiation is established immediately at the system's entry point.
+
+---
+
+### Threat Model & Security Controls
+
+Attack vectors mapping against the forensic engine and corresponding architectural mitigations:
+
+| Threat Vector | Attack Impact | Architectural Controls (Mitigation) |
+| :--- | :--- | :--- |
+| **Cross-Tenant Data Leak** | Cross-tenant data access, leakage, or tampering. | RLS enforced via organization JWT claims (**INV-2**), mandatory query filtering (**INV-1**), and automated penetration testing (**INV-22**). |
+| **Oracle / Enumeration Attack** | Mapping third-party records via HTTP status code variations (e.g., 403 vs 404). | Strict error parity (**INV-26** & **INV-27**): unauthorized queries or ownership mismatches return a unified `404 Not Found` to prevent data inference. |
+| **Evidence / History Tampering** | Retroactive modification of telemetry or verdicts to bypass SLA financial penalties. | Append-only database constraints (**INV-3**), immediate SHA-256 evidence hashing at ingest, and binding to immutable state Snapshot IDs (**INV-21**). |
+| **Telemetry Spoofing / Replay** | Injection of spoofed data mimicking a valid device, or replay of valid historical telemetry. | Mandatory tenant-specific HMAC signature verification (**INV-28**) and ingestion-layer idempotency constraints. |
+| **Temporal Manipulation** | Submitting backdated or future-dated telemetry to forge SLA contract windows. | Detection and rejection of unvalidated client device clock drifts (**INV-6**), strict `TIMESTAMPTZ` storage, and canonical UTC time providers. |
+
+---
+
+### Forensic Invariants Matrix
+
+The system implements 28 deterministic invariants to enforce state protection, mapped into 4 critical pillars:
+
+#### 1. Tenant Isolation & Identity Protection
+- **INV-1 & INV-2 (Mandatory Filtration & RLS Hardening)**: Every query enforces filtration by `organization_id`. Row Level Security (RLS) policies exclusively resolve identity using JWT claims (`auth.jwt() ->> 'organization_id'`), completely isolating the transactional context.
+- **INV-22 (Tenant Isolation)**: Guarantees that Tenant A cannot access or infer data belonging to Tenant B, validated via automated penetration testing scripts.
+- **INV-26 & INV-27 (Anti-Oracle Defenses)**: Sensitive API endpoints return a unified `404 Not Found` for non-existent or cross-tenant resources, mitigating database mapping through HTTP status code inference.
+
+#### 2. Ledger Integrity & Mathematical Rigor
+- **INV-3 (Append-Only Enforcement)**: Native database-level blocking of mutation or physical deletion on ledger and verdict tables.
+- **INV-4 & INV-5 (Monetary Type & Basis Point Precision)**: Monetary values utilize `BIGINT` (cents) for persistence, `int` for transit, and wrap into a `Money` Value Object in the domain to eliminate floating-point errors. Basis Point (BPS) operations apply strict symmetric rounding.
+- **INV-21 (Traceable Snapshot IDs)**: Generated verdicts carry a unique, immutable cryptographic identifier of the generating database state, allowing byte-identical replay.
+
+#### 3. Temporal and Spatial Determinism
+- **INV-6 & INV-20 (UTC Mandatory & Windows Normalization)**: Date handling is restricted to `TIMESTAMPTZ` and driven by a hermetic provider (`IDateTimeProvider.nowUtc()`). Ingested device clock drifts are calculated and sealed at the ingestion layer to prevent temporal spoofing.
+
+#### 4. Execution Security & Strict Typing
+- **INV-7 & INV-10 (Strict Typing & Domain Exceptions)**: Prohibits the use of the `dynamic` type in application layers. Integrity breaches trigger explicit, typed application errors (`IntegrityException`), preventing the exposure of raw infrastructure stack traces.
+- **INV-24 & INV-28 (HMAC Isolation)**: Ingested telemetry validation is tied to a unique HMAC secret key per organization, securely stored and programmatically rotated.
+
+---
 ### Tech Stack
 - **Frontend**: Flutter (WASM), Riverpod, High-density data UI layout.
 - **Backend**: Supabase, PostgreSQL (PostGIS), Edge Functions (Dart).

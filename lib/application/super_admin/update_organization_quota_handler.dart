@@ -38,50 +38,7 @@ class UpdateOrganizationQuotaHandler {
       sessionId: cmd.sessionId,
     );
 
-    // ── Step 1: RBAC — before any I/O
-    if (!_rbac.can(UserRole.superAdmin, UserPermission.canManageTenants)) {
-      throw const DomainException('Unauthorized: canManageTenants required.');
-    }
-
-    // ── Step 2: Validate reason (Stage C — mandatory for governance)
-    if (cmd.reason == null || cmd.reason!.trim().isEmpty) {
-      throw const DomainException(
-        'Justificativa obrigatória para mudanças de cota.',
-      );
-    }
-    if (cmd.reason!.trim().length < 10) {
-      throw const DomainException(
-        'Justificativa deve ter pelo menos 10 caracteres.',
-      );
-    }
-
-    // ── Step 3: Validate plan type
-    final validPlan = PlanType.values.any((p) => p.dbValue == cmd.newPlanType);
-    if (!validPlan) {
-      throw DomainException('Tipo de plano inválido: ${cmd.newPlanType}.');
-    }
-
-    // ── Step 4: Validate limits
-    if (cmd.newMaxVehicles != null && cmd.newMaxVehicles! < 1) {
-      throw const DomainException('Limite de veículos deve ser pelo menos 1.');
-    }
-    if (cmd.newMaxActiveContracts != null && cmd.newMaxActiveContracts! < 1) {
-      throw const DomainException(
-        'Limite de contratos ativos deve ser pelo menos 1.',
-      );
-    }
-    if (cmd.dwellTimeSeconds != null && cmd.dwellTimeSeconds! < 300) {
-      throw const DomainException(
-        'Tempo de permanência deve ser pelo menos 300 segundos (5 minutos).',
-      );
-    }
-
-    // ── Step 4a: tool_cost_cents required
-    if (cmd.toolCostCents == null) {
-      throw const DomainException(
-        'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
-      );
-    }
+    _validateCommand(cmd);
 
     // ── Step 5: Delegate to repository
     // RPC writes system_audit_log atomically with full name diff (CT11, INV-21).
@@ -92,6 +49,99 @@ class UpdateOrganizationQuotaHandler {
         throw DomainException(e.message);
       }
       rethrow;
+    }
+  }
+
+  void _validateCommand(UpdateOrganizationQuotaCommand cmd) {
+    _validateRbacAndReason(cmd);
+    _validatePlanAndBasicLimits(cmd);
+    _validateForenseAndCompliance(cmd);
+    _validateInfraAndCost(cmd);
+  }
+
+  void _validateRbacAndReason(UpdateOrganizationQuotaCommand cmd) {
+    // ── Step 1: RBAC — before any I/O
+    if (!_rbac.can(UserRole.superAdmin, UserPermission.canManageTenants)) {
+      throw const DomainException('Unauthorized: canManageTenants required.');
+    }
+
+    // ── Step 2: Validate reason (Stage C — mandatory for governance)
+    final reason = cmd.reason;
+    if (reason == null || reason.trim().isEmpty) {
+      throw const DomainException(
+        'Justificativa obrigatória para mudanças de cota.',
+      );
+    }
+    if (reason.trim().length < 10) {
+      throw const DomainException(
+        'Justificativa deve ter pelo menos 10 caracteres.',
+      );
+    }
+  }
+
+  void _validatePlanAndBasicLimits(UpdateOrganizationQuotaCommand cmd) {
+    // ── Step 3: Validate plan type
+    final validPlan = PlanType.values.any((p) => p.dbValue == cmd.newPlanType);
+    if (!validPlan) {
+      throw DomainException('Tipo de plano inválido: ${cmd.newPlanType}.');
+    }
+
+    // ── Step 4: Validate limits
+    final newMaxVehicles = cmd.newMaxVehicles;
+    if (newMaxVehicles != null && newMaxVehicles < 1) {
+      throw const DomainException('Limite de veículos deve ser pelo menos 1.');
+    }
+    final newMaxActiveContracts = cmd.newMaxActiveContracts;
+    if (newMaxActiveContracts != null && newMaxActiveContracts < 1) {
+      throw const DomainException(
+        'Limite de contratos ativos deve ser pelo menos 1.',
+      );
+    }
+    final dwellTimeSeconds = cmd.dwellTimeSeconds;
+    if (dwellTimeSeconds != null && dwellTimeSeconds < 300) {
+      throw const DomainException(
+        'Tempo de permanência deve ser pelo menos 300 segundos (5 minutos).',
+      );
+    }
+  }
+
+  void _validateForenseAndCompliance(UpdateOrganizationQuotaCommand cmd) {
+    // ── Step 4b: CT10 — Motor Forense, Compliance
+    final clockDriftToleranceS = cmd.clockDriftToleranceS;
+    if (clockDriftToleranceS != null && clockDriftToleranceS < 0) {
+      throw const DomainException(
+        'Tolerância de clock drift deve ser >= 0 segundos.',
+      );
+    }
+    final dataRetentionDays = cmd.dataRetentionDays;
+    if (dataRetentionDays != null && dataRetentionDays < 1) {
+      throw const DomainException(
+        'Período de retenção de dados deve ser de pelo menos 1 dia.',
+      );
+    }
+  }
+
+  void _validateInfraAndCost(UpdateOrganizationQuotaCommand cmd) {
+    // ── Step 4b: CT10 — Infraestrutura
+    final connectionPoolLimit = cmd.connectionPoolLimit;
+    if (connectionPoolLimit != null &&
+        (connectionPoolLimit < 1 || connectionPoolLimit > 500)) {
+      throw const DomainException(
+        'Limite de connection pool deve estar entre 1 e 500 conexões.',
+      );
+    }
+    final storageQuotaGb = cmd.storageQuotaGb;
+    if (storageQuotaGb != null && storageQuotaGb < 1) {
+      throw const DomainException(
+        'Quota de storage deve ser de pelo menos 1 GB.',
+      );
+    }
+
+    // ── Step 4a: tool_cost_cents required
+    if (cmd.toolCostCents == null) {
+      throw const DomainException(
+        'Custo mensal da ferramenta é obrigatório para calcular o ROI.',
+      );
     }
   }
 }

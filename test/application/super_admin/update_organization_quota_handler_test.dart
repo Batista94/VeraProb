@@ -25,6 +25,11 @@ UpdateOrganizationQuotaCommand _validCmd({
   int? toolCostCents = 50000,
   String? tradeName,
   String? legalName,
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+  int? clockDriftToleranceS,
+  int? dataRetentionDays,
+  int? connectionPoolLimit,
+  int? storageQuotaGb,
 }) => UpdateOrganizationQuotaCommand(
   organizationId: organizationId,
   newPlanType: newPlanType,
@@ -36,6 +41,10 @@ UpdateOrganizationQuotaCommand _validCmd({
   toolCostCents: toolCostCents,
   tradeName: tradeName,
   legalName: legalName,
+  clockDriftToleranceS: clockDriftToleranceS,
+  dataRetentionDays: dataRetentionDays,
+  connectionPoolLimit: connectionPoolLimit,
+  storageQuotaGb: storageQuotaGb,
 );
 
 void main() {
@@ -350,6 +359,224 @@ void main() {
         await expectLater(
           handler.handle(_validCmd()),
           throwsA(isA<PostgrestException>()),
+        );
+      });
+    });
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // CT10 — validações dos 4 novos campos
+  // ══════════════════════════════════════════════════════════════════════════
+
+  group('CT10 — validação Motor Forense / Compliance / Infra', () {
+    group('clockDriftToleranceS', () {
+      test('valor negativo (-1) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(clockDriftToleranceS: -1)),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('clock drift'),
+            ),
+          ),
+        );
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('zero (0) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(clockDriftToleranceS: 0)),
+          completes,
+        );
+      });
+
+      test('300 (padrão) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(clockDriftToleranceS: 300)),
+          completes,
+        );
+      });
+
+      test('null é aceito (DB COALESCE preserva existente)', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(clockDriftToleranceS: null)),
+          completes,
+        );
+      });
+    });
+
+    group('dataRetentionDays', () {
+      test('zero (0) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(dataRetentionDays: 0)),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('retenção'),
+            ),
+          ),
+        );
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('negativo (-5) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(dataRetentionDays: -5)),
+          throwsA(isA<DomainException>()),
+        );
+      });
+
+      test('1 (mínimo) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(dataRetentionDays: 1)),
+          completes,
+        );
+      });
+
+      test('1825 (5 anos) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(dataRetentionDays: 1825)),
+          completes,
+        );
+      });
+
+      test('null é aceito (DB COALESCE)', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(dataRetentionDays: null)),
+          completes,
+        );
+      });
+    });
+
+    group('connectionPoolLimit', () {
+      test('zero (0) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(connectionPoolLimit: 0)),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('pool'),
+            ),
+          ),
+        );
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('acima de 500 (501) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(connectionPoolLimit: 501)),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('pool'),
+            ),
+          ),
+        );
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('1 (mínimo) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(connectionPoolLimit: 1)),
+          completes,
+        );
+      });
+
+      test('500 (máximo) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(connectionPoolLimit: 500)),
+          completes,
+        );
+      });
+
+      test('null é aceito (DB COALESCE)', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(connectionPoolLimit: null)),
+          completes,
+        );
+      });
+    });
+
+    group('storageQuotaGb', () {
+      test('zero (0) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(storageQuotaGb: 0)),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains('storage'),
+            ),
+          ),
+        );
+        verifyNever(() => mockRepo.updateOrganizationQuota(any()));
+      });
+
+      test('negativo (-1) lança DomainException', () async {
+        await expectLater(
+          handler.handle(_validCmd(storageQuotaGb: -1)),
+          throwsA(isA<DomainException>()),
+        );
+      });
+
+      test('1 (mínimo) é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(storageQuotaGb: 1)),
+          completes,
+        );
+      });
+
+      test('500 GB é aceito', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(storageQuotaGb: 500)),
+          completes,
+        );
+      });
+
+      test('null é aceito (DB COALESCE)', () async {
+        when(
+          () => mockRepo.updateOrganizationQuota(any()),
+        ).thenAnswer((_) async {});
+        await expectLater(
+          handler.handle(_validCmd(storageQuotaGb: null)),
+          completes,
         );
       });
     });
