@@ -702,6 +702,30 @@ jobs:
       - name: Start Supabase
         run: supabase start
 
+      - name: Wait for Supabase to be ready
+        run: |
+          RETRY_COUNT=0
+          MAX_RETRIES=15
+          RETRY_DELAY=2
+          
+          echo "⏳ Waiting for Supabase API to respond..."
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:54321/rest/v1/")
+            
+            if [[ "$HTTP_STATUS" =~ ^[23][0-9]{2}$ ]]; then
+              echo "✅ Supabase API is ready (HTTP $HTTP_STATUS)"
+              exit 0
+            fi
+            
+            echo "  Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES: API returned HTTP $HTTP_STATUS, retrying in ${RETRY_DELAY}s..."
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep $RETRY_DELAY
+          done
+          
+          echo "::error::Supabase API did not become ready after $((MAX_RETRIES * RETRY_DELAY))s"
+          exit 1
+
       - name: Bootstrap Forensic Data
         run: |
           npm install @supabase/supabase-js

@@ -108,14 +108,33 @@ if [[ -z "$SERVICE_ROLE_KEY" ]]; then
 fi
 ok "SERVICE_ROLE_KEY set"
 
-# Verify Supabase is reachable
-HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${SUPABASE_URL}/rest/v1/" \
-  -H "apikey: ${SUPABASE_ANON_KEY}" 2>/dev/null || echo "000")
+# Verify Supabase is reachable (with retry for slow startup)
+RETRY_COUNT=0
+MAX_RETRIES=10
+RETRY_DELAY=1
+HTTP_STATUS="000"
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${SUPABASE_URL}/rest/v1/" \
+    -H "apikey: ${SUPABASE_ANON_KEY}" 2>/dev/null || echo "000")
+  
+  if [[ "$HTTP_STATUS" == "200" ]]; then
+    ok "Supabase reachable at ${SUPABASE_URL} (HTTP $HTTP_STATUS)"
+    break
+  fi
+  
+  if [ $RETRY_COUNT -lt $((MAX_RETRIES - 1)) ]; then
+    log "  Supabase not ready (HTTP $HTTP_STATUS), retrying in ${RETRY_DELAY}s... [$((RETRY_COUNT + 1))/$MAX_RETRIES]"
+    sleep $RETRY_DELAY
+  fi
+  
+  RETRY_COUNT=$((RETRY_COUNT + 1))
+done
+
 if [[ "$HTTP_STATUS" != "200" ]]; then
-  err "Supabase not reachable at ${SUPABASE_URL} (status: $HTTP_STATUS). Run: supabase start"
+  err "Supabase not reachable at ${SUPABASE_URL} (status: $HTTP_STATUS after $MAX_RETRIES retries). Run: supabase start"
   exit 1
 fi
-ok "Supabase reachable at ${SUPABASE_URL}"
 
 mkdir -p "${RESULTS_DIR}"
 
