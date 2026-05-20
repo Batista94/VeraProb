@@ -14,6 +14,9 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 /// **INV-4 / Lens 2:** No domain types are imported here.
 /// All filtering logic lives in [TenantSearchNotifier].
 class TenantListPanel extends ConsumerStatefulWidget {
+  static const tenantListViewKey = ValueKey('tenant-list-view');
+  static const tenantListErrorKey = ValueKey('tenant-list-error');
+
   final String? selectedOrgId;
   final ValueChanged<TenantHealthView> onOrgSelected;
 
@@ -77,44 +80,42 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
           ),
 
           // ── Status filter chips ────────────────────────────────────
+          // Wrap instead of SingleChildScrollView — avoids unexpected
+          // horizontal Scrollable in narrow panels (maxWidth <= 320px).
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _StatusChip(
-                    label: TenantStatusFilter.all.label,
-                    selected: statusFilter == TenantStatusFilter.all,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.all),
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.active.label,
-                    selected: statusFilter == TenantStatusFilter.active,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.active),
-                    color: VeraProbColors.success,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.suspended.label,
-                    selected: statusFilter == TenantStatusFilter.suspended,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.suspended),
-                    color: VeraProbColors.error,
-                  ),
-                  const SizedBox(width: 6),
-                  _StatusChip(
-                    label: TenantStatusFilter.archived.label,
-                    selected: statusFilter == TenantStatusFilter.archived,
-                    onSelected: () =>
-                        notifier.setStatusFilter(TenantStatusFilter.archived),
-                    color: VeraProbColors.neutral,
-                  ),
-                ],
-              ),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                _StatusChip(
+                  label: TenantStatusFilter.all.label,
+                  selected: statusFilter == TenantStatusFilter.all,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.all),
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.active.label,
+                  selected: statusFilter == TenantStatusFilter.active,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.active),
+                  color: VeraProbColors.success,
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.suspended.label,
+                  selected: statusFilter == TenantStatusFilter.suspended,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.suspended),
+                  color: VeraProbColors.error,
+                ),
+                _StatusChip(
+                  label: TenantStatusFilter.archived.label,
+                  selected: statusFilter == TenantStatusFilter.archived,
+                  onSelected: () =>
+                      notifier.setStatusFilter(TenantStatusFilter.archived),
+                  color: VeraProbColors.neutral,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 8),
@@ -138,6 +139,7 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            key: TenantListPanel.tenantListErrorKey,
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
@@ -192,7 +194,7 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
 
   Widget _buildListView(List<TenantHealthView> filtered) {
     return ListView.builder(
-      key: const ValueKey('tenant-list-view'),
+      key: TenantListPanel.tenantListViewKey,
       itemCount: filtered.length,
       itemBuilder: (context, index) {
         final t = filtered[index];
@@ -282,17 +284,23 @@ class _TenantListTile extends StatelessWidget {
                 : VeraProbColors.error,
           ),
         ),
-        title: Text(
-          tenant.name,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        title: Tooltip(
+          message: tenant.name,
+          child: Text(
+            tenant.name,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
-          overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
           tenant.planType?.toUpperCase() ?? '—',
           style: const TextStyle(fontSize: 11),
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
         ),
         trailing: tenant.hasCriticalAlerts
             ? const Icon(

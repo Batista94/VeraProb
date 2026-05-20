@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
@@ -21,6 +22,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   List<Map<String, dynamic>>? _members;
   bool _loading = true;
   String? _error;
+  bool _processing = false;
 
   @override
   void initState() {
@@ -66,7 +68,34 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
     bool currentStatus,
     String email,
   ) async {
+    if (_processing) return;
     final newStatus = !currentStatus;
+
+    // Apenas exigir justificativa/confirmação ao desativar o usuário (Req 3.3)
+    String? reason;
+    if (!newStatus) {
+      setState(() => _processing = true);
+      try {
+        reason = await showDialog<String>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => ReasonConfirmationDialog(
+            title: 'Inativar Usuário',
+            promptMessage:
+                'Informe a justificativa para inativar o usuário $email.',
+          ),
+        );
+      } finally {
+        if (reason == null && mounted) {
+          setState(() => _processing = false);
+        }
+      }
+      if (reason == null) return; // SuperAdmin cancelou o modal
+    } else {
+      setState(() => _processing = true);
+      reason = 'Admin reativado pelo SuperAdmin';
+    }
+
     try {
       final repo = ref.read(superAdminRepositoryProvider);
       await repo.toggleTenantMemberStatus(
@@ -81,10 +110,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       final auditSvc = ref.read(systemAuditLogServiceProvider);
       await auditSvc.logGovernanceChange(
         eventType: 'STATUS_CHANGE',
-        reason: newStatus
-            ? 'Admin reativado pelo SuperAdmin'
-            : 'Admin inativado pelo SuperAdmin',
-
+        reason: reason,
         organizationId: widget.tenant.id,
         organizationName: widget.tenant.name,
         context: {'user_id': userId, 'email': email},
@@ -115,53 +141,32 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
     }
   }
 
-  Future<String?> _askReason(BuildContext ctx, String title) async {
-    final ctrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
-    final result = await showDialog<String>(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: SizedBox(
-          width: 400,
-          child: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: ctrl,
-              decoration: const InputDecoration(
-                labelText: 'Justificativa',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-              validator: (v) =>
-                  (v == null || v.trim().isEmpty) ? 'Obrigatório.' : null,
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(null),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            onPressed: () {
-              if (formKey.currentState?.validate() ?? false) {
-                Navigator.of(ctx).pop(ctrl.text.trim());
-              }
-            },
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
-    );
-    return result;
-  }
-
   Future<void> _resendInvite(String email) async {
-    final reason = await _askReason(context, 'Reenviar Convite');
+    if (_processing) return;
+    setState(() => _processing = true);
+    String? reason;
+    try {
+      reason = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ReasonConfirmationDialog(
+          title: 'Reenviar Convite',
+          promptMessage:
+              'Informe a justificativa para reenviar o convite para $email.',
+        ),
+      );
+    } finally {
+      if (reason == null && mounted) {
+        setState(() => _processing = false);
+      }
+    }
     if (reason == null || !mounted) return;
 
     try {
@@ -189,11 +194,32 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
     }
   }
 
   Future<void> _revokeInvite(String email) async {
-    final reason = await _askReason(context, 'Revogar Convite');
+    if (_processing) return;
+    setState(() => _processing = true);
+    String? reason;
+    try {
+      reason = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ReasonConfirmationDialog(
+          title: 'Revogar Convite',
+          promptMessage:
+              'Informe a justificativa para revogar o convite para $email.',
+        ),
+      );
+    } finally {
+      if (reason == null && mounted) {
+        setState(() => _processing = false);
+      }
+    }
     if (reason == null || !mounted) return;
 
     try {
@@ -225,163 +251,175 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
     }
   }
 
   Future<void> _addAdmin() async {
-    final emailCtrl = TextEditingController();
-    final reasonCtrl = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+    if (_processing) return;
+    setState(() => _processing = true);
+    try {
+      final emailCtrl = TextEditingController();
+      final reasonCtrl = TextEditingController();
+      final formKey = GlobalKey<FormState>();
 
-    // INV-22 / Lesson #4: dialog gerencia submit/erro internamente.
-    // Só fecha em sucesso — em falha de rede/duplicidade o usuário mantém o
-    // contexto digitado e vê a mensagem inline + snackbar.
-    final result = await showDialog<({String email, String reason})>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogCtx) {
-        var submitting = false;
-        String? serverError;
+      // INV-22 / Lesson #4: dialog gerencia submit/erro internamente.
+      // Só fecha em sucesso — em falha de rede/duplicidade o usuário mantém o
+      // contexto digitado e vê a mensagem inline + snackbar.
+      final result = await showDialog<({String email, String reason})>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogCtx) {
+          var submitting = false;
+          String? serverError;
 
-        return StatefulBuilder(
-          builder: (sbCtx, setSbState) {
-            Future<void> submit() async {
-              if (!(formKey.currentState?.validate() ?? false)) return;
-              setSbState(() {
-                submitting = true;
-                serverError = null;
-              });
-              final emailValue = emailCtrl.text.trim();
-              final reasonValue = reasonCtrl.text.trim();
-              try {
-                final repo = ref.read(superAdminRepositoryProvider);
-                final userId =
-                    ref.read(authStateProvider).value?.session?.user.id ?? '';
-                const uuid = Uuid();
-                final now = ref.read(dateTimeProviderProvider).nowUtc();
-                await repo.addAdminToOrganization(
-                  orgId: widget.tenant.id,
-                  email: emailValue,
-                  invitationId: uuid.v4(),
-                  token: uuid.v4(),
-                  expiresAtUtc: now.add(const Duration(days: 7)),
-                  superAdminUserId: userId,
-                  reason: reasonValue,
-                );
-                if (dialogCtx.mounted) {
-                  Navigator.of(
-                    dialogCtx,
-                  ).pop((email: emailValue, reason: reasonValue));
-                }
-              } catch (e) {
-                // INV-10: Não silencia falhas. Mantém modal aberto para retry
-                // — mensagem inline preserva contexto digitado (INV-22).
-                if (!dialogCtx.mounted) return;
+          return StatefulBuilder(
+            builder: (sbCtx, setSbState) {
+              Future<void> submit() async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
                 setSbState(() {
-                  submitting = false;
-                  serverError = e
-                      .toString()
-                      .replaceAll(RegExp(r'^.*Exception: '), '')
-                      .trim();
+                  submitting = true;
+                  serverError = null;
                 });
+                final emailValue = emailCtrl.text.trim();
+                final reasonValue = reasonCtrl.text.trim();
+                try {
+                  final repo = ref.read(superAdminRepositoryProvider);
+                  final userId =
+                      ref.read(authStateProvider).value?.session?.user.id ?? '';
+                  const uuid = Uuid();
+                  final now = ref.read(dateTimeProviderProvider).nowUtc();
+                  await repo.addAdminToOrganization(
+                    orgId: widget.tenant.id,
+                    email: emailValue,
+                    invitationId: uuid.v4(),
+                    token: uuid.v4(),
+                    expiresAtUtc: now.add(const Duration(days: 7)),
+                    superAdminUserId: userId,
+                    reason: reasonValue,
+                  );
+                  if (dialogCtx.mounted) {
+                    Navigator.of(
+                      dialogCtx,
+                    ).pop((email: emailValue, reason: reasonValue));
+                  }
+                } catch (e) {
+                  // INV-10: Não silencia falhas. Mantém modal aberto para retry
+                  // — mensagem inline preserva contexto digitado (INV-22).
+                  if (!dialogCtx.mounted) return;
+                  setSbState(() {
+                    submitting = false;
+                    serverError = e
+                        .toString()
+                        .replaceAll(RegExp(r'^.*Exception: '), '')
+                        .trim();
+                  });
+                }
               }
-            }
 
-            return AlertDialog(
-              title: const Text('Adicionar Administrador'),
-              content: SizedBox(
-                width: 400,
-                child: Form(
-                  key: formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      TextFormField(
-                        controller: emailCtrl,
-                        enabled: !submitting,
-                        decoration: const InputDecoration(
-                          labelText: 'E-mail do Administrador',
-                          border: OutlineInputBorder(),
-                        ),
-                        keyboardType: TextInputType.emailAddress,
-                        autofocus: true,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'E-mail obrigatório.';
-                          }
-                          final emailRegex = RegExp(
-                            r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}',
-                          );
-                          if (!emailRegex.hasMatch(v.trim())) {
-                            return 'E-mail inválido.';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: reasonCtrl,
-                        enabled: !submitting,
-                        decoration: const InputDecoration(
-                          labelText: 'Justificativa',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) {
-                            return 'Justificativa obrigatória.';
-                          }
-                          return null;
-                        },
-                      ),
-                      if (serverError != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          serverError!,
-                          style: const TextStyle(
-                            color: VeraProbColors.error,
-                            fontSize: 12,
+              return AlertDialog(
+                title: const Text('Adicionar Administrador'),
+                content: SizedBox(
+                  width: 400,
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: emailCtrl,
+                          enabled: !submitting,
+                          decoration: const InputDecoration(
+                            labelText: 'E-mail do Administrador',
+                            border: OutlineInputBorder(),
                           ),
+                          keyboardType: TextInputType.emailAddress,
+                          autofocus: true,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'E-mail obrigatório.';
+                            }
+                            final emailRegex = RegExp(
+                              r'^[\w.+\-]+@[\w\-]+\.[a-z]{2,}',
+                            );
+                            if (!emailRegex.hasMatch(v.trim())) {
+                              return 'E-mail inválido.';
+                            }
+                            return null;
+                          },
                         ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: reasonCtrl,
+                          enabled: !submitting,
+                          decoration: const InputDecoration(
+                            labelText: 'Justificativa',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Justificativa obrigatória.';
+                            }
+                            return null;
+                          },
+                        ),
+                        if (serverError != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            serverError!,
+                            style: const TextStyle(
+                              color: VeraProbColors.error,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: submitting
-                      ? null
-                      : () => Navigator.of(dialogCtx).pop(),
-                  child: const Text('Cancelar'),
-                ),
-                FilledButton(
-                  onPressed: submitting ? null : submit,
-                  child: submitting
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Convidar'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+                actions: [
+                  TextButton(
+                    onPressed: submitting
+                        ? null
+                        : () => Navigator.of(dialogCtx).pop(),
+                    child: const Text('Cancelar'),
+                  ),
+                  FilledButton(
+                    onPressed: submitting ? null : submit,
+                    child: submitting
+                        ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Convidar'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
 
-    if (result == null || !mounted) return;
+      if (result == null || !mounted) return;
 
-    // INV-22: Invalida snapshot para sincronizar status do painel pai.
-    ref.invalidate(tenantHealthSnapshotProvider);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Convite enviado para ${result.email}.'),
-        backgroundColor: VeraProbColors.success,
-      ),
-    );
-    await _loadMembers();
+      // INV-22: Invalida snapshot para sincronizar status do painel pai.
+      ref.invalidate(tenantHealthSnapshotProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Convite enviado para ${result.email}.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
+      await _loadMembers();
+    } finally {
+      if (mounted) {
+        setState(() => _processing = false);
+      }
+    }
   }
 
   @override
@@ -513,9 +551,21 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                 IconButton(
                   icon: const Icon(Icons.copy_outlined, size: 18),
                   tooltip: 'Copiar link de convite',
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.all(4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () {
-                    final link =
-                        '${Uri.base.origin}/accept-invite?token=$inviteToken';
+                    final baseUri = Uri.base;
+                    final origin =
+                        (baseUri.scheme == 'http' || baseUri.scheme == 'https')
+                        ? baseUri.origin
+                        : 'http://localhost:3000';
+                    final link = '$origin/accept-invite?token=$inviteToken';
                     Clipboard.setData(ClipboardData(text: link));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Link de convite copiado.')),
@@ -527,12 +577,28 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                   icon: const Icon(Icons.cancel_outlined, size: 18),
                   tooltip: 'Revogar Convite',
                   color: VeraProbColors.error,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.all(4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () => _revokeInvite(email),
                 ),
               if ((isPending || !hasSignedIn) && !isOrgArchived)
                 IconButton(
                   icon: const Icon(Icons.send_outlined, size: 18),
                   tooltip: 'Reenviar Convite',
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.all(4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () => _resendInvite(email),
                 ),
               if (!isPending && userId != null && !isOrgArchived)
@@ -545,6 +611,14 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                   color: isActive
                       ? VeraProbColors.error
                       : VeraProbColors.success,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.all(4),
+                  constraints: const BoxConstraints(),
+                  style: IconButton.styleFrom(
+                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.all(4),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   onPressed: () => _toggleStatus(userId, isActive, email),
                 ),
             ],

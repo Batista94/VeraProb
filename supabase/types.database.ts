@@ -4996,7 +4996,10 @@ export type Database = {
           p_tool_cost_cents?: number;
           p_trade_name: string;
         };
-        Returns: string;
+        Returns: {
+          org_id: string;
+          plaintext_secret: string;
+        }[];
       };
       super_admin_get_org_members: {
         Args: { p_org_id: string };
@@ -5070,6 +5073,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      test_archive_org_for_e2e: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
       test_cleanup_forensic_data: {
         Args: { p_org_id: string };
         Returns: undefined;
@@ -5077,6 +5084,10 @@ export type Database = {
       test_cleanup_system_audit_log: {
         Args: { p_org_ids: string[] };
         Returns: undefined;
+      };
+      test_get_user_banned_until: {
+        Args: { p_user_id: string };
+        Returns: string;
       };
       test_tamper_raw_telemetry_payload: {
         Args: { p_new_payload: Json; p_record_id: string };

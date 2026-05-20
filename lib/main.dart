@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -25,6 +26,10 @@ import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
 import 'state/retry_policy.dart';
+
+/// Test-only overrides to inject mocks during E2E testing.
+@visibleForTesting
+List<Override> testProviderOverrides = [];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -78,6 +83,7 @@ void main() async {
             supabaseClientProvider.overrideWithValue(supabase),
             // FASE 6 — Atomic Switch: runtime now operates on Postgres.
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
+            ...testProviderOverrides,
           ],
           child: VeraProbAdminApp(
             inviteToken: isInviteRoute ? queryToken : null,

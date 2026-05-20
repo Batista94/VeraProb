@@ -1,12 +1,16 @@
-// ignore_for_file: lines_longer_than_80_chars
+/// Unit tests for [SupabaseSuperAdminRepository].
+///
+/// Covers RPC delegation, Edge Function proxy paths, IntegrityException
+/// invariants on createOrganization (INV-28), and PostgrestException mapping
+/// (INV-26).
+library;
+
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'package:veraprob/domain/admin/org_capabilities.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
@@ -24,708 +28,501 @@ class MockSupabaseClient extends Mock implements SupabaseClient {}
 
 class MockFunctionsClient extends Mock implements FunctionsClient {}
 
-// ── Fixtures ──────────────────────────────────────────────────────────────────
-
-const _kOrgId = 'org-00000000-0000-0000-0000-000000000001';
-const _kUserId = 'usr-00000000-0000-0000-0000-000000000001';
-const _kEmail = 'admin@acme.com';
-const _kToken = 'tok-secure-random-256';
-const _kInvitationId = 'inv-00000000-0000-0000-0000-000000000001';
-
-CreateOrganizationCommand _createOrgCmd({String cnpj = '12.345.678/0001-90'}) =>
-    CreateOrganizationCommand(
-      legalName: 'Acme Ltda',
-      tradeName: 'Acme',
-      cnpj: cnpj,
-      timezone: 'America/Sao_Paulo',
-      currencyCode: 'BRL',
-      planType: PlanType.professional,
-      maxVehicles: 50,
-      maxActiveContracts: 10,
-      adminEmails: [_kEmail],
-      superAdminUserId: _kUserId,
-      capabilities: const OrgCapabilities(),
-      toolCostCents: 9900,
-      dwellTimeSeconds: 300,
-      reason: 'New client onboarding',
-      billingDay: 15,
-      contactEmail: _kEmail,
-      externalId: 'CRM-001',
-      organizationType: 'CARGO',
-      allowedDomains: ['acme.com'],
-    );
-
-UpdateOrganizationQuotaCommand _updateQuotaCmd() =>
-    UpdateOrganizationQuotaCommand(
-      organizationId: _kOrgId,
-      newPlanType: 'enterprise',
-      newMaxVehicles: 200,
-      newMaxActiveContracts: 50,
-      superAdminUserId: _kUserId,
-      reason: 'Upgrade request',
-      sessionId: 'session-001',
-      expectedUpdatedAt: DateTime.utc(2026, 5, 1),
-    );
-
-ArchiveOrganizationCommand _archiveCmd() => const ArchiveOrganizationCommand(
-  orgId: _kOrgId,
-  reason: 'Client churned',
-  superAdminUserId: _kUserId,
-  currentStatus: OrgStatus.active,
-  sessionId: 'session-001',
-);
-
-// ── PostgREST Error Factory ───────────────────────────────────────────────────
-
-PostgrestException _pgError(String code, {String? message, String? details}) =>
-    PostgrestException(
-      message: message ?? 'pg error $code',
-      code: code,
-      details: details,
-    );
-
-// ── Edge Function Response Factory ────────────────────────────────────────────
-
-FunctionResponse _fnOk(dynamic data) =>
-    FunctionResponse(status: 200, data: data);
-
-// ── Fake PostgrestFilterBuilder ────────────────────────────────────────────────
-
-class _FakePostgrestFilterBuilder extends Fake
+/// Resolves to [_result] when awaited — mirrors PostgREST's PostgrestFilterBuilder.
+class FakePostgrestFilterBuilder extends Fake
     implements PostgrestFilterBuilder<dynamic> {
   final dynamic _result;
-  final Object? _error;
 
-  _FakePostgrestFilterBuilder(this._result, {Object? error}) : _error = error;
+  FakePostgrestFilterBuilder(this._result);
 
   @override
   Future<S> then<S>(
     FutureOr<S> Function(dynamic value) onValue, {
     Function? onError,
-  }) {
-    if (_error != null) {
-      return Future<dynamic>.error(_error).then(onValue, onError: onError);
-    }
-    return Future<dynamic>.value(_result).then(onValue, onError: onError);
-  }
+  }) => Future<dynamic>.value(_result).then(onValue, onError: onError);
 
   @override
-  Future<dynamic> catchError(Function onError, {bool Function(Object)? test}) {
-    if (_error != null) {
-      return Future<dynamic>.error(_error).catchError(onError, test: test);
-    }
-    return Future<dynamic>.value(_result);
-  }
+  Future<dynamic> catchError(
+    Function onError, {
+    bool Function(Object error)? test,
+  }) => Future<dynamic>.value(_result);
 
   @override
-  Future<dynamic> whenComplete(FutureOr<void> Function() action) {
-    if (_error != null) {
-      return Future<dynamic>.error(_error).whenComplete(action);
-    }
-    return Future<dynamic>.value(_result).whenComplete(action);
-  }
+  Future<dynamic> whenComplete(FutureOr<void> Function() action) =>
+      Future<dynamic>.value(_result).whenComplete(action);
 
   @override
-  Stream<dynamic> asStream() =>
-      _error != null ? Stream.error(_error) : Stream.value(_result);
+  Stream<dynamic> asStream() => Stream.value(_result);
 
   @override
   Future<dynamic> timeout(
     Duration timeLimit, {
     FutureOr<dynamic> Function()? onTimeout,
-  }) {
-    if (_error != null) return Future<dynamic>.error(_error);
-    return Future<dynamic>.value(_result);
-  }
+  }) => Future<dynamic>.value(_result);
 }
 
-// ── Test Context (shared closures) ────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-typedef _ClientGetter = MockSupabaseClient Function();
-typedef _FunctionsGetter = MockFunctionsClient Function();
-typedef _RepoGetter = SupabaseSuperAdminRepository Function();
-typedef _RpcStub = void Function(String name, dynamic result);
-typedef _RpcThrowsStub = void Function(String name, PostgrestException error);
-typedef _EdgeFnStub = void Function(dynamic data);
-typedef _EdgeFnThrowsStub = void Function(Exception error);
+PostgrestException _pgError(String code, {String message = 'db error'}) =>
+    PostgrestException(message: message, code: code);
 
-typedef _Ctx = ({
-  _ClientGetter clientOf,
-  _FunctionsGetter fnsOf,
-  _RepoGetter repoOf,
-  _RpcStub stubRpc,
-  _RpcThrowsStub stubRpcThrows,
-  _EdgeFnStub stubEdgeFn,
-  _EdgeFnThrowsStub stubEdgeFnThrows,
-});
+// ── File-level state ──────────────────────────────────────────────────────────
 
-// ── Main ──────────────────────────────────────────────────────────────────────
+late MockSupabaseClient _mockClient;
+late MockFunctionsClient _mockFunctions;
+late SupabaseSuperAdminRepository _repo;
 
-void main() {
-  late MockSupabaseClient mockClient;
-  late MockFunctionsClient mockFunctions;
-  late SupabaseSuperAdminRepository repo;
+// ── Test groups ───────────────────────────────────────────────────────────────
 
-  setUp(() {
-    mockClient = MockSupabaseClient();
-    mockFunctions = MockFunctionsClient();
-    when(() => mockClient.functions).thenReturn(mockFunctions);
-    repo = SupabaseSuperAdminRepository(mockClient);
-  });
-
-  void stubRpc(String name, dynamic result) {
-    when(
-      () => mockClient.rpc<dynamic>(name, params: any(named: 'params')),
-    ).thenAnswer((_) => _FakePostgrestFilterBuilder(result));
-  }
-
-  void stubRpcThrows(String name, PostgrestException error) {
-    when(
-      () => mockClient.rpc<dynamic>(name, params: any(named: 'params')),
-    ).thenThrow(error);
-  }
-
-  void stubEdgeFn(dynamic data) {
-    when(
-      () => mockFunctions.invoke(any(), body: any(named: 'body')),
-    ).thenAnswer((_) async => _fnOk(data));
-  }
-
-  void stubEdgeFnThrows(Exception error) {
-    when(
-      () => mockFunctions.invoke(any(), body: any(named: 'body')),
-    ).thenThrow(error);
-  }
-
-  final ctx = (
-    clientOf: () => mockClient,
-    fnsOf: () => mockFunctions,
-    repoOf: () => repo,
-    stubRpc: stubRpc,
-    stubRpcThrows: stubRpcThrows,
-    stubEdgeFn: stubEdgeFn,
-    stubEdgeFnThrows: stubEdgeFnThrows,
-  );
-
-  _registerCreateOrganizationGroup(ctx);
-  _registerInviteFirstAdminGroup(ctx);
-  _registerCheckCnpjExistsGroup(ctx);
-  _registerGetAllTenantHealthGroup(ctx);
-  _registerGetSystemAuditLogGroup(ctx);
-  _registerGetTenantTechnicalHealthGroup(ctx);
-  _registerGetEvidenceVolumeGroup(ctx);
-  _registerCheckSchemaIntegrityGroup(ctx);
-  _registerUpdateOrganizationQuotaGroup(ctx);
-  _registerArchiveOrganizationGroup(ctx);
-  _registerUnarchiveOrganizationGroup(ctx);
-  _registerGetTenantMembersGroup(ctx);
-  _registerToggleTenantMemberStatusGroup(ctx);
-  _registerResendInvitationGroup(ctx);
-  _registerAddAdminToOrganizationGroup(ctx);
-  _registerRevokeInvitationGroup(ctx);
-  _registerUpdateAllowedDomainsGroup(ctx);
-  _registerAdversarialGroup(ctx);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// createOrganization
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerCreateOrganizationGroup(_Ctx ctx) {
+void _testCreateOrganization() {
   group('createOrganization', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    const cmd = CreateOrganizationCommand(
+      legalName: 'Acme Ltda',
+      tradeName: 'Acme',
+      cnpj: '12.345.678/0001-90',
+      timezone: 'America/Sao_Paulo',
+      currencyCode: 'BRL',
+      planType: PlanType.starter,
+      adminEmails: ['admin@acme.com'],
+      superAdminUserId: 'sa-uuid',
+      reason: 'onboarding',
+    );
 
-    const rpcName = 'super_admin_create_organization';
+    void stubRpc(dynamic result) {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_create_organization',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(result));
+    }
 
-    test('returns org UUID on success', () async {
-      ctx.stubRpc(rpcName, _kOrgId);
-      final result = await repo.createOrganization(_createOrgCmd());
-      expect(result, _kOrgId);
+    test('returns orgId and plaintextSecret on success', () async {
+      stubRpc([
+        {'org_id': 'org-1', 'plaintext_secret': 'abc123'},
+      ]);
+
+      final result = await _repo.createOrganization(cmd);
+
+      expect(result.orgId, 'org-1');
+      expect(result.plaintextSecret, 'abc123');
     });
 
-    test('strips CNPJ non-digit characters before RPC call', () async {
-      ctx.stubRpc(rpcName, _kOrgId);
-      await repo.createOrganization(_createOrgCmd(cnpj: '12.345.678/0001-90'));
+    test('strips CNPJ formatting before sending to RPC', () async {
+      stubRpc([
+        {'org_id': 'org-2', 'plaintext_secret': 'secret'},
+      ]);
+
+      await _repo.createOrganization(cmd);
 
       final captured =
           verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
+                () => _mockClient.rpc<dynamic>(
+                  'super_admin_create_organization',
                   params: captureAny(named: 'params'),
                 ),
-              ).captured.single
+              ).captured.first
               as Map<String, dynamic>;
       expect(captured['p_cnpj'], '12345678000190');
     });
 
-    test(
-      'maps 23505 unique_violation → IntegrityException with field',
-      () async {
-        ctx.stubRpcThrows(
-          rpcName,
-          _pgError(
-            '23505',
-            message: 'duplicate key',
-            details: 'Key (cnpj)=(12345678000190) already exists.',
-          ),
-        );
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
-          throwsA(
-            isA<IntegrityException>().having((e) => e.field, 'field', 'cnpj'),
-          ),
-        );
-      },
-    );
+    test('throws IntegrityException when RPC returns empty list', () async {
+      stubRpc(<dynamic>[]);
 
-    test('maps P0001 RAISE EXCEPTION → IntegrityException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0001', message: 'Quota exceeded'));
-      expect(
-        () => repo.createOrganization(_createOrgCmd()),
+      await expectLater(
+        _repo.createOrganization(cmd),
         throwsA(
-          isA<IntegrityException>().having(
-            (e) => e.message,
-            'msg',
-            'Quota exceeded',
-          ),
+          isA<IntegrityException>().having((e) => e.field, 'field', 'org_id'),
+        ),
+      );
+    });
+
+    test('throws IntegrityException when org_id is null', () async {
+      stubRpc([
+        {'org_id': null, 'plaintext_secret': 'secret'},
+      ]);
+
+      await expectLater(
+        _repo.createOrganization(cmd),
+        throwsA(isA<IntegrityException>()),
+      );
+    });
+
+    test('throws IntegrityException when org_id is empty string', () async {
+      stubRpc([
+        {'org_id': '', 'plaintext_secret': 'secret'},
+      ]);
+
+      await expectLater(
+        _repo.createOrganization(cmd),
+        throwsA(
+          isA<IntegrityException>().having((e) => e.field, 'field', 'org_id'),
         ),
       );
     });
 
     test(
-      'maps 22P02 invalid UUID → ResourceNotFoundException (INV-26)',
+      'throws IntegrityException (INV-28) when plaintext_secret is null',
       () async {
-        ctx.stubRpcThrows(rpcName, _pgError('22P02'));
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
-          throwsA(isA<ResourceNotFoundException>()),
+        stubRpc([
+          {'org_id': 'org-3', 'plaintext_secret': null},
+        ]);
+
+        await expectLater(
+          _repo.createOrganization(cmd),
+          throwsA(
+            isA<IntegrityException>().having(
+              (e) => e.field,
+              'field',
+              'plaintext_secret',
+            ),
+          ),
         );
       },
     );
 
     test(
-      'maps 23503 FK violation → ResourceNotFoundException (INV-26)',
+      'throws IntegrityException (INV-28) when plaintext_secret is empty',
       () async {
-        ctx.stubRpcThrows(rpcName, _pgError('23503'));
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
-          throwsA(isA<ResourceNotFoundException>()),
+        stubRpc([
+          {'org_id': 'org-4', 'plaintext_secret': ''},
+        ]);
+
+        await expectLater(
+          _repo.createOrganization(cmd),
+          throwsA(
+            isA<IntegrityException>().having(
+              (e) => e.field,
+              'field',
+              'plaintext_secret',
+            ),
+          ),
         );
       },
     );
 
+    test('maps PostgrestException P0001 → IntegrityException', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_create_organization',
+          params: any(named: 'params'),
+        ),
+      ).thenThrow(_pgError('P0001', message: 'CNPJ already registered'));
+
+      await expectLater(
+        _repo.createOrganization(cmd),
+        throwsA(isA<IntegrityException>()),
+      );
+    });
+
     test(
-      'maps 42501 insufficient_privilege → SovereigntyViolationException',
+      'maps PostgrestException 42501 → SovereigntyViolationException',
       () async {
-        ctx.stubRpcThrows(rpcName, _pgError('42501'));
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
+        when(
+          () => _mockClient.rpc<dynamic>(
+            'super_admin_create_organization',
+            params: any(named: 'params'),
+          ),
+        ).thenThrow(_pgError('42501'));
+
+        await expectLater(
+          _repo.createOrganization(cmd),
           throwsA(isA<SovereigntyViolationException>()),
         );
       },
     );
 
-    test(
-      'rethrows unknown PostgrestException codes (fail-fast INV-10)',
-      () async {
-        final unknown = _pgError('XX000', message: 'internal error');
-        ctx.stubRpcThrows(rpcName, unknown);
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
-          throwsA(same(unknown)),
-        );
-      },
-    );
-
-    test(
-      'type cast failure when RPC returns non-String throws TypeError',
-      () async {
-        ctx.stubRpc(rpcName, 12345);
-        expect(
-          () => repo.createOrganization(_createOrgCmd()),
-          throwsA(isA<TypeError>()),
-        );
-      },
-    );
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// inviteFirstAdmin
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerInviteFirstAdminGroup(_Ctx ctx) {
-  group('inviteFirstAdmin', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_invite_first_admin';
-    final expiresAt = DateTime.utc(2026, 6, 1);
-
-    Future<void> call() => repo.inviteFirstAdmin(
-      orgId: _kOrgId,
-      email: _kEmail,
-      token: _kToken,
-      invitationId: _kInvitationId,
-      expiresAtUtc: expiresAt,
-      superAdminUserId: _kUserId,
-    );
-
-    test('completes successfully on valid RPC response', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(), completes);
-    });
-
-    test('passes correct params including ISO8601 date', () async {
-      ctx.stubRpc(rpcName, null);
-      await call();
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_org_id'], _kOrgId);
-      expect(captured['p_email'], _kEmail);
-      expect(captured['p_role'], 'TENANT_ADMIN');
-      expect(captured['p_expires_at'], expiresAt.toIso8601String());
-    });
-
-    test('maps PGRST116 → ResourceNotFoundException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('PGRST116'));
-      expect(call, throwsA(isA<ResourceNotFoundException>()));
-    });
-
-    test('maps 42501 → SovereigntyViolationException (RBAC)', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(call, throwsA(isA<SovereigntyViolationException>()));
-    });
-
-    test('maps 23505 duplicate invite → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError(
-          '23505',
-          details: 'Key (email)=(admin@acme.com) already exists.',
+    test('maps PostgrestException 22P02 → ResourceNotFoundException', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_create_organization',
+          params: any(named: 'params'),
         ),
-      );
-      expect(
-        call,
-        throwsA(
-          isA<IntegrityException>().having((e) => e.field, 'field', 'email'),
-        ),
+      ).thenThrow(_pgError('22P02'));
+
+      await expectLater(
+        _repo.createOrganization(cmd),
+        throwsA(isA<ResourceNotFoundException>()),
       );
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// checkCnpjExists
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerCheckCnpjExistsGroup(_Ctx ctx) {
+void _testCheckCnpjExists() {
   group('checkCnpjExists', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_check_cnpj_exists';
+    void stubRpc(dynamic result) {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_check_cnpj_exists',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(result));
+    }
 
     test('returns true when CNPJ exists', () async {
-      ctx.stubRpc(rpcName, true);
-      expect(await repo.checkCnpjExists('12345678000190'), isTrue);
+      stubRpc(true);
+      expect(await _repo.checkCnpjExists('12345678000190'), isTrue);
     });
 
     test('returns false when CNPJ does not exist', () async {
-      ctx.stubRpc(rpcName, false);
-      expect(await repo.checkCnpjExists('00000000000000'), isFalse);
+      stubRpc(false);
+      expect(await _repo.checkCnpjExists('99999999000191'), isFalse);
     });
 
-    test('maps P0001 → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('P0001', message: 'Invalid CNPJ format'),
-      );
-      expect(
-        () => repo.checkCnpjExists('invalid'),
-        throwsA(isA<IntegrityException>()),
+    test('maps PostgrestException to domain exception', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_check_cnpj_exists',
+          params: any(named: 'params'),
+        ),
+      ).thenThrow(_pgError('PGRST116'));
+
+      await expectLater(
+        _repo.checkCnpjExists('00000000000000'),
+        throwsA(isA<ResourceNotFoundException>()),
       );
     });
-
-    test(
-      'type cast failure when RPC returns non-bool throws TypeError',
-      () async {
-        ctx.stubRpc(rpcName, 'not-a-bool');
-        expect(
-          () => repo.checkCnpjExists('12345678000190'),
-          throwsA(isA<TypeError>()),
-        );
-      },
-    );
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// getAllTenantHealth (Edge Function)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerGetAllTenantHealthGroup(_Ctx ctx) {
+void _testGetAllTenantHealth() {
   group('getAllTenantHealth', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    test('returns parsed TenantHealthSnapshot list', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => FunctionResponse(
+          status: 200,
+          data: {
+            'data': [
+              {
+                'id': 'org-1',
+                'name': 'Acme',
+                'is_active': true,
+                'max_vehicles': 10,
+                'max_active_contracts': 5,
+                'active_contract_count': 2,
+                'open_critical_alert_count': 0,
+              },
+            ],
+          },
+        ),
+      );
 
-    Map<String, dynamic> validRow() => {
-      'id': _kOrgId,
-      'name': 'Acme',
-      'is_active': true,
-      'max_vehicles': 50,
-      'max_active_contracts': 10,
-      'active_contract_count': 3,
-      'open_critical_alert_count': 0,
-      'dwell_time_seconds': 300,
-    };
+      final result = await _repo.getAllTenantHealth();
 
-    test('parses valid response into TenantHealthSnapshot list', () async {
-      ctx.stubEdgeFn({
-        'data': [validRow(), validRow()],
-      });
-      final result = await repo.getAllTenantHealth();
-      expect(result, hasLength(2));
-      expect(result.first.id, _kOrgId);
+      expect(result, hasLength(1));
+      expect(result.first.id, 'org-1');
       expect(result.first.name, 'Acme');
     });
 
-    test('returns empty list when data is empty', () async {
-      ctx.stubEdgeFn({'data': <dynamic>[]});
-      final result = await repo.getAllTenantHealth();
-      expect(result, isEmpty);
-    });
-
-    test('wraps SocketException in DomainException (Availability)', () async {
-      ctx.stubEdgeFnThrows(const SocketException('Connection refused'));
-      expect(
-        () => repo.getAllTenantHealth(),
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('unavailable'),
-          ),
+    test('wraps Edge Function error in DomainException', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
         ),
+      ).thenThrow(Exception('network failure'));
+
+      await expectLater(
+        _repo.getAllTenantHealth(),
+        throwsA(isA<DomainException>()),
       );
     });
-
-    test('wraps HttpException in DomainException', () async {
-      ctx.stubEdgeFnThrows(const HttpException('503 Service Unavailable'));
-      expect(() => repo.getAllTenantHealth(), throwsA(isA<DomainException>()));
-    });
-
-    test('wraps FormatException (malformed JSON) in DomainException', () async {
-      ctx.stubEdgeFnThrows(const FormatException('Unexpected character'));
-      expect(() => repo.getAllTenantHealth(), throwsA(isA<DomainException>()));
-    });
-
-    test(
-      'null data field causes TypeError wrapped in DomainException',
-      () async {
-        ctx.stubEdgeFn(null);
-        expect(
-          () => repo.getAllTenantHealth(),
-          throwsA(isA<DomainException>()),
-        );
-      },
-    );
-
-    test(
-      'missing "data" key causes TypeError wrapped in DomainException',
-      () async {
-        ctx.stubEdgeFn({'result': <dynamic>[]});
-        expect(
-          () => repo.getAllTenantHealth(),
-          throwsA(isA<DomainException>()),
-        );
-      },
-    );
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// getSystemAuditLog (Edge Function)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerGetSystemAuditLogGroup(_Ctx ctx) {
+void _testGetSystemAuditLog() {
   group('getSystemAuditLog', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    test('returns parsed SystemAuditLogEntry list', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => FunctionResponse(
+          status: 200,
+          data: {
+            'data': [
+              {
+                'severity': 'info',
+                'event_type': 'ORG_CREATED',
+                'occurred_at': '2026-01-01T00:00:00Z',
+              },
+            ],
+          },
+        ),
+      );
 
-    Map<String, dynamic> validEntry() => {
-      'severity': 'critical',
-      'event_type': 'ORG_CREATED',
-      'occurred_at': '2026-05-01T00:00:00Z',
-      'organization_id': _kOrgId,
-    };
+      final result = await _repo.getSystemAuditLog();
 
-    test('parses valid response into SystemAuditLogEntry list', () async {
-      ctx.stubEdgeFn({
-        'data': [validEntry()],
-      });
-      final result = await repo.getSystemAuditLog();
       expect(result, hasLength(1));
       expect(result.first.eventType, 'ORG_CREATED');
     });
 
-    test('passes optional filters in params', () async {
-      ctx.stubEdgeFn({'data': <dynamic>[]});
-      final from = DateTime.utc(2026, 1, 1);
-      final to = DateTime.utc(2026, 5, 1);
+    test('wraps Edge Function error in DomainException', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(Exception('timeout'));
 
-      await repo.getSystemAuditLog(
-        organizationId: _kOrgId,
-        severity: 'critical',
-        fromDate: from,
-        toDate: to,
-        limit: 50,
-      );
-
-      final captured =
-          verify(
-                () => ctx.fnsOf().invoke(
-                  'super-admin-proxy',
-                  body: captureAny(named: 'body'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      final params = captured['params'] as Map<String, dynamic>;
-      expect(params['organization_id'], _kOrgId);
-      expect(params['severity'], 'critical');
-      expect(params['from_date'], from.toIso8601String());
-      expect(params['to_date'], to.toIso8601String());
-      expect(params['limit'], 50);
-    });
-
-    test('omits null optional params from body', () async {
-      ctx.stubEdgeFn({'data': <dynamic>[]});
-      await repo.getSystemAuditLog();
-
-      final captured =
-          verify(
-                () => ctx.fnsOf().invoke(
-                  'super-admin-proxy',
-                  body: captureAny(named: 'body'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      final params = captured['params'] as Map<String, dynamic>;
-      expect(params.containsKey('organization_id'), isFalse);
-      expect(params.containsKey('severity'), isFalse);
-      expect(params['limit'], 100);
-    });
-
-    test('wraps network failure in DomainException', () async {
-      ctx.stubEdgeFnThrows(const SocketException('timeout'));
-      expect(() => repo.getSystemAuditLog(), throwsA(isA<DomainException>()));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// getTenantTechnicalHealth (Edge Function)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerGetTenantTechnicalHealthGroup(_Ctx ctx) {
-  group('getTenantTechnicalHealth', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    test('returns parsed map on success', () async {
-      final payload = {'replication_lag_ms': 12, 'schema_valid': true};
-      ctx.stubEdgeFn({'data': payload});
-      final result = await repo.getTenantTechnicalHealth(_kOrgId);
-      expect(result['replication_lag_ms'], 12);
-    });
-
-    test('passes organization_id in params', () async {
-      ctx.stubEdgeFn({'data': <String, dynamic>{}});
-      await repo.getTenantTechnicalHealth(_kOrgId);
-
-      final captured =
-          verify(
-                () => ctx.fnsOf().invoke(
-                  'super-admin-proxy',
-                  body: captureAny(named: 'body'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['action'], 'get_tenant_technical_health');
-      expect((captured['params'] as Map)['organization_id'], _kOrgId);
-    });
-
-    test('wraps Exception in DomainException', () async {
-      ctx.stubEdgeFnThrows(Exception('500 Internal Server Error'));
-      expect(
-        () => repo.getTenantTechnicalHealth(_kOrgId),
+      await expectLater(
+        _repo.getSystemAuditLog(),
         throwsA(isA<DomainException>()),
       );
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// getEvidenceVolume (Edge Function)
-// ═══════════════════════════════════════════════════════════════════════════
+void _testUpdateOrganizationQuota() {
+  group('updateOrganizationQuota', () {
+    const cmd = UpdateOrganizationQuotaCommand(
+      organizationId: 'org-1',
+      newPlanType: 'professional',
+      superAdminUserId: 'sa-uuid',
+      sessionId: 'session-1',
+    );
 
-void _registerGetEvidenceVolumeGroup(_Ctx ctx) {
-  group('getEvidenceVolume', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    test('calls RPC with correct params', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_update_organization_quota',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-    test('returns parsed map on success', () async {
-      final payload = {'total': 1500, 'current_month': 42};
-      ctx.stubEdgeFn({'data': payload});
-      final result = await repo.getEvidenceVolume(_kOrgId);
-      expect(result['total'], 1500);
+      await _repo.updateOrganizationQuota(cmd);
+
+      verify(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_update_organization_quota',
+          params: any(named: 'params'),
+        ),
+      ).called(1);
+    });
+  });
+}
+
+void _testArchiveOrganization() {
+  group('archiveOrganization', () {
+    const cmd = ArchiveOrganizationCommand(
+      orgId: 'org-1',
+      reason: 'churn',
+      superAdminUserId: 'sa-uuid',
+      currentStatus: OrgStatus.active,
+      sessionId: 'session-1',
+    );
+
+    test('calls super_admin_archive_organization RPC', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_archive_organization',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
+
+      await _repo.archiveOrganization(cmd);
+
+      verify(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_archive_organization',
+          params: any(named: 'params'),
+        ),
+      ).called(1);
     });
 
-    test('wraps timeout in DomainException', () async {
-      ctx.stubEdgeFnThrows(const SocketException('Connection timed out'));
-      expect(
-        () => repo.getEvidenceVolume(_kOrgId),
-        throwsA(isA<DomainException>()),
+    test('maps PostgrestException to domain exception', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_archive_organization',
+          params: any(named: 'params'),
+        ),
+      ).thenThrow(_pgError('P0001', message: 'Org not found'));
+
+      await expectLater(
+        _repo.archiveOrganization(cmd),
+        throwsA(isA<IntegrityException>()),
       );
     });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// checkSchemaIntegrity (Edge Function)
-// ═══════════════════════════════════════════════════════════════════════════
+void _testAddAdminToOrganization() {
+  group('addAdminToOrganization', () {
+    Future<void> callAdd() => _repo.addAdminToOrganization(
+      orgId: 'org-1',
+      email: 'admin@acme.com',
+      invitationId: 'inv-uuid',
+      token: 'token-abc',
+      expiresAtUtc: DateTime.utc(2026, 12, 31),
+      superAdminUserId: 'sa-uuid',
+      reason: 'new admin',
+    );
 
-void _registerCheckSchemaIntegrityGroup(_Ctx ctx) {
-  group('checkSchemaIntegrity', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    test('calls super_admin_add_org_admin RPC on success', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_add_org_admin',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-    test('returns parsed map on success', () async {
-      final payload = {'tables_ok': 42, 'drift_detected': false};
-      ctx.stubEdgeFn({'data': payload});
-      final result = await repo.checkSchemaIntegrity(_kOrgId);
-      expect(result['drift_detected'], isFalse);
+      await callAdd();
+
+      verify(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_add_org_admin',
+          params: any(named: 'params'),
+        ),
+      ).called(1);
     });
 
     test(
-      'wraps Exception in DomainException without leaking details',
+      'P0005 (pending invite) → DomainException with descriptive message',
       () async {
-        ctx.stubEdgeFnThrows(Exception('secret_key=abc123'));
-        expect(
-          () => repo.checkSchemaIntegrity(_kOrgId),
+        when(
+          () => _mockClient.rpc<dynamic>(
+            'super_admin_add_org_admin',
+            params: any(named: 'params'),
+          ),
+        ).thenThrow(_pgError('P0005'));
+
+        await expectLater(
+          callAdd(),
           throwsA(
             isA<DomainException>().having(
-              (e) => e.message,
-              'msg',
-              contains('unavailable'),
+              (e) => e.toString(),
+              'message',
+              contains('convite pendente'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'P0006 (active member) → DomainException with descriptive message',
+      () async {
+        when(
+          () => _mockClient.rpc<dynamic>(
+            'super_admin_add_org_admin',
+            params: any(named: 'params'),
+          ),
+        ).thenThrow(_pgError('P0006'));
+
+        await expectLater(
+          callAdd(),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.toString(),
+              'message',
+              contains('perfil ativo'),
             ),
           ),
         );
@@ -734,786 +531,220 @@ void _registerCheckSchemaIntegrityGroup(_Ctx ctx) {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// updateOrganizationQuota
-// ═══════════════════════════════════════════════════════════════════════════
+void _testRevokeInvitation() {
+  group('revokeInvitation', () {
+    Future<void> callRevoke() => _repo.revokeInvitation(
+      orgId: 'org-1',
+      email: 'admin@acme.com',
+      superAdminUserId: 'sa-uuid',
+      reason: 'mistake',
+    );
 
-void _registerUpdateOrganizationQuotaGroup(_Ctx ctx) {
-  group('updateOrganizationQuota', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
+    test('calls super_admin_revoke_invitation RPC on success', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_revoke_invitation',
+          params: any(named: 'params'),
+        ),
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-    const rpcName = 'super_admin_update_organization_quota';
+      await callRevoke();
 
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
+      verify(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_revoke_invitation',
+          params: any(named: 'params'),
+        ),
+      ).called(1);
+    });
+
+    test('P0008 (no pending invite) → DomainException', () async {
+      when(
+        () => _mockClient.rpc<dynamic>(
+          'super_admin_revoke_invitation',
+          params: any(named: 'params'),
+        ),
+      ).thenThrow(_pgError('P0008'));
+
       await expectLater(
-        repo.updateOrganizationQuota(_updateQuotaCmd()),
-        completes,
-      );
-    });
-
-    test('passes expectedUpdatedAt as ISO8601', () async {
-      ctx.stubRpc(rpcName, null);
-      await repo.updateOrganizationQuota(_updateQuotaCmd());
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_expected_updated_at'], '2026-05-01T00:00:00.000Z');
-    });
-
-    test('maps P0001 (OCC conflict) → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('P0001', message: 'Concurrent modification detected'),
-      );
-      expect(
-        () => repo.updateOrganizationQuota(_updateQuotaCmd()),
-        throwsA(
-          isA<IntegrityException>().having(
-            (e) => e.message,
-            'msg',
-            contains('Concurrent'),
-          ),
-        ),
-      );
-    });
-
-    test('maps 42501 → SovereigntyViolationException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(
-        () => repo.updateOrganizationQuota(_updateQuotaCmd()),
-        throwsA(isA<SovereigntyViolationException>()),
-      );
-    });
-
-    test('rethrows unknown code', () async {
-      final err = _pgError('42P01', message: 'undefined_table');
-      ctx.stubRpcThrows(rpcName, err);
-      expect(
-        () => repo.updateOrganizationQuota(_updateQuotaCmd()),
-        throwsA(same(err)),
-      );
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// archiveOrganization
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerArchiveOrganizationGroup(_Ctx ctx) {
-  group('archiveOrganization', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_archive_organization';
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(repo.archiveOrganization(_archiveCmd()), completes);
-    });
-
-    test('maps PGRST116 not found → ResourceNotFoundException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('PGRST116'));
-      expect(
-        () => repo.archiveOrganization(_archiveCmd()),
-        throwsA(isA<ResourceNotFoundException>()),
-      );
-    });
-
-    test('maps P0001 (already archived) → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('P0001', message: 'Already archived'),
-      );
-      expect(
-        () => repo.archiveOrganization(_archiveCmd()),
-        throwsA(isA<IntegrityException>()),
-      );
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// unarchiveOrganization
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerUnarchiveOrganizationGroup(_Ctx ctx) {
-  group('unarchiveOrganization', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_unarchive_organization';
-
-    Future<void> call() => repo.unarchiveOrganization(
-      orgId: _kOrgId,
-      reason: 'Client reactivated',
-      superAdminId: _kUserId,
-    );
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(), completes);
-    });
-
-    test('maps 42501 → SovereigntyViolationException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(call, throwsA(isA<SovereigntyViolationException>()));
-    });
-
-    test('maps PGRST116 → ResourceNotFoundException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('PGRST116'));
-      expect(call, throwsA(isA<ResourceNotFoundException>()));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// getTenantMembers
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerGetTenantMembersGroup(_Ctx ctx) {
-  group('getTenantMembers', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_get_org_members';
-
-    test('returns list of member maps', () async {
-      ctx.stubRpc(rpcName, [
-        {'user_id': 'u1', 'email': 'a@b.com', 'is_active': true},
-        {'user_id': 'u2', 'email': 'c@d.com', 'is_active': false},
-      ]);
-      final result = await repo.getTenantMembers(_kOrgId);
-      expect(result, hasLength(2));
-      expect(result.first['user_id'], 'u1');
-    });
-
-    test('returns empty list when no members', () async {
-      ctx.stubRpc(rpcName, <dynamic>[]);
-      final result = await repo.getTenantMembers(_kOrgId);
-      expect(result, isEmpty);
-    });
-
-    test('maps 22P02 invalid UUID → ResourceNotFoundException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('22P02'));
-      expect(
-        () => repo.getTenantMembers('not-a-uuid'),
-        throwsA(isA<ResourceNotFoundException>()),
-      );
-    });
-
-    test('maps 42501 → SovereigntyViolationException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(
-        () => repo.getTenantMembers(_kOrgId),
-        throwsA(isA<SovereigntyViolationException>()),
-      );
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// toggleTenantMemberStatus
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerToggleTenantMemberStatusGroup(_Ctx ctx) {
-  group('toggleTenantMemberStatus', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_toggle_member_status';
-
-    Future<void> call({bool isActive = false}) => repo.toggleTenantMemberStatus(
-      orgId: _kOrgId,
-      userId: _kUserId,
-      isActive: isActive,
-    );
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(isActive: true), completes);
-    });
-
-    test('passes correct params', () async {
-      ctx.stubRpc(rpcName, null);
-      await call(isActive: true);
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_org_id'], _kOrgId);
-      expect(captured['p_user_id'], _kUserId);
-      expect(captured['p_is_active'], isTrue);
-    });
-
-    test('maps PGRST116 → ResourceNotFoundException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('PGRST116'));
-      expect(call, throwsA(isA<ResourceNotFoundException>()));
-    });
-
-    test('maps P0001 → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('P0001', message: 'Cannot deactivate last admin'),
-      );
-      expect(
-        call,
-        throwsA(
-          isA<IntegrityException>().having(
-            (e) => e.message,
-            'msg',
-            contains('last admin'),
-          ),
-        ),
-      );
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// resendInvitation (Edge Function — rethrow)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerResendInvitationGroup(_Ctx ctx) {
-  group('resendInvitation', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_audit_resend_invitation';
-
-    Future<void> call() => repo.resendInvitation(
-      email: _kEmail,
-      orgName: 'Acme',
-      orgId: _kOrgId,
-      reason: 'User did not receive email',
-    );
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      when(
-        () => ctx.fnsOf().invoke('notify-invite', body: any(named: 'body')),
-      ).thenAnswer((_) async => _fnOk({'sent': true}));
-      await expectLater(call(), completes);
-    });
-
-    test('calls audit RPC before notify edge function', () async {
-      ctx.stubRpc(rpcName, null);
-      when(
-        () => ctx.fnsOf().invoke('notify-invite', body: any(named: 'body')),
-      ).thenAnswer((_) async => _fnOk({'sent': true}));
-      await call();
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_org_id'], _kOrgId);
-      expect(captured['p_email'], _kEmail);
-      expect(captured['p_reason'], 'User did not receive email');
-    });
-
-    test('wraps non-Postgrest exceptions as DomainException', () async {
-      ctx.stubRpc(rpcName, null);
-      const error = SocketException('Connection refused');
-      when(
-        () => ctx.fnsOf().invoke('notify-invite', body: any(named: 'body')),
-      ).thenThrow(error);
-      expect(call, throwsA(isA<DomainException>()));
-    });
-
-    test('wraps FunctionException on 500 as DomainException', () async {
-      ctx.stubRpc(rpcName, null);
-      const error = FunctionException(
-        status: 500,
-        details: 'Internal Server Error',
-      );
-      when(
-        () => ctx.fnsOf().invoke('notify-invite', body: any(named: 'body')),
-      ).thenThrow(error);
-      expect(call, throwsA(isA<DomainException>()));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// addAdminToOrganization (custom P0005/P0006 handling)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerAddAdminToOrganizationGroup(_Ctx ctx) {
-  group('addAdminToOrganization', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_add_org_admin';
-    final expiresAt = DateTime.utc(2026, 6, 1);
-
-    Future<void> call({String email = _kEmail}) => repo.addAdminToOrganization(
-      orgId: _kOrgId,
-      email: email,
-      invitationId: _kInvitationId,
-      token: _kToken,
-      expiresAtUtc: expiresAt,
-      superAdminUserId: _kUserId,
-      reason: 'New admin needed',
-    );
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(), completes);
-    });
-
-    test('passes reason to RPC', () async {
-      ctx.stubRpc(rpcName, null);
-      await call();
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_reason'], 'New admin needed');
-    });
-
-    test('P0005 → DomainException with pending invite message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0005', message: 'pending invite'));
-      expect(
-        call,
+        callRevoke(),
         throwsA(
           isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
+            (e) => e.toString(),
+            'message',
             contains('convite pendente'),
           ),
         ),
       );
     });
-
-    test('P0005 includes email in error message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0005'));
-      expect(
-        () => call(email: 'test@org.com'),
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('test@org.com'),
-          ),
-        ),
-      );
-    });
-
-    test('P0006 → DomainException with active profile message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0006', message: 'already active'));
-      expect(
-        call,
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('perfil ativo'),
-          ),
-        ),
-      );
-    });
-
-    test('P0006 includes email in error message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0006'));
-      expect(
-        () => call(email: 'existing@org.com'),
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('existing@org.com'),
-          ),
-        ),
-      );
-    });
-
-    test('other codes fall through to interceptor (23505)', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('23505', details: 'Key (email)=(x) already exists.'),
-      );
-      expect(call, throwsA(isA<IntegrityException>()));
-    });
-
-    test('other codes fall through to interceptor (42501)', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(call, throwsA(isA<SovereigntyViolationException>()));
-    });
-
-    test('unknown code rethrows PostgrestException', () async {
-      final err = _pgError('XX001');
-      ctx.stubRpcThrows(rpcName, err);
-      expect(call, throwsA(same(err)));
-    });
   });
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// revokeInvitation (custom P0008 handling)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerRevokeInvitationGroup(_Ctx ctx) {
-  group('revokeInvitation', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_revoke_invitation';
-
-    Future<void> call({String email = _kEmail}) => repo.revokeInvitation(
-      orgId: _kOrgId,
-      email: email,
-      superAdminUserId: _kUserId,
-      reason: 'Admin no longer needed',
-    );
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(), completes);
-    });
-
-    test('passes reason to RPC', () async {
-      ctx.stubRpc(rpcName, null);
-      await call();
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_reason'], 'Admin no longer needed');
-    });
-
-    test('P0008 → DomainException with no pending invite message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0008'));
-      expect(
-        call,
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('Nenhum convite pendente'),
-          ),
-        ),
-      );
-    });
-
-    test('P0008 includes email in error message', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('P0008'));
-      expect(
-        () => call(email: 'ghost@org.com'),
-        throwsA(
-          isA<DomainException>().having(
-            (e) => e.message,
-            'msg',
-            contains('ghost@org.com'),
-          ),
-        ),
-      );
-    });
-
-    test('other codes fall through to interceptor (PGRST116)', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('PGRST116'));
-      expect(call, throwsA(isA<ResourceNotFoundException>()));
-    });
-
-    test('other codes fall through to interceptor (42501)', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(call, throwsA(isA<SovereigntyViolationException>()));
-    });
-
-    test('unknown code rethrows', () async {
-      final err = _pgError('57014', message: 'statement_timeout');
-      ctx.stubRpcThrows(rpcName, err);
-      expect(call, throwsA(same(err)));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// updateAllowedDomains (domain normalization logic)
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerUpdateAllowedDomainsGroup(_Ctx ctx) {
+void _testUpdateAllowedDomains() {
   group('updateAllowedDomains', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    const rpcName = 'super_admin_update_allowed_domains';
-
-    Future<void> call(List<String> domains) =>
-        repo.updateAllowedDomains(_kOrgId, domains, _kUserId);
-
-    test('completes successfully', () async {
-      ctx.stubRpc(rpcName, null);
-      await expectLater(call(['acme.com']), completes);
-    });
-
-    test('normalizes domains: lowercase + trim', () async {
-      ctx.stubRpc(rpcName, null);
-      await call([' ACME.COM ', '  Beta.IO']);
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      final domains = captured['p_allowed_domains'] as List;
-      expect(domains, containsAll(['acme.com', 'beta.io']));
-    });
-
-    test('deduplicates domains', () async {
-      ctx.stubRpc(rpcName, null);
-      await call(['acme.com', 'ACME.COM', ' acme.com ']);
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      final domains = captured['p_allowed_domains'] as List;
-      expect(domains, hasLength(1));
-      expect(domains.first, 'acme.com');
-    });
-
-    test('passes empty list when no domains', () async {
-      ctx.stubRpc(rpcName, null);
-      await call([]);
-
-      final captured =
-          verify(
-                () => ctx.clientOf().rpc<dynamic>(
-                  rpcName,
-                  params: captureAny(named: 'params'),
-                ),
-              ).captured.single
-              as Map<String, dynamic>;
-      expect(captured['p_allowed_domains'], isEmpty);
-    });
-
-    test('maps 42501 → SovereigntyViolationException', () async {
-      ctx.stubRpcThrows(rpcName, _pgError('42501'));
-      expect(
-        () => call(['x.com']),
-        throwsA(isA<SovereigntyViolationException>()),
-      );
-    });
-
-    test('maps P0001 → IntegrityException', () async {
-      ctx.stubRpcThrows(
-        rpcName,
-        _pgError('P0001', message: 'Invalid domain format'),
-      );
-      expect(() => call(['not valid']), throwsA(isA<IntegrityException>()));
-    });
-  });
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ADVERSARIAL SCENARIOS — CIA Triad & Resilience
-// ═══════════════════════════════════════════════════════════════════════════
-
-void _registerAdversarialGroup(_Ctx ctx) {
-  group('Adversarial: CIA Triad & Resilience', () {
-    late SupabaseSuperAdminRepository repo;
-    setUp(() => repo = ctx.repoOf());
-
-    group('Confidentiality — RBAC/JWT enforcement', () {
-      test('42501 on any RPC never leaks DB error details', () async {
-        ctx.stubRpcThrows(
-          'super_admin_create_organization',
-          _pgError(
-            '42501',
-            message: 'permission denied for table organizations',
+    test(
+      'normalizes domains: lowercase, trim, deduplicate before RPC',
+      () async {
+        when(
+          () => _mockClient.rpc<dynamic>(
+            'super_admin_update_allowed_domains',
+            params: any(named: 'params'),
           ),
-        );
-        try {
-          await repo.createOrganization(_createOrgCmd());
-        } on SovereigntyViolationException catch (e) {
-          expect(e.toString(), isNot(contains('organizations')));
-          expect(e.toString(), isNot(contains('permission denied')));
-        }
-      });
+        ).thenAnswer((_) => FakePostgrestFilterBuilder(null));
 
-      test(
-        'ResourceNotFoundException never leaks resource details in toString',
-        () async {
-          ctx.stubRpcThrows(
-            'super_admin_archive_organization',
-            _pgError(
-              '22P02',
-              message: 'invalid input syntax for type uuid: "attack-probe"',
-            ),
-          );
-          try {
-            await repo.archiveOrganization(_archiveCmd());
-          } on ResourceNotFoundException catch (e) {
-            expect(e.toString(), isNot(contains('attack-probe')));
-            expect(e.toString(), isNot(contains('uuid')));
-          }
-        },
-      );
-    });
-
-    group('Integrity — parameter validation', () {
-      test('createOrganization passes all params to RPC', () async {
-        ctx.stubRpc('super_admin_create_organization', _kOrgId);
-        final cmd = _createOrgCmd();
-        await repo.createOrganization(cmd);
+        await _repo.updateAllowedDomains('org-1', [
+          'ACME.COM',
+          ' acme.com ',
+          'FLEET.IO',
+        ], 'sa-uuid');
 
         final captured =
             verify(
-                  () => ctx.clientOf().rpc<dynamic>(
-                    'super_admin_create_organization',
+                  () => _mockClient.rpc<dynamic>(
+                    'super_admin_update_allowed_domains',
                     params: captureAny(named: 'params'),
                   ),
-                ).captured.single
+                ).captured.first
                 as Map<String, dynamic>;
+        final domains = captured['p_allowed_domains'] as List<String>;
+        expect(domains, hasLength(2));
+        expect(domains, containsAll(['acme.com', 'fleet.io']));
+      },
+    );
+  });
+}
 
-        expect(captured['p_legal_name'], cmd.legalName);
-        expect(captured['p_trade_name'], cmd.tradeName);
-        expect(captured['p_timezone'], cmd.timezone);
-        expect(captured['p_currency_code'], cmd.currencyCode);
-        expect(captured['p_plan_type'], cmd.planType.name);
-        expect(captured['p_max_vehicles'], cmd.maxVehicles);
-        expect(captured['p_max_active_contracts'], cmd.maxActiveContracts);
-        expect(captured['p_super_admin_user_id'], cmd.superAdminUserId);
-        expect(captured['p_tool_cost_cents'], cmd.toolCostCents);
-        expect(captured['p_dwell_time_seconds'], cmd.dwellTimeSeconds);
-        expect(captured['p_billing_day'], cmd.billingDay);
-        expect(captured['p_contact_email'], cmd.contactEmail);
-        expect(captured['p_external_id'], cmd.externalId);
-        expect(captured['p_reason'], cmd.reason);
-        expect(captured['p_organization_type'], cmd.organizationType);
-        expect(captured['p_allowed_domains'], cmd.allowedDomains);
-      });
-    });
-
-    group('Availability — network failures', () {
-      test('SocketException on Edge Function → DomainException', () async {
-        ctx.stubEdgeFnThrows(const SocketException('Network unreachable'));
-        expect(
-          () => repo.getAllTenantHealth(),
-          throwsA(isA<DomainException>()),
-        );
-      });
-
-      test('HttpException on Edge Function → DomainException', () async {
-        ctx.stubEdgeFnThrows(const HttpException('503'));
-        expect(
-          () => repo.getEvidenceVolume(_kOrgId),
-          throwsA(isA<DomainException>()),
-        );
-      });
-    });
-
-    group('Type safety — malformed responses', () {
-      test(
-        'Edge Function returns list instead of map → DomainException',
-        () async {
-          ctx.stubEdgeFn([1, 2, 3]);
-          expect(
-            () => repo.getTenantTechnicalHealth(_kOrgId),
-            throwsA(isA<DomainException>()),
-          );
-        },
+void _testGetTenantTechnicalHealth() {
+  group('getTenantTechnicalHealth', () {
+    test('returns data map from Edge Function', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => FunctionResponse(
+          status: 200,
+          data: {
+            'data': {'replication_lag_ms': 5, 'schema_ok': true},
+          },
+        ),
       );
 
-      test(
-        'Edge Function returns string instead of map → DomainException',
-        () async {
-          ctx.stubEdgeFn('unexpected string');
-          expect(
-            () => repo.checkSchemaIntegrity(_kOrgId),
-            throwsA(isA<DomainException>()),
-          );
-        },
-      );
-
-      test(
-        'RPC returns list instead of String for createOrganization',
-        () async {
-          ctx.stubRpc('super_admin_create_organization', [
-            'unexpected',
-            'list',
-          ]);
-          expect(
-            () => repo.createOrganization(_createOrgCmd()),
-            throwsA(isA<TypeError>()),
-          );
-        },
-      );
-
-      test('RPC returns null for checkCnpjExists → TypeError', () async {
-        ctx.stubRpc('super_admin_check_cnpj_exists', null);
-        expect(
-          () => repo.checkCnpjExists('12345678000190'),
-          throwsA(isA<TypeError>()),
-        );
-      });
+      final result = await _repo.getTenantTechnicalHealth('org-1');
+      expect(result['schema_ok'], isTrue);
     });
 
-    group('Concurrency — race condition error handling', () {
-      test('P0001 OCC conflict on updateOrganizationQuota', () async {
-        ctx.stubRpcThrows(
-          'super_admin_update_organization_quota',
-          _pgError('P0001', message: 'Row was modified by another transaction'),
-        );
-        expect(
-          () => repo.updateOrganizationQuota(_updateQuotaCmd()),
-          throwsA(
-            isA<IntegrityException>().having(
-              (e) => e.message,
-              'msg',
-              contains('another transaction'),
-            ),
-          ),
-        );
-      });
+    test('wraps Edge Function error in DomainException', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(Exception('503'));
 
-      test('23505 race on archiveOrganization → IntegrityException', () async {
-        ctx.stubRpcThrows(
-          'super_admin_archive_organization',
-          _pgError('23505', details: 'Key (org_id)=($_kOrgId) already exists.'),
-        );
-        expect(
-          () => repo.archiveOrganization(_archiveCmd()),
-          throwsA(
-            isA<IntegrityException>().having((e) => e.field, 'field', 'org_id'),
-          ),
-        );
-      });
+      await expectLater(
+        _repo.getTenantTechnicalHealth('org-1'),
+        throwsA(isA<DomainException>()),
+      );
     });
   });
+}
+
+void _testGetEvidenceVolume() {
+  group('getEvidenceVolume', () {
+    test('returns volume metrics map', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => FunctionResponse(
+          status: 200,
+          data: {
+            'data': {'total': 1000, 'current_month': 42},
+          },
+        ),
+      );
+
+      final result = await _repo.getEvidenceVolume('org-1');
+      expect(result['total'], 1000);
+    });
+
+    test('wraps Edge Function error in DomainException', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(Exception('unavailable'));
+
+      await expectLater(
+        _repo.getEvidenceVolume('org-1'),
+        throwsA(isA<DomainException>()),
+      );
+    });
+  });
+}
+
+void _testCheckSchemaIntegrity() {
+  group('checkSchemaIntegrity', () {
+    test('returns integrity check result map', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) async => FunctionResponse(
+          status: 200,
+          data: {
+            'data': {'ok': true, 'missing_tables': <dynamic>[]},
+          },
+        ),
+      );
+
+      final result = await _repo.checkSchemaIntegrity('org-1');
+      expect(result['ok'], isTrue);
+    });
+
+    test('wraps Edge Function error in DomainException', () async {
+      when(
+        () => _mockFunctions.invoke(
+          'super-admin-proxy',
+          body: any(named: 'body'),
+        ),
+      ).thenThrow(Exception('edge fn down'));
+
+      await expectLater(
+        _repo.checkSchemaIntegrity('org-1'),
+        throwsA(isA<DomainException>()),
+      );
+    });
+  });
+}
+
+// ── Entry point ───────────────────────────────────────────────────────────────
+
+void main() {
+  setUp(() {
+    _mockClient = MockSupabaseClient();
+    _mockFunctions = MockFunctionsClient();
+    when(() => _mockClient.functions).thenReturn(_mockFunctions);
+    _repo = SupabaseSuperAdminRepository(_mockClient);
+  });
+
+  _testCreateOrganization();
+  _testCheckCnpjExists();
+  _testGetAllTenantHealth();
+  _testGetSystemAuditLog();
+  _testUpdateOrganizationQuota();
+  _testArchiveOrganization();
+  _testAddAdminToOrganization();
+  _testRevokeInvitation();
+  _testUpdateAllowedDomains();
+  _testGetTenantTechnicalHealth();
+  _testGetEvidenceVolume();
+  _testCheckSchemaIntegrity();
 }

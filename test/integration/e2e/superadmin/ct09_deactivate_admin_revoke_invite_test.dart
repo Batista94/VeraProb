@@ -1,9 +1,11 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:veraprob/main.dart' as app;
+import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
+import '../helpers/failing_super_admin_repository.dart';
 import '../helpers/superadmin_auth_helper.dart';
 import '../helpers/superadmin_data_factory.dart';
 import '../helpers/superadmin_db_verifier.dart';
@@ -139,7 +141,11 @@ void main() {
         await tester.tap(revokeButton.first);
         await tester.pumpAndSettle();
 
-        // Confirmar a revogação no modal
+        // Preencher justificativa e confirmar a revogação no modal
+        await SuperAdminWidgetHelpers.fillJustification(
+          tester,
+          'Justificativa de revogação',
+        );
         await SuperAdminWidgetHelpers.confirmModal(tester);
 
         // Verificar que o convite foi removido da lista (UI)
@@ -164,10 +170,10 @@ void main() {
             // Se ainda existe, deve ter status 'REVOKED'
             final invitation = invitations.first;
             expect(
-              invitation['status'],
-              equals('REVOKED'),
+              invitation['revoked_at_utc'],
+              isNotNull,
               reason:
-                  'O convite deve ter status REVOKED no DB após '
+                  'O convite deve ter revoked_at_utc preenchido no DB após '
                   'confirmação (Req 3.2)',
             );
           }
@@ -193,18 +199,30 @@ void main() {
       );
       await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-      // Localizar o botão de desativar admin ativo
-      final deactivateButton = find.byTooltip('Inativar Usuário');
+      // Obter um admin ativo para verificação
+      final activeAdmin = testOrg.admins.firstWhere(
+        (a) => a.isActive && !a.isPending,
+      );
+
+      // Localizar o botão de desativar do admin ativo específico
+      final adminListTile = find.ancestor(
+        of: find.textContaining(activeAdmin.email),
+        matching: find.byType(ListTile),
+      );
+      final deactivateButton = find.descendant(
+        of: adminListTile,
+        matching: find.byTooltip('Inativar Usuário'),
+      );
       expect(
         deactivateButton,
-        findsAtLeast(1),
+        findsOneWidget,
         reason:
             'O botão "Inativar Usuário" deve estar visível para '
             'Admin_Ativo (Req 3.3)',
       );
 
       // Tocar no botão de desativar
-      await tester.tap(deactivateButton.first);
+      await tester.tap(deactivateButton);
       await tester.pumpAndSettle();
 
       // Verificar que o Modal_Confirmação é exibido
@@ -268,13 +286,24 @@ void main() {
         await client.dispose();
       }
 
-      // Tocar no botão de desativar
-      final deactivateButton = find.byTooltip('Inativar Usuário');
-      expect(deactivateButton, findsAtLeast(1));
-      await tester.tap(deactivateButton.first);
+      // Tocar no botão de desativar específico do activeAdmin
+      final adminListTile = find.ancestor(
+        of: find.textContaining(activeAdmin.email),
+        matching: find.byType(ListTile),
+      );
+      final deactivateButton = find.descendant(
+        of: adminListTile,
+        matching: find.byTooltip('Inativar Usuário'),
+      );
+      expect(deactivateButton, findsOneWidget);
+      await tester.tap(deactivateButton);
       await tester.pumpAndSettle();
 
-      // Confirmar a desativação no modal
+      // Preencher justificativa e confirmar a desativação no modal
+      await SuperAdminWidgetHelpers.fillJustification(
+        tester,
+        'Justificativa de desativação',
+      );
       await SuperAdminWidgetHelpers.confirmModal(tester);
 
       // Aguardar processamento
@@ -345,15 +374,22 @@ void main() {
         await client.dispose();
       }
 
-      // Tocar no botão de desativar (se disponível)
-      final deactivateButton = find.byTooltip('Inativar Usuário');
+      // Tocar no botão de desativar específico do targetAdmin
+      final adminListTile = find.ancestor(
+        of: find.textContaining(targetAdmin.email),
+        matching: find.byType(ListTile),
+      );
+      final deactivateButton = find.descendant(
+        of: adminListTile,
+        matching: find.byTooltip('Inativar Usuário'),
+      );
       if (deactivateButton.evaluate().isEmpty) {
         markTestSkipped(
           'Nenhum botão de desativar disponível (admins já desativados).',
         );
         return;
       }
-      await tester.tap(deactivateButton.first);
+      await tester.tap(deactivateButton);
       await tester.pumpAndSettle();
 
       // Cancelar a operação no modal
@@ -472,13 +508,6 @@ void main() {
         return;
       }
 
-      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-      await SuperAdminNavigationHelper.goToTenantDetail(
-        tester,
-        testOrgSingleAdmin.orgName,
-      );
-      await SuperAdminNavigationHelper.goToUsersTab(tester);
-
       // Capturar estado antes da operação
       final singleAdmin = testOrgSingleAdmin.admins.first;
       final client = SuperAdminTestConfig.createServiceRoleClient();
@@ -495,11 +524,23 @@ void main() {
         await client.dispose();
       }
 
-      // Simular falha de rede via HttpOverrides
-      final originalOverrides = HttpOverrides.current;
-      HttpOverrides.global = _FailingHttpOverrides();
-
       try {
+        app.testProviderOverrides = [
+          superAdminRepositoryProvider.overrideWith((ref) {
+            return FailingSuperAdminRepository(
+              ref.watch(supabaseClientProvider),
+              failToggle: true,
+            );
+          }),
+        ];
+
+        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+        await SuperAdminNavigationHelper.goToTenantDetail(
+          tester,
+          testOrgSingleAdmin.orgName,
+        );
+        await SuperAdminNavigationHelper.goToUsersTab(tester);
+
         // Tocar no botão de desativar
         final deactivateButton = find.byTooltip('Inativar Usuário');
         if (deactivateButton.evaluate().isEmpty) {
@@ -514,6 +555,10 @@ void main() {
         final simpleDialog = find.byType(Dialog);
         if (dialog.evaluate().isNotEmpty ||
             simpleDialog.evaluate().isNotEmpty) {
+          await SuperAdminWidgetHelpers.fillJustification(
+            tester,
+            'Justificativa de desativação com falha',
+          );
           await SuperAdminWidgetHelpers.confirmModal(tester);
         }
 
@@ -529,8 +574,7 @@ void main() {
               '(Req 3.7)',
         );
       } finally {
-        // Restaurar HttpOverrides original
-        HttpOverrides.global = originalOverrides;
+        app.testProviderOverrides = [];
       }
 
       // Verificar que o estado no DB não mudou (consistência)
@@ -554,141 +598,4 @@ void main() {
       }
     });
   });
-}
-
-/// HttpOverrides que simula falha de rede para todos os requests.
-///
-/// Usado pelo teste 3.7 para verificar o comportamento da UI quando
-/// a operação de desativação falha por erro de rede.
-class _FailingHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return _FailingHttpClient();
-  }
-}
-
-/// HttpClient que rejeita todas as conexões simulando falha de rede.
-class _FailingHttpClient implements HttpClient {
-  @override
-  bool autoUncompress = true;
-
-  @override
-  Duration? connectionTimeout = const Duration(seconds: 1);
-
-  @override
-  Duration idleTimeout = const Duration(seconds: 1);
-
-  @override
-  int? maxConnectionsPerHost;
-
-  @override
-  String? userAgent;
-
-  @override
-  void addCredentials(
-    Uri url,
-    String realm,
-    HttpClientCredentials credentials,
-  ) {}
-
-  @override
-  void addProxyCredentials(
-    String host,
-    int port,
-    String realm,
-    HttpClientCredentials credentials,
-  ) {}
-
-  @override
-  set authenticate(
-    Future<bool> Function(Uri url, String scheme, String? realm)? f,
-  ) {}
-
-  @override
-  set authenticateProxy(
-    Future<bool> Function(String host, int port, String scheme, String? realm)?
-    f,
-  ) {}
-
-  @override
-  set badCertificateCallback(
-    bool Function(X509Certificate cert, String host, int port)? callback,
-  ) {}
-
-  @override
-  set connectionFactory(
-    Future<ConnectionTask<Socket>> Function(
-      Uri url,
-      String? proxyHost,
-      int? proxyPort,
-    )?
-    f,
-  ) {}
-
-  @override
-  set findProxy(String Function(Uri url)? f) {}
-
-  @override
-  set keyLog(void Function(String line)? callback) {}
-
-  @override
-  void close({bool force = false}) {}
-
-  @override
-  Future<HttpClientRequest> delete(String host, int port, String path) =>
-      _fail();
-
-  @override
-  Future<HttpClientRequest> deleteUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> get(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> getUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> head(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> headUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> open(
-    String method,
-    String host,
-    int port,
-    String path,
-  ) => _fail();
-
-  @override
-  Future<HttpClientRequest> openUrl(String method, Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> patch(String host, int port, String path) =>
-      _fail();
-
-  @override
-  Future<HttpClientRequest> patchUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> post(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> postUrl(Uri url) => _fail();
-
-  @override
-  Future<HttpClientRequest> put(String host, int port, String path) => _fail();
-
-  @override
-  Future<HttpClientRequest> putUrl(Uri url) => _fail();
-
-  Future<HttpClientRequest> _fail() {
-    return Future.error(
-      const SocketException('Simulated network failure (CT09 test)'),
-    );
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => null;
 }

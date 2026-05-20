@@ -124,25 +124,26 @@ void main() async {
             final cnpj = _uniqueCnpj();
             final superAdminUserId = _uuid.v4();
 
-            // Call the ORIGINAL overload (without p_allowed_domains)
+            // Function returns TABLE(org_id UUID, plaintext_secret TEXT) since
+            // migration 20260706000010; extract org_id from first row.
+            final rows = await serviceRoleClient.rpc<List<dynamic>>(
+              'super_admin_create_organization',
+              params: {
+                'p_legal_name': input.legalName,
+                'p_trade_name': input.tradeName,
+                'p_cnpj': cnpj,
+                'p_timezone': 'America/Sao_Paulo',
+                'p_currency_code': 'BRL',
+                'p_plan_type': input.planType,
+                'p_max_vehicles': input.maxVehicles,
+                'p_max_active_contracts': input.maxContracts,
+                'p_super_admin_user_id': superAdminUserId,
+                'p_tool_cost_cents': input.toolCostCents,
+                'p_reason': 'PBT preservation test iter $i',
+              },
+            );
             final orgId =
-                await serviceRoleClient.rpc<void>(
-                      'super_admin_create_organization',
-                      params: {
-                        'p_legal_name': input.legalName,
-                        'p_trade_name': input.tradeName,
-                        'p_cnpj': cnpj,
-                        'p_timezone': 'America/Sao_Paulo',
-                        'p_currency_code': 'BRL',
-                        'p_plan_type': input.planType,
-                        'p_max_vehicles': input.maxVehicles,
-                        'p_max_active_contracts': input.maxContracts,
-                        'p_super_admin_user_id': superAdminUserId,
-                        'p_tool_cost_cents': input.toolCostCents,
-                        'p_reason': 'PBT preservation test iter $i',
-                      },
-                    )
-                    as String;
+                (rows.first as Map<String, dynamic>)['org_id'] as String;
 
             // Verify organizations row
             final org = await serviceRoleClient
@@ -195,24 +196,24 @@ void main() async {
             final cnpj = _uniqueCnpj();
             final superAdminUserId = _uuid.v4();
 
+            final rows = await serviceRoleClient.rpc<List<dynamic>>(
+              'super_admin_create_organization',
+              params: {
+                'p_legal_name': input.legalName,
+                'p_trade_name': input.tradeName,
+                'p_cnpj': cnpj,
+                'p_timezone': 'UTC',
+                'p_currency_code': 'USD',
+                'p_plan_type': input.planType,
+                'p_max_vehicles': input.maxVehicles,
+                'p_max_active_contracts': input.maxContracts,
+                'p_super_admin_user_id': superAdminUserId,
+                'p_tool_cost_cents': input.toolCostCents,
+                'p_reason': 'PBT billing preservation iter $i',
+              },
+            );
             final orgId =
-                await serviceRoleClient.rpc<void>(
-                      'super_admin_create_organization',
-                      params: {
-                        'p_legal_name': input.legalName,
-                        'p_trade_name': input.tradeName,
-                        'p_cnpj': cnpj,
-                        'p_timezone': 'UTC',
-                        'p_currency_code': 'USD',
-                        'p_plan_type': input.planType,
-                        'p_max_vehicles': input.maxVehicles,
-                        'p_max_active_contracts': input.maxContracts,
-                        'p_super_admin_user_id': superAdminUserId,
-                        'p_tool_cost_cents': input.toolCostCents,
-                        'p_reason': 'PBT billing preservation iter $i',
-                      },
-                    )
-                    as String;
+                (rows.first as Map<String, dynamic>)['org_id'] as String;
 
             // Verify billing event
             final events = await serviceRoleClient
@@ -264,24 +265,24 @@ void main() async {
             final superAdminUserId = _uuid.v4();
 
             // service_role client has no JWT sub → bypass path
+            final rows = await serviceRoleClient.rpc<List<dynamic>>(
+              'super_admin_create_organization',
+              params: {
+                'p_legal_name': 'PBT Bypass Legal',
+                'p_trade_name': 'PBT Bypass Corp',
+                'p_cnpj': cnpj,
+                'p_timezone': 'America/Sao_Paulo',
+                'p_currency_code': 'BRL',
+                'p_plan_type': planType,
+                'p_max_vehicles': 10,
+                'p_max_active_contracts': 5,
+                'p_super_admin_user_id': superAdminUserId,
+                'p_tool_cost_cents': 25000,
+                'p_reason': 'PBT service_role bypass test',
+              },
+            );
             final orgId =
-                await serviceRoleClient.rpc<void>(
-                      'super_admin_create_organization',
-                      params: {
-                        'p_legal_name': 'PBT Bypass Legal',
-                        'p_trade_name': 'PBT Bypass Corp',
-                        'p_cnpj': cnpj,
-                        'p_timezone': 'America/Sao_Paulo',
-                        'p_currency_code': 'BRL',
-                        'p_plan_type': planType,
-                        'p_max_vehicles': 10,
-                        'p_max_active_contracts': 5,
-                        'p_super_admin_user_id': superAdminUserId,
-                        'p_tool_cost_cents': 25000,
-                        'p_reason': 'PBT service_role bypass test',
-                      },
-                    )
-                    as String;
+                (rows.first as Map<String, dynamic>)['org_id'] as String;
 
             // If we get here without exception, bypass worked
             expect(
@@ -309,24 +310,24 @@ void main() async {
           final cnpj = _uniqueCnpj();
           final superAdminUserId = _uuid.v4();
 
+          final rows = await serviceRoleClient.rpc<List<dynamic>>(
+            'super_admin_create_organization',
+            params: {
+              'p_legal_name': 'PBT Domains Legal',
+              'p_trade_name': 'PBT Domains Corp',
+              'p_cnpj': cnpj,
+              'p_timezone': 'America/Sao_Paulo',
+              'p_currency_code': 'BRL',
+              'p_plan_type': 'professional',
+              'p_max_vehicles': 10,
+              'p_max_active_contracts': 5,
+              'p_super_admin_user_id': superAdminUserId,
+              'p_tool_cost_cents': 50000,
+              'p_reason': 'PBT domains normalization test',
+            },
+          );
           final orgId =
-              await serviceRoleClient.rpc<void>(
-                    'super_admin_create_organization',
-                    params: {
-                      'p_legal_name': 'PBT Domains Legal',
-                      'p_trade_name': 'PBT Domains Corp',
-                      'p_cnpj': cnpj,
-                      'p_timezone': 'America/Sao_Paulo',
-                      'p_currency_code': 'BRL',
-                      'p_plan_type': 'professional',
-                      'p_max_vehicles': 10,
-                      'p_max_active_contracts': 5,
-                      'p_super_admin_user_id': superAdminUserId,
-                      'p_tool_cost_cents': 50000,
-                      'p_reason': 'PBT domains normalization test',
-                    },
-                  )
-                  as String;
+              (rows.first as Map<String, dynamic>)['org_id'] as String;
 
           // Now update allowed_domains with mixed-case, spaces, empty strings
           await serviceRoleClient.rpc<void>(
@@ -381,25 +382,25 @@ void main() async {
           final cnpj = _uniqueCnpj();
           final superAdminUserId = _uuid.v4();
 
+          final rows = await serviceRoleClient.rpc<List<dynamic>>(
+            'super_admin_create_organization',
+            params: {
+              'p_legal_name': 'Preservation Test Transportes Ltda.',
+              'p_trade_name': 'Preservation Corp',
+              'p_cnpj': cnpj,
+              'p_timezone': 'America/Sao_Paulo',
+              'p_currency_code': 'BRL',
+              'p_plan_type': 'professional',
+              'p_max_vehicles': 100,
+              'p_max_active_contracts': 20,
+              'p_super_admin_user_id': superAdminUserId,
+              'p_tool_cost_cents': 50000,
+              'p_dwell_time_seconds': 300,
+              'p_reason': 'Preservation test reason',
+            },
+          );
           final orgId =
-              await serviceRoleClient.rpc<void>(
-                    'super_admin_create_organization',
-                    params: {
-                      'p_legal_name': 'Preservation Test Transportes Ltda.',
-                      'p_trade_name': 'Preservation Corp',
-                      'p_cnpj': cnpj,
-                      'p_timezone': 'America/Sao_Paulo',
-                      'p_currency_code': 'BRL',
-                      'p_plan_type': 'professional',
-                      'p_max_vehicles': 100,
-                      'p_max_active_contracts': 20,
-                      'p_super_admin_user_id': superAdminUserId,
-                      'p_tool_cost_cents': 50000,
-                      'p_dwell_time_seconds': 300,
-                      'p_reason': 'Preservation test reason',
-                    },
-                  )
-                  as String;
+              (rows.first as Map<String, dynamic>)['org_id'] as String;
 
           // Assertion #2 equivalent: Org row exists with correct name and plan_type
           final org = await serviceRoleClient

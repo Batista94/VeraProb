@@ -43,8 +43,10 @@ abstract class SuperAdminDataFactory {
   /// 1. Insere na tabela `organizations` com status `'ACTIVE'`
   /// 2. Para cada admin ativo: cria user via Admin API, insere em `user_roles`
   ///    com `is_active=true`
-  /// 3. Para cada admin pendente: cria user via Admin API, insere em
-  ///    `user_roles` com `is_active=false`, gera token de convite em `invitations`
+  /// 3. Para cada admin pendente: cria user via Admin API, gera token de
+  ///    convite em `invitations` — sem inserção em `user_roles` (a row só
+  ///    existe após aceite do convite; inserção precoce suprime o convite no
+  ///    filtro NOT EXISTS de `super_admin_get_org_members`)
   ///
   /// Retorna [TestOrgData] com todos os dados criados para uso nos testes
   /// e posterior cleanup.
@@ -115,8 +117,8 @@ abstract class SuperAdminDataFactory {
 
   /// Cria um admin pendente (convite não aceito) para uma org existente.
   ///
-  /// Insere user via Admin API, cria `user_roles` com `is_active=false`,
-  /// e gera um token de convite na tabela `invitations`.
+  /// Insere user via Admin API e gera token de convite em `invitations`.
+  /// Não insere em `user_roles` — a row só existe após aceite (produção).
   static Future<TestAdminData> createPendingAdmin({
     required String orgId,
     required String email,
@@ -193,13 +195,11 @@ abstract class SuperAdminDataFactory {
         _log('cleanup: falha ao deletar user_roles para org ${data.orgId}: $e');
       }
 
-      // 3. Deletar users via Admin API
+      // 3. Deletar users via Admin API (sequencial com retry — GoTrue
+      // serializa writes em auth.users; requests concorrentes geram locks e
+      // 500s intermitentes no teardown).
       for (final admin in data.admins) {
-        try {
-          await client.auth.admin.deleteUser(admin.userId);
-        } catch (e) {
-          _log('cleanup: falha ao deletar user ${admin.userId}: $e');
-        }
+        await _deleteUserWithRetry(client, admin.userId, context: 'cleanup');
       }
 
       // 4. Deletar organização
@@ -292,6 +292,12 @@ abstract class SuperAdminDataFactory {
     required bool isActive,
     required bool isPending,
   }) async {
+    // isPending and isActive are mutually exclusive — pending invite has no role yet.
+    assert(
+      !isPending || !isActive,
+      'isPending and isActive are mutually exclusive',
+    );
+
     // 1. Criar user via Supabase Admin API
     final userResponse = await client.auth.admin.createUser(
       AdminUserAttributes(
@@ -305,29 +311,33 @@ abstract class SuperAdminDataFactory {
     final userId = userResponse.user!.id;
     String? inviteToken;
 
-    // 2. Inserir em user_roles
-    await client.from('user_roles').insert({
-      'user_id': userId,
-      'organization_id': orgId,
-      'role': 'TENANT_ADMIN',
-      'is_active': isActive,
-      'created_at': DateTime.now().toUtc().toIso8601String(),
-    });
-
-    // 3. Se pendente, criar invitation com token
     if (isPending) {
+      // 2. Pendente: apenas invitation — SEM user_roles.
+      // super_admin_get_org_members usa NOT EXISTS (user_roles JOIN auth.users)
+      // para surfar convites pendentes. Uma row em user_roles aqui suprime o
+      // convite nesse filtro e exibe o usuário como inativo em vez de pendente.
       inviteToken = _uuid.v4();
       await client.from('invitations').insert({
         'organization_id': orgId,
         'email': email,
         'role': 'TENANT_ADMIN',
         'token': inviteToken,
-        'invited_by': userId, // auto-referência para simplificar seed
+        'invited_by':
+            userId, // test convention: self-reference (no real inviter in seed)
         'created_at_utc': DateTime.now().toUtc().toIso8601String(),
         'expires_at_utc': DateTime.now()
             .toUtc()
             .add(const Duration(days: 7))
             .toIso8601String(),
+      });
+    } else {
+      // 2. Ativo (ou inativo já aceito): inserir user_roles.
+      await client.from('user_roles').insert({
+        'user_id': userId,
+        'organization_id': orgId,
+        'role': 'TENANT_ADMIN',
+        'is_active': isActive,
+        'created_at': DateTime.now().toUtc().toIso8601String(),
       });
     }
 
@@ -353,6 +363,43 @@ abstract class SuperAdminDataFactory {
     print('[SuperAdminDataFactory] $message');
   }
 
+  /// Deleta um usuário via Admin API com retry e backoff exponencial.
+  ///
+  /// GoTrue serializa writes em `auth.users`; calls rápidos e consecutivos
+  /// causam lock contention e retornam HTTP 500 transitório. Retry resolve
+  /// sem alterar a semântica do cleanup (best-effort, falhas são logadas).
+  static Future<void> _deleteUserWithRetry(
+    SupabaseClient client,
+    String userId, {
+    required String context,
+  }) async {
+    const maxAttempts = 5;
+    for (var attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        await client.auth.admin.deleteUser(userId);
+        // Pausa pós-sucesso: dá ao GoTrue tempo de liberar o write lock
+        // antes da próxima deleção — evita lock contention em lote.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        return;
+      } catch (e) {
+        if (attempt < maxAttempts - 1) {
+          // Backoff exponencial: 500 ms, 1 000 ms, 2 000 ms, 4 000 ms.
+          final delayMs = 500 * (1 << attempt);
+          _log(
+            '$context: deleteUser $userId tentativa ${attempt + 1} falhou '
+            '($e). Retry em ${delayMs}ms...',
+          );
+          await Future<void>.delayed(Duration(milliseconds: delayMs));
+        } else {
+          _log(
+            '$context: deleteUser $userId falhou após $maxAttempts '
+            'tentativas: $e',
+          );
+        }
+      }
+    }
+  }
+
   /// Remove orgs remanescentes (qualquer status) com o nome dado.
   ///
   /// Reutilizado por [createOrgWithAdmins] para garantir idempotência
@@ -374,7 +421,7 @@ abstract class SuperAdminDataFactory {
       final orgIds = rows.map((r) => r['id'] as String).toList(growable: false);
 
       for (final orgId in orgIds) {
-        // 1. Coletar user_ids da org antes de deletar user_roles
+        // 1a. Coletar user_ids da org antes de deletar user_roles
         List<String> userIds = const [];
         try {
           final roleRows = await client
@@ -386,6 +433,32 @@ abstract class SuperAdminDataFactory {
               .toList(growable: false);
         } catch (e) {
           _log('purge: falha ao listar user_roles de $orgId: $e');
+        }
+
+        // 1b. Coletar user_ids de admins pendentes via invitations.invited_by
+        // ANTES de deletar invitations. Test convention: invited_by é setado
+        // como o próprio userId do pendente (self-reference no seed). Verificado
+        // via email domain guard para evitar deleção acidental de não-test users.
+        final pendingUserIds = <String>[];
+        try {
+          final inviteRows = await client
+              .from('invitations')
+              .select('invited_by')
+              .eq('organization_id', orgId);
+          for (final row in inviteRows) {
+            final invitedBy = row['invited_by'] as String?;
+            if (invitedBy == null || userIds.contains(invitedBy)) continue;
+            try {
+              final resp = await client.auth.admin.getUserById(invitedBy);
+              if (resp.user?.email?.endsWith('@e2e.veraprob.dev') == true) {
+                pendingUserIds.add(invitedBy);
+              }
+            } catch (_) {
+              // user pode não existir — skip
+            }
+          }
+        } catch (e) {
+          _log('purge: falha ao coletar pending admin IDs de $orgId: $e');
         }
 
         // 2. invitations
@@ -405,13 +478,9 @@ abstract class SuperAdminDataFactory {
           _log('purge: falha ao deletar user_roles de $orgId: $e');
         }
 
-        // 4. auth.users
-        for (final userId in userIds) {
-          try {
-            await client.auth.admin.deleteUser(userId);
-          } catch (e) {
-            _log('purge: falha ao deletar user $userId: $e');
-          }
+        // 4. auth.users — ativos/inativos (user_roles) + pendentes (invitations)
+        for (final userId in [...userIds, ...pendingUserIds]) {
+          await _deleteUserWithRetry(client, userId, context: 'purge');
         }
 
         // 5. organização

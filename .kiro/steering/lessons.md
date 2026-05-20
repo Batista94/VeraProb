@@ -122,6 +122,11 @@ return (exists, lookup);
 
 **Rule:** Test-generated CNPJs MUST pass mod-11 check-digit validation. `SuperAdminDataFactory.generateUniqueCnpj()` produces valid digits; random 14-digit strings are rejected by `create_organization_wizard` validator.
 
+### 6.6 Static Analysis & Test Cleanliness (PR-SCAN)
+
+**Rule:** After fixing E2E tests, immediately run `dart fix --apply && flutter analyze` to ensure there are no unused imports, unused local variables, or formatting issues introduced. Any compile-time or static warning in test files is treated as a blocking error in the PR scanner.
+
+
 ---
 
 ## 7. REGRESSION ACK DISCIPLINE

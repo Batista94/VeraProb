@@ -179,7 +179,7 @@ Row(
 
 ## 8. E2E-HANG: pumpAndSettle timeout in superadmin tests
 
-**Problem:** Running `flutter test test/integration/e2e/superadmin/**` without `--dart-define=SKIP_MFA_DEV=true`. `SuperAdminGuard.isAal2 = false` → guard schedules `pushAndRemoveUntil(MfaChallengeScreen)` every frame → `pumpAndSettle` never settles.
+**Problem:** Running `flutter test test/integration/e2e/superadmin/**` without `--dart-define=SKIP_MFA_DEV=true`. `SuperAdminGuard.isAal2 = false` → guard schedules `pushAndRemoveUntil(MfaChallengeScreen)` every frame → `pumpAndSettle` never settles. Also happens when a non-dismissible modal barrier eats taps and blocks the test.
 
 **Fix:** Always use the Makefile target.
 
@@ -190,6 +190,8 @@ make test-e2e-file FILE=test/integration/e2e/superadmin/adverse_scenarios_test.d
 ```
 
 Test runner scripts and CI workflows for E2E MUST set these flags in env.
+
+**Modal Barrier Check:** If a test opens a dialog/modal with `barrierDismissible: false`, the agent MUST invoke `cancelModal(tester)` to close the dialog before attempting external navigation or tapping other elements. Otherwise, subsequent taps will fail and the test will hang.
 
 ---
 
@@ -206,6 +208,8 @@ Test runner scripts and CI workflows for E2E MUST set these flags in env.
 **Problem:** Test uses `find.byType(TextFormField)` or `find.widgetWithText(FilledButton, 'Entrar')` while the actual screen uses `TextField` and `'ACESSAR SISTEMA'`. Test finds nothing → timeout.
 
 **Fix:** Open the screen file. Match the literal widget type and literal label. Prefer `ValueKey` selectors over text matching for fields that lack a clear label.
+
+**Linter / Warning Check:** Before finishing any test fix, ensure that no unused imports or variables (common in copied tests) are left in the test file, as this violates strict project linting gates.
 
 ```dart
 // Wrong

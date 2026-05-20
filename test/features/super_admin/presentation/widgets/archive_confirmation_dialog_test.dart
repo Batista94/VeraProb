@@ -21,38 +21,59 @@ void main() {
   }
 
   group('CIA Integrity — Validação de Motivo Obrigatório', () {
-    testWidgets('rejeita motivo vazio', (tester) async {
+    testWidgets('botão desabilitado quando motivo vazio', (tester) async {
       await openDialog(tester);
-      await tester.tap(find.text('Confirmar Arquivamento'));
-      await tester.pumpAndSettle();
 
-      expect(find.text('Motivo obrigatório.'), findsOneWidget);
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Confirmar Arquivamento'),
+      );
+      expect(button.onPressed, isNull);
     });
 
-    testWidgets('rejeita motivo com menos de 10 caracteres', (tester) async {
+    testWidgets('botão desabilitado quando motivo com menos de 10 caracteres', (
+      tester,
+    ) async {
       await openDialog(tester);
       await tester.enterText(find.byType(TextFormField), 'curto');
-      await tester.tap(find.text('Confirmar Arquivamento'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      expect(find.text('Mínimo 10 caracteres.'), findsOneWidget);
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Confirmar Arquivamento'),
+      );
+      expect(button.onPressed, isNull);
     });
 
     testWidgets(
-      'rejeita motivo com espaços que resulta em < 10 chars após trim',
+      'botão desabilitado quando apenas espaços (< 10 chars após trim)',
       (tester) async {
         await openDialog(tester);
         await tester.enterText(find.byType(TextFormField), '   abc    ');
-        await tester.tap(find.text('Confirmar Arquivamento'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        expect(find.text('Mínimo 10 caracteres.'), findsOneWidget);
+        final button = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Confirmar Arquivamento'),
+        );
+        expect(button.onPressed, isNull);
       },
     );
+
+    testWidgets('botão habilitado quando motivo tem ≥ 10 chars após trim', (
+      tester,
+    ) async {
+      await openDialog(tester);
+      await tester.enterText(find.byType(TextFormField), '1234567890');
+      await tester.pump();
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Confirmar Arquivamento'),
+      );
+      expect(button.onPressed, isNotNull);
+    });
 
     testWidgets('aceita motivo com exatamente 10 caracteres', (tester) async {
       await openDialog(tester);
       await tester.enterText(find.byType(TextFormField), '1234567890');
+      await tester.pump(); // rebuild so onPressed becomes non-null
       await tester.tap(find.text('Confirmar Arquivamento'));
       await tester.pumpAndSettle();
 
@@ -70,6 +91,7 @@ void main() {
         find.byType(TextFormField),
         '  Motivo válido para auditoria  ',
       );
+      await tester.pump(); // rebuild so onPressed becomes non-null
       await tester.tap(find.text('Confirmar Arquivamento'));
       await tester.pumpAndSettle();
 

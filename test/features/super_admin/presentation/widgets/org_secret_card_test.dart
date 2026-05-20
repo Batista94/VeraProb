@@ -8,7 +8,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/super_admin/generate_org_secret_handler.dart';
 import 'package:veraprob/application/super_admin/org_api_secret_view_model.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/org_secret_card.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
@@ -34,6 +33,10 @@ final _kExistingSecret = OrgApiSecretViewModel(
   revokedAt: null,
   isActive: true,
 );
+
+// ── File-level state ──────────────────────────────────────────
+
+late MockGenerateOrgSecretHandler _mockHandler;
 
 // ── Helpers ───────────────────────────────────────────────────
 
@@ -103,23 +106,15 @@ Future<void> _tapGenerateButton(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-void main() {
-  late MockGenerateOrgSecretHandler mockHandler;
+// ── Test groups ───────────────────────────────────────────────
 
-  setUp(() {
-    mockHandler = MockGenerateOrgSecretHandler();
-  });
-
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 1: CIA TRIAD — SECURITY
-  // ═══════════════════════════════════════════════════════════════
-
+void _testCiaConfidentiality() {
   group('[CIA] Confidentiality — Ephemeral Secret State', () {
     testWidgets('generated secret shown only in ephemeral widget state', (
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -131,7 +126,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -140,7 +135,7 @@ void main() {
 
       // Secret stored in local state only — no persistence layer called
       verifyNever(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: _kOrgId,
           sessionId: 'persist', // never called with persist session
         ),
@@ -151,7 +146,7 @@ void main() {
       'secret container disappears after widget rebuild with new key',
       (tester) async {
         when(
-          () => mockHandler.handle(
+          () => _mockHandler.handle(
             organizationId: any(named: 'organizationId'),
             sessionId: any(named: 'sessionId'),
           ),
@@ -164,7 +159,7 @@ void main() {
         );
 
         // Build with no existing secret, generate one
-        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
         await _tapGenerateButton(tester);
         await _confirmDialog(tester);
         expect(find.text(_kValidSecret), findsOneWidget);
@@ -173,7 +168,7 @@ void main() {
         await tester.pumpWidget(
           ProviderScope(
             overrides: [
-              generateOrgSecretHandlerProvider.overrideWithValue(mockHandler),
+              generateOrgSecretHandlerProvider.overrideWithValue(_mockHandler),
             ],
             child: MaterialApp(
               home: Scaffold(
@@ -195,13 +190,15 @@ void main() {
       },
     );
   });
+}
 
+void _testCiaIntegrity() {
   group('[CIA] Integrity — Confirmation & Correct OrgId', () {
     testWidgets('rotation requires dialog confirmation before handler call', (
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -215,7 +212,7 @@ void main() {
 
       await tester.pumpWidget(
         _buildSubject(
-          mockHandler: mockHandler,
+          mockHandler: _mockHandler,
           currentSecret: _kExistingSecret,
         ),
       );
@@ -230,7 +227,7 @@ void main() {
 
       // Handler NOT called yet
       verifyNever(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -241,7 +238,7 @@ void main() {
 
       // NOW handler called with correct orgId
       verify(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: _kOrgId,
           sessionId: 'super-admin-session',
         ),
@@ -254,7 +251,7 @@ void main() {
       const customOrgId = 'org-custom-xyz-789';
 
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -269,7 +266,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            generateOrgSecretHandlerProvider.overrideWithValue(mockHandler),
+            generateOrgSecretHandlerProvider.overrideWithValue(_mockHandler),
           ],
           child: const MaterialApp(
             home: Scaffold(
@@ -288,26 +285,28 @@ void main() {
       await _confirmDialog(tester);
 
       verify(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: customOrgId,
           sessionId: 'super-admin-session',
         ),
       ).called(1);
     });
   });
+}
 
+void _testCiaAvailability() {
   group('[CIA] Availability — Error Resilience', () {
     testWidgets('network failure shows error message without crashing UI', (
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenThrow(Exception('Network timeout'));
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -327,7 +326,7 @@ void main() {
     testWidgets('error state clears on successful retry', (tester) async {
       var callCount = 0;
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -341,7 +340,7 @@ void main() {
         );
       });
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
 
       // First attempt — fails
       await _tapGenerateButton(tester);
@@ -355,11 +354,9 @@ void main() {
       expect(find.text(_kValidSecret), findsOneWidget);
     });
   });
+}
 
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 2: ADVERSARIAL & CHAOS INJECTION
-  // ═══════════════════════════════════════════════════════════════
-
+void _testAdversarialRaceConditions() {
   group('[Adversarial] Race Conditions', () {
     testWidgets(
       'rapid clicks during processing ignored — single handler call',
@@ -367,13 +364,13 @@ void main() {
         final completer = Completer<GenerateOrgSecretResult>();
 
         when(
-          () => mockHandler.handle(
+          () => _mockHandler.handle(
             organizationId: any(named: 'organizationId'),
             sessionId: any(named: 'sessionId'),
           ),
         ).thenAnswer((_) => completer.future);
 
-        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
         await _tapGenerateButton(tester);
         await _confirmDialogNonSettling(tester);
 
@@ -405,7 +402,7 @@ void main() {
 
         // Handler called exactly once
         verify(
-          () => mockHandler.handle(
+          () => _mockHandler.handle(
             organizationId: _kOrgId,
             sessionId: 'super-admin-session',
           ),
@@ -417,13 +414,13 @@ void main() {
       final completer = Completer<GenerateOrgSecretResult>();
 
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialogNonSettling(tester);
       await tester.pump();
@@ -442,10 +439,12 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
+}
 
+void _testAdversarialFlowInterruption() {
   group('[Adversarial] Flow Interruption', () {
     testWidgets('canceling dialog does NOT trigger handler', (tester) async {
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
 
       // Dialog visible
@@ -458,7 +457,7 @@ void main() {
 
       // Handler never called
       verifyNever(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -468,7 +467,7 @@ void main() {
     testWidgets('dismissing dialog via barrier tap does NOT trigger handler', (
       tester,
     ) async {
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await tester.pumpAndSettle();
 
@@ -477,7 +476,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -487,7 +486,7 @@ void main() {
     testWidgets('state remains idle after dialog cancel', (tester) async {
       await tester.pumpWidget(
         _buildSubject(
-          mockHandler: mockHandler,
+          mockHandler: _mockHandler,
           currentSecret: _kExistingSecret,
         ),
       );
@@ -506,13 +505,15 @@ void main() {
       expect(find.byIcon(Icons.copy), findsNothing);
     });
   });
+}
 
+void _testChaosDataCorruption() {
   group('[Chaos] Data Corruption Injection', () {
     testWidgets('empty secret string treated as integrity failure', (
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -524,7 +525,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -541,13 +542,13 @@ void main() {
 
     testWidgets('handler throwing preserves UI stability', (tester) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenThrow(StateError('Unexpected corruption'));
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -560,7 +561,9 @@ void main() {
       expect(find.byType(Card), findsOneWidget);
     });
   });
+}
 
+void _testForensicClipboard() {
   group('[Forensic] Clipboard', () {
     testWidgets('copy button places exact secret value in clipboard', (
       tester,
@@ -580,7 +583,7 @@ void main() {
       );
 
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -592,7 +595,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -606,17 +609,15 @@ void main() {
       expect(find.text('Secret copiado!'), findsOneWidget);
     });
   });
+}
 
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 3: ACCESSIBILITY (A11y)
-  // ═══════════════════════════════════════════════════════════════
-
+void _testA11ySemanticTree() {
   group('[A11y] Semantic Tree & Accessibility', () {
     testWidgets('warning text uses semantic label for screen readers', (
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -628,7 +629,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -641,7 +642,7 @@ void main() {
 
     testWidgets('copy button has tooltip for accessibility', (tester) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -653,7 +654,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -663,7 +664,7 @@ void main() {
 
     testWidgets('secret displayed in monospace font', (tester) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -675,7 +676,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -686,7 +687,7 @@ void main() {
     });
 
     testWidgets('confirmation dialog captures focus', (tester) async {
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await tester.pumpAndSettle();
 
@@ -706,16 +707,14 @@ void main() {
       );
     });
   });
+}
 
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 4: STATE BRANCH COVERAGE
-  // ═══════════════════════════════════════════════════════════════
-
+void _testStatesBranchCoverage() {
   group('[States] Full Branch Coverage', () {
     testWidgets('IDLE — no secret configured shows placeholder', (
       tester,
     ) async {
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
 
       expect(find.text('Nenhum secret configurado.'), findsOneWidget);
       expect(find.text('Gerar Secret'), findsOneWidget);
@@ -728,7 +727,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _buildSubject(
-          mockHandler: mockHandler,
+          mockHandler: _mockHandler,
           currentSecret: _kExistingSecret,
         ),
       );
@@ -741,13 +740,13 @@ void main() {
     testWidgets('LOADING — spinner shown, button disabled', (tester) async {
       final completer = Completer<GenerateOrgSecretResult>();
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialogNonSettling(tester);
       await tester.pump();
@@ -778,7 +777,7 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
@@ -790,7 +789,7 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -807,13 +806,13 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenThrow(Exception('Server unavailable'));
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialog(tester);
 
@@ -821,11 +820,9 @@ void main() {
       expect(find.byIcon(Icons.copy), findsNothing);
     });
   });
+}
 
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 5: LIFECYCLE — MOUNTED GUARD
-  // ═══════════════════════════════════════════════════════════════
-
+void _testLifecycleMountedGuard() {
   group('[Lifecycle] context.mounted guard', () {
     testWidgets('no setState error if widget disposed during async handler', (
       tester,
@@ -833,13 +830,13 @@ void main() {
       final completer = Completer<GenerateOrgSecretResult>();
 
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialogNonSettling(tester);
       await tester.pump();
@@ -866,13 +863,13 @@ void main() {
       final completer = Completer<GenerateOrgSecretResult>();
 
       when(
-        () => mockHandler.handle(
+        () => _mockHandler.handle(
           organizationId: any(named: 'organizationId'),
           sessionId: any(named: 'sessionId'),
         ),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+      await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
       await _tapGenerateButton(tester);
       await _confirmDialogNonSettling(tester);
       await tester.pump();
@@ -887,37 +884,35 @@ void main() {
       await tester.pumpAndSettle();
     });
   });
+}
 
-  // ═══════════════════════════════════════════════════════════════
-  // GROUP 6: INV-10 — DOMAIN-LANGUAGE ERROR DISPLAY
-  // ═══════════════════════════════════════════════════════════════
-
+void _testInv10ErrorMessages() {
   group('[INV-10] Error message never leaks internal class names', () {
     testWidgets(
-      'DomainException shows e.message directly — no "DomainException:" prefix',
+      'OrgSecretException shows e.message directly — no class prefix in UI',
       (tester) async {
         when(
-          () => mockHandler.handle(
+          () => _mockHandler.handle(
             organizationId: any(named: 'organizationId'),
             sessionId: any(named: 'sessionId'),
           ),
         ).thenThrow(
-          const DomainException(
+          const OrgSecretException(
             'Cota de secrets excedida para esta organização',
           ),
         );
 
-        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
         await _tapGenerateButton(tester);
         await _confirmDialog(tester);
 
         expect(
           find.text('Cota de secrets excedida para esta organização'),
           findsOneWidget,
-          reason: 'DomainException.message must be shown verbatim',
+          reason: 'OrgSecretException.message must be shown verbatim',
         );
         expect(
-          find.textContaining('DomainException'),
+          find.textContaining('OrgSecretException'),
           findsNothing,
           reason: 'Internal class name must never appear in the UI (INV-10)',
         );
@@ -928,13 +923,13 @@ void main() {
       'non-domain exception shows generic message — no raw exception class leaked',
       (tester) async {
         when(
-          () => mockHandler.handle(
+          () => _mockHandler.handle(
             organizationId: any(named: 'organizationId'),
             sessionId: any(named: 'sessionId'),
           ),
         ).thenThrow(StateError('internal db constraint violation'));
 
-        await tester.pumpWidget(_buildSubject(mockHandler: mockHandler));
+        await tester.pumpWidget(_buildSubject(mockHandler: _mockHandler));
         await _tapGenerateButton(tester);
         await _confirmDialog(tester);
 
@@ -956,4 +951,24 @@ void main() {
       },
     );
   });
+}
+
+// ── Entry point ───────────────────────────────────────────────
+
+void main() {
+  setUp(() {
+    _mockHandler = MockGenerateOrgSecretHandler();
+  });
+
+  _testCiaConfidentiality();
+  _testCiaIntegrity();
+  _testCiaAvailability();
+  _testAdversarialRaceConditions();
+  _testAdversarialFlowInterruption();
+  _testChaosDataCorruption();
+  _testForensicClipboard();
+  _testA11ySemanticTree();
+  _testStatesBranchCoverage();
+  _testLifecycleMountedGuard();
+  _testInv10ErrorMessages();
 }

@@ -235,6 +235,13 @@ void main() {
         await SuperAdminNavigationHelper.goToTenantList(tester);
         await tester.pumpAndSettle();
 
+        // Search for "Viação" to bring the organization to the top and render it
+        final searchField = find.byType(TextField);
+        await tester.enterText(searchField, 'Viação');
+        // Wait for search debounce (usually 300ms) + network load
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pumpAndSettle();
+
         // Verificar que não há exceção ao renderizar caracteres especiais
         expect(
           tester.takeException(),

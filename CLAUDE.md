@@ -35,6 +35,12 @@ Invoke proactively when task matches scope. See each agent's frontmatter `descri
 
 - **SuperAdmin:** All multi-tenant escapes MUST use `SuperAdminBypassTenantValidator`. MFA enforcement mandatory for sensitive state transitions (Archive/Quota/Delete).
 - **Telegram:** Integration via `TelegramBindingToken` (short TTL). Evidence links strictly bound to `organization_id` (INV-1).
+- **E2E Testing:** Any changes/fixes to `test/integration/e2e/**` MUST:
+  - Run using `make test-e2e` or `make test-e2e-file FILE=...` (never raw `flutter test` due to `--dart-define=SKIP_MFA_DEV=true` requirement to avoid `pumpAndSettle` timeout).
+  - Explicitly close modals via `cancelModal(tester)` before performing external navigation or clicking widgets through the modal barrier.
+  - Verify selectors against actual widget types and literal labels in the screen file.
+  - Eliminate all static analysis warnings/unused variables.
+
 
 ## GUARDRAILS & HOOKS (Source: `hooks.json`)
 

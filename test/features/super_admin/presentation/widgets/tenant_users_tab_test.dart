@@ -236,15 +236,27 @@ void main() {
       // Rapid taps
       await tester.tap(blockIcon);
       await tester.pump(const Duration(milliseconds: 10));
-      await tester.tap(blockIcon);
+      await tester.tap(blockIcon, warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 10));
-      await tester.tap(blockIcon);
-      await tester.pump(const Duration(milliseconds: 600));
+      await tester.tap(blockIcon, warnIfMissed: false);
+      await tester.pumpAndSettle();
+
+      // Fill confirmation dialog to trigger repository call
+      await tester.enterText(
+        find.byType(TextField),
+        'Justificativa com mais de dez caracteres',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Confirmar'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
 
       // Flutter's IconButton does not debounce by default, but the async
       // nature of _toggleStatus means subsequent taps while the first is
-      // in-flight will still fire. The test validates the widget doesn't crash.
-      expect(callCount, greaterThanOrEqualTo(1));
+      // in-flight will still fire. The test validates the widget doesn't crash
+      // and only executes the status toggle once.
+      expect(callCount, equals(1));
     });
 
     testWidgets('network error on load shows error state with retry', (

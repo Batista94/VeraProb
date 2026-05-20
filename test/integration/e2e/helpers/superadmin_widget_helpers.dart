@@ -30,36 +30,42 @@ abstract class SuperAdminWidgetHelpers {
     WidgetTester tester,
     String text,
   ) async {
-    // Localizar o TextFormField dentro do Dialog visível.
+    // Localizar o campo de texto dentro do Dialog visível.
+    // Suporta TextFormField (ArchiveConfirmationDialog) e TextField bare
+    // (ReasonConfirmationDialog) para que CT12 e CT13 usem o mesmo helper.
     final dialogFinder = find.byType(AlertDialog);
     final simpledialogFinder = find.byType(Dialog);
 
-    Finder textFieldFinder;
+    Finder fieldIn(Finder container) {
+      final formField = find.descendant(
+        of: container,
+        matching: find.byType(TextFormField),
+      );
+      if (formField.evaluate().isNotEmpty) return formField;
+      return find.descendant(of: container, matching: find.byType(TextField));
+    }
 
+    Finder textFieldFinder;
     if (dialogFinder.evaluate().isNotEmpty) {
-      textFieldFinder = find.descendant(
-        of: dialogFinder,
-        matching: find.byType(TextFormField),
-      );
+      textFieldFinder = fieldIn(dialogFinder);
     } else if (simpledialogFinder.evaluate().isNotEmpty) {
-      textFieldFinder = find.descendant(
-        of: simpledialogFinder,
-        matching: find.byType(TextFormField),
-      );
+      textFieldFinder = fieldIn(simpledialogFinder);
     } else {
-      // Fallback: buscar qualquer TextFormField visível (pode estar em
-      // um widget customizado de modal).
-      textFieldFinder = find.byType(TextFormField);
+      // Fallback: qualquer TextFormField ou TextField visível.
+      final formField = find.byType(TextFormField);
+      textFieldFinder = formField.evaluate().isNotEmpty
+          ? formField
+          : find.byType(TextField);
     }
 
     expect(
       textFieldFinder,
       findsAtLeast(1),
       reason:
-          'O campo de justificativa (TextFormField) deve estar visível no modal',
+          'O campo de justificativa (TextFormField ou TextField) '
+          'deve estar visível no modal',
     );
 
-    // Limpar o campo e inserir o novo texto.
     await tester.enterText(textFieldFinder.first, text);
     await tester.pump();
   }
@@ -236,8 +242,31 @@ abstract class SuperAdminWidgetHelpers {
           )
           .evaluate()
           .isNotEmpty;
+      final isInsideTextField = find
+          .ancestor(of: find.byWidget(widget), matching: find.byType(TextField))
+          .evaluate()
+          .isNotEmpty;
+      final isInsideTextFormField = find
+          .ancestor(
+            of: find.byWidget(widget),
+            matching: find.byType(TextFormField),
+          )
+          .evaluate()
+          .isNotEmpty;
+      final isInsideEditableText = find
+          .ancestor(
+            of: find.byWidget(widget),
+            matching: find.byType(EditableText),
+          )
+          .evaluate()
+          .isNotEmpty;
 
-      if (!isInsideTabBar && !isInsidePageView && !isInsideListView) {
+      if (!isInsideTabBar &&
+          !isInsidePageView &&
+          !isInsideListView &&
+          !isInsideTextField &&
+          !isInsideTextFormField &&
+          !isInsideEditableText) {
         fail(
           'Scrollable horizontal inesperado encontrado fora de '
           'componentes legítimos (TabBar, PageView, ListView horizontal). '

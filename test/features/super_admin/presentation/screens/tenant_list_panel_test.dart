@@ -17,105 +17,100 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 class MockSuperAdminRepository extends Mock implements ISuperAdminRepository {}
 
-void main() {
-  late MockSuperAdminRepository mockRepo;
+late MockSuperAdminRepository _mockRepo;
 
-  setUp(() {
-    mockRepo = MockSuperAdminRepository();
-    GoogleFonts.config.allowRuntimeFetching = false;
-  });
+final _mockTenants = [
+  const TenantHealthView(
+    id: 'org-1',
+    name: 'Omni Consórcio',
+    legalName: 'Omni Consórcio Ltda',
+    planType: 'Enterprise',
+    status: OrgStatus.active,
+    maxVehicles: 100,
+    maxActiveContracts: 50,
+    activeContractCount: 10,
+    openCriticalAlertCount: 0,
+    cnpj: '11.444.777/0001-61',
+  ),
+  const TenantHealthView(
+    id: 'org-2',
+    name: 'Hydra Corp',
+    legalName: 'Hydra Logistica',
+    planType: 'Basic',
+    status: OrgStatus.suspended,
+    maxVehicles: 20,
+    maxActiveContracts: 5,
+    activeContractCount: 5,
+    openCriticalAlertCount: 2,
+    cnpj: '22.333.444/0001-22',
+  ),
+  const TenantHealthView(
+    id: 'org-3',
+    name: 'Alpha Trans',
+    legalName: 'Alpha Transportes',
+    planType: 'Enterprise',
+    status: OrgStatus.active,
+    maxVehicles: 200,
+    maxActiveContracts: 100,
+    activeContractCount: 80,
+    openCriticalAlertCount: 0,
+    cnpj: '33.222.111/0001-33',
+  ),
+];
 
-  final mockTenants = [
-    const TenantHealthView(
-      id: 'org-1',
-      name: 'Omni Consórcio',
-      legalName: 'Omni Consórcio Ltda',
-      planType: 'Enterprise',
-      status: OrgStatus.active,
-      maxVehicles: 100,
-      maxActiveContracts: 50,
-      activeContractCount: 10,
-      openCriticalAlertCount: 0,
-      cnpj: '11.444.777/0001-61',
-    ),
-    const TenantHealthView(
-      id: 'org-2',
-      name: 'Hydra Corp',
-      legalName: 'Hydra Logistica',
-      planType: 'Basic',
-      status: OrgStatus.suspended,
-      maxVehicles: 20,
-      maxActiveContracts: 5,
-      activeContractCount: 5,
-      openCriticalAlertCount: 2,
-      cnpj: '22.333.444/0001-22',
-    ),
-    const TenantHealthView(
-      id: 'org-3',
-      name: 'Alpha Trans',
-      legalName: 'Alpha Transportes',
-      planType: 'Enterprise',
-      status: OrgStatus.active,
-      maxVehicles: 200,
-      maxActiveContracts: 100,
-      activeContractCount: 80,
-      openCriticalAlertCount: 0,
-      cnpj: '33.222.111/0001-33',
-    ),
-  ];
-
-  Widget createTestWidget({
-    List<TenantHealthView>? tenants,
-    Object? error,
-    String? selectedOrgId,
-    Duration debounce = Duration.zero,
-    bool isLoading = false,
-    required ValueChanged<TenantHealthView> onOrgSelected,
-  }) {
-    if (isLoading) {
-      final completer = Completer<List<TenantHealthSnapshot>>();
-      when(
-        () => mockRepo.getAllTenantHealth(),
-      ).thenAnswer((_) => completer.future);
-      addTearDown(() {
-        if (!completer.isCompleted) completer.complete([]);
-      });
-    } else if (error != null) {
-      when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        throw error;
-      });
-    } else {
-      when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        return (tenants ?? mockTenants).map((t) => t.toSnapshot()).toList();
-      });
-    }
-
-    return ProviderScope(
-      overrides: [
-        superAdminRepositoryProvider.overrideWithValue(mockRepo),
-        tenantSearchDebounceDurationProvider.overrideWithValue(debounce),
-        if (isLoading)
-          tenantHealthSnapshotProvider.overrideWith(
-            (ref) => Completer<List<TenantHealthView>>().future,
-          ),
-      ],
-      child: MaterialApp(
-        theme: AppTheme.darkTheme,
-        home: Scaffold(
-          body: TenantListPanel(
-            selectedOrgId: selectedOrgId,
-            onOrgSelected: onOrgSelected,
-          ),
-        ),
-      ),
-    );
+Widget _createTestWidget({
+  List<TenantHealthView>? tenants,
+  Object? error,
+  String? selectedOrgId,
+  Duration debounce = Duration.zero,
+  bool isLoading = false,
+  required ValueChanged<TenantHealthView> onOrgSelected,
+}) {
+  if (isLoading) {
+    final completer = Completer<List<TenantHealthSnapshot>>();
+    when(
+      () => _mockRepo.getAllTenantHealth(),
+    ).thenAnswer((_) => completer.future);
+    addTearDown(() {
+      if (!completer.isCompleted) completer.complete([]);
+    });
+  } else if (error != null) {
+    when(() => _mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      throw error;
+    });
+  } else {
+    when(() => _mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+      return (tenants ?? _mockTenants).map((t) => t.toSnapshot()).toList();
+    });
   }
 
+  return ProviderScope(
+    overrides: [
+      superAdminRepositoryProvider.overrideWithValue(_mockRepo),
+      tenantSearchDebounceDurationProvider.overrideWithValue(debounce),
+      if (isLoading)
+        tenantHealthSnapshotProvider.overrideWith(
+          (ref) => Completer<List<TenantHealthView>>().future,
+        ),
+    ],
+    child: MaterialApp(
+      theme: AppTheme.darkTheme,
+      home: Scaffold(
+        body: TenantListPanel(
+          selectedOrgId: selectedOrgId,
+          onOrgSelected: onOrgSelected,
+        ),
+      ),
+    ),
+  );
+}
+
+void _testHappyPath() {
   group('TenantListPanel - Happy Path', () {
     testWidgets('Renders tenant list correctly', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       expect(find.text('Omni Consórcio'), findsOneWidget);
@@ -123,12 +118,16 @@ void main() {
       expect(find.text('Alpha Trans'), findsOneWidget);
       expect(find.text('ENTERPRISE'), findsAtLeast(2));
       expect(find.text('BASIC'), findsOneWidget);
+      // E2E navigation helper depends on this key — must stay attached to the ListView
+      expect(find.byKey(TenantListPanel.tenantListViewKey), findsOneWidget);
+      // Error key must NOT be present when data loaded successfully
+      expect(find.byKey(TenantListPanel.tenantListErrorKey), findsNothing);
     });
 
     testWidgets('Selects a tenant and calls onOrgSelected', (tester) async {
       TenantHealthView? selected;
       await tester.pumpWidget(
-        createTestWidget(onOrgSelected: (t) => selected = t),
+        _createTestWidget(onOrgSelected: (t) => selected = t),
       );
       await tester.pumpAndSettle();
 
@@ -139,7 +138,7 @@ void main() {
     });
 
     testWidgets('Filters list by search query (Name)', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Alpha');
@@ -153,7 +152,7 @@ void main() {
     testWidgets('Filters list by search query (i18n / Accents)', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Consórcio');
@@ -166,7 +165,7 @@ void main() {
     });
 
     testWidgets('Status filtering: Active vs Suspended', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Ativos'));
@@ -185,7 +184,7 @@ void main() {
     });
 
     testWidgets('Clearing search resets the list', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'Alpha');
@@ -202,10 +201,10 @@ void main() {
     testWidgets('Shows skeleton loading state', (tester) async {
       final completer = Completer<List<TenantHealthSnapshot>>();
       when(
-        () => mockRepo.getAllTenantHealth(),
+        () => _mockRepo.getAllTenantHealth(),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pump();
 
       expect(find.byType(TenantSkeletonTile), findsNWidgets(5));
@@ -217,19 +216,24 @@ void main() {
 
     testWidgets('Shows error state', (tester) async {
       await tester.pumpWidget(
-        createTestWidget(onOrgSelected: (_) {}, error: 'API Error'),
+        _createTestWidget(onOrgSelected: (_) {}, error: 'API Error'),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
       expect(find.textContaining('API Error'), findsOneWidget);
+      // E2E navigation helper uses this key to detect error state and fail fast
+      expect(find.byKey(TenantListPanel.tenantListErrorKey), findsOneWidget);
+      expect(find.byKey(TenantListPanel.tenantListViewKey), findsNothing);
     });
   });
+}
 
+void _testEnterpriseScenarios() {
   group('TenantListPanel - Enterprise & Security Scenarios', () {
     testWidgets('Golden Test: Panel width is exactly 320px', (tester) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       final panel = tester.widget<SizedBox>(find.byType(SizedBox).first);
@@ -239,7 +243,7 @@ void main() {
     testWidgets('Forensic Visibility: Critical alerts show warning icon', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       final hydraTile = find.ancestor(
@@ -270,7 +274,7 @@ void main() {
     testWidgets('Security: Search injection resilience (DoS/Injection)', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -287,7 +291,7 @@ void main() {
 
     testWidgets('Accessibility: Semantics audit', (tester) async {
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       expect(
@@ -321,7 +325,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        createTestWidget(onOrgSelected: (_) {}, tenants: largeList),
+        _createTestWidget(onOrgSelected: (_) {}, tenants: largeList),
       );
       await tester.pumpAndSettle();
 
@@ -339,12 +343,14 @@ void main() {
       expect(found, isTrue);
     });
   });
+}
 
+void _testCiaA11y() {
   group('TenantListPanel - Enterprise Tier 1: CIA / Adversarial / A11y', () {
     testWidgets(
       'CIA (Integrity): Race condition — rapid search resolves to last query',
       (tester) async {
-        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(TextField), 'Alpha');
@@ -362,7 +368,7 @@ void main() {
       'Adversarial (Availability): Retry after timeout preserves filter state',
       (tester) async {
         await tester.pumpWidget(
-          createTestWidget(
+          _createTestWidget(
             onOrgSelected: (_) {},
             error: TimeoutException('Network timeout'),
           ),
@@ -373,9 +379,9 @@ void main() {
 
         expect(find.text('Tentar novamente'), findsOneWidget);
 
-        when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+        when(() => _mockRepo.getAllTenantHealth()).thenAnswer((_) async {
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          return mockTenants.map((t) => t.toSnapshot()).toList();
+          return _mockTenants.map((t) => t.toSnapshot()).toList();
         });
 
         await tester.tap(find.text('Tentar novamente'));
@@ -394,7 +400,7 @@ void main() {
       tester,
     ) async {
       final handle = tester.ensureSemantics();
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       expect(
@@ -409,13 +415,15 @@ void main() {
       handle.dispose();
     });
   });
+}
 
+void _testDebounceAdversarial() {
   group('TenantListPanel - Debounce Adversarial', () {
     testWidgets(
       'Rapid fire: 10 keystrokes in 50ms each — shimmer overlay visible',
       (tester) async {
         await tester.pumpWidget(
-          createTestWidget(
+          _createTestWidget(
             onOrgSelected: (_) {},
             debounce: const Duration(milliseconds: 300),
           ),
@@ -447,7 +455,7 @@ void main() {
       'Dispose mid-debounce: widget unmounts during active timer — no crash',
       (tester) async {
         await tester.pumpWidget(
-          createTestWidget(
+          _createTestWidget(
             onOrgSelected: (_) {},
             debounce: const Duration(milliseconds: 300),
           ),
@@ -470,10 +478,10 @@ void main() {
     ) async {
       final completer = Completer<List<TenantHealthSnapshot>>();
       when(
-        () => mockRepo.getAllTenantHealth(),
+        () => _mockRepo.getAllTenantHealth(),
       ).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pump();
 
       // Verify skeleton tiles with keys
@@ -492,7 +500,7 @@ void main() {
       'Concurrent data update: snapshot refreshes during debounce uses latest',
       (tester) async {
         await tester.pumpWidget(
-          createTestWidget(
+          _createTestWidget(
             onOrgSelected: (_) {},
             debounce: const Duration(milliseconds: 300),
           ),
@@ -503,9 +511,9 @@ void main() {
         expect(find.text('Omni Consórcio'), findsOneWidget);
 
         // Override mock for second call — returns only Alpha Trans
-        when(() => mockRepo.getAllTenantHealth()).thenAnswer((_) async {
+        when(() => _mockRepo.getAllTenantHealth()).thenAnswer((_) async {
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          return [mockTenants[2].toSnapshot()];
+          return [_mockTenants[2].toSnapshot()];
         });
 
         // Start typing (triggers debounce)
@@ -527,12 +535,14 @@ void main() {
       },
     );
   });
+}
 
+void _testCnpjSearch() {
   group('TenantListPanel - CNPJ Search (Mask Resilience)', () {
     testWidgets('CT-CNPJ-01: Full CNPJ with mask finds correct tenant', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+      await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), '11.444.777/0001-61');
@@ -546,7 +556,7 @@ void main() {
     testWidgets(
       'CT-CNPJ-02: Full CNPJ without mask (digits only) finds correct tenant',
       (tester) async {
-        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(TextField), '11444777000161');
@@ -561,7 +571,7 @@ void main() {
     testWidgets(
       'CT-CNPJ-03 (Adversarial): Invalid chars in CNPJ do not crash',
       (tester) async {
-        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(TextField), '11.444.AAA.777');
@@ -575,7 +585,7 @@ void main() {
     testWidgets(
       'CT-CNPJ-04 (Regression): Name with accents and ID search still work',
       (tester) async {
-        await tester.pumpWidget(createTestWidget(onOrgSelected: (_) {}));
+        await tester.pumpWidget(_createTestWidget(onOrgSelected: (_) {}));
         await tester.pumpAndSettle();
 
         await tester.enterText(find.byType(TextField), 'Consórcio');
@@ -593,7 +603,9 @@ void main() {
       },
     );
   });
+}
 
+void _testVisualRegression() {
   group('TenantListPanel - Visual Regression (Goldens)', () {
     goldenTest(
       'Golden Test: Default List State',
@@ -601,7 +613,7 @@ void main() {
       builder: () => SizedBox(
         width: 320,
         height: 600,
-        child: createTestWidget(onOrgSelected: (_) {}),
+        child: _createTestWidget(onOrgSelected: (_) {}),
       ),
       pumpBeforeTest: (tester) async {
         await tester.pumpAndSettle();
@@ -614,7 +626,7 @@ void main() {
       builder: () => SizedBox(
         width: 320,
         height: 600,
-        child: createTestWidget(onOrgSelected: (_) {}),
+        child: _createTestWidget(onOrgSelected: (_) {}),
       ),
       pumpBeforeTest: (tester) async {
         await tester.pumpAndSettle();
@@ -629,7 +641,7 @@ void main() {
       builder: () => SizedBox(
         width: 320,
         height: 600,
-        child: createTestWidget(onOrgSelected: (_) {}, tenants: []),
+        child: _createTestWidget(onOrgSelected: (_) {}, tenants: []),
       ),
       pumpBeforeTest: (tester) async {
         await tester.pumpAndSettle();
@@ -643,7 +655,7 @@ void main() {
         return SizedBox(
           width: 320,
           height: 600,
-          child: createTestWidget(isLoading: true, onOrgSelected: (_) {}),
+          child: _createTestWidget(isLoading: true, onOrgSelected: (_) {}),
         );
       },
       pumpBeforeTest: (tester) async {
@@ -651,6 +663,20 @@ void main() {
       },
     );
   });
+}
+
+void main() {
+  setUp(() {
+    _mockRepo = MockSuperAdminRepository();
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
+  _testHappyPath();
+  _testEnterpriseScenarios();
+  _testCiaA11y();
+  _testDebounceAdversarial();
+  _testCnpjSearch();
+  _testVisualRegression();
 }
 
 extension on TenantHealthView {

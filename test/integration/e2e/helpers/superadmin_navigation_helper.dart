@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/features/super_admin/presentation/screens/tenant_list_panel.dart';
 
 import 'superadmin_test_config.dart';
 
@@ -55,23 +56,59 @@ abstract class SuperAdminNavigationHelper {
     WidgetTester tester,
     String orgName,
   ) async {
+    // Settle any pending navigation animations.
+    await tester.pump(const Duration(milliseconds: 100));
+
+    // Wait until the tenant list finishes loading.
+    // pumpAndSettle can return "settled" before the Supabase FutureProvider
+    // resolves: HTTP in-flight = no Flutter work pending → early settle,
+    // leaving the skeleton visible and tenantListViewKey absent. An explicit
+    // pump loop gives the real HTTP call time to complete.
+    final sw = Stopwatch()..start();
+    while (find.byKey(TenantListPanel.tenantListViewKey).evaluate().isEmpty &&
+        find.byKey(TenantListPanel.tenantListErrorKey).evaluate().isEmpty &&
+        sw.elapsed < SuperAdminTestConfig.defaultTimeout) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    // Fail fast when the panel is in error state (GoTrue HTTP 500 / banned_until=infinity).
+    // Without this guard the test fails with a misleading "org not found in list"
+    // instead of the real cause: the API call failed before the list rendered.
+    final errorPanel = find.byKey(TenantListPanel.tenantListErrorKey);
+    if (errorPanel.evaluate().isNotEmpty) {
+      fail(
+        'TenantListPanel is in error state while navigating to "$orgName". '
+        'GoTrue may be returning HTTP 500 — verify no auth.users rows have '
+        'banned_until = infinity (run migration '
+        '20260519000001_fix_banned_until_infinity).',
+      );
+    }
+
+    // Filter using the search bar to locate the organization deterministically
+    final searchField = find.byType(TextField);
+    if (searchField.evaluate().isNotEmpty) {
+      await tester.enterText(searchField.first, orgName);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pumpAndSettle();
+    }
+
     // Buscar o texto da organização na lista.
-    final orgFinder = find.text(orgName);
+    final orgFinder = find.descendant(
+      of: find.byKey(TenantListPanel.tenantListViewKey),
+      matching: find.text(orgName),
+    );
 
     // Se não encontrar imediatamente, pode ser necessário scroll.
-    // Primeiro, verificar se está visível.
+    // Drag the keyed ListView directly — avoids scrollUntilVisible's
+    // Scrollable stability requirement (which throws "Bad state: No element"
+    // when the list rebuilds mid-scroll, e.g. on first data arrival).
     if (orgFinder.evaluate().isEmpty) {
-      // Tentar scroll na lista para encontrar o item.
-      final listView = find.byType(ListView);
+      final listView = find.byKey(TenantListPanel.tenantListViewKey);
       if (listView.evaluate().isNotEmpty) {
-        await tester.scrollUntilVisible(
-          orgFinder,
-          200,
-          scrollable: find.descendant(
-            of: listView.first,
-            matching: find.byType(Scrollable),
-          ),
-        );
+        for (int i = 0; i < 20 && orgFinder.evaluate().isEmpty; i++) {
+          await tester.drag(listView.first, const Offset(0, -300));
+          await tester.pump(const Duration(milliseconds: 50));
+        }
       }
     }
 
@@ -158,12 +195,13 @@ abstract class SuperAdminNavigationHelper {
   ///
   /// Pré-condição: a lista de tenants está visível.
   static Future<void> filterArchived(WidgetTester tester) async {
-    final archivedChip = find.widgetWithText(FilterChip, 'Suspensos');
+    final archivedChip = find.widgetWithText(FilterChip, 'Arquivadas');
 
     expect(
       archivedChip,
       findsOneWidget,
-      reason: 'O FilterChip "Suspensos" deve estar visível na lista de tenants',
+      reason:
+          'O FilterChip "Arquivadas" deve estar visível na lista de tenants',
     );
 
     await tester.tap(archivedChip);

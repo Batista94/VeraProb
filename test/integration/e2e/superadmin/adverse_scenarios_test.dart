@@ -389,10 +389,14 @@ void main() {
       await tester.tap(deactivateButton, warnIfMissed: false);
       await tester.pumpAndSettle();
 
-      // Se o modal foi exibido, confirmar a operação
+      // Se o modal foi exibido, confirmar a operação com justificativa preenchida
       final dialog = find.byType(AlertDialog);
       final simpleDialog = find.byType(Dialog);
       if (dialog.evaluate().isNotEmpty || simpleDialog.evaluate().isNotEmpty) {
+        await SuperAdminWidgetHelpers.fillJustification(
+          tester,
+          'Justificativa para desativar o admin double-click',
+        );
         await SuperAdminWidgetHelpers.confirmModal(tester);
       }
 
@@ -411,7 +415,7 @@ void main() {
             .from('system_audit_log')
             .select()
             .eq('organization_id', testOrgDoubleClick.orgId)
-            .eq('event_type', 'DEACTIVATE_USER');
+            .eq('event_type', 'STATUS_CHANGE');
 
         // Deve haver no máximo 1 registro de desativação para este admin
         final logsForAdmin = auditLogs.where((log) {
@@ -645,12 +649,14 @@ void main() {
             .eq('organization_id', testOrgRevokeRace.orgId)
             .eq('email', pendingAdmin.email);
 
-        // Ativar o admin (simula aceitação completa)
-        await client
-            .from('user_roles')
-            .update({'is_active': true})
-            .eq('user_id', pendingAdmin.userId)
-            .eq('organization_id', testOrgRevokeRace.orgId);
+        // Ativar o admin (simula aceitação completa - insere em user_roles)
+        await client.from('user_roles').insert({
+          'user_id': pendingAdmin.userId,
+          'organization_id': testOrgRevokeRace.orgId,
+          'role': 'TENANT_ADMIN',
+          'is_active': true,
+          'created_at': DateTime.now().toUtc().toIso8601String(),
+        });
       } finally {
         await client.dispose();
       }

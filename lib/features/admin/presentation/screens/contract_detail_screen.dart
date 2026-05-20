@@ -126,7 +126,11 @@ class _DetailViewState extends ConsumerState<_DetailView> {
       if (!mounted) return;
 
       // Build the review link based on current window location
-      final reviewLink = '${Uri.base.origin}/review-contract?token=$token';
+      final baseUri = Uri.base;
+      final origin = (baseUri.scheme == 'http' || baseUri.scheme == 'https')
+          ? baseUri.origin
+          : 'http://localhost:3000';
+      final reviewLink = '$origin/review-contract?token=$token';
 
       if (!context.mounted) return;
 
