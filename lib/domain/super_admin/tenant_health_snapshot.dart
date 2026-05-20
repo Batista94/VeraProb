@@ -30,6 +30,20 @@ class TenantHealthSnapshot extends Equatable {
   final DateTime? createdAt;
   final List<String> allowedDomains;
 
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+
+  /// Tolerância de clock drift em segundos (Motor Forense). Padrão: 300.
+  final int clockDriftToleranceS;
+
+  /// Dias de retenção de evidências online (Compliance). Padrão: 1825 (5 anos).
+  final int dataRetentionDays;
+
+  /// Limite de conexões Postgres por tenant (Infraestrutura). Padrão: 60.
+  final int connectionPoolLimit;
+
+  /// Quota de armazenamento de evidências em GB (Infraestrutura). Padrão: 100.
+  final int storageQuotaGb;
+
   const TenantHealthSnapshot({
     required this.id,
     required this.name,
@@ -53,6 +67,11 @@ class TenantHealthSnapshot extends Equatable {
     this.cnpj,
     this.createdAt,
     this.allowedDomains = const [],
+    // CT10 — Motor Forense, Compliance, Infraestrutura
+    this.clockDriftToleranceS = 300,
+    this.dataRetentionDays = 1825,
+    this.connectionPoolLimit = 60,
+    this.storageQuotaGb = 100,
   });
 
   factory TenantHealthSnapshot.fromJson(Map<String, dynamic> json) {
@@ -93,6 +112,13 @@ class TenantHealthSnapshot extends Equatable {
           ? DateTime.parse(json['created_at'] as String)
           : null,
       allowedDomains: (json['allowed_domains'] as List?)?.cast<String>() ?? [],
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS:
+          (json['clock_drift_tolerance_s'] as num?)?.toInt() ?? 300,
+      dataRetentionDays: (json['data_retention_days'] as num?)?.toInt() ?? 1825,
+      connectionPoolLimit:
+          (json['connection_pool_limit'] as num?)?.toInt() ?? 60,
+      storageQuotaGb: (json['storage_quota_gb'] as num?)?.toInt() ?? 100,
     );
   }
 
@@ -122,5 +148,9 @@ class TenantHealthSnapshot extends Equatable {
     cnpj,
     createdAt,
     allowedDomains,
+    clockDriftToleranceS,
+    dataRetentionDays,
+    connectionPoolLimit,
+    storageQuotaGb,
   ];
 }

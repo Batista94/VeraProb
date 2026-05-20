@@ -76,6 +76,29 @@ class UpdateOrganizationQuotaHandler {
       );
     }
 
+    // ── Step 4b: CT10 — Motor Forense, Compliance, Infraestrutura
+    if (cmd.clockDriftToleranceS != null && cmd.clockDriftToleranceS! < 0) {
+      throw const DomainException(
+        'Tolerância de clock drift deve ser >= 0 segundos.',
+      );
+    }
+    if (cmd.dataRetentionDays != null && cmd.dataRetentionDays! < 1) {
+      throw const DomainException(
+        'Período de retenção de dados deve ser de pelo menos 1 dia.',
+      );
+    }
+    if (cmd.connectionPoolLimit != null &&
+        (cmd.connectionPoolLimit! < 1 || cmd.connectionPoolLimit! > 500)) {
+      throw const DomainException(
+        'Limite de connection pool deve estar entre 1 e 500 conexões.',
+      );
+    }
+    if (cmd.storageQuotaGb != null && cmd.storageQuotaGb! < 1) {
+      throw const DomainException(
+        'Quota de storage deve ser de pelo menos 1 GB.',
+      );
+    }
+
     // ── Step 4a: tool_cost_cents required
     if (cmd.toolCostCents == null) {
       throw const DomainException(

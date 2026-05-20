@@ -49,6 +49,23 @@ class TenantHealthView {
   /// Data de criação da organização — campo de identidade core imutável.
   final DateTime? createdAt;
 
+  /// Domínios permitidos para autenticação (lista de baixo nivel de email).
+  final List<String> allowedDomains;
+
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+
+  /// Tolerância de clock drift em segundos. Padrão: 300.
+  final int clockDriftToleranceS;
+
+  /// Dias de retenção de evidências online. Padrão: 1825 (5 anos).
+  final int dataRetentionDays;
+
+  /// Limite de conexões Postgres por tenant. Padrão: 60.
+  final int connectionPoolLimit;
+
+  /// Quota de armazenamento em GB. Padrão: 100.
+  final int storageQuotaGb;
+
   const TenantHealthView({
     required this.id,
     required this.name,
@@ -70,6 +87,12 @@ class TenantHealthView {
     this.updatedAt,
     this.cnpj,
     this.createdAt,
+    this.allowedDomains = const [],
+    // CT10 — Motor Forense, Compliance, Infraestrutura
+    this.clockDriftToleranceS = 300,
+    this.dataRetentionDays = 1825,
+    this.connectionPoolLimit = 60,
+    this.storageQuotaGb = 100,
   });
 
   /// Derived from [status] — ACTIVE orgs are operational.
@@ -109,6 +132,12 @@ class TenantHealthView {
       updatedAt: snapshot.updatedAt,
       cnpj: snapshot.cnpj,
       createdAt: snapshot.createdAt,
+      allowedDomains: snapshot.allowedDomains,
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS: snapshot.clockDriftToleranceS,
+      dataRetentionDays: snapshot.dataRetentionDays,
+      connectionPoolLimit: snapshot.connectionPoolLimit,
+      storageQuotaGb: snapshot.storageQuotaGb,
     );
   }
 
@@ -152,6 +181,14 @@ class TenantHealthView {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
+      allowedDomains: (json['allowed_domains'] as List?)?.cast<String>() ?? [],
+      // CT10 — Motor Forense, Compliance, Infraestrutura
+      clockDriftToleranceS:
+          (json['clock_drift_tolerance_s'] as num?)?.toInt() ?? 300,
+      dataRetentionDays: (json['data_retention_days'] as num?)?.toInt() ?? 1825,
+      connectionPoolLimit:
+          (json['connection_pool_limit'] as num?)?.toInt() ?? 60,
+      storageQuotaGb: (json['storage_quota_gb'] as num?)?.toInt() ?? 100,
     );
   }
 }

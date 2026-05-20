@@ -8,6 +8,7 @@ import 'package:veraprob/application/super_admin/org_capabilities_view_model.dar
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/locked_field_tile.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -37,6 +38,16 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   final _contactEmailCtrl = TextEditingController();
   final _externalIdCtrl = TextEditingController();
 
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+  final _clockDriftCtrl = TextEditingController();
+  final _dataRetentionCtrl = TextEditingController();
+  final _connectionPoolCtrl = TextEditingController();
+  final _storageQuotaCtrl = TextEditingController();
+
+  // CT10 — Domínios Permitidos (movido da aba Segurança)
+  late List<String> _allowedDomains;
+  final _domainInputCtrl = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -58,6 +69,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     _billingDayCtrl.text = t.billingDay?.toString() ?? '';
     _contactEmailCtrl.text = t.contactEmail ?? '';
     _externalIdCtrl.text = t.externalId ?? '';
+    // CT10
+    _clockDriftCtrl.text = t.clockDriftToleranceS.toString();
+    _dataRetentionCtrl.text = t.dataRetentionDays.toString();
+    _connectionPoolCtrl.text = t.connectionPoolLimit.toString();
+    _storageQuotaCtrl.text = t.storageQuotaGb.toString();
+    _allowedDomains = List<String>.from(t.allowedDomains);
   }
 
   @override
@@ -84,6 +101,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     _billingDayCtrl.dispose();
     _contactEmailCtrl.dispose();
     _externalIdCtrl.dispose();
+    // CT10
+    _clockDriftCtrl.dispose();
+    _dataRetentionCtrl.dispose();
+    _connectionPoolCtrl.dispose();
+    _storageQuotaCtrl.dispose();
+    _domainInputCtrl.dispose();
     super.dispose();
   }
 
@@ -95,6 +118,20 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   bool get _isDisabled => widget.tenant.isArchived;
 
   bool get _capabilitiesChanged => _capabilities != widget.tenant.capabilities;
+
+  bool get _ct10Changed {
+    final t = widget.tenant;
+    return _clockDriftCtrl.text != t.clockDriftToleranceS.toString() ||
+        _dataRetentionCtrl.text != t.dataRetentionDays.toString() ||
+        _connectionPoolCtrl.text != t.connectionPoolLimit.toString() ||
+        _storageQuotaCtrl.text != t.storageQuotaGb.toString();
+  }
+
+  bool get _domainsChanged {
+    final current = List<String>.from(widget.tenant.allowedDomains)..sort();
+    final edited = List<String>.from(_allowedDomains)..sort();
+    return current.join(',') != edited.join(',');
+  }
 
   bool get _paramsChanged {
     final t = widget.tenant;
@@ -112,10 +149,12 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         _dwellTimeCtrl.text != t.dwellTimeSeconds.toString() ||
         _billingDayCtrl.text != (t.billingDay?.toString() ?? '') ||
         _contactEmailCtrl.text != (t.contactEmail ?? '') ||
-        _externalIdCtrl.text != (t.externalId ?? '');
+        _externalIdCtrl.text != (t.externalId ?? '') ||
+        _ct10Changed;
   }
 
-  bool get _isDirty => _capabilitiesChanged || _paramsChanged;
+  bool get _isDirty =>
+      _capabilitiesChanged || _paramsChanged || _domainsChanged;
 
   bool get _isFormValid {
     final cost = double.tryParse(_costCtrl.text.replaceAll(',', '.'));
@@ -141,6 +180,26 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     if (_contactEmailCtrl.text.isNotEmpty) {
       final e = _contactEmailCtrl.text;
       if (!e.contains('@') || !e.contains('.')) return false;
+    }
+    // CT10 validations
+    final clockDrift = int.tryParse(_clockDriftCtrl.text);
+    if (_clockDriftCtrl.text.isNotEmpty &&
+        (clockDrift == null || clockDrift < 0)) {
+      return false;
+    }
+    final retention = int.tryParse(_dataRetentionCtrl.text);
+    if (_dataRetentionCtrl.text.isNotEmpty &&
+        (retention == null || retention < 1)) {
+      return false;
+    }
+    final pool = int.tryParse(_connectionPoolCtrl.text);
+    if (_connectionPoolCtrl.text.isNotEmpty &&
+        (pool == null || pool < 1 || pool > 500)) {
+      return false;
+    }
+    final storage = int.tryParse(_storageQuotaCtrl.text);
+    if (_storageQuotaCtrl.text.isNotEmpty && (storage == null || storage < 1)) {
+      return false;
     }
     return true;
   }
@@ -170,6 +229,35 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     _showSnackBar('Copiado para a área de transferência');
   }
 
+  void _addDomain() {
+    final raw = _domainInputCtrl.text.trim().toLowerCase();
+    if (raw.isEmpty) return;
+    if (!raw.contains('.') || raw.startsWith('.') || raw.endsWith('.')) {
+      _showSnackBar('Domínio inválido', backgroundColor: VeraProbColors.error);
+      return;
+    }
+    if (_allowedDomains.contains(raw)) {
+      _showSnackBar('Domínio já existe na lista');
+      return;
+    }
+    setState(() {
+      _allowedDomains = [..._allowedDomains, raw];
+      _domainInputCtrl.clear();
+    });
+  }
+
+  void _removeDomain(String domain) {
+    setState(() {
+      _allowedDomains = _allowedDomains.where((d) => d != domain).toList();
+    });
+  }
+
+  Future<void> _saveAllowedDomains(String reason) async {
+    final repo = ref.read(superAdminRepositoryProvider);
+    final userId = ref.read(authStateProvider).value?.session?.user.id ?? '';
+    await repo.updateAllowedDomains(widget.tenant.id, _allowedDomains, userId);
+  }
+
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -185,29 +273,45 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
       final costVal =
           double.tryParse(_costCtrl.text.replaceAll(',', '.')) ?? 0.0;
 
-      final cmd = UpdateQuotaFormData(
-        organizationId: t.id,
-        newPlanType: _planType ?? 'starter',
-        newMaxVehicles: int.tryParse(_maxVehiclesCtrl.text),
-        newMaxActiveContracts: int.tryParse(_maxContractsCtrl.text),
-        superAdminUserId:
-            ref.read(authStateProvider).value?.session?.user.id ?? '',
-        reason: reason,
-        capabilities: _capabilities,
-        toolCostCents: (costVal * 100).round(),
-        dwellTimeSeconds: int.tryParse(_dwellTimeCtrl.text) ?? 300,
-        billingDay: int.tryParse(_billingDayCtrl.text),
-        contactEmail: _contactEmailCtrl.text.isEmpty
-            ? null
-            : _contactEmailCtrl.text,
-        externalId: _externalIdCtrl.text.isEmpty ? null : _externalIdCtrl.text,
-        organizationType: _orgType,
-        tradeName: _tradeNameCtrl.text.isEmpty ? null : _tradeNameCtrl.text,
-        legalName: _legalNameCtrl.text.isEmpty ? null : _legalNameCtrl.text,
-        expectedUpdatedAt: t.updatedAt,
-      ).toCommand();
+      // Save quota/config params
+      if (_paramsChanged || _capabilitiesChanged) {
+        final cmd = UpdateQuotaFormData(
+          organizationId: t.id,
+          newPlanType: _planType ?? 'starter',
+          newMaxVehicles: int.tryParse(_maxVehiclesCtrl.text),
+          newMaxActiveContracts: int.tryParse(_maxContractsCtrl.text),
+          superAdminUserId:
+              ref.read(authStateProvider).value?.session?.user.id ?? '',
+          reason: reason,
+          capabilities: _capabilities,
+          toolCostCents: (costVal * 100).round(),
+          dwellTimeSeconds: int.tryParse(_dwellTimeCtrl.text) ?? 300,
+          billingDay: int.tryParse(_billingDayCtrl.text),
+          contactEmail: _contactEmailCtrl.text.isEmpty
+              ? null
+              : _contactEmailCtrl.text,
+          externalId: _externalIdCtrl.text.isEmpty
+              ? null
+              : _externalIdCtrl.text,
+          organizationType: _orgType,
+          tradeName: _tradeNameCtrl.text.isEmpty ? null : _tradeNameCtrl.text,
+          legalName: _legalNameCtrl.text.isEmpty ? null : _legalNameCtrl.text,
+          expectedUpdatedAt: t.updatedAt,
+          // CT10
+          clockDriftToleranceS: int.tryParse(_clockDriftCtrl.text),
+          dataRetentionDays: int.tryParse(_dataRetentionCtrl.text),
+          connectionPoolLimit: int.tryParse(_connectionPoolCtrl.text),
+          storageQuotaGb: int.tryParse(_storageQuotaCtrl.text),
+        ).toCommand();
 
-      await ref.read(updateOrganizationQuotaHandlerProvider).handle(cmd);
+        await ref.read(updateOrganizationQuotaHandlerProvider).handle(cmd);
+      }
+
+      // Save allowed domains independently (separate RPC — Lesson 2)
+      if (_domainsChanged) {
+        await _saveAllowedDomains(reason);
+      }
+
       ref.invalidate(tenantHealthSnapshotProvider);
       await ref.read(tenantHealthSnapshotProvider.future);
       _showSnackBar(
@@ -301,6 +405,37 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
               externalIdCtrl: _externalIdCtrl,
               enabled: !_isDisabled,
               onFieldChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 24),
+            // CT10 — Motor Forense
+            _ForensicEngineSection(
+              clockDriftCtrl: _clockDriftCtrl,
+              enabled: !_isDisabled,
+              onFieldChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 24),
+            // CT10 — Compliance
+            _ComplianceSection(
+              dataRetentionCtrl: _dataRetentionCtrl,
+              enabled: !_isDisabled,
+              onFieldChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 24),
+            // CT10 — Infraestrutura
+            _InfrastructureSection(
+              connectionPoolCtrl: _connectionPoolCtrl,
+              storageQuotaCtrl: _storageQuotaCtrl,
+              enabled: !_isDisabled,
+              onFieldChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 24),
+            // CT10 — Domínios Permitidos (movido da aba Segurança)
+            _AllowedDomainsSection(
+              domains: _allowedDomains,
+              domainInputCtrl: _domainInputCtrl,
+              enabled: !_isDisabled,
+              onAdd: _addDomain,
+              onRemove: _removeDomain,
             ),
             const SizedBox(height: 24),
             _CapabilitiesSection(
@@ -605,6 +740,259 @@ class _BillingIntegrationSection extends StatelessWidget {
     ],
   );
 }
+
+// ── CT10 Sections ─────────────────────────────────────────────────────────────
+
+class _ForensicEngineSection extends StatelessWidget {
+  final TextEditingController clockDriftCtrl;
+  final bool enabled;
+  final VoidCallback onFieldChanged;
+
+  const _ForensicEngineSection({
+    required this.clockDriftCtrl,
+    required this.enabled,
+    required this.onFieldChanged,
+  });
+
+  static String? _validateClockDrift(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = int.tryParse(v);
+    if (n == null || n < 0) return 'Mínimo: 0 segundos';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Motor Forense'),
+      const SizedBox(height: 16),
+      TextFormField(
+        key: const Key('clock_drift_tolerance_s_field'),
+        controller: clockDriftCtrl,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          labelText: 'Tolerância Clock Drift (segundos)',
+          helperText:
+              'Desvio máximo de relógio tolerado para evidências. Padrão: 300s.',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (_) => onFieldChanged(),
+        validator: _validateClockDrift,
+      ),
+    ],
+  );
+}
+
+class _ComplianceSection extends StatelessWidget {
+  final TextEditingController dataRetentionCtrl;
+  final bool enabled;
+  final VoidCallback onFieldChanged;
+
+  const _ComplianceSection({
+    required this.dataRetentionCtrl,
+    required this.enabled,
+    required this.onFieldChanged,
+  });
+
+  static String? _validateRetention(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = int.tryParse(v);
+    if (n == null || n < 1) return 'Mínimo: 1 dia';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Compliance'),
+      const SizedBox(height: 16),
+      TextFormField(
+        key: const Key('data_retention_days_field'),
+        controller: dataRetentionCtrl,
+        enabled: enabled,
+        decoration: const InputDecoration(
+          labelText: 'Retenção de Dados (dias)',
+          helperText:
+              'Período de retenção de evidências online. Padrão: 1825 dias (5 anos).',
+          border: OutlineInputBorder(),
+        ),
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        onChanged: (_) => onFieldChanged(),
+        validator: _validateRetention,
+      ),
+    ],
+  );
+}
+
+class _InfrastructureSection extends StatelessWidget {
+  final TextEditingController connectionPoolCtrl;
+  final TextEditingController storageQuotaCtrl;
+  final bool enabled;
+  final VoidCallback onFieldChanged;
+
+  const _InfrastructureSection({
+    required this.connectionPoolCtrl,
+    required this.storageQuotaCtrl,
+    required this.enabled,
+    required this.onFieldChanged,
+  });
+
+  static String? _validatePool(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = int.tryParse(v);
+    if (n == null || n < 1 || n > 500) return 'Entre 1 e 500';
+    return null;
+  }
+
+  static String? _validateStorage(String? v) {
+    if (v == null || v.isEmpty) return 'Obrigatório';
+    final n = int.tryParse(v);
+    if (n == null || n < 1) return 'Mínimo: 1 GB';
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Infraestrutura'),
+      const SizedBox(height: 16),
+      Row(
+        children: [
+          Expanded(
+            child: TextFormField(
+              key: const Key('connection_pool_limit_field'),
+              controller: connectionPoolCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Connection Pool Limit',
+                helperText: '1–500 conexões',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => onFieldChanged(),
+              validator: _validatePool,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: TextFormField(
+              key: const Key('storage_quota_gb_field'),
+              controller: storageQuotaCtrl,
+              enabled: enabled,
+              decoration: const InputDecoration(
+                labelText: 'Storage Quota (GB)',
+                helperText: 'Mínimo: 1 GB',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              onChanged: (_) => onFieldChanged(),
+              validator: _validateStorage,
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+}
+
+class _AllowedDomainsSection extends StatelessWidget {
+  final List<String> domains;
+  final TextEditingController domainInputCtrl;
+  final bool enabled;
+  final VoidCallback onAdd;
+  final ValueChanged<String> onRemove;
+
+  const _AllowedDomainsSection({
+    required this.domains,
+    required this.domainInputCtrl,
+    required this.enabled,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const _SectionTitle('Domínios Permitidos'),
+      const SizedBox(height: 8),
+      const Text(
+        'Lista de domínios de e-mail autorizados para login (ex: empresa.com.br).',
+        style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+      ),
+      const SizedBox(height: 12),
+      if (domains.isNotEmpty)
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: domains.map((domain) {
+            return Chip(
+              key: Key('domain_chip_$domain'),
+              label: Text(
+                domain,
+                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+              ),
+              deleteIcon: enabled ? const Icon(Icons.close, size: 14) : null,
+              onDeleted: enabled ? () => onRemove(domain) : null,
+              backgroundColor: VeraProbColors.superAdminSurface.withValues(
+                alpha: 0.3,
+              ),
+            );
+          }).toList(),
+        )
+      else
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            'Nenhum domínio configurado — qualquer e-mail pode fazer login.',
+            style: TextStyle(
+              fontSize: 12,
+              color: VeraProbColors.warning,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      if (enabled) ...[
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                key: const Key('domain_input_field'),
+                controller: domainInputCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Adicionar Domínio',
+                  hintText: 'ex: viacao.com.br',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                onSubmitted: (_) => onAdd(),
+              ),
+            ),
+            const SizedBox(width: 8),
+            IconButton(
+              key: const Key('domain_add_button'),
+              icon: const Icon(Icons.add_circle_outline),
+              tooltip: 'Adicionar domínio',
+              onPressed: onAdd,
+              color: VeraProbColors.secondary,
+            ),
+          ],
+        ),
+      ],
+    ],
+  );
+}
+
+// ── Capabilities Section ──────────────────────────────────────────────────────
 
 class _CapabilitiesSection extends StatelessWidget {
   final OrgCapabilitiesViewModel capabilities;

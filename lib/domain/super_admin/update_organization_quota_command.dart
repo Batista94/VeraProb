@@ -60,6 +60,24 @@ class UpdateOrganizationQuotaCommand {
   /// Null = skip concurrency check (backwards compat).
   final DateTime? expectedUpdatedAt;
 
+  // CT10 — Motor Forense, Compliance, Infraestrutura
+
+  /// Tolerância de clock drift em segundos (Motor Forense).
+  /// Null = COALESCE mantém valor existente no DB. Zero é válido.
+  final int? clockDriftToleranceS;
+
+  /// Dias de retenção de evidências online (Compliance). Mínimo: 1.
+  /// Null = COALESCE mantém valor existente no DB.
+  final int? dataRetentionDays;
+
+  /// Limite de conexões Postgres por tenant (Infraestrutura). Range: 1-500.
+  /// Null = COALESCE mantém valor existente no DB.
+  final int? connectionPoolLimit;
+
+  /// Quota de armazenamento de evidências em GB (Infraestrutura). Mínimo: 1.
+  /// Null = COALESCE mantém valor existente no DB.
+  final int? storageQuotaGb;
+
   const UpdateOrganizationQuotaCommand({
     required this.organizationId,
     required this.newPlanType,
@@ -78,5 +96,10 @@ class UpdateOrganizationQuotaCommand {
     this.tradeName,
     this.legalName,
     this.expectedUpdatedAt,
+    // CT10 — Motor Forense, Compliance, Infraestrutura
+    this.clockDriftToleranceS,
+    this.dataRetentionDays,
+    this.connectionPoolLimit,
+    this.storageQuotaGb,
   });
 }
