@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/misc.dart' show ProviderException;
 import 'package:intl/intl.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/locked_field_tile.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -224,6 +221,28 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     );
   }
 
+  /// Extract error message without importing domain types (INV-13).
+  /// Attempts to access .message property if available; falls back to toString().
+  String _extractErrorMessage(dynamic error) {
+    // Handle ProviderException by unwrapping the original exception
+    if (error.runtimeType.toString().contains('ProviderException')) {
+      try {
+        final original = (error as dynamic).exception;
+        return _extractErrorMessage(original);
+      } catch (_) {
+        return error.toString();
+      }
+    }
+    // Try to access .message property without domain imports
+    try {
+      final msg = (error as dynamic).message;
+      if (msg is String && msg.isNotEmpty) return msg;
+    } catch (_) {
+      // message property not available or not a string
+    }
+    return error.toString();
+  }
+
   Future<void> _copyToClipboard(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     _showSnackBar('Copiado para a área de transferência');
@@ -318,17 +337,11 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         'Configurações atualizadas com sucesso.',
         backgroundColor: VeraProbColors.success,
       );
-    } on ProviderException catch (e) {
-      // Riverpod v3: unwrap ProviderException to get original error
-      final original = e.exception;
-      final msg = original is DomainException
-          ? original.message
-          : 'Erro: $original';
-      _showSnackBar(msg, backgroundColor: VeraProbColors.error);
-    } on DomainException catch (e) {
-      _showSnackBar(e.message, backgroundColor: VeraProbColors.error);
     } catch (e) {
-      _showSnackBar('Erro: $e', backgroundColor: VeraProbColors.error);
+      // Extract error message gracefully without domain imports (INV-13).
+      // ProviderException wraps the original error; try to access its message property.
+      final msg = _extractErrorMessage(e);
+      _showSnackBar(msg, backgroundColor: VeraProbColors.error);
     }
   }
 
