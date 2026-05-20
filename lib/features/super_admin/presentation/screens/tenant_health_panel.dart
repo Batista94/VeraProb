@@ -34,25 +34,92 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedId = ref.watch(selectedTenantIdProvider);
+    final tenantsAsync = ref.watch(tenantHealthSnapshotProvider);
+
+    // Initial select or list updates
+    if (_selectedTenant == null &&
+        selectedId != null &&
+        tenantsAsync is AsyncData<List<TenantHealthView>>) {
+      final value = tenantsAsync.value;
+      final found = value.where((t) => t.id == selectedId).firstOrNull;
+      if (found != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _selectedTenant = found);
+        });
+      } else {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            ref.read(selectedTenantIdProvider.notifier).select(null);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Organização não encontrada ou sem permissão de acesso.',
+                ),
+                backgroundColor: VeraProbColors.error,
+              ),
+            );
+          }
+        });
+      }
+    }
+
     // INV-11: Mantém _selectedTenant sincronizado quando o provider é invalidado
     // (ex: após archive/unarchive, o painel filho reflete o novo status sem cache local).
     ref.listen<AsyncValue<List<TenantHealthView>>>(
       tenantHealthSnapshotProvider,
       (_, next) {
-        if (next case AsyncData(:final value)) {
-          if (_selectedTenant == null || !mounted) return;
-          final updated = value
-              .where((t) => t.id == _selectedTenant!.id)
-              .firstOrNull;
-          if (updated != null) setState(() => _selectedTenant = updated);
+        if (next is AsyncData<List<TenantHealthView>>) {
+          final value = next.value;
+          final currentId = ref.read(selectedTenantIdProvider);
+          if (currentId != null) {
+            final found = value.where((t) => t.id == currentId).firstOrNull;
+            if (found != null) {
+              setState(() => _selectedTenant = found);
+            } else {
+              ref.read(selectedTenantIdProvider.notifier).select(null);
+              setState(() => _selectedTenant = null);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Organização não encontrada ou sem permissão de acesso.',
+                  ),
+                  backgroundColor: VeraProbColors.error,
+                ),
+              );
+            }
+          } else if (_selectedTenant != null) {
+            final updated = value
+                .where((t) => t.id == _selectedTenant!.id)
+                .firstOrNull;
+            if (updated != null) setState(() => _selectedTenant = updated);
+          }
         }
       },
     );
+
+    // Listen for provider updates to selected ID
+    ref.listen<String?>(selectedTenantIdProvider, (prev, next) {
+      if (next == null) {
+        setState(() => _selectedTenant = null);
+        return;
+      }
+      final tenantsAsync = ref.read(tenantHealthSnapshotProvider);
+      if (tenantsAsync is AsyncData<List<TenantHealthView>>) {
+        final value = tenantsAsync.value;
+        final found = value.where((t) => t.id == next).firstOrNull;
+        setState(() => _selectedTenant = found);
+      }
+    });
+
     return Row(
       children: [
         TenantListPanel(
           selectedOrgId: _selectedTenant?.id,
-          onOrgSelected: (tenant) => setState(() => _selectedTenant = tenant),
+          onOrgSelected: (tenant) {
+            ref.read(selectedTenantIdProvider.notifier).select(tenant.id);
+            setState(() => _selectedTenant = tenant);
+          },
         ),
         const VerticalDivider(width: 1),
         Expanded(

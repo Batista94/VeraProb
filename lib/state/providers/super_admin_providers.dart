@@ -211,3 +211,16 @@ AuditLogParams auditLogParams({
   toDate: toDate,
   limit: limit,
 );
+
+class SelectedTenantIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void select(String? id) => state = id;
+}
+
+/// Provider to manage the selected tenant ID in the split-view dashboard.
+final selectedTenantIdProvider =
+    NotifierProvider<SelectedTenantIdNotifier, String?>(
+      SelectedTenantIdNotifier.new,
+    );

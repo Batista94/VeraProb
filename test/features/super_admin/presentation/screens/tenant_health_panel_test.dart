@@ -800,4 +800,99 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 11. Deep Link Routing — selectedTenantIdProvider initial selection
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  group('selectedTenantIdProvider Deep Link Routing', () {
+    testWidgets(
+      'Valid tenant ID in selectedTenantIdProvider auto-selects tenant',
+      (tester) async {
+        when(() => mockRepo.getAllTenantHealth()).thenAnswer(
+          (_) async => [_tenantA, _tenantB].map(_makeSnapshot).toList(),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              superAdminRepositoryProvider.overrideWithValue(mockRepo),
+              updateOrganizationQuotaHandlerProvider.overrideWithValue(
+                mockHandler,
+              ),
+              currentSuperAdminIdProvider.overrideWithValue('super-admin-uid'),
+              authStateProvider.overrideWith(
+                (ref) => const Stream<Never>.empty(),
+              ),
+              currentSessionIdProvider.overrideWithValue('test-session'),
+              selectedTenantIdProvider.overrideWith(
+                () => FakeSelectedTenantIdNotifier('org-b'),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const Scaffold(body: TenantHealthPanel()),
+            ),
+          ),
+        );
+
+        await _pumpUntilFound(tester, find.text('Alpha Trans'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Beta Logística'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'Invalid tenant ID in selectedTenantIdProvider clears provider and shows SnackBar',
+      (tester) async {
+        when(() => mockRepo.getAllTenantHealth()).thenAnswer(
+          (_) async => [_tenantA, _tenantB].map(_makeSnapshot).toList(),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              superAdminRepositoryProvider.overrideWithValue(mockRepo),
+              updateOrganizationQuotaHandlerProvider.overrideWithValue(
+                mockHandler,
+              ),
+              currentSuperAdminIdProvider.overrideWithValue('super-admin-uid'),
+              authStateProvider.overrideWith(
+                (ref) => const Stream<Never>.empty(),
+              ),
+              currentSessionIdProvider.overrideWithValue('test-session'),
+              selectedTenantIdProvider.overrideWith(
+                () => FakeSelectedTenantIdNotifier('invalid-org'),
+              ),
+            ],
+            child: MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: const Scaffold(body: TenantHealthPanel()),
+            ),
+          ),
+        );
+
+        await _pumpUntilFound(tester, find.text('Alpha Trans'));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.textContaining('Organização não encontrada'),
+          findsOneWidget,
+        );
+        expect(
+          find.text('Selecione uma organização na lista ao lado.'),
+          findsOneWidget,
+        );
+      },
+    );
+  });
+}
+
+class FakeSelectedTenantIdNotifier extends SelectedTenantIdNotifier {
+  final String? initialValue;
+  FakeSelectedTenantIdNotifier(this.initialValue);
+
+  @override
+  String? build() => initialValue;
 }

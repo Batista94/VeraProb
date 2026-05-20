@@ -25,6 +25,7 @@ import 'infrastructure/observability/analytics_service.dart';
 import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
+import 'state/providers/super_admin_providers.dart';
 import 'state/retry_policy.dart';
 
 /// Test-only overrides to inject mocks during E2E testing.
@@ -70,6 +71,21 @@ void main() async {
       final isReviewContractRoute =
           uri.path.contains('review-contract') && queryToken != null;
       final isJustifyRoute = uri.path.contains('justify') && queryToken != null;
+      final superAdminTenantId = () {
+        final segments = uri.pathSegments;
+        if (segments.length >= 3 &&
+            segments[0] == 'super-admin' &&
+            segments[1] == 'tenants') {
+          final id = segments[2];
+          final uuidRegex = RegExp(
+            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+          );
+          if (uuidRegex.hasMatch(id)) {
+            return id;
+          }
+        }
+        return null;
+      }();
 
       runApp(
         ProviderScope(
@@ -89,6 +105,7 @@ void main() async {
             inviteToken: isInviteRoute ? queryToken : null,
             reviewContractToken: isReviewContractRoute ? queryToken : null,
             justifyToken: isJustifyRoute ? queryToken : null,
+            superAdminTenantId: superAdminTenantId,
           ),
         ),
       );
@@ -100,12 +117,14 @@ class VeraProbAdminApp extends ConsumerStatefulWidget {
   final String? inviteToken;
   final String? reviewContractToken;
   final String? justifyToken;
+  final String? superAdminTenantId;
 
   const VeraProbAdminApp({
     super.key,
     this.inviteToken,
     this.reviewContractToken,
     this.justifyToken,
+    this.superAdminTenantId,
   });
 
   @override
@@ -117,6 +136,18 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
   // expires SuperAdminGuard renders NotFoundPage (since super_admin claim
   // disappears) and user is trapped with no path back to login.
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.superAdminTenantId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref
+            .read(selectedTenantIdProvider.notifier)
+            .select(widget.superAdminTenantId);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
