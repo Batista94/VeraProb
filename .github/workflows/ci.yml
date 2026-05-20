@@ -723,6 +723,7 @@ jobs:
             exit 1
           fi
 
+          export SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
           export SUPABASE_ANON_KEY="$ANON_KEY"
           export SUPABASE_URL="http://127.0.0.1:54321"
