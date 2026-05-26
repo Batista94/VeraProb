@@ -100,6 +100,7 @@ class ImportCsvHandler {
     CsvMappingTemplate template;
     if (command.templateId != null) {
       final t = (await _templateRepo.getTemplates(
+        organizationId: command.organizationId, // INV-1
         targetEntity: command.targetEntity,
       )).firstWhere((t) => t.id == command.templateId);
       template = t;

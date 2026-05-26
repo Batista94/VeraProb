@@ -46,14 +46,22 @@ class FakeCsvMappingTemplateRepository
   }
 
   @override
-  Future<void> deleteTemplate(String templateId) async {}
+  Future<void> deleteTemplate(
+    String templateId, {
+    required String organizationId,
+  }) async {}
 
   @override
-  Future<CsvMappingTemplate?> getDefaultTemplate(String targetEntity) async =>
-      null;
+  Future<CsvMappingTemplate?> getDefaultTemplate({
+    required String organizationId,
+    required String targetEntity,
+  }) async => null;
 
   @override
-  Future<List<CsvMappingTemplate>> getTemplates({String? targetEntity}) async {
+  Future<List<CsvMappingTemplate>> getTemplates({
+    required String organizationId,
+    String? targetEntity,
+  }) async {
     return _templates
         .where((t) => targetEntity == null || t.targetEntity == targetEntity)
         .toList();

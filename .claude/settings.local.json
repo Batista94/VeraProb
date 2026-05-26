@@ -184,7 +184,8 @@
       "Bash(make check *)",
       "Bash(bash *)",
       "Bash(Read *)",
-      "Bash(Get-Content *)"
+      "Bash(Get-Content *)",
+      "Bash(make test-db *)"
     ]
   },
   "enabledMcpjsonServers": [

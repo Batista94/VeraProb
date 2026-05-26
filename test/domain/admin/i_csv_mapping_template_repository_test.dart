@@ -19,16 +19,29 @@ class _InMemoryCsvMappingTemplateRepository
   final Map<String, CsvMappingTemplate> _store = {};
 
   @override
-  Future<List<CsvMappingTemplate>> getTemplates({String? targetEntity}) async {
+  Future<List<CsvMappingTemplate>> getTemplates({
+    required String organizationId,
+    String? targetEntity,
+  }) async {
     return _store.values
-        .where((t) => targetEntity == null || t.targetEntity == targetEntity)
+        .where(
+          (t) =>
+              t.organizationId == organizationId &&
+              (targetEntity == null || t.targetEntity == targetEntity),
+        )
         .toList();
   }
 
   @override
-  Future<CsvMappingTemplate?> getDefaultTemplate(String targetEntity) async {
+  Future<CsvMappingTemplate?> getDefaultTemplate({
+    required String organizationId,
+    required String targetEntity,
+  }) async {
     final matches = _store.values.where(
-      (t) => t.targetEntity == targetEntity && t.isDefault,
+      (t) =>
+          t.organizationId == organizationId &&
+          t.targetEntity == targetEntity &&
+          t.isDefault,
     );
     return matches.isEmpty ? null : matches.first;
   }
@@ -67,7 +80,10 @@ class _InMemoryCsvMappingTemplateRepository
   }
 
   @override
-  Future<void> deleteTemplate(String templateId) async {
+  Future<void> deleteTemplate(
+    String templateId, {
+    required String organizationId,
+  }) async {
     _store.remove(templateId);
   }
 }
@@ -115,7 +131,7 @@ void main() {
     // ── getTemplates ──────────────────────────────────────────────────────────
 
     test('getTemplates returns empty list when no templates exist', () async {
-      final result = await repo.getTemplates();
+      final result = await repo.getTemplates(organizationId: 'org-test');
       expect(result, isEmpty);
     });
 
@@ -125,7 +141,7 @@ void main() {
         _buildTemplate(id: 'b', targetEntity: 'contract'),
       );
 
-      final result = await repo.getTemplates();
+      final result = await repo.getTemplates(organizationId: 'org-test');
       expect(result, hasLength(2));
     });
 
@@ -135,7 +151,10 @@ void main() {
         _buildTemplate(id: 'b', targetEntity: 'contract'),
       );
 
-      final assetOnly = await repo.getTemplates(targetEntity: 'asset');
+      final assetOnly = await repo.getTemplates(
+        organizationId: 'org-test',
+        targetEntity: 'asset',
+      );
       expect(assetOnly, hasLength(1));
       expect(assetOnly.first.targetEntity, equals('asset'));
     });
@@ -143,7 +162,10 @@ void main() {
     // ── getDefaultTemplate ────────────────────────────────────────────────────
 
     test('getDefaultTemplate returns null when no default exists', () async {
-      final result = await repo.getDefaultTemplate('asset');
+      final result = await repo.getDefaultTemplate(
+        organizationId: 'org-test',
+        targetEntity: 'asset',
+      );
       expect(result, isNull);
     });
 
@@ -157,7 +179,10 @@ void main() {
           _buildTemplate(id: 'b', targetEntity: 'asset', isDefault: true),
         );
 
-        final result = await repo.getDefaultTemplate('asset');
+        final result = await repo.getDefaultTemplate(
+          organizationId: 'org-test',
+          targetEntity: 'asset',
+        );
         expect(result, isNotNull);
         expect(result!.isDefault, isTrue);
       },
@@ -194,7 +219,7 @@ void main() {
         final staleTemplate = _buildTemplate(id: 'x', version: 1);
 
         // Perform one valid update to advance version to 2.
-        final current = await repo.getTemplates();
+        final current = await repo.getTemplates(organizationId: 'org-test');
         await repo.updateTemplate(current.first);
 
         // Now attempt with stale version 1.
@@ -212,16 +237,19 @@ void main() {
       () async {
         await repo.createTemplate(_buildTemplate(id: 'del-1'));
 
-        await repo.deleteTemplate('del-1');
+        await repo.deleteTemplate('del-1', organizationId: 'org-test');
 
-        final remaining = await repo.getTemplates();
+        final remaining = await repo.getTemplates(organizationId: 'org-test');
         expect(remaining.where((t) => t.id == 'del-1'), isEmpty);
       },
     );
 
     test('deleteTemplate on non-existent id does not throw', () async {
       // The contract does not require throwing on missing id.
-      await expectLater(repo.deleteTemplate('non-existent'), completes);
+      await expectLater(
+        repo.deleteTemplate('non-existent', organizationId: 'org-test'),
+        completes,
+      );
     });
   });
 }
