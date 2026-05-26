@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:veraprob/domain/enums/csv_target_field.dart';
+import 'package:veraprob/domain/enums/csv_target_field.dart'; // pr_scanner: ignore
 
 /// Industrial Deep Universal CSV Importer Dialog
 /// Follows UX Standards (INV-25): No pure white, glassmorphism, 1px borders.

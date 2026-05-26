@@ -131,8 +131,9 @@ class ImportCsvHandler {
       ); // Empty or headers only
     }
 
-    final headers =
-        rawRows.first.map((Object? e) => (e ?? '').toString().trim()).toList();
+    final headers = rawRows.first
+        .map((Object? e) => (e ?? '').toString().trim())
+        .toList();
     final List<Map<String, String>> mappedRows = [];
 
     for (var i = 1; i < rawRows.length; i++) {

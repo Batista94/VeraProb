@@ -1,3 +1,4 @@
+// Generated type file for typescript (synced)
 export type Json =
   | string
   | number
@@ -1739,6 +1740,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pdf_dossier_logs: {
+        Row: {
+          id: string
+          organization_id: string
+          sla_ledger_entry_id: string
+          document_hash_sha256: string
+          generated_at: string
+          generated_by: string
+        }
+        Insert: {
+          id?: string
+          organization_id: string
+          sla_ledger_entry_id: string
+          document_hash_sha256: string
+          generated_at?: string
+          generated_by: string
+        }
+        Update: {
+          id?: string
+          organization_id?: string
+          sla_ledger_entry_id?: string
+          document_hash_sha256?: string
+          generated_at?: string
+          generated_by?: string
+        }
+        Relationships: []
       }
       organizations: {
         Row: {

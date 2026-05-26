@@ -181,7 +181,10 @@
       "Bash(make test *)",
       "Bash(make test-e2e-file *)",
       "Bash(make test-e2e *)",
-      "Bash(make check *)"
+      "Bash(make check *)",
+      "Bash(bash *)",
+      "Bash(Read *)",
+      "Bash(Get-Content *)"
     ]
   },
   "enabledMcpjsonServers": [

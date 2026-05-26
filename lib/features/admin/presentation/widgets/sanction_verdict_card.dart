@@ -1,7 +1,11 @@
+import 'dart:typed_data';
+
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
+import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
@@ -9,6 +13,7 @@ import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
+import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 import 'ghost_bar_widget.dart';
@@ -37,6 +42,8 @@ class SanctionVerdictCard extends ConsumerStatefulWidget {
 class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   bool _showRejectField = false;
   final _rejectController = TextEditingController();
+  bool _isDossierLoading = false;
+  String? _dossierError;
 
   // Maps clause prefix → measurement unit for forensically accurate display.
   // VEL clauses measure km/h over-speed — never "min".
@@ -356,8 +363,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   // ── Zona 4: Forensic Seal ──────────────────────────────────────
                   _ForensicSealRow(item: item),
 
+                  // ── Zona 4.5: Dossier Download ─────────────────────────────────
+                  _DossierDownloadRow(
+                    isLoading: _isDossierLoading,
+                    onDownload: () => _onDownloadDossier(),
+                  ),
+
                   // ── Error feedback ─────────────────────────────────────────────
-                  if (actionState is AsyncError) ...[
+                  if (actionState is AsyncError || _dossierError != null) ...[
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
                       child: Container(
@@ -367,7 +380,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
-                          actionState.error.toString(),
+                          actionState is AsyncError
+                              ? actionState.error.toString()
+                              : _dossierError!,
                           style: const TextStyle(
                             fontSize: 12,
                             color: VeraProbColors.error,
@@ -542,6 +557,64 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         ),
       ),
     );
+  }
+
+  Future<void> _onDownloadDossier() async {
+    final item = widget.item;
+    final evidence = item.verdictEvidence;
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+    final entry = SlaLedgerEntry(
+      eventId: item.ledgerEntryId,
+      organizationId: item.organizationId,
+      contractId: item.contractId,
+      type: 'SANCTION_VERDICT',
+      planVersion: 0,
+      occurredAtUtc: item.createdAtUtc,
+    );
+
+    final command = GenerateForensicDossierCommand(
+      sessionId: sessionId,
+      operatorId: userId,
+      jwtOrganizationId: item.organizationId,
+      requestedOrganizationId: item.organizationId,
+      ledgerEntry: entry,
+      savingsCents: evidence.fineCents.cents,
+      mapLat: evidence.primaryEvidenceLat,
+      mapLng: evidence.primaryEvidenceLng,
+    );
+
+    setState(() {
+      _isDossierLoading = true;
+      _dossierError = null;
+    });
+
+    try {
+      final handler = ref.read(generateForensicDossierHandlerProvider);
+      final bytes = await handler.handle(command);
+      final name =
+          'dossie_forense_'
+          '${item.ledgerEntryId.substring(0, 8)}_'
+          '${DateTime.now().toUtc().millisecondsSinceEpoch}';
+      await FileSaver.instance.saveFile(
+        name: name,
+        bytes: Uint8List.fromList(bytes),
+        fileExtension: 'pdf',
+        mimeType: MimeType.pdf,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Dossiê forense baixado com sucesso.')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(
+        () => _dossierError = 'Falha ao gerar o dossiê. Tente novamente.',
+      );
+    } finally {
+      if (mounted) setState(() => _isDossierLoading = false);
+    }
   }
 }
 
@@ -844,6 +917,44 @@ class _VerdictActionRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Zona 4.5: Dossier download row — always visible, even when verdict is locked.
+/// INV-13: calls only application-layer provider, never infrastructure directly.
+class _DossierDownloadRow extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onDownload;
+
+  const _DossierDownloadRow({
+    required this.isLoading,
+    required this.onDownload,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: Tooltip(
+        message: 'Baixar Dossiê Forense Executive-Grade',
+        child: OutlinedButton.icon(
+          onPressed: isLoading ? null : onDownload,
+          icon: isLoading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.download_outlined, size: 16),
+          label: const Text('BAIXAR DOSSIÊ'),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: VeraProbColors.primary,
+            side: const BorderSide(color: VeraProbColors.primary),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          ),
+        ),
+      ),
     );
   }
 }

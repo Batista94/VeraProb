@@ -149,7 +149,7 @@ class CsvPreflightValidator {
           }
         } else if (mapping.targetField == CsvTargetField.latitude ||
             mapping.targetField == CsvTargetField.longitude) {
-          final val = double.tryParse(sanitizedValue);
+          final val = num.tryParse(sanitizedValue);
           if (val == null ||
               (mapping.targetField == CsvTargetField.latitude &&
                   (val < -90 || val > 90)) ||

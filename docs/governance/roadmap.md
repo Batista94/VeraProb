@@ -123,7 +123,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **Status:** EM ANDAMENTO
 - **Deliverables:**
   - [x] **[TECH/UX] Bloco 1: Entrada (Universal CSV Mapping Engine):** Interface de upload (`lib/features/admin/`) que permite ao usuário mapear colunas de arquivos externos para as entidades do sistema (Veículos, Contratos, Zonas) com validação prévia de erros (Pre-flight Validation) antes de gravar no Supabase.
-  - [ ] **[BIZ/UX] Bloco 2: Saída (Executive-Grade Forensic PDF Certificate):** Geração de dossiê forense (PDF) na camada de aplicação (`lib/application/reporting/`) consolidando o Mapa da ocorrência, evidências, foto do Telegram, hash SHA-256 (INV-9) e o sumário claro de "Savings BRL" (ROI).
+  - [/] **[BIZ/UX] Bloco 2: Saída (Executive-Grade Forensic PDF Certificate):** Geração de dossiê forense (PDF) na camada de aplicação e domínio (concluídos: `ForensicDossier` com `int savingsCents` [INV-4], `IForensicPdfGenerator` e `GenerateForensicDossierHandler` com isolamento de tenant [INV-1]; pendentes: infraestrutura física de renderização do PDF com MapTiler/Telegram bytes e botão de download na UI).
   - [ ] **[UX] Bloco 3: Fechamento de Débitos Críticos do Checklist:**
     - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
     - [ ] **Reverse Geocoding:** Endereços legíveis e nomes de zonas em 100% das listas ao invés de coordenadas brutas.
