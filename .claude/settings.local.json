@@ -185,7 +185,8 @@
       "Bash(bash *)",
       "Bash(Read *)",
       "Bash(Get-Content *)",
-      "Bash(make test-db *)"
+      "Bash(make test-db *)",
+      "PowerShell(ls -Name \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\application\\\\admin\\\\\" | Where-Object { $_ -match '\\\\.dart$' } | Sort-Object)"
     ]
   },
   "enabledMcpjsonServers": [

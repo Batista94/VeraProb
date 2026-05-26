@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/entities/column_mapping.dart';
 import 'package:veraprob/domain/entities/csv_mapping_template.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart';
 import 'package:veraprob/domain/shared/security_assertion_service.dart';
@@ -48,6 +49,30 @@ class CsvPreflightReport extends Equatable {
   List<Object?> get props => [totalRows, validRows, errors];
 }
 
+/// Library-private result carrier for [CsvPreflightValidator._preprocessField].
+class _FieldPreprocessResult {
+  final String? sanitizedValue;
+  final CsvRowError? error;
+  final bool _isSkip;
+
+  const _FieldPreprocessResult._({
+    this.sanitizedValue,
+    this.error,
+    bool isSkip = false,
+  }) : _isSkip = isSkip;
+
+  const _FieldPreprocessResult.skip() : this._(isSkip: true);
+
+  const _FieldPreprocessResult.withError(CsvRowError error)
+    : this._(error: error);
+
+  const _FieldPreprocessResult.value(String sanitizedValue)
+    : this._(sanitizedValue: sanitizedValue);
+
+  bool get isSkip => _isSkip;
+  bool get isError => error != null;
+}
+
 /// Pure Dart domain service to validate parsed CSV rows against a template.
 class CsvPreflightValidator {
   /// Validates a list of parsed CSV rows against the mapping template.
@@ -59,157 +84,43 @@ class CsvPreflightValidator {
     CsvMappingTemplate template,
   ) {
     final errors = <CsvRowError>[];
+    final documentTracker = <String, int>{};
     int validRowsCount = 0;
-
-    // Track documents to find duplicates in batch (e.g., CNPJ/CPF)
-    final documentTracker =
-        <String, int>{}; // document value -> first seen row index
 
     for (var i = 0; i < rows.length; i++) {
       final row = rows[i];
-      final rowIndex = i + 1; // 1-indexed for user readability
+      final rowIndex = i + 1;
       bool rowHasError = false;
 
       for (final mapping in template.columnMappings) {
-        final rawValue = row[mapping.csvHeader];
-
-        // 1. Check if source header is missing entirely
-        if (rawValue == null) {
-          errors.add(
-            CsvRowError(
-              rowIndex: rowIndex,
-              csvHeader: mapping.csvHeader,
-              targetField: mapping.targetField.dbValue,
-              errorCode: 'missing_source',
-              message: 'Coluna obrigatória ausente no arquivo CSV.',
-            ),
-          );
-          rowHasError = true;
-          continue;
-        }
-
-        final trimmedValue = rawValue.trim();
-
-        // 2. Check required field
-        if (mapping.required && trimmedValue.isEmpty) {
-          errors.add(
-            CsvRowError(
-              rowIndex: rowIndex,
-              csvHeader: mapping.csvHeader,
-              targetField: mapping.targetField.dbValue,
-              errorCode: 'required',
-              message: 'Valor obrigatório não preenchido.',
-            ),
-          );
-          rowHasError = true;
-          continue;
-        }
-
-        // If empty and not required, skip further checks for this column
-        if (trimmedValue.isEmpty) continue;
-
-        // 3. Security Checks (Emenda 1)
-        try {
-          SecurityAssertionService.assertNoCsvInjection(
-            trimmedValue,
-            mapping.csvHeader,
-          );
-        } catch (e) {
-          errors.add(
-            CsvRowError(
-              rowIndex: rowIndex,
-              csvHeader: mapping.csvHeader,
-              targetField: mapping.targetField.dbValue,
-              errorCode: 'injection_detected',
-              message:
-                  'Valor bloqueado por segurança (fórmula suspeita detectada).',
-            ),
-          );
-          rowHasError = true;
-          continue;
-        }
-
-        final sanitizedValue = SecurityAssertionService.sanitizeHtml(
-          trimmedValue,
+        final preprocessed = _preprocessField(
+          row[mapping.csvHeader],
+          mapping,
+          rowIndex,
         );
 
-        // 4. Domain-specific formatting & structural checks
-        if (mapping.targetField == CsvTargetField.capacity) {
-          if (int.tryParse(sanitizedValue) == null) {
-            errors.add(
-              CsvRowError(
-                rowIndex: rowIndex,
-                csvHeader: mapping.csvHeader,
-                targetField: mapping.targetField.dbValue,
-                errorCode: 'invalid_number',
-                message: 'Capacidade deve ser um número inteiro válido.',
-              ),
-            );
-            rowHasError = true;
-          }
-        } else if (mapping.targetField == CsvTargetField.latitude ||
-            mapping.targetField == CsvTargetField.longitude) {
-          final val = num.tryParse(sanitizedValue);
-          if (val == null ||
-              (mapping.targetField == CsvTargetField.latitude &&
-                  (val < -90 || val > 90)) ||
-              (mapping.targetField == CsvTargetField.longitude &&
-                  (val < -180 || val > 180))) {
-            errors.add(
-              CsvRowError(
-                rowIndex: rowIndex,
-                csvHeader: mapping.csvHeader,
-                targetField: mapping.targetField.dbValue,
-                errorCode: 'invalid_coordinate',
-                message:
-                    'Coordenada geolocalizada fora dos limites permitidos.',
-              ),
-            );
-            rowHasError = true;
-          }
-        } else if (mapping.targetField == CsvTargetField.operatorDocument ||
-            mapping.targetField == CsvTargetField.contractorDocument) {
-          // Simple duplication check in batch
-          if (documentTracker.containsKey(sanitizedValue)) {
-            final firstRow = documentTracker[sanitizedValue];
-            errors.add(
-              CsvRowError(
-                rowIndex: rowIndex,
-                csvHeader: mapping.csvHeader,
-                targetField: mapping.targetField.dbValue,
-                errorCode: 'duplicate_in_batch',
-                message:
-                    'Documento duplicado neste mesmo arquivo (visto na linha $firstRow).',
-              ),
-            );
-            rowHasError = true;
-          } else {
-            documentTracker[sanitizedValue] = rowIndex;
-          }
-          // Note: Real CNPJ mod-11 check logic would go here
-        } else if (mapping.targetField == CsvTargetField.startDate ||
-            mapping.targetField == CsvTargetField.endDate) {
-          // Date parsing attempt based on hint (simplified)
-          if (DateTime.tryParse(sanitizedValue) == null &&
-              mapping.formatHint == null) {
-            errors.add(
-              CsvRowError(
-                rowIndex: rowIndex,
-                csvHeader: mapping.csvHeader,
-                targetField: mapping.targetField.dbValue,
-                errorCode: 'invalid_date',
-                message:
-                    'Data inválida ou em formato não reconhecido (use padrão ISO-8601 ou especifique formato).',
-              ),
-            );
-            rowHasError = true;
-          }
+        if (preprocessed.isSkip) continue;
+
+        if (preprocessed.isError) {
+          errors.add(preprocessed.error!);
+          rowHasError = true;
+          continue;
+        }
+
+        final fieldError = _validateFieldType(
+          preprocessed.sanitizedValue!,
+          mapping,
+          rowIndex,
+          documentTracker,
+        );
+
+        if (fieldError != null) {
+          errors.add(fieldError);
+          rowHasError = true;
         }
       }
 
-      if (!rowHasError) {
-        validRowsCount++;
-      }
+      if (!rowHasError) validRowsCount++;
     }
 
     return CsvPreflightReport(
@@ -217,5 +128,178 @@ class CsvPreflightValidator {
       validRows: validRowsCount,
       errors: errors,
     );
+  }
+
+  _FieldPreprocessResult _preprocessField(
+    String? rawValue,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    if (rawValue == null) {
+      return _FieldPreprocessResult.withError(
+        CsvRowError(
+          rowIndex: rowIndex,
+          csvHeader: mapping.csvHeader,
+          targetField: mapping.targetField.dbValue,
+          errorCode: 'missing_source',
+          message: 'Coluna obrigatória ausente no arquivo CSV.',
+        ),
+      );
+    }
+
+    final trimmedValue = rawValue.trim();
+
+    if (mapping.required && trimmedValue.isEmpty) {
+      return _FieldPreprocessResult.withError(
+        CsvRowError(
+          rowIndex: rowIndex,
+          csvHeader: mapping.csvHeader,
+          targetField: mapping.targetField.dbValue,
+          errorCode: 'required',
+          message: 'Valor obrigatório não preenchido.',
+        ),
+      );
+    }
+
+    if (trimmedValue.isEmpty) return const _FieldPreprocessResult.skip();
+
+    try {
+      SecurityAssertionService.assertNoCsvInjection(
+        trimmedValue,
+        mapping.csvHeader,
+      );
+    } catch (_) {
+      return _FieldPreprocessResult.withError(
+        CsvRowError(
+          rowIndex: rowIndex,
+          csvHeader: mapping.csvHeader,
+          targetField: mapping.targetField.dbValue,
+          errorCode: 'injection_detected',
+          message:
+              'Valor bloqueado por segurança (fórmula suspeita detectada).',
+        ),
+      );
+    }
+
+    return _FieldPreprocessResult.value(
+      SecurityAssertionService.sanitizeHtml(trimmedValue),
+    );
+  }
+
+  CsvRowError? _validateFieldType(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+    Map<String, int> documentTracker,
+  ) {
+    if (mapping.targetField == CsvTargetField.capacity) {
+      return _validateCapacity(value, mapping, rowIndex);
+    }
+    if (_coordinateFields.contains(mapping.targetField)) {
+      return _validateCoordinate(value, mapping, rowIndex);
+    }
+    if (_documentFields.contains(mapping.targetField)) {
+      return _validateDocument(value, mapping, rowIndex, documentTracker);
+    }
+    if (_dateFields.contains(mapping.targetField)) {
+      return _validateDate(value, mapping, rowIndex);
+    }
+    return null;
+  }
+
+  static const Set<CsvTargetField> _coordinateFields = {
+    CsvTargetField.latitude,
+    CsvTargetField.longitude,
+  };
+  static const Set<CsvTargetField> _documentFields = {
+    CsvTargetField.operatorDocument,
+    CsvTargetField.contractorDocument,
+  };
+  static const Set<CsvTargetField> _dateFields = {
+    CsvTargetField.startDate,
+    CsvTargetField.endDate,
+  };
+
+  CsvRowError? _validateCapacity(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    if (int.tryParse(value) == null) {
+      return CsvRowError(
+        rowIndex: rowIndex,
+        csvHeader: mapping.csvHeader,
+        targetField: mapping.targetField.dbValue,
+        errorCode: 'invalid_number',
+        message: 'Capacidade deve ser um número inteiro válido.',
+      );
+    }
+    return null;
+  }
+
+  CsvRowError? _validateCoordinate(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    final val = num.tryParse(value);
+    final isInvalid =
+        val == null ||
+        (mapping.targetField == CsvTargetField.latitude &&
+            _isLatitudeOutOfBounds(val)) ||
+        (mapping.targetField == CsvTargetField.longitude &&
+            _isLongitudeOutOfBounds(val));
+    if (!isInvalid) return null;
+    return CsvRowError(
+      rowIndex: rowIndex,
+      csvHeader: mapping.csvHeader,
+      targetField: mapping.targetField.dbValue,
+      errorCode: 'invalid_coordinate',
+      message: 'Coordenada geolocalizada fora dos limites permitidos.',
+    );
+  }
+
+  static bool _isLatitudeOutOfBounds(num val) =>
+      val < -90 || val > 90; // Physical Metric - Double Required
+  static bool _isLongitudeOutOfBounds(num val) =>
+      val < -180 || val > 180; // Physical Metric - Double Required
+
+  CsvRowError? _validateDocument(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+    Map<String, int> documentTracker,
+  ) {
+    if (documentTracker.containsKey(value)) {
+      final firstRow = documentTracker[value]!; // safe: containsKey guard above
+      return CsvRowError(
+        rowIndex: rowIndex,
+        csvHeader: mapping.csvHeader,
+        targetField: mapping.targetField.dbValue,
+        errorCode: 'duplicate_in_batch',
+        message:
+            'Documento duplicado neste mesmo arquivo (visto na linha $firstRow).',
+      );
+    }
+    documentTracker[value] = rowIndex;
+    return null;
+  }
+
+  CsvRowError? _validateDate(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    if (DateTime.tryParse(value) == null && mapping.formatHint == null) {
+      return CsvRowError(
+        rowIndex: rowIndex,
+        csvHeader: mapping.csvHeader,
+        targetField: mapping.targetField.dbValue,
+        errorCode: 'invalid_date',
+        message:
+            'Data inválida ou em formato não reconhecido (use padrão ISO-8601 ou especifique formato).',
+      );
+    }
+    return null;
   }
 }
