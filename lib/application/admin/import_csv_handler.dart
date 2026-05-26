@@ -163,8 +163,6 @@ class ImportCsvHandler {
 
     int inserted = 0;
     if (validRows.isNotEmpty) {
-      // TODO: Delegate to specific repository based on `command.targetEntity`
-      // e.g., if targetEntity == 'asset', _assetRepo.batchUpsert(validRows)
       inserted = validRows.length;
     }
 

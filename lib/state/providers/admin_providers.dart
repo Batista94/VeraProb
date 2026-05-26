@@ -36,6 +36,10 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
+import 'package:veraprob/domain/admin/i_csv_mapping_template_repository.dart';
+import 'package:veraprob/infrastructure/admin/postgres_csv_mapping_template_repository.dart';
+import 'package:veraprob/application/admin/csv_preflight_validator.dart';
+import 'package:veraprob/application/admin/import_csv_handler.dart';
 
 // ── Infrastructure Providers ──────────────────────────────────────────────────
 
@@ -202,4 +206,26 @@ final orgSettingsProvider = FutureProvider.autoDispose<Organization?>((
   final orgId = ref.watch(currentOrganizationIdProvider);
   if (orgId == null) return null;
   return ref.watch(organizationRepositoryProvider).findById(orgId);
+});
+
+// ── CSV Mapping Engine Providers ─────────────────────────────────────────────
+
+final csvMappingTemplateRepositoryProvider =
+    Provider<ICsvMappingTemplateRepository>((ref) {
+      return PostgresCsvMappingTemplateRepository(
+        ref.watch(supabaseClientProvider),
+      );
+    });
+
+final csvPreflightValidatorProvider = Provider<CsvPreflightValidator>((ref) {
+  return CsvPreflightValidator();
+});
+
+final importCsvHandlerProvider = Provider<ImportCsvHandler>((ref) {
+  return ImportCsvHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    templateRepo: ref.watch(csvMappingTemplateRepositoryProvider),
+    validator: ref.watch(csvPreflightValidatorProvider),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
+  );
 });
