@@ -30,6 +30,14 @@ final _orgBId = _uuid.v4();
 final _userAEmail = 'pdfdossier_a_${_uuid.v4().substring(0, 8)}@veraprob.test';
 final _userBEmail = 'pdfdossier_b_${_uuid.v4().substring(0, 8)}@veraprob.test';
 
+// generated_by is UUID NOT NULL in the migration — must use valid UUIDs.
+final _opUserTest = _uuid.v4();
+final _opA1 = _uuid.v4();
+final _opA2 = _uuid.v4();
+final _opB1 = _uuid.v4();
+final _opB2 = _uuid.v4();
+final _opB = _uuid.v4();
+
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
 Future<void> _ensureUser(String email, {required String orgId}) async {
@@ -145,7 +153,7 @@ void main() {
           organizationId: _orgAId,
           slaLedgerEntryId: entryId,
           documentHash: hash,
-          operatorId: 'op-user-test',
+          operatorId: _opUserTest,
         );
 
         // Verify via service_role (bypass RLS to read back the row).
@@ -160,7 +168,7 @@ void main() {
         expect(row['organization_id'], equals(_orgAId));
         expect(row['sla_ledger_entry_id'], equals(entryId));
         expect(row['document_hash_sha256'], equals(hash));
-        expect(row['generated_by'], equals('op-user-test'));
+        expect(row['generated_by'], equals(_opUserTest));
       },
     );
 
@@ -187,7 +195,7 @@ void main() {
           organizationId: _orgAId,
           slaLedgerEntryId: entryId,
           documentHash: hash,
-          operatorId: 'op-1',
+          operatorId: _opA1,
         );
 
         // Second insert with same (org, entry, hash) must throw IntegrityException.
@@ -196,7 +204,7 @@ void main() {
             organizationId: _orgAId,
             slaLedgerEntryId: entryId,
             documentHash: hash,
-            operatorId: 'op-2',
+            operatorId: _opA2,
           ),
           throwsA(isA<IntegrityException>()),
         );
@@ -223,13 +231,13 @@ void main() {
           organizationId: _orgAId,
           slaLedgerEntryId: entryId,
           documentHash: 'c' * 64,
-          operatorId: 'op-1',
+          operatorId: _opB1,
         );
         await repoA.logGeneration(
           organizationId: _orgAId,
           slaLedgerEntryId: entryId,
           documentHash: 'd' * 64,
-          operatorId: 'op-2',
+          operatorId: _opB2,
         );
 
         final rows = await adminClient
@@ -263,7 +271,7 @@ void main() {
           'organization_id': _orgBId,
           'sla_ledger_entry_id': entryBId,
           'document_hash_sha256': 'e' * 64,
-          'generated_by': 'op-b',
+          'generated_by': _opB,
         });
 
         // Org-A client queries for Org-B row.
