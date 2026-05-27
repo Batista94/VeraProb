@@ -145,10 +145,14 @@ build-test-env: ## Constrói a imagem Docker de ambiente de testes e sincroniza 
 # pr-scan agora depende do selo de sincronia para evitar erros de análise
 pr-scan: .docker_deps_synced ## [Lead Reviewer] Executa o scanner determinístico completo de PR
 	$(DOCKER_RUN) -e FULL_SCAN=$(FULL_SCAN) $(IMAGE_NAME) bash scripts/security/pr_full_scanner.sh
+ifeq ($(OS),Windows_NT)
+	@echo "Bypassing auto pgTAP run on Windows host (run 'make test-db' manually)."
+else
 	@if supabase status >/dev/null 2>&1; then \
 		echo "Supabase online. Executando testes pgTAP automaticamente..."; \
 		$(MAKE) test-db; \
 	fi
+endif
 
 docs-check: ## [Governance] Valida sync entre AGENTS.md index e SSOT (.claude/rules/ci-blocks.md + .kiro/steering/lessons.md)
 	bash scripts/governance/check_docs_sync.sh
