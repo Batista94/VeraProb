@@ -22,6 +22,8 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
+import { verifyPayload } from "../shared/hmac_signer.ts";
+import { calculateClockDrift, FRAUD_DRIFT_THRESHOLD_S } from "../shared/clock_drift_helper.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -72,7 +74,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        "Access-Control-Allow-Headers": "Authorization, Content-Type, x-timestamp, x-signature",
       },
     });
   }
@@ -90,6 +92,29 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error("[super-admin-proxy] Fatal: Missing essential Supabase environment variables.");
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
+
+  // ── INV-31 Phase 1: Temporal gate (headers-only, no body consumed) ─────────
+  const xTimestamp = req.headers.get("x-timestamp");
+  const xSignature  = req.headers.get("x-signature");
+
+  if (!xTimestamp || !xSignature) {
+    console.error("[super-admin-proxy] INV-31: Missing HMAC headers");
+    return sovereigntyErrorResponse();
+  }
+
+  const clientTs = parseInt(xTimestamp, 10);
+  if (isNaN(clientTs)) {
+    console.error("[super-admin-proxy] INV-31: Non-numeric x-timestamp");
+    return sovereigntyErrorResponse();
+  }
+
+  const serverTs = Math.floor(Date.now() / 1000);
+  const drift = Math.abs(calculateClockDrift(clientTs, serverTs));
+  if (drift > FRAUD_DRIFT_THRESHOLD_S) {
+    console.error(`[super-admin-proxy] INV-31: Replay window exceeded — drift=${drift}s`);
+    return sovereigntyErrorResponse();
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   // ── Auth: verify JWT and super_admin claim ──────────────────────────────────
   const authHeader = req.headers.get("Authorization") ?? "";
@@ -178,6 +203,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
   if (!body.action) {
     return Response.json({ error: "Missing required field: action" }, { status: 400 });
   }
+
+  // ── INV-31 Phase 2: Payload HMAC verification (post-auth, post-parse) ──────
+  const signingPayload = { ...body, timestamp: clientTs };
+  const isValid = await verifyPayload(signingPayload, xSignature);
+  if (!isValid) {
+    console.error("[super-admin-proxy] INV-31: HMAC signature verification failed");
+    return sovereigntyErrorResponse();
+  }
+  // ──────────────────────────────────────────────────────────────────────────
 
   const ipAddress =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??

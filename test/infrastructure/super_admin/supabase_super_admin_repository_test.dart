@@ -292,6 +292,7 @@ void _testGetAllTenantHealth() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenAnswer(
         (_) async => FunctionResponse(
@@ -324,6 +325,7 @@ void _testGetAllTenantHealth() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenThrow(Exception('network failure'));
 
@@ -342,6 +344,7 @@ void _testGetSystemAuditLog() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenAnswer(
         (_) async => FunctionResponse(
@@ -369,6 +372,7 @@ void _testGetSystemAuditLog() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenThrow(Exception('timeout'));
 
@@ -621,6 +625,7 @@ void _testGetTenantTechnicalHealth() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenAnswer(
         (_) async => FunctionResponse(
@@ -640,6 +645,7 @@ void _testGetTenantTechnicalHealth() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenThrow(Exception('503'));
 
@@ -658,6 +664,7 @@ void _testGetEvidenceVolume() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenAnswer(
         (_) async => FunctionResponse(
@@ -677,6 +684,7 @@ void _testGetEvidenceVolume() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenThrow(Exception('unavailable'));
 
@@ -695,6 +703,7 @@ void _testCheckSchemaIntegrity() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenAnswer(
         (_) async => FunctionResponse(
@@ -714,6 +723,7 @@ void _testCheckSchemaIntegrity() {
         () => _mockFunctions.invoke(
           'super-admin-proxy',
           body: any(named: 'body'),
+          headers: any(named: 'headers'),
         ),
       ).thenThrow(Exception('edge fn down'));
 
@@ -732,7 +742,10 @@ void main() {
     _mockClient = MockSupabaseClient();
     _mockFunctions = MockFunctionsClient();
     when(() => _mockClient.functions).thenReturn(_mockFunctions);
-    _repo = SupabaseSuperAdminRepository(_mockClient);
+    _repo = SupabaseSuperAdminRepository(
+      _mockClient,
+      hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+    );
   });
 
   _testCreateOrganization();

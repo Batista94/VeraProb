@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/infrastructure/super_admin/super_admin_hmac_signer.dart';
 
 import 'package:veraprob/domain/super_admin/cnpj_company_data.dart';
 import 'package:veraprob/domain/super_admin/cnpj_exceptions.dart';
@@ -13,8 +14,18 @@ import 'package:veraprob/application/super_admin/cnpj_service_exceptions.dart';
 /// and maintain architectural sovereignty (INV-14).
 class ReceitaWsCnpjService implements ICnpjLookupService {
   final SupabaseClient _client;
+  final String _hmacRequestKey;
 
-  ReceitaWsCnpjService(this._client);
+  ReceitaWsCnpjService(this._client, {required String hmacRequestKey})
+    : _hmacRequestKey = hmacRequestKey {
+    assert(
+      _hmacRequestKey.isNotEmpty,
+      'INV-31: hmacRequestKey must not be empty',
+    );
+  }
+
+  Map<String, String> _hmacHeaders(Map<String, dynamic> body) =>
+      buildSuperAdminHmacHeaders(body: body, hmacKeyV1: _hmacRequestKey);
 
   @override
   Future<CnpjCompanyData?> lookup(String cnpjDigits) async {
@@ -28,12 +39,14 @@ class ReceitaWsCnpjService implements ICnpjLookupService {
 
     late FunctionResponse response;
     try {
+      final body = {
+        'action': 'lookup_cnpj',
+        'params': {'cnpj': cnpjDigits},
+      };
       response = await _client.functions.invoke(
         'super-admin-proxy',
-        body: {
-          'action': 'lookup_cnpj',
-          'params': {'cnpj': cnpjDigits},
-        },
+        body: body,
+        headers: _hmacHeaders(body),
       );
     } on TimeoutException {
       throw ServiceTimeoutException('CNPJ lookup timed out', cnpj: cnpjDigits);

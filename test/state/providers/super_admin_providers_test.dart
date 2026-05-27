@@ -105,7 +105,12 @@ void main() {
       () {
         final mockClient = MockSupabaseClient();
         final container = ProviderContainer.test(
-          overrides: [supabaseClientProvider.overrideWithValue(mockClient)],
+          overrides: [
+            supabaseClientProvider.overrideWithValue(mockClient),
+            hmacRequestKeyProvider.overrideWithValue(
+              'test-hmac-key-v1-32chars-padding00',
+            ),
+          ],
         );
 
         // Reading the provider should not throw — proves DI wiring is correct
@@ -120,7 +125,12 @@ void main() {
       () {
         final mockClient = MockSupabaseClient();
         final container = ProviderContainer.test(
-          overrides: [supabaseClientProvider.overrideWithValue(mockClient)],
+          overrides: [
+            supabaseClientProvider.overrideWithValue(mockClient),
+            hmacRequestKeyProvider.overrideWithValue(
+              'test-hmac-key-v1-32chars-padding00',
+            ),
+          ],
         );
 
         final service = container.read(cnpjLookupServiceProvider);

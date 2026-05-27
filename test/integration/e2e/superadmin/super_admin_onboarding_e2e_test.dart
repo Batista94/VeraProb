@@ -79,7 +79,10 @@ void main() async {
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
         );
-        repo = SupabaseSuperAdminRepository(serviceRoleClient);
+        repo = SupabaseSuperAdminRepository(
+          serviceRoleClient,
+          hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+        );
         handler = CreateOrganizationHandler(
           repo,
           serviceRoleClient,

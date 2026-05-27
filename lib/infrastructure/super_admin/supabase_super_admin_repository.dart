@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/infrastructure/super_admin/super_admin_hmac_signer.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/super_admin/archive_organization_command.dart';
 import 'package:veraprob/domain/super_admin/create_organization_command.dart';
@@ -24,8 +25,20 @@ class SupabaseSuperAdminRepository
     with PostgresErrorInterceptor
     implements ISuperAdminRepository {
   final SupabaseClient _authenticatedClient;
+  final String _hmacRequestKey;
 
-  SupabaseSuperAdminRepository(this._authenticatedClient);
+  SupabaseSuperAdminRepository(
+    this._authenticatedClient, {
+    required String hmacRequestKey,
+  }) : _hmacRequestKey = hmacRequestKey {
+    assert(
+      _hmacRequestKey.isNotEmpty,
+      'INV-31: hmacRequestKey must not be empty',
+    );
+  }
+
+  Map<String, String> _hmacHeaders(Map<String, dynamic> body) =>
+      buildSuperAdminHmacHeaders(body: body, hmacKeyV1: _hmacRequestKey);
 
   @override
   Future<({String orgId, String plaintextSecret})> createOrganization(
@@ -115,9 +128,11 @@ class SupabaseSuperAdminRepository
   @override
   Future<List<TenantHealthSnapshot>> getAllTenantHealth() async {
     try {
+      final body = {'action': 'list_tenant_health'};
       final response = await _authenticatedClient.functions.invoke(
         'super-admin-proxy',
-        body: {'action': 'list_tenant_health'},
+        body: body,
+        headers: _hmacHeaders(body),
       );
       final rows =
           (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
@@ -159,9 +174,11 @@ class SupabaseSuperAdminRepository
     if (toDate != null) params['to_date'] = toDate.toIso8601String();
 
     try {
+      final body = {'action': 'get_audit_log', 'params': params};
       final response = await _authenticatedClient.functions.invoke(
         'super-admin-proxy',
-        body: {'action': 'get_audit_log', 'params': params},
+        body: body,
+        headers: _hmacHeaders(body),
       );
       final rows =
           (response.data as Map<String, dynamic>)['data'] as List<dynamic>;
@@ -381,12 +398,14 @@ class SupabaseSuperAdminRepository
   @override
   Future<Map<String, dynamic>> getTenantTechnicalHealth(String orgId) async {
     try {
+      final body = {
+        'action': 'get_tenant_technical_health',
+        'params': {'organization_id': orgId},
+      };
       final response = await _authenticatedClient.functions.invoke(
         'super-admin-proxy',
-        body: {
-          'action': 'get_tenant_technical_health',
-          'params': {'organization_id': orgId},
-        },
+        body: body,
+        headers: _hmacHeaders(body),
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
@@ -404,12 +423,14 @@ class SupabaseSuperAdminRepository
   @override
   Future<Map<String, dynamic>> getEvidenceVolume(String orgId) async {
     try {
+      final body = {
+        'action': 'get_evidence_volume',
+        'params': {'organization_id': orgId},
+      };
       final response = await _authenticatedClient.functions.invoke(
         'super-admin-proxy',
-        body: {
-          'action': 'get_evidence_volume',
-          'params': {'organization_id': orgId},
-        },
+        body: body,
+        headers: _hmacHeaders(body),
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;
@@ -450,12 +471,14 @@ class SupabaseSuperAdminRepository
   @override
   Future<Map<String, dynamic>> checkSchemaIntegrity(String orgId) async {
     try {
+      final body = {
+        'action': 'check_schema_integrity',
+        'params': {'organization_id': orgId},
+      };
       final response = await _authenticatedClient.functions.invoke(
         'super-admin-proxy',
-        body: {
-          'action': 'check_schema_integrity',
-          'params': {'organization_id': orgId},
-        },
+        body: body,
+        headers: _hmacHeaders(body),
       );
       return (response.data as Map<String, dynamic>)['data']
           as Map<String, dynamic>;

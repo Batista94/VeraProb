@@ -50,6 +50,12 @@ class PostgresTestConfig {
   /// Service-role key — bypasses RLS.
   static String get serviceRoleKey => _getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
+  /// HMAC signing key for super-admin-proxy requests (INV-31).
+  static String get hmacSecretKeyV1 => _getEnv('HMAC_SECRET_KEY_V1');
+
+  /// Base URL for Edge Functions running locally.
+  static String get edgeFunctionsUrl => '$supabaseUrl/functions/v1';
+
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.
   static const String testOrgId = '00000000-0000-0000-0000-000000000001';
