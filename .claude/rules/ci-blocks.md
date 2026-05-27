@@ -222,3 +222,65 @@ final loginBtn = find.widgetWithText(ElevatedButton, 'ACESSAR SISTEMA');
 // or
 final email = find.byKey(const ValueKey('admin-lock-email-field'));
 ```
+
+---
+
+## 11. SECURITY-DEFINER-VIEW: View bypasses RLS (INV-2, INV-22)
+
+**Problem:** `CREATE VIEW` or `CREATE OR REPLACE VIEW` without `WITH (security_invoker = true)`. In Supabase, views default to SECURITY DEFINER — they execute with the view owner's permissions and **bypass RLS on underlying tables**. Any authenticated user querying the view receives all tenants' data unfiltered.
+
+**Fix:** All views in the `public` schema MUST use `WITH (security_invoker = true)`.
+
+```sql
+-- Wrong
+CREATE OR REPLACE VIEW public.v_something AS
+SELECT organization_id, amount_cents FROM public.some_table;
+
+-- Right
+CREATE OR REPLACE VIEW public.v_something
+  WITH (security_invoker = true)
+AS
+SELECT organization_id, amount_cents FROM public.some_table;
+```
+
+Verify after applying:
+```sql
+SELECT reloptions FROM pg_class
+WHERE relnamespace = 'public'::regnamespace AND relname = 'v_something';
+-- Must contain: security_invoker=true
+```
+
+> **Note:** `CREATE OR REPLACE VIEW` cannot change the `security_invoker` option on an **existing** view in some PostgreSQL versions. Use `DROP VIEW IF EXISTS` + `CREATE VIEW` to guarantee the option is applied.
+
+---
+
+## 12. PARTITION-RLS-GAP: RLS not inherited by child partitions (INV-2, INV-22)
+
+**Problem:** `ENABLE ROW LEVEL SECURITY` on a parent partitioned table does **NOT** cascade to child partitions created via `CREATE TABLE ... PARTITION OF`. Clients querying a partition directly by name (e.g., `SELECT * FROM public.table_p0`) bypass the parent's RLS entirely — full cross-tenant read/write for any authenticated user.
+
+**Fix:** Every `CREATE TABLE ... PARTITION OF` block MUST be immediately followed by its own RLS + policy block:
+
+```sql
+CREATE TABLE public.parent_p0 PARTITION OF public.parent
+  FOR VALUES WITH (modulus 4, remainder 0);
+
+-- MANDATORY: mirror parent RLS on every partition
+ALTER TABLE public.parent_p0 ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Tenant Isolation: parent_p0" ON public.parent_p0;
+CREATE POLICY "Tenant Isolation: parent_p0"
+  ON public.parent_p0 FOR ALL
+  USING  (organization_id = ((auth.jwt() -> 'app_metadata' ->> 'org_id')::UUID))
+  WITH CHECK (organization_id = ((auth.jwt() -> 'app_metadata' ->> 'org_id')::UUID));
+```
+
+Repeat for every partition (p0 … pN). Verify all partitions have `rowsecurity = true`:
+
+```sql
+SELECT relname, relrowsecurity
+FROM pg_class
+WHERE relname LIKE 'parent_%'
+  AND relnamespace = 'public'::regnamespace
+ORDER BY relname;
+-- Every row must have relrowsecurity = true
+```

@@ -256,9 +256,6 @@ class _LinkableActorRow extends StatelessWidget {
   }
 
   /// Navigates to the SuperAdmin profile screen.
-  ///
-  /// TODO: Replace with actual navigation once the SuperAdmin profile screen
-  /// is implemented.
   void _navigateToSuperAdminProfile(BuildContext context, String superAdminId) {
     debugPrint('Navigate to SuperAdmin profile: $superAdminId');
   }

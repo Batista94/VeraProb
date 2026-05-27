@@ -15,7 +15,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 | ID | Category | Rule |
 |----|----------|------|
 | INV-1 | Identity Sovereignty | Every database query and application flow MUST filter by `organization_id`. The application layer MUST validate that the `organization_id` matches the JWT claim before processing (Fail-Fast). |
-| INV-2 | RLS Hardening | Policies must use `auth.jwt() ->> 'organization_id'`. NO `auth.uid()`. |
+| INV-2 | RLS Hardening | Policies must use `auth.jwt() ->> 'organization_id'`. NO `auth.uid()`. **Views:** ALL public-schema views MUST be created with `WITH (security_invoker = true)` (PostgreSQL 15+); omitting it defaults to SECURITY DEFINER, which bypasses RLS on underlying tables (INV-22 violation). **Partitions:** `ENABLE ROW LEVEL SECURITY` on a parent partitioned table does NOT cascade to child partitions — every `CREATE TABLE ... PARTITION OF` MUST immediately enable RLS and mirror the parent policy on the child. |
 | INV-3 | Ledger Integrity | Financial/Verdict tables are APPEND-ONLY. NO `UPDATE` or `DELETE`. |
 | INV-4 | Money Type | Use `BIGINT` (cents) for DB; `int` for DTOs; `Money` VO for Domain. |
 | INV-5 | BPS Precision | Symmetric Rounding: (cents * bps + 5000) ~/ 10000. Forbid raw truncation. |

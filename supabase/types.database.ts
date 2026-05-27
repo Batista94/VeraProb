@@ -1,3 +1,4 @@
+Connecting to db 5432
 export type Json =
   | string
   | number
@@ -334,6 +335,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contract_review_tokens_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contract_rule_sets: {
@@ -368,6 +376,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_rule_sets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -501,6 +516,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contractors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contracts: {
@@ -591,6 +613,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contracts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contractual_evaluation_traces: {
@@ -634,6 +663,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractual_evaluation_traces_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -777,6 +813,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "contractual_financial_snapshot_v2_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       contractual_service_executions: {
@@ -873,6 +916,48 @@ export type Database = {
           },
         ]
       }
+      csv_mapping_templates: {
+        Row: {
+          column_mappings: Json
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_default: boolean
+          name: string
+          organization_id: string
+          target_entity: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          column_mappings?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          organization_id: string
+          target_entity: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          column_mappings?: Json
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          organization_id?: string
+          target_entity?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           archived_at_utc: string | null
@@ -917,6 +1002,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_drivers_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1002,6 +1094,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "execution_state_transitions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1231,6 +1330,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "impersonation_sessions_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ingestion_alerts: {
@@ -1274,6 +1380,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingestion_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1328,6 +1441,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1559,6 +1679,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "operational_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "operational_alerts_trace_id_fkey"
             columns: ["trace_id"]
             isOneToOne: false
@@ -1642,6 +1769,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "operational_zones_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       org_api_secrets: {
@@ -1685,6 +1819,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_api_secrets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1738,6 +1879,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "org_quota_warnings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       organizations: {
@@ -1756,6 +1904,7 @@ export type Database = {
           external_id: string | null
           id: string
           is_active: boolean | null
+          last_schema_check_at: string | null
           legal_name: string | null
           logo_url: string | null
           max_active_contracts: number | null
@@ -1763,6 +1912,8 @@ export type Database = {
           name: string
           organization_type: string | null
           plan_type: string
+          schema_integrity_status: string
+          schema_version: string
           status: string
           storage_quota_gb: number
           timezone: string | null
@@ -1784,6 +1935,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           is_active?: boolean | null
+          last_schema_check_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
           max_active_contracts?: number | null
@@ -1791,6 +1943,8 @@ export type Database = {
           name: string
           organization_type?: string | null
           plan_type?: string
+          schema_integrity_status?: string
+          schema_version?: string
           status?: string
           storage_quota_gb?: number
           timezone?: string | null
@@ -1812,6 +1966,7 @@ export type Database = {
           external_id?: string | null
           id?: string
           is_active?: boolean | null
+          last_schema_check_at?: string | null
           legal_name?: string | null
           logo_url?: string | null
           max_active_contracts?: number | null
@@ -1819,11 +1974,40 @@ export type Database = {
           name?: string
           organization_type?: string | null
           plan_type?: string
+          schema_integrity_status?: string
+          schema_version?: string
           status?: string
           storage_quota_gb?: number
           timezone?: string | null
           tool_cost_cents?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      pdf_dossier_logs: {
+        Row: {
+          document_hash_sha256: string
+          generated_at: string
+          generated_by: string
+          id: string
+          organization_id: string
+          sla_ledger_entry_id: string
+        }
+        Insert: {
+          document_hash_sha256: string
+          generated_at?: string
+          generated_by: string
+          id?: string
+          organization_id: string
+          sla_ledger_entry_id: string
+        }
+        Update: {
+          document_hash_sha256?: string
+          generated_at?: string
+          generated_by?: string
+          id?: string
+          organization_id?: string
+          sla_ledger_entry_id?: string
         }
         Relationships: []
       }
@@ -1923,6 +2107,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "provider_api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       raw_telemetry_payloads: {
@@ -2002,6 +2193,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_routes_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2143,6 +2341,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_manifests_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
           {
@@ -2666,6 +2871,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sla_audit_ledger_v2_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sla_templates: {
@@ -2709,6 +2921,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sla_templates_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -2838,6 +3057,13 @@ export type Database = {
             columns: ["target_org_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "super_admin_access_log_target_org_id_fkey"
+            columns: ["target_org_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3374,6 +3600,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tenant_billing_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       trips_audit: {
@@ -3423,6 +3656,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_trips_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
           {
@@ -3501,6 +3741,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       vehicles: {
@@ -3555,6 +3802,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_vehicles_organization"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -3600,6 +3854,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "super_admin_tenant_health_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
             referencedColumns: ["id"]
           },
         ]
@@ -3695,6 +3956,13 @@ export type Database = {
             referencedRelation: "super_admin_tenant_health_view"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "invitations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "super_admin_tenant_technical_health_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       mv_evidence_volume: {
@@ -3728,6 +3996,16 @@ export type Database = {
           status: string | null
           tool_cost_cents: number | null
           updated_at: string | null
+        }
+        Relationships: []
+      }
+      super_admin_tenant_technical_health_view: {
+        Row: {
+          id: string | null
+          last_check_at: string | null
+          replication_status: string | null
+          schema_integrity_status: string | null
+          schema_version: string | null
         }
         Relationships: []
       }
@@ -3924,6 +4202,7 @@ export type Database = {
       }
       check_mfa_lockout: { Args: { p_user_id: string }; Returns: Json }
       check_rls_enabled: { Args: { p_table_name: string }; Returns: boolean }
+      check_schema_integrity: { Args: { p_org_id: string }; Returns: Json }
       check_telegram_rate_limit: {
         Args: { p_chat_id: number }
         Returns: boolean
@@ -5813,3 +6092,5 @@ export const Constants = {
   },
 } as const
 
+A new version of Supabase CLI is available: v2.101.0 (currently installed v2.95.4)
+We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli

@@ -7,7 +7,7 @@ Details: .claude/rules/forensic-standards.original.md
 | ID | Rule |
 |----|------|
 | 1 | org_id filter ALL flows/queries. Validate JWT claim (Fail-Fast). |
-| 2 | RLS: auth.jwt() organization_id. NO auth.uid(). |
+| 2 | RLS: auth.jwt() organization_id. NO auth.uid(). Views MUST use `WITH (security_invoker = true)`. Partitions MUST each have their own `ENABLE ROW LEVEL SECURITY` + mirrored policy (CI blocks #11, #12). |
 | 3 | Ledger: APPEND-ONLY. NO UPDATE/DELETE. |
 | 4 | Money: BIGINT cents (DB); int (DTO); Money VO (Domain). |
 | 5 | Round: (cents * bps + 5000) ~/ 10000. No raw truncation. |

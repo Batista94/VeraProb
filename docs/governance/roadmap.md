@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-04-01
-**Current Status:** Phase 10.4 — OCC UX Polish · [NEXT: 10.5 - First Pilot]
+**Current Status:** Phase 10.4.B — First Tenant Activation Gate · [NEXT: 10.5 - First Pilot]
 **Arquivo Histórico:** [roadmap_archive.md](roadmap_archive.md)
 
 ---
@@ -22,21 +22,21 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 8/19 itens de Readiness concluídos.
+**Status:** EM ANDAMENTO — 12/32 itens de Readiness concluídos.
 Verificar checklists detalhados de readiness e testes manuais em [roadmap_archive.md](roadmap_archive.md#milestone-gate-ready-for-first-tenant).
 
 ### Checklist "READY FOR FIRST TENANT"
 
 - [ ] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI.
 - [x] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
-- [ ] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
+- [x] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
 - [ ] **Importador de contratos via CSV** com validador de dados.
 - [ ] **Importador Universal de CSV** funcional com mapeamento persistente por tenant.
 - [ ] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo.
-- [ ] **Bot de evidências (Telegram)** integrado à Fila Auditora.
+- [x] **Bot de evidências (Telegram)** integrado à Fila Auditora.
 - [ ] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA.
 - [x] **RLS validada** e testada contra vazamento de dados entre tenants.
-- [ ] **Fluxo de convite e ativação de conta** para novos administradores funcional.
+- [x] **Fluxo de convite e ativação de conta** para novos administradores funcional.
 - [x] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
 - [x] **Tooltips de interface** — `InfoTooltip` global widget criado; campos No-Show e geofence migrados ✅ *(cobertura 100% dos campos complexos pendente de auditoria final)*
 - [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
@@ -59,7 +59,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [ ] **Self-Service Onboarding:** Tenant creation flow with automated limit configuration.
 - [ ] **Evidence Proof:** Functional "Generate Forensic Evidence" button in each verdict.
 - [ ] **Legal Gate:** System access block pending specific telemetry LGPD acceptance.
-- [ ] **Login Localization:** Login screen 100% in PT-BR and free of technical IDs in the visual preview.
+- [x] **Login Localization:** Login screen 100% in PT-BR and free of technical IDs in the visual preview.
 
 ---
 
@@ -99,19 +99,17 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
   - [x] **WS-1: Forensic Authority Language & Sealed Verdict Lock** (Verbs forensicized, 🔒 locked state implemented, Pillar C audit trail active).
   - [x] **WS-2: Predictive SLA Breach Alerts** (Dynamic Risk Buffer + Risk Thermometer visual).
   - [x] **WS-3: Ingestion Health & Confidence Score** (Signal Integrity monitor + Double confirmation logic).
-  - [x] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards) ✅.
-  - [x] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click) ✅.
+  - [x] **WS-4: Telegram Evidence Bot** (Deno Edge Function + Hot-linking to Verdict Cards).
+  - [x] **WS-5: Telemetry Map-Sync** (Reactive repositioning on click).
   - [x] **WS-6: Recurrence & Contractual Context** (Infringement history on cards).
-  - [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente.
-  - [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards).
-  - [ ] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card.
+  - [ ] **WS-7: Operational Macros (1-Click Verdict):** (Movido para a Fase 10.8)
+  - [ ] **WS-8: Keyboard-First Navigation:** (Movido para a Fase 10.8)
+  - [ ] **WS-9: Signal Integrity Monitor:** (Movido para a Fase 10.8)
 
 - Cognitive load audit · Verdict traceable in ≤1 click · WCAG 2.2 AA.
 - [x] **[UX] Forensic Audit Context:** Enriquecer o card da Fila Auditora com Histórico de Recorrência (ex: '3ª infração deste veículo/motorista no mês') e visualização comparativa direta entre o dado observado e o limite contratual.
 - [x] **[UX] Actionable Verdicts:** Alterar linguagem passiva ('Validar/Rejeitar') para linguagem de autoridade ('Selar Veredito' / 'Recusar Veredito' / 'Solicitar Prova Forense').
 - **[BIZ] Telegram Evidence Bot Integration:** Gateway gratuito para motoristas enviarem fotos/provas preventivas diretamente para o card de auditoria via Telegram API (Custo R$ 0).
-- **[UX] Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz Policial', 'Parada Autorizada') que preenchem justificativa e anexam regras de tolerância automaticamente.
-- **[UX] Ingestion Health Monitor:** Widget de integridade que sinaliza 'Gaps' de sinal ou falhas de hardware antes da geração do relatório final.
 - **[UX] Invite Link UX Masking:** Replace tokenized raw URLs with a professional invite modal featuring "Copy to Clipboard" and "Access Credential" visual.
 - **[BIZ] Contextual Legal Acceptance:** Block first access until Tenant Admin accepts Terms of Use and Privacy Policy (Telemetry-specific).
 - **[UX] Predictive SLA Breach Alerts:** Monitoring interface for imminent risk (ETA vs SLA calculation) to allow manager action before contract violation.
@@ -119,6 +117,17 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization.
 - **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard.
 - **[UX] Empty State Shortcuts:** Replace "No records" placeholders with quick action cards and contextual onboarding guides.
+
+### [ ] Phase 10.4.B — Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída)
+
+- **Status:** EM ANDAMENTO
+- **Deliverables:**
+  - [x] **[TECH/UX] Bloco 1: Entrada (Universal CSV Mapping Engine):** Interface de upload (`lib/features/admin/`) que permite ao usuário mapear colunas de arquivos externos para as entidades do sistema (Veículos, Contratos, Zonas) com validação prévia de erros (Pre-flight Validation) antes de gravar no Supabase.
+  - [/] **[BIZ/UX] Bloco 2: Saída (Executive-Grade Forensic PDF Certificate):** Geração de dossiê forense (PDF) na camada de aplicação e domínio (concluídos: `ForensicDossier` com `int savingsCents` [INV-4], `IForensicPdfGenerator` e `GenerateForensicDossierHandler` com isolamento de tenant [INV-1]; pendentes: infraestrutura física de renderização do PDF com MapTiler/Telegram bytes e botão de download na UI).
+  - [ ] **[UX] Bloco 3: Fechamento de Débitos Críticos do Checklist:**
+    - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
+    - [ ] **Reverse Geocoding:** Endereços legíveis e nomes de zonas em 100% das listas ao invés de coordenadas brutas.
+    - [ ] **Audit Log (Meta-Audit):** Registro de alterações críticas nos modelos de SLA para governança.
 
 ### [ ] Phase 10.5 — First Pilot Tenant Onboarding
 
@@ -128,7 +137,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 
 *This phase separates simple SaaS clones from a hardened forensic auditing tool.*
 
-- **[BIZ] Executive-Grade 'Audit Certificate' PDF:** Motor de PDF (Dart pdf package) para gerar dossiês com Sumário de ROI, Selo de Autenticidade e Hash SHA-256 (INV-23) em destaque. Refatoração total do exportador de relatórios com Branding do Tenant (Logo/Cores) e remoção de IDs técnicos.
+- **[BIZ] Executive-Grade 'Audit Certificate' PDF:** (Priorizado para a Fase 10.4.B)
 - **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
 - **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
 - **Automated Billing Provisioning (Stripe/Stax):** Integration/placeholder for billing account provisioning at Org creation.
@@ -137,16 +146,19 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
 - **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
 - [ ] **[BIZ] Immutable Rule Snapshot:** No momento do veredito, persistir o snapshot JSON da regra de SLA aplicada para garantir integridade jurídica retroativa.
-- [ ] **[BIZ] Executive PDF Certificate:** Gerador de dossiê forense (pdf) com Mapa, Foto do Telegram, Hash SHA-256 e Sumário de ROI (Savings BRL).
+- [ ] **[BIZ] Executive PDF Certificate:** (Priorizado para a Fase 10.4.B)
 
 ### [ ] Phase 10.7 — Operational Automation & Data Ingestion
 
-- [ ] **[TECH] Universal CSV Mapping Engine:** Interface de upload que permite ao usuário mapear colunas de arquivos externos para as entidades do sistema (Contracts, Vehicles, Zones).
+- [ ] **[TECH] Universal CSV Mapping Engine:** (Priorizado para a Fase 10.4.B)
 - [ ] **[UX] Smart Defaulting:** Sistema de preenchimento inteligente de formulários baseado nos últimos registros inseridos (Redução de 60% no tempo de cadastro).
 - [ ] **[UX] Bulk Action Mode:** Seleção múltipla de infrações na Fila Auditora para tratamento em massa (Batch Processing).
 
 ### [ ] Phase 10.8 — Governance & Dispute
 
+- [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente. (Pausado da Fase 10.4)
+- [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards). (Pausado da Fase 10.4)
+- [ ] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
 - [ ] **[BIZ] Forensic Dispute Portal (ReadOnly):** Tela externa (link temporário/tokenizado) para que transportadores visualizem as evidências contra eles sem precisar de login no sistema core.
 - [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
 - **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
