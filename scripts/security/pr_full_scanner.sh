@@ -539,7 +539,7 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
   # 9.3: Test Presence Gate (70% Threshold for Critical Files)
   # BLOCK on main / PR-to-main; WARN on feature branches.
   CRITICAL_FILES=$(echo "$CHANGED_FILES" | grep -E "^lib/(domain|application|infrastructure|state)/" | grep -vE "\.(g|freezed)\.dart$" || true)
-  TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v '^[[:space:]]*$' | grep -c . || echo "0")
+  TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v '^[[:space:]]*$' | grep -c . || true)
 
   if [[ "$TOTAL_CRITICAL" -gt 0 ]]; then
     if [[ "$TEST_GATE_BLOCK" == "true" ]]; then
