@@ -290,17 +290,16 @@ void _testCrossOrgSelect() {
   test(
     'Case 15 — INV-6: Authenticated users cannot read super_admin_mfa_lockouts',
     () async {
-      // Table has RLS enabled but no policy for the authenticated role.
-      // PostgreSQL returns 0 rows (deny-by-default) — not an exception.
-      final result = await _orgAClient
-          .from('super_admin_mfa_lockouts')
-          .select('user_id')
-          .limit(1);
+      // Table has RLS enabled and all grants revoked from authenticated role.
+      // PostgreSQL returns permission denied (42501) exception.
       expect(
-        result,
-        isEmpty,
-        reason:
-            'super_admin_mfa_lockouts must be invisible to authenticated users (INV-6)',
+        () => _orgAClient
+            .from('super_admin_mfa_lockouts')
+            .select('user_id')
+            .limit(1),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+        ),
       );
     },
   );
@@ -309,15 +308,14 @@ void _testCrossOrgSelect() {
   test(
     'Case 16 — INV-6: Authenticated users cannot read super_admin_recovery_codes',
     () async {
-      final result = await _orgAClient
-          .from('super_admin_recovery_codes')
-          .select('id')
-          .limit(1);
       expect(
-        result,
-        isEmpty,
-        reason:
-            'super_admin_recovery_codes must be invisible to authenticated users (INV-6)',
+        () => _orgAClient
+            .from('super_admin_recovery_codes')
+            .select('id')
+            .limit(1),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+        ),
       );
     },
   );

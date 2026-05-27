@@ -73,12 +73,11 @@ void main() {
         PostgresTestConfig.supabaseAnonKey,
       );
       try {
-        final rows = await anon.from('system_audit_log').select();
         expect(
-          rows,
-          isEmpty,
-          reason:
-              'anon JWT lacks user_role=admin → SELECT policy must yield 0 rows',
+          () => anon.from('system_audit_log').select(),
+          throwsA(
+            isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+          ),
         );
       } finally {
         await anon.dispose();
