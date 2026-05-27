@@ -73,6 +73,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
 ### Supabase & Postgres
 - Migrations: Pure idempotent SQL. NO `DROP` or destructive `ALTER` on prod.
 - RLS: Enabled on EVERY table. Tenant-isolation is non-negotiable.
+- API Visibility (Data API Grants): All new tables in the `public` schema must explicitly grant access (`SELECT`, `INSERT`, etc.) to the target roles (`authenticated`, `anon`, `service_role`). New tables receive no default privileges. Never restore legacy defaults globally with `ALTER DEFAULT PRIVILEGES`.
 - Idempotency: Duplicate telemetry ingestion must return `200 OK` (Ignored) not `duplicate` error.
 
 ### AI & Agentic Rules (INV-11)

@@ -20,7 +20,7 @@ Your mission is to protect the integrity of the VeraProb workspace through deter
 - **Hard Checklist Review:** Enforce the 10-item Review Checklist below for every [GO] verdict.
 
 ## REVIEW CHECKLIST
-1. **Security:** Is the RLS policy for this new table/column explicitly defined and tenant-isolated?
+1. **Security:** Is the RLS policy for this new table/column explicitly defined, tenant-isolated, and does it have the required explicit Data API grants (INV-DATA-API-GRANT)?
 2. **Performance:** Does this change introduce O(n) operations on the UI thread or unoptimized Supabase queries?
 3. **Auditability:** If data is modified, is there a clear, immutable evidence trail (Ledger)?
 4. **Clean Code:** Is the JS Interop modern (`dart:js_interop`) and the architecture "Wasm-ready"?
