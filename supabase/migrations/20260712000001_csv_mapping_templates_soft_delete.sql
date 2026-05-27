@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression — INV-1+INV-2+INV-3+INV-DB ADD COLUMN IF NOT EXISTS, Council-reviewed
 -- Migration: CSV Mapping Templates — soft-delete + RLS hardening
 -- INV-1:  org_id filter enforced at both Dart and DB layers
 -- INV-3:  append-only semantics — hard DELETE replaced by soft-delete

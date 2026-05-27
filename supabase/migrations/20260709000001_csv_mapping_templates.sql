@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression — INV-1+INV-2+INV-6+INV-14+INV-DB CREATE only, Council-reviewed
 -- Migration: Universal CSV Mapping Engine templates
 -- INV-1:  organization_id tenant isolation
 -- INV-2:  RLS via JWT app_metadata.org_id

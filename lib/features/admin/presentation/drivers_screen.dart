@@ -5,6 +5,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/features/admin/providers/drivers_provider.dart';
+import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 import 'widgets/driver_form_drawer.dart';
 import 'widgets/telegram_binding_dialog.dart';
 
@@ -172,6 +173,17 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                   : Colors.grey.shade600,
             ),
           ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.upload_file_outlined),
+          tooltip: 'Importar CSV',
+          onPressed: () async {
+            final imported = await showUniversalCsvImporter(
+              context,
+              targetEntity: 'operator',
+            );
+            if (imported) ref.invalidate(driversListProvider);
+          },
         ),
         const SizedBox(width: 8),
         if (userRole.hasPermission(UserRole.admin))

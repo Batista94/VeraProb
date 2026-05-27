@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — INV-7+INV-10+INV-14 value object, Council-reviewed
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';

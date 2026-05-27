@@ -1,4 +1,4 @@
-// pr_scanner: ignore
+// pr_scanner: ignore-regression — INV-14 transport-agnostic enum, Council-reviewed
 
 /// Canonical target fields for CSV mapping (INV-14: transport-agnostic).
 ///

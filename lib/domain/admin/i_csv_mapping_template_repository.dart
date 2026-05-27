@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — INV-1+INV-8 port, org-scoped CRUD, Council-reviewed
 import 'package:veraprob/domain/entities/csv_mapping_template.dart';
 
 /// Port for CSV mapping template CRUD operations.

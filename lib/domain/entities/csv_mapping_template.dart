@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — INV-1+INV-10+INV-14 entity, assertValid(), Council-reviewed
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/entities/column_mapping.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';

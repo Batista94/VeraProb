@@ -40,7 +40,7 @@ final _opB = _uuid.v4();
 
 // ── Auth helpers ──────────────────────────────────────────────────────────────
 
-Future<void> _ensureUser(String email, {required String orgId}) async {
+Future<String> _ensureUser(String email, {required String orgId}) async {
   final res = await http.post(
     Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
     headers: {
@@ -55,9 +55,40 @@ Future<void> _ensureUser(String email, {required String orgId}) async {
       'app_metadata': {'org_id': orgId},
     }),
   );
-  if (res.statusCode != 200 && res.statusCode != 201 && res.statusCode != 422) {
-    throw Exception('Failed to provision user $email: ${res.body}');
+  if (res.statusCode == 200 || res.statusCode == 201) {
+    return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
   }
+  if (res.statusCode == 422) {
+    final list = await http.get(
+      Uri.parse(
+        '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?email=$email',
+      ),
+      headers: {
+        'apikey': PostgresTestConfig.serviceRoleKey,
+        'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+      },
+    );
+    final users =
+        ((jsonDecode(list.body) as Map<String, dynamic>)['users'] as List);
+    final userId = (users.first as Map<String, dynamic>)['id'] as String;
+
+    // Ensure app_metadata.org_id is set (may be missing from a prior run).
+    await http.put(
+      Uri.parse(
+        '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users/$userId',
+      ),
+      headers: {
+        'apikey': PostgresTestConfig.serviceRoleKey,
+        'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'app_metadata': {'org_id': orgId},
+      }),
+    );
+    return userId;
+  }
+  throw Exception('Failed to provision user $email: ${res.body}');
 }
 
 Future<SupabaseClient> _signIn(String email) async {
@@ -108,8 +139,19 @@ void main() {
         name: 'PDF Log Test Org B',
       );
 
-      await _ensureUser(_userAEmail, orgId: _orgAId);
-      await _ensureUser(_userBEmail, orgId: _orgBId);
+      final userAId = await _ensureUser(_userAEmail, orgId: _orgAId);
+      final userBId = await _ensureUser(_userBEmail, orgId: _orgBId);
+
+      await adminClient.from('user_roles').upsert({
+        'user_id': userAId,
+        'organization_id': _orgAId,
+        'role': 'TENANT_ADMIN',
+      }, onConflict: 'user_id');
+      await adminClient.from('user_roles').upsert({
+        'user_id': userBId,
+        'organization_id': _orgBId,
+        'role': 'TENANT_ADMIN',
+      }, onConflict: 'user_id');
 
       orgAClient = await _signIn(_userAEmail);
       orgBClient = await _signIn(_userBEmail);

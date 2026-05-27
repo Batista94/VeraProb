@@ -7,7 +7,7 @@ GRANT SELECT, INSERT ON public.pdf_dossier_logs TO authenticated;
 -- H1 & H2: UPDATE and DELETE are blocked for authenticated role (INV-3)
 -- Set role to authenticated and configure JWT claims for org A
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"role": "authenticated", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
+SET LOCAL request.jwt.claims = '{"role": "authenticated", "organization_id": "a0000000-0000-0000-0000-00000000000a", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
 
 -- Insert an initial row for testing (must pass RLS check)
 INSERT INTO public.pdf_dossier_logs (

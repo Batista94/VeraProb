@@ -6,6 +6,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
 import 'package:veraprob/application/sla_audit/delete_contractor_command.dart';
 import 'package:veraprob/features/admin/presentation/widgets/contractor_form_dialog.dart';
+import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
 /// Screen for managing Contractors (CRUD).
 class ContractorManagementScreen extends ConsumerStatefulWidget {
@@ -56,6 +57,18 @@ class _ContractorManagementScreenState
                   style: VeraProbTypography.sectionTitle,
                 ),
                 const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.upload_file_outlined),
+                  tooltip: 'Importar CSV',
+                  onPressed: () async {
+                    final imported = await showUniversalCsvImporter(
+                      context,
+                      targetEntity: 'contract',
+                    );
+                    if (imported) ref.invalidate(contractorListProvider);
+                  },
+                ),
+                const SizedBox(width: 8),
                 FilledButton.icon(
                   icon: const Icon(Icons.add, size: 18),
                   label: const Text('Novo Contratante'),

@@ -10,7 +10,7 @@ SELECT has_column('public', 'pdf_dossier_logs', 'document_hash_sha256', 'hash sh
 
 -- P4: Tenant Isolation (Read)
 SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"role": "authenticated", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
+SET LOCAL request.jwt.claims = '{"role": "authenticated", "organization_id": "a0000000-0000-0000-0000-00000000000a", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
 
 SELECT results_eq(
   'SELECT count(*)::int FROM public.pdf_dossier_logs',
@@ -35,7 +35,7 @@ SELECT results_eq(
 );
 
 -- Switch to org_b
-SET LOCAL request.jwt.claims = '{"role": "authenticated", "app_metadata": {"org_id": "b0000000-0000-0000-0000-00000000000b"}}';
+SET LOCAL request.jwt.claims = '{"role": "authenticated", "organization_id": "b0000000-0000-0000-0000-00000000000b", "app_metadata": {"org_id": "b0000000-0000-0000-0000-00000000000b"}}';
 
 SELECT results_eq(
   'SELECT count(*)::int FROM public.pdf_dossier_logs',
@@ -52,7 +52,7 @@ SELECT throws_ok(
 );
 
 -- P3: NOT NULL on generated_by
-SET LOCAL request.jwt.claims = '{"role": "authenticated", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
+SET LOCAL request.jwt.claims = '{"role": "authenticated", "organization_id": "a0000000-0000-0000-0000-00000000000a", "app_metadata": {"org_id": "a0000000-0000-0000-0000-00000000000a"}}';
 SELECT throws_ok(
   $$ INSERT INTO public.pdf_dossier_logs
      (organization_id, sla_ledger_entry_id, document_hash_sha256, generated_by)

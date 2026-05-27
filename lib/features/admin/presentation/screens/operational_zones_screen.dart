@@ -6,6 +6,7 @@ import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
+import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
@@ -30,6 +31,18 @@ class OperationalZonesScreen extends ConsumerWidget {
             title: 'Zonas Operacionais',
             subtitle: 'Garagens, clientes e pontos de apoio.',
             actions: [
+              IconButton(
+                icon: const Icon(Icons.upload_file_outlined),
+                tooltip: 'Importar CSV',
+                onPressed: () async {
+                  final imported = await showUniversalCsvImporter(
+                    context,
+                    targetEntity: 'zone',
+                  );
+                  if (imported) ref.invalidate(operationalZonesProvider);
+                },
+              ),
+              const SizedBox(width: 8),
               FilledButton.icon(
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Nova Zona Operacional'),
