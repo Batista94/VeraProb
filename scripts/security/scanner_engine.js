@@ -177,52 +177,118 @@ changedFiles.forEach((file) => {
       return;
     }
 
-    // ── SQL RLS Integrity Check (INV-2 Specialized) ──
+    // ── SQL RLS & Schema Integrity Check (Specialized) ──
     if (config.type === "sql_rls_integrity" && file.endsWith(".sql")) {
       const sql = content.replace(/\/\*[\s\S]*?\*\//g, "").replace(/--.*$/gm, "");
-      const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)/gi;
-      let match;
-      
-      while ((match = createTableRegex.exec(sql)) !== null) {
-        const schemaName = match[1];
-        const tableName = match[2];
-        const tableStart = match.index;
-        const nextSnippet = sql.substring(tableStart, tableStart + 200);
-        if (/PARTITION\s+OF/i.test(nextSnippet)) continue;
-        if (schemaName && schemaName.toLowerCase() !== "public") continue;
-        
-        const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${tableName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
-        if (!rlsRegex.test(sql)) {
-          violations.push({
-            file,
-            line: null,
-            rule: "INV-2-RLS-MANDATORY",
-            description: `Table '${tableName}' created but 'ENABLE ROW LEVEL SECURITY' not found in the same file.`,
-            severity: "BLOCK"
-          });
-        } else {
-          const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
-          if (!policyRegex.test(sql)) {
-            if (!getDenyAllTables().has(tableName.toLowerCase()) && !getTablesWithPolicies().has(tableName.toLowerCase())) {
+
+      // 1. INV-2-RLS-INTEGRITY / INV-DATA-API-GRANT-MISSING: Standard Tables (RLS, Policies, Grants)
+      if (name === "INV-2-RLS-INTEGRITY" || name === "INV-DATA-API-GRANT-MISSING") {
+        const createTableRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)/gi;
+        let match;
+        while ((match = createTableRegex.exec(sql)) !== null) {
+          const schemaName = match[1];
+          const tableName = match[2];
+          const tableStart = match.index;
+          const nextSnippet = sql.substring(tableStart, tableStart + 200);
+          if (/PARTITION\s+OF/i.test(nextSnippet)) continue;
+          if (schemaName && schemaName.toLowerCase() !== "public") continue;
+          
+          if (name === "INV-2-RLS-INTEGRITY") {
+            // Check RLS
+            const rlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${tableName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
+            if (!rlsRegex.test(sql)) {
               violations.push({
                 file,
                 line: null,
-                rule: "INV-2-POLICY-MISSING",
-                description: `Table '${tableName}' has RLS enabled but no policies found.`,
-                severity: "WARN"
+                rule: "INV-2-RLS-MANDATORY",
+                description: `Table '${tableName}' created but 'ENABLE ROW LEVEL SECURITY' not found in the same file.`,
+                severity: "BLOCK"
               });
+            } else {
+              const policyRegex = new RegExp(`CREATE\\s+POLICY.+ON\\s+(?:public\\.)?${tableName}`, "i");
+              if (!policyRegex.test(sql)) {
+                if (!getDenyAllTables().has(tableName.toLowerCase()) && !getTablesWithPolicies().has(tableName.toLowerCase())) {
+                  violations.push({
+                    file,
+                    line: null,
+                    rule: "INV-2-POLICY-MISSING",
+                    description: `Table '${tableName}' has RLS enabled but no policies found.`,
+                    severity: "WARN"
+                  });
+                }
+              } else {
+                const patternRegex = /\(auth\.jwt\(\)\s*(?:->>\s*'organization_id'|->\s*'app_metadata'\s*->>\s*'org_id')\)::uuid/i;
+                if (!patternRegex.test(sql)) {
+                  violations.push({
+                    file,
+                    line: null,
+                    rule: "INV-2-ISOLATION-PATTERN",
+                    description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern.`,
+                    severity: "WARN"
+                  });
+                }
+              }
             }
-          } else {
-            const patternRegex = /\(auth\.jwt\(\)\s*(?:->>\s*'organization_id'|->\s*'app_metadata'\s*->>\s*'org_id')\)::uuid/i;
-            if (!patternRegex.test(sql)) {
+          }
+
+          if (name === "INV-DATA-API-GRANT-MISSING") {
+            // Check explicit Data API grants
+            const grantRegex = new RegExp(`GRANT\\s+.+\\s+ON\\s+(?:TABLE\\s+)?(?:public\\.)?${tableName}\\s+TO\\s+`, "i");
+            const hasBypass = new RegExp(`--\\s*INV-DATA-API-GRANT:\\s*(zero-downtime-verified|bypass|internal-only)`, "i").test(content);
+            if (!grantRegex.test(sql) && !hasBypass) {
               violations.push({
                 file,
                 line: null,
-                rule: "INV-2-ISOLATION-PATTERN",
-                description: `Policy on '${tableName}' might not be using the mandatory VeraProb isolation pattern.`,
-                severity: "WARN"
+                rule: name,
+                description: config.description.replace("${tableName}", tableName),
+                severity: "BLOCK"
               });
             }
+          }
+        }
+      }
+
+      // 2. PARTITION-RLS-GAP-BLOCK: Partitions (RLS)
+      if (name === "PARTITION-RLS-GAP-BLOCK") {
+        const createPartitionRegex = /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:(\w+)\.)?(\w+)\s+PARTITION\s+OF/gi;
+        let partMatch;
+        while ((partMatch = createPartitionRegex.exec(sql)) !== null) {
+          const partSchema = partMatch[1];
+          const partName = partMatch[2];
+          if (partSchema && partSchema.toLowerCase() !== "public") continue;
+          
+          const partRlsRegex = new RegExp(`ALTER\\s+TABLE\\s+(?:public\\.)?${partName}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`, "i");
+          if (!partRlsRegex.test(sql)) {
+            violations.push({
+              file,
+              line: null,
+              rule: name,
+              description: config.description.replace("${partName}", partName),
+              severity: "BLOCK"
+            });
+          }
+        }
+      }
+
+      // 3. SECURITY-DEFINER-VIEW-BLOCK: Views (security_invoker = true)
+      if (name === "SECURITY-DEFINER-VIEW-BLOCK") {
+        const createViewRegex = /CREATE\s+(?:OR\s+REPLACE\s+)?VIEW\s+(?:(\w+)\.)?(\w+)/gi;
+        let viewMatch;
+        while ((viewMatch = createViewRegex.exec(sql)) !== null) {
+          const viewSchema = viewMatch[1];
+          const viewName = viewMatch[2];
+          if (viewSchema && viewSchema.toLowerCase() !== "public") continue;
+          
+          const viewStart = viewMatch.index;
+          const viewWindow = sql.substring(viewStart, viewStart + 500);
+          if (!/WITH\s*\(\s*security_invoker\s*=\s*true\s*\)/i.test(viewWindow)) {
+            violations.push({
+              file,
+              line: null,
+              rule: name,
+              description: config.description.replace("${viewName}", viewName),
+              severity: "BLOCK"
+            });
           }
         }
       }

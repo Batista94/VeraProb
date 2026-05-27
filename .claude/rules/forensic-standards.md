@@ -43,7 +43,7 @@ Details: .claude/rules/forensic-standards.original.md
 
 ## 🛠️ TECH STANDARDS
 - **Flutter:** Riverpod (Generator). AsyncValue UI. Industrial Deep palette. WASM/CanvasKit.
-- **Supabase:** Idempotent SQL migrations. RLS enabled ALL tables. 200 OK for duplicate telemetry.
+- **Supabase:** Idempotent SQL migrations. RLS enabled ALL tables. Explicit Data API grants required for all new tables. 200 OK for duplicate telemetry.
 - **AI/Agentic:** `prompt-injection-auditor` for summaries. Cryptographic workflow sealing.
 
 ## 🚄 PERF & BUDGET

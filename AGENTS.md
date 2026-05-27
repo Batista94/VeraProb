@@ -92,6 +92,7 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 10 | E2E-SELECTOR | Test selector mismatch (TextField vs TextFormField, label inference) |
 | 11 | SECURITY-DEFINER-VIEW | `CREATE VIEW` without `WITH (security_invoker = true)` bypasses RLS (INV-2, INV-22) |
 | 12 | PARTITION-RLS-GAP | `CREATE TABLE … PARTITION OF` without per-child `ENABLE ROW LEVEL SECURITY` + mirrored policy (INV-2, INV-22) |
+| 13 | INV-DATA-API-GRANT | Missing explicit Data API table grants for tables created in the `public` schema |
 
 ## Lessons Learned — Index
 
@@ -118,6 +119,7 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 - All datetime columns: `TIMESTAMPTZ` mandatory. Bare `TIMESTAMP` blocked.
 - **Views (INV-2):** ALL `public` schema views MUST be created with `WITH (security_invoker = true)`. Omitting this defaults to SECURITY DEFINER, which bypasses RLS on underlying tables. Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #11.
 - **Partitions (INV-2):** `ENABLE ROW LEVEL SECURITY` does NOT cascade to hash/range/list partitions. Every `CREATE TABLE … PARTITION OF` MUST immediately enable RLS and mirror the parent policy on the child. Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #12.
+- **Explicit Grants (INV-DATA-API-GRANT):** New tables in the `public` schema have no default privileges. They MUST explicitly grant required permissions (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) to the API roles (`authenticated`, `anon`, `service_role`). Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #13.
 
 ## Complexity Gates (Hard Limits)
 

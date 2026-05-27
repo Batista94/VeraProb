@@ -492,6 +492,12 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
         echo -e "  ${RED}${BOLD}[BLOCK]${NC} ${MIG_BASENAME}.sql — no Test Plan found. Add: forensic_records/plans/${TIMESTAMP_PREFIX}*_test_plan.md"
         PLAN_BLOCKS=$((PLAN_BLOCKS + 1))
       fi
+
+      PGTAP_TEST_IN_PR=$(echo "$CHANGED_FILES" | grep "supabase/tests/${TIMESTAMP_PREFIX}" | grep "\.sql$" || true)
+      if [[ -z "$PGTAP_TEST_IN_PR" ]]; then
+        echo -e "  ${RED}${BOLD}[BLOCK]${NC} ${MIG_BASENAME}.sql — no pgTAP test file found. Add: supabase/tests/${TIMESTAMP_PREFIX}*_test.sql"
+        PLAN_BLOCKS=$((PLAN_BLOCKS + 1))
+      fi
     done <<< "$MIG_FILES"
     if [[ $PLAN_BLOCKS -gt 0 ]]; then
       TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
@@ -532,7 +538,7 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
 
   # 9.3: Test Presence Gate (70% Threshold for Critical Files)
   # BLOCK on main / PR-to-main; WARN on feature branches.
-  CRITICAL_FILES=$(echo "$CHANGED_FILES" | grep -E "^lib/(domain|application|infrastructure)/" | grep -vE "\.(g|freezed)\.dart$" || true)
+  CRITICAL_FILES=$(echo "$CHANGED_FILES" | grep -E "^lib/(domain|application|infrastructure|state)/" | grep -vE "\.(g|freezed)\.dart$" || true)
   TOTAL_CRITICAL=$(echo "$CRITICAL_FILES" | grep -v '^[[:space:]]*$' | grep -c . || echo "0")
 
   if [[ "$TOTAL_CRITICAL" -gt 0 ]]; then

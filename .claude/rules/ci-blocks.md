@@ -284,3 +284,28 @@ WHERE relname LIKE 'parent_%'
 ORDER BY relname;
 -- Every row must have relrowsecurity = true
 ```
+
+---
+
+## 13. INV-DATA-API-GRANT: Missing explicit Data API table grants
+
+**Problem:** Creating a table in schema `public` without explicit `GRANT` statements. In new Supabase projects, tables created in `public` are not exposed to the Data API by default, causing client requests (`supabase-js` or PostgREST) to fail with authorization errors.
+
+**Fix:** Add explicit table-level grants at the end of the migration for the target roles (typically `authenticated` and `service_role`).
+
+```sql
+CREATE TABLE public.my_table (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id UUID NOT NULL REFERENCES public.organizations(id)
+);
+
+-- Enable RLS
+ALTER TABLE public.my_table ENABLE ROW LEVEL SECURITY;
+
+-- MANDATORY: Grant permissions for the Data API
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.my_table TO authenticated;
+GRANT ALL ON TABLE public.my_table TO service_role;
+```
+
+Do NOT use global `ALTER DEFAULT PRIVILEGES` to restore the insecure legacy defaults, as that violates tenant and data isolation boundaries (INV-22).
+

@@ -146,6 +146,27 @@
     "description": "INV-2: Mandatory RLS and Policy pattern verification for new tables.",
     "severity": "BLOCK"
   },
+  "INV-DATA-API-GRANT-MISSING": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+TABLE",
+    "path_filter": "supabase/migrations/",
+    "description": "Table '${tableName}' created but no explicit 'GRANT' statements found for it. Add explicit grants to authenticated/anon/service_role to expose to the Data API, or bypass with '-- INV-DATA-API-GRANT: internal-only'.",
+    "severity": "BLOCK"
+  },
+  "PARTITION-RLS-GAP-BLOCK": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+TABLE\\s+.+\\s+PARTITION\\s+OF",
+    "path_filter": "supabase/migrations/",
+    "description": "Partition table '${partName}' created but 'ENABLE ROW LEVEL SECURITY' not found for it. Partitions do not inherit parent RLS (INV-2, INV-22).",
+    "severity": "BLOCK"
+  },
+  "SECURITY-DEFINER-VIEW-BLOCK": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+(?:OR\\s+REPLACE\\s+)?VIEW",
+    "path_filter": "supabase/migrations/",
+    "description": "View '${viewName}' created without 'WITH (security_invoker = true)' option. Omitting this defaults to SECURITY DEFINER, bypassing RLS (INV-2, INV-22).",
+    "severity": "BLOCK"
+  },
   "INFRA-LEAK-UI": {
     "pattern": "import 'package:veraprob/infrastructure/(?!(observability|config)/)",
     "path_filter": "lib/features/",
@@ -156,6 +177,12 @@
     "pattern": "throw\\s+(Exception|StateError|FormatException|TypeError)\\s*\\(",
     "path_filter": "lib/(domain|application)/",
     "description": "Generic exception thrown in domain/application layer. Use typed domain exceptions: IntegrityException, SovereigntyViolationException, ConflictException, AuthorizationException, etc.",
+    "severity": "BLOCK"
+  },
+  "LEDGER-UPDATE-BLOCK": {
+    "pattern": "\\bUPDATE\\s+(public\\.)?ledger_entries\\b|\\bUPDATE\\s+(public\\.)?transactions\\b",
+    "path_filter": "supabase/migrations/|supabase/functions/",
+    "description": "INV-3 violation: Updates on ledger/transaction tables are strictly forbidden (Append-Only ledger constraint).",
     "severity": "BLOCK"
   }
 }
