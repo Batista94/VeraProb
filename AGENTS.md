@@ -90,6 +90,8 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 8 | E2E-HANG | E2E `pumpAndSettle` timeout (missing dart-defines) |
 | 9 | E2E-HTTPMOCK | `HttpOverrides` ignored by pre-initialized Supabase HttpClient |
 | 10 | E2E-SELECTOR | Test selector mismatch (TextField vs TextFormField, label inference) |
+| 11 | SECURITY-DEFINER-VIEW | `CREATE VIEW` without `WITH (security_invoker = true)` bypasses RLS (INV-2, INV-22) |
+| 12 | PARTITION-RLS-GAP | `CREATE TABLE … PARTITION OF` without per-child `ENABLE ROW LEVEL SECURITY` + mirrored policy (INV-2, INV-22) |
 
 ## Lessons Learned — Index
 
@@ -114,6 +116,8 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 - Destructive DDL (DROP TABLE/COLUMN, DELETE, TRUNCATE) blocked. Requires `-- INV-DB: zero-downtime-verified` bypass comment after Council approval.
 - Soft-delete only (`deleted_at` or archive status). No hard `DELETE`.
 - All datetime columns: `TIMESTAMPTZ` mandatory. Bare `TIMESTAMP` blocked.
+- **Views (INV-2):** ALL `public` schema views MUST be created with `WITH (security_invoker = true)`. Omitting this defaults to SECURITY DEFINER, which bypasses RLS on underlying tables. Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #11.
+- **Partitions (INV-2):** `ENABLE ROW LEVEL SECURITY` does NOT cascade to hash/range/list partitions. Every `CREATE TABLE … PARTITION OF` MUST immediately enable RLS and mirror the parent policy on the child. Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #12.
 
 ## Complexity Gates (Hard Limits)
 
