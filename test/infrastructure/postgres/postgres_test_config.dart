@@ -217,8 +217,9 @@ class PostgresTestConfig {
       final response = await http
           .get(Uri.parse('$supabaseUrl/functions/v1/super-admin-proxy'))
           .timeout(const Duration(seconds: 2));
-      // 401/405 means the function is up but needs auth — that's fine
-      return response.statusCode != 503 && response.statusCode != 0;
+      // 405 = function deployed but rejects non-POST (correct behavior)
+      // 404 = router has no such function (not deployed) — treat as offline
+      return response.statusCode == 405;
     } catch (_) {
       return false;
     }

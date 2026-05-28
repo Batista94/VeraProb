@@ -29,6 +29,9 @@ class SuperAdminTestConfig {
   /// Service-role key — bypassa RLS (delegado ao [PostgresTestConfig]).
   static final String serviceRoleKey = PostgresTestConfig.serviceRoleKey;
 
+  /// HMAC request key for super-admin-proxy requests (INV-31).
+  static String get hmacSecretKeyV1 => PostgresTestConfig.hmacSecretKeyV1;
+
   // ── Configuração do Test Runner ───────────────────────────────────────────
 
   /// Porta do web-server para `flutter drive` / `flutter test` web.

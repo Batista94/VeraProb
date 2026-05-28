@@ -43,7 +43,12 @@ abstract class SuperAdminAuthHelper {
       await forceTokenExpiry();
     }
 
-    SharedPreferences.setMockInitialValues({});
+    final hmacKey = SuperAdminTestConfig.hmacSecretKeyV1;
+    SharedPreferences.setMockInitialValues({
+      'hmac_request_key_v1': hmacKey.isNotEmpty
+          ? hmacKey
+          : 'test-hmac-key-v1-32chars-padding00',
+    });
 
     // Mock app_links EventChannel — native plugin unavailable in flutter test VM.
     tester.binding.defaultBinaryMessenger.setMockStreamHandler(
