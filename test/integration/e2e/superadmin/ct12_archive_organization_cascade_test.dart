@@ -407,7 +407,7 @@ void main() {
           superAdminRepositoryProvider.overrideWith((ref) {
             return FailingSuperAdminRepository(
               ref.watch(supabaseClientProvider),
-              hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+              hmacRequestKey: SuperAdminTestConfig.hmacSecretKeyV1,
               failArchive: true,
             );
           }),

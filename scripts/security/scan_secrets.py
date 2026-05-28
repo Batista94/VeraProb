@@ -35,9 +35,7 @@ NC     = "\033[0m"
 TARGET_EXTENSIONS = {".dart", ".sql", ".ts", ".env", ".json", ".yaml", ".yml", ".py", ".sh"}
 
 WHITELIST_PATHS = [
-    "test/", "forensic_records/", "mock/", "mocks/",
-    "pubspec.lock", ".env.example", "package-lock.json",
-    "forensic_records/security/dirty_secrets_test/",  # test fixtures are exempt
+    "pubspec.lock", "package-lock.json", "scripts/security/scan_secrets.py",
 ]
 
 # Audit log location (never committed)
@@ -244,13 +242,13 @@ def main() -> int:
     args = parser.parse_args()
 
     print(f"\n{BOLD}{'='*62}{NC}")
-    print(f"{BOLD}  VeraProb — Forensic Secrets Scanner (INV-28){NC}")
+    print(f"{BOLD}  VeraProb - Forensic Secrets Scanner (INV-28){NC}")
     print(f"{BOLD}{'='*62}{NC}")
 
-    # ── Gate: only run on protected context ──────────────────────────────────
+    # -- Gate: only run on protected context ----------------------------------
     if not is_protected_context():
         branch = get_current_branch()
-        print(f"\n{GREEN}  [OK] Branch '{branch}' is not protected — scanner skipped.{NC}")
+        print(f"\n{GREEN}  [OK] Branch '{branch}' is not protected - scanner skipped.{NC}")
         print(f"  (Scanner runs only on 'main' or PR-tracked branches)\n")
         return 0
 
@@ -273,13 +271,13 @@ def main() -> int:
         all_findings.extend(findings)
         scanned += 1
 
-    # ── Report ────────────────────────────────────────────────────────────────
+    # -- Report ----------------------------------------------------------------
     if all_findings:
-        print(f"\n{RED}{BOLD}  [X] SECRETS DETECTED — Commit Blocked{NC}")
-        print(f"{'─'*62}")
+        print(f"\n{RED}{BOLD}  [X] SECRETS DETECTED - Commit Blocked{NC}")
+        print(f"{'-'*62}")
         log_entries = []
         for f in all_findings:
-            entry = f"[LEVEL-{f['level']}] {f['file']}:{f['line']} — {f['type']} -> {f['masked']}"
+            entry = f"[LEVEL-{f['level']}] {f['file']}:{f['line']} - {f['type']} -> {f['masked']}"
             print(f"  {RED}{entry}{NC}")
             log_entries.append(entry)
 
@@ -291,7 +289,7 @@ def main() -> int:
 
         if args.force_bypass:
             write_audit_log(log_entries, bypass=True, bypass_reason=args.force_bypass)
-            print(f"{YELLOW}  ⚠  FORCE-BYPASS activated. Reason: '{args.force_bypass}'{NC}")
+            print(f"{YELLOW}  [WARN] FORCE-BYPASS activated. Reason: '{args.force_bypass}'{NC}")
             print(f"  Audit logged to: {AUDIT_LOG}\n")
             return 0
 
