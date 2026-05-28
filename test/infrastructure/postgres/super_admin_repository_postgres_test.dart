@@ -192,8 +192,14 @@ void main() async {
           anonKey: PostgresTestConfig.supabaseAnonKey,
         );
 
-        repo = SupabaseSuperAdminRepository(serviceRoleClient);
-        superAdminRepo = SupabaseSuperAdminRepository(superAdminClient);
+        repo = SupabaseSuperAdminRepository(
+          serviceRoleClient,
+          hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+        );
+        superAdminRepo = SupabaseSuperAdminRepository(
+          superAdminClient,
+          hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+        );
       });
 
       tearDownAll(() async {

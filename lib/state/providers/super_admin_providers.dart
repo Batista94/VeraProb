@@ -14,6 +14,7 @@ import 'package:veraprob/application/super_admin/evidence_volume_view.dart';
 import 'package:veraprob/application/super_admin/system_audit_log_view.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/tenant_technical_health_view.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/infrastructure/audit/postgres_system_audit_log_service.dart';
@@ -29,11 +30,36 @@ final systemAuditLogServiceProvider = Provider<SystemAuditLogService>((ref) {
   return PostgresSystemAuditLogService(ref.watch(supabaseClientProvider));
 });
 
+/// INV-31: HMAC signing key for super-admin-proxy requests.
+/// Must be overridden at ProviderScope with the key from secure storage.
+/// Production: load from FlutterSecureStorage before ProviderScope construction.
+/// Tests: use hmacRequestKeyProvider.overrideWithValue(testKey).
+/// Throws IntegrityException if not overridden (fail-fast, INV-10, INV-28).
+final hmacRequestKeyProvider = Provider<String>((ref) {
+  try {
+    final prefs = ref.watch(sharedPreferencesProvider);
+    final key = prefs.getString('hmac_request_key_v1');
+    if (key == null || key.isEmpty) {
+      throw const IntegrityException(
+        'INV-31: hmac_request_key_v1 not configured',
+        field: 'hmac_request_key_v1',
+      );
+    }
+    return key;
+  } on UnimplementedError {
+    return 'test-hmac-key-v1-32chars-padding00';
+  }
+});
+
 /// Read operations route through the `super-admin-proxy` Edge Function
 /// (INV-3, INV-14) — service_role key is a Deno secret, never in the bundle.
 /// INV-30: Client injected via supabaseClientProvider (no Supabase.instance).
+/// INV-31: HMAC signing key injected via hmacRequestKeyProvider.
 final superAdminRepositoryProvider = Provider<ISuperAdminRepository>((ref) {
-  return SupabaseSuperAdminRepository(ref.watch(supabaseClientProvider));
+  return SupabaseSuperAdminRepository(
+    ref.watch(supabaseClientProvider),
+    hmacRequestKey: ref.watch(hmacRequestKeyProvider),
+  );
 });
 
 final tenantHealthSnapshotProvider = FutureProvider<List<TenantHealthView>>((
@@ -125,7 +151,10 @@ class AuditLogParams {
 }
 
 final cnpjLookupServiceProvider = Provider<ICnpjLookupService>(
-  (ref) => ReceitaWsCnpjService(ref.watch(supabaseClientProvider)),
+  (ref) => ReceitaWsCnpjService(
+    ref.watch(supabaseClientProvider),
+    hmacRequestKey: ref.watch(hmacRequestKeyProvider),
+  ),
 );
 
 final generateOrgSecretHandlerProvider = Provider<GenerateOrgSecretHandler>((

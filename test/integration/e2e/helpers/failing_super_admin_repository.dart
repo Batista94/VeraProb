@@ -12,6 +12,7 @@ class FailingSuperAdminRepository extends SupabaseSuperAdminRepository {
 
   FailingSuperAdminRepository(
     super.client, {
+    required super.hmacRequestKey,
     this.failResend = false,
     this.failToggle = false,
     this.failArchive = false,

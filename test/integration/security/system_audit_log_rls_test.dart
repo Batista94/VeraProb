@@ -8,9 +8,11 @@ library;
 
 import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/infrastructure/shared/canonical_json.dart';
 
 import '../../../test/infrastructure/postgres/postgres_test_config.dart';
 
@@ -73,12 +75,11 @@ void main() {
         PostgresTestConfig.supabaseAnonKey,
       );
       try {
-        final rows = await anon.from('system_audit_log').select();
         expect(
-          rows,
-          isEmpty,
-          reason:
-              'anon JWT lacks user_role=admin → SELECT policy must yield 0 rows',
+          () => anon.from('system_audit_log').select(),
+          throwsA(
+            isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+          ),
         );
       } finally {
         await anon.dispose();
@@ -155,27 +156,116 @@ void main() {
     });
   });
 
-  group('super-admin-proxy — INV-31 HMAC (cases 35–36, TDD-RED backlog)', () {
+  group('super-admin-proxy — INV-31 HMAC (cases 35–36)', () {
+    late Uri proxyUri;
+    late String hmacKey;
+    late bool edgeFnUp;
+
+    setUpAll(() async {
+      edgeFnUp = await PostgresTestConfig.isEdgeFunctionsRunning();
+      proxyUri = Uri.parse(
+        '${PostgresTestConfig.edgeFunctionsUrl}/super-admin-proxy',
+      );
+      hmacKey = PostgresTestConfig.hmacSecretKeyV1;
+    });
+
+    Map<String, String> sign(Map<String, dynamic> body, int timestamp) {
+      final signing = <String, dynamic>{...body, 'timestamp': timestamp};
+      final canonical = canonicalJsonEncode(signing);
+      final hmac = Hmac(sha256, utf8.encode(hmacKey));
+      return {
+        'Content-Type': 'application/json',
+        'x-timestamp': timestamp.toString(),
+        'x-signature': 'v1|${hmac.convert(utf8.encode(canonical))}',
+      };
+    }
+
     test(
       '35 proxy rejects request without/with tampered HMAC signature',
       () async {
-        // Backlog: super-admin-proxy currently does not verify HMAC. When
-        // `shared/hmac_signer.ts` is wired into the proxy, this test must
-        // assert 401/403 for a request that is missing or tampered.
-        markTestSkipped(
-          'TDD-RED — implement HMAC verification in '
-          'supabase/functions/super-admin-proxy/index.ts (plan adendo A).',
+        if (!edgeFnUp) {
+          markTestSkipped('Edge Functions offline');
+          return;
+        }
+
+        final body = {'action': 'list_tenant_health'};
+        final bodyBytes = utf8.encode(jsonEncode(body));
+
+        // 35a: sem headers HMAC
+        final r1 = await http.post(
+          proxyUri,
+          headers: {'Content-Type': 'application/json'},
+          body: bodyBytes,
+        );
+        expect(
+          r1.statusCode,
+          equals(404),
+          reason: 'Headers ausentes → sovereigntyErrorResponse',
+        );
+
+        // 35b: timestamp válido mas assinatura adulterada
+        final ts = DateTime.now().toUtc().millisecondsSinceEpoch ~/ 1000;
+        final r2 = await http.post(
+          proxyUri,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-timestamp': ts.toString(),
+            'x-signature':
+                'v1|deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+          },
+          body: bodyBytes,
+        );
+        expect(
+          r2.statusCode,
+          equals(404),
+          reason: 'Assinatura adulterada → sovereigntyErrorResponse',
+        );
+
+        // 35c: assinatura válida mas body adulterado após assinar
+        final validHeaders = sign(body, ts);
+        final tamperedBodyBytes = utf8.encode(
+          jsonEncode({'action': 'get_audit_log'}),
+        );
+        final r3 = await http.post(
+          proxyUri,
+          headers: validHeaders,
+          body: tamperedBodyBytes,
+        );
+        expect(
+          r3.statusCode,
+          equals(404),
+          reason: 'Body adulterado pós-assinatura → HMAC inválido',
         );
       },
-      skip: true,
     );
 
     test('36 proxy rejects replayed request outside 5-minute window', () async {
-      markTestSkipped(
-        'TDD-RED — implement timestamp-window replay check in '
-        'super-admin-proxy (plan adendo A).',
+      if (!edgeFnUp) {
+        markTestSkipped('Edge Functions offline');
+        return;
+      }
+
+      final body = {'action': 'list_tenant_health'};
+      // Timestamp 6 minutos atrás — fora da janela de 300s
+      final oldTs =
+          DateTime.now()
+              .toUtc()
+              .subtract(const Duration(minutes: 6))
+              .millisecondsSinceEpoch ~/
+          1000;
+
+      final headers = sign(body, oldTs);
+      final r = await http.post(
+        proxyUri,
+        headers: headers,
+        body: utf8.encode(jsonEncode(body)),
       );
-    }, skip: true);
+      expect(
+        r.statusCode,
+        equals(404),
+        reason: 'Timestamp expirado → replay window → sovereigntyErrorResponse',
+      );
+    });
   });
 
   group('AUDIT_LOG_VIEWED recursivity (cases 39–40, TDD-RED backlog)', () {
@@ -218,11 +308,5 @@ void main() {
     );
     // PostgreSQL returns null for VOID RPCs; absence of throw is the contract.
     expect(res, anyOf(isNull, isA<dynamic>()));
-  });
-
-  // Reference to silence the unused-import lint when the JSON helper is not
-  // exercised by an active test (cases 35–36 are backlog).
-  test('json codec is wired (sanity)', () {
-    expect(jsonEncode({'k': 'v'}), '{"k":"v"}');
   });
 }

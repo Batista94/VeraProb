@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
+import 'package:veraprob/infrastructure/shared/canonical_json.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
 /// INV-26: Base repository for all Postgres-backed implementations.
@@ -263,52 +264,8 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   /// produce byte-identical JSON for the same logical payload.
   static String? _hashPayloadIfPresent(Map<String, dynamic>? payload) {
     if (payload == null || payload.isEmpty) return null;
-    final canonicalJson = jsonEncode(_sortKeys(payload));
+    final canonicalJson = canonicalJsonEncode(payload);
     return sha256.convert(utf8.encode(canonicalJson)).toString();
-  }
-
-  /// Recursively sorts Map keys alphabetically and normalizes types for
-  /// canonical JSON serialization.
-  ///
-  /// Dart's `jsonEncode` preserves Map insertion order. To ensure identical hashes
-  /// between Dart (insert) and Deno (verification), keys MUST be sorted
-  /// alphabetically — matching the Deno `sortKeys()` function in `canonical_json.ts`.
-  ///
-  /// **Type normalization (INV-9 parity):**
-  /// - `DateTime` → ISO-8601 string with 'Z' suffix (e.g. `2026-04-11T00:00:00.000Z`)
-  /// - `Map<String, dynamic>` → keys sorted, values recursively normalized
-  /// - `List<dynamic>` → each element recursively normalized
-  /// - Primitives (null, String, int, double, bool) → returned as-is
-  ///
-  /// This ensures that a `DateTime` embedded in a nested list or map is
-  /// serialized identically on both Dart and Deno sides before hashing.
-  static dynamic _sortKeys(dynamic obj) {
-    if (obj == null) return null;
-
-    // Type normalization: DateTime → ISO-8601 string (Z-suffix for UTC parity)
-    if (obj is DateTime) {
-      final iso = obj.toUtc().toIso8601String();
-      // Ensure 'Z' suffix for deterministic parity with Deno
-      return iso.endsWith('Z') ? iso : '${iso}Z';
-    }
-
-    // Recursive map: sort keys + normalize values
-    if (obj is Map<String, dynamic>) {
-      final sorted = <String, dynamic>{};
-      final keys = obj.keys.toList()..sort();
-      for (final key in keys) {
-        sorted[key] = _sortKeys(obj[key]);
-      }
-      return sorted;
-    }
-
-    // Recursive list: normalize each element
-    if (obj is List) {
-      return obj.map(_sortKeys).toList();
-    }
-
-    // Case base: primitives (String, int, double, bool, num) pass through
-    return obj;
   }
 
   // ── Test Hooks (public access to private static methods) ──────────────────
@@ -324,7 +281,7 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   /// JSON serialization and type normalization.
   @visibleForTesting
   static dynamic sortKeys(dynamic obj) {
-    return _sortKeys(obj);
+    return canonicalJsonSortKeys(obj);
   }
 
   /// Returns the canonical JSON string for a payload (sorted keys + normalized
@@ -332,7 +289,7 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   /// the Deno `canonical_json.ts` implementation.
   @visibleForTesting
   static String canonicalJson(Map<String, dynamic> payload) {
-    return jsonEncode(_sortKeys(payload));
+    return canonicalJsonEncode(payload);
   }
 }
 

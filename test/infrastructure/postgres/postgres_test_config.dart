@@ -50,6 +50,12 @@ class PostgresTestConfig {
   /// Service-role key — bypasses RLS.
   static String get serviceRoleKey => _getEnv('SUPABASE_SERVICE_ROLE_KEY');
 
+  /// HMAC signing key for super-admin-proxy requests (INV-31).
+  static String get hmacSecretKeyV1 => _getEnv('HMAC_SECRET_KEY_V1');
+
+  /// Base URL for Edge Functions running locally.
+  static String get edgeFunctionsUrl => '$supabaseUrl/functions/v1';
+
   /// UUID sentinela para testes de integração. Identificador estável para
   /// evitar colisões entre runs sem precisar de fixture de organização real.
   static const String testOrgId = '00000000-0000-0000-0000-000000000001';
@@ -211,8 +217,9 @@ class PostgresTestConfig {
       final response = await http
           .get(Uri.parse('$supabaseUrl/functions/v1/super-admin-proxy'))
           .timeout(const Duration(seconds: 2));
-      // 401/405 means the function is up but needs auth — that's fine
-      return response.statusCode != 503 && response.statusCode != 0;
+      // 405 = function deployed but rejects non-POST (correct behavior)
+      // 404 = router has no such function (not deployed) — treat as offline
+      return response.statusCode == 405;
     } catch (_) {
       return false;
     }

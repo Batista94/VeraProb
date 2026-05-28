@@ -83,6 +83,8 @@ inspector_port = 8083
 # AAL2 bypass in super-admin-proxy (line 137-143). Mirrors supabase/.env.local.
 [edge_runtime.secrets]
 ENVIRONMENT = "dev"
+HMAC_SECRET_KEY_V1 = "env(HMAC_SECRET_KEY_V1)"
+TELEGRAM_WEBHOOK_SECRET = "env(TELEGRAM_WEBHOOK_SECRET)"
 
 # ── Per-function overrides ──────────────────────────────────────────────────
 # ingest-sascar uses its own API key auth (provider_api_keys table lookup),

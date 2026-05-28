@@ -350,6 +350,13 @@ jobs:
         with:
           version: latest
 
+      - name: Setup supabase local environment secrets
+        run: |
+          HMAC_KEY=$(openssl rand -hex 16)
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> $GITHUB_ENV
+          echo "ENVIRONMENT=dev" > supabase/.env.local
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> supabase/.env.local
+
       - name: Start Supabase Local
         run: supabase start
 
@@ -441,6 +448,13 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Setup supabase local environment secrets
+        run: |
+          HMAC_KEY=$(openssl rand -hex 16)
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> $GITHUB_ENV
+          echo "ENVIRONMENT=dev" > supabase/.env.local
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> supabase/.env.local
 
       - name: Start Supabase Local
         run: supabase start
@@ -565,6 +579,13 @@ jobs:
         uses: supabase/setup-cli@v1
         with:
           version: latest
+
+      - name: Setup supabase local environment secrets
+        run: |
+          HMAC_KEY=$(openssl rand -hex 16)
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> $GITHUB_ENV
+          echo "ENVIRONMENT=dev" > supabase/.env.local
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> supabase/.env.local
 
       - name: Start Supabase Local
         run: supabase start
@@ -699,6 +720,17 @@ jobs:
       - name: Setup k6
         uses: grafana/setup-k6-action@v1
 
+      - name: Setup supabase local environment secrets
+        run: |
+          HMAC_KEY=$(openssl rand -hex 16)
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> $GITHUB_ENV
+          echo "ENVIRONMENT=dev" > supabase/.env.local
+          echo "HMAC_SECRET_KEY_V1=$HMAC_KEY" >> supabase/.env.local
+          
+          WEBHOOK_KEY=$(openssl rand -hex 16)
+          echo "WEBHOOK_SECRET=$WEBHOOK_KEY" >> $GITHUB_ENV
+          echo "TELEGRAM_WEBHOOK_SECRET=$WEBHOOK_KEY" >> supabase/.env.local
+
       - name: Start Supabase
         run: supabase start
 
@@ -754,6 +786,6 @@ jobs:
           export ORG_ID="00000000-0000-0000-0000-000000000001"
           export CONTRACT_ID="00000000-0000-0000-0000-ca0000000001"
           export BOUND_CHAT_ID="908453789"
-          export WEBHOOK_SECRET="VeraProb_Secret_Local_2026"
+          # WEBHOOK_SECRET is dynamically generated in Setup step and loaded from GITHUB_ENV
 
           bash scripts/qa/chaos/run_chaos_suite.sh

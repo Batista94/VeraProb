@@ -21,6 +21,7 @@ import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/shared/utils/cnpj_validator.dart';
 
 import '../../../infrastructure/postgres/postgres_test_config.dart';
+import '../helpers/superadmin_test_config.dart';
 
 const _uuid = Uuid();
 
@@ -79,7 +80,10 @@ void main() async {
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.serviceRoleKey,
         );
-        repo = SupabaseSuperAdminRepository(serviceRoleClient);
+        repo = SupabaseSuperAdminRepository(
+          serviceRoleClient,
+          hmacRequestKey: SuperAdminTestConfig.hmacSecretKeyV1,
+        );
         handler = CreateOrganizationHandler(
           repo,
           serviceRoleClient,

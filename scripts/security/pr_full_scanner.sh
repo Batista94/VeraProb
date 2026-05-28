@@ -562,7 +562,7 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
         # this file as a dependency.
         PACKAGE_PATH=$(echo "$f" | sed 's|^lib/|package:veraprob/|')
         SRC_BASENAME=$(basename "$f" .dart)
-        SRC_BASENAME_ESC=$(printf '%s' "$SRC_BASENAME" | sed 's/[]\[.^$*?+{}()|\\]/\\&/g')
+        SRC_BASENAME_ESC=$(printf '%s' "$SRC_BASENAME" | sed 's#[]\[.^$*?+{}()|\\]#\\&#g')
         IMPORT_HIT=$(grep -rl "import '$PACKAGE_PATH'" test/ 2>/dev/null | grep "_test\.dart$" | grep -E "(^|/)${SRC_BASENAME_ESC}_test\.dart$" | head -1 || true)
         if [[ -n "$IMPORT_HIT" ]]; then
           COVERED_COUNT=$((COVERED_COUNT + 1))

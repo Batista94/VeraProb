@@ -22,7 +22,10 @@ void main() {
 
     when(mockSupabaseClient.functions).thenReturn(mockFunctionsClient);
 
-    service = ReceitaWsCnpjService(mockSupabaseClient);
+    service = ReceitaWsCnpjService(
+      mockSupabaseClient,
+      hmacRequestKey: 'test-hmac-key-v1-32chars-padding00',
+    );
   });
 
   group('ReceitaWsCnpjService — Enterprise Resilience Suite', () {
@@ -34,6 +37,7 @@ void main() {
           mockFunctionsClient.invoke(
             'super-admin-proxy',
             body: anyNamed('body'),
+            headers: anyNamed('headers'),
           ),
         ).thenAnswer(
           (_) async => FunctionResponse(
@@ -62,7 +66,11 @@ void main() {
         'lookup returns null when proxy returns data:null (not found)',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenAnswer(
             (_) async => FunctionResponse(status: 200, data: {'data': null}),
           );
@@ -79,7 +87,11 @@ void main() {
         'ExternalApiException does not leak raw status code in message',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenAnswer((_) async => FunctionResponse(status: 503));
 
           final exception = await _capture(() => service.lookup(validCnpj));
@@ -112,7 +124,11 @@ void main() {
         'throws InvalidCnpjException when API returns status=ERROR',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenAnswer(
             (_) async => FunctionResponse(
               status: 200,
@@ -139,7 +155,11 @@ void main() {
         'throws DataParsingException on unexpected response shape',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenAnswer(
             (_) async => FunctionResponse(status: 200, data: 'not-a-map'),
           );
@@ -155,7 +175,11 @@ void main() {
         'throws DataParsingException on contract drift (TypeError)',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenAnswer(
             (_) async => FunctionResponse(
               status: 200,
@@ -184,7 +208,11 @@ void main() {
     group('A — Availability & Network Resilience', () {
       test('throws ServiceTimeoutException on TimeoutException', () async {
         when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          mockFunctionsClient.invoke(
+            any,
+            body: anyNamed('body'),
+            headers: anyNamed('headers'),
+          ),
         ).thenThrow(TimeoutException('timeout'));
 
         await expectLater(
@@ -195,7 +223,11 @@ void main() {
 
       test('throws RateLimitExceededException on 429 status', () async {
         when(
-          mockFunctionsClient.invoke(any, body: anyNamed('body')),
+          mockFunctionsClient.invoke(
+            any,
+            body: anyNamed('body'),
+            headers: anyNamed('headers'),
+          ),
         ).thenAnswer((_) async => FunctionResponse(status: 429));
 
         await expectLater(
@@ -208,7 +240,11 @@ void main() {
         'throws ExternalApiException on generic FunctionException',
         () async {
           when(
-            mockFunctionsClient.invoke(any, body: anyNamed('body')),
+            mockFunctionsClient.invoke(
+              any,
+              body: anyNamed('body'),
+              headers: anyNamed('headers'),
+            ),
           ).thenThrow(const FunctionException(status: 500));
 
           await expectLater(

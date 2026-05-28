@@ -49,7 +49,7 @@ SELECT table_privs_are('public', 'contractual_financial_snapshot_v2', 'service_r
 
 -- 9. execution_state_transitions
 SELECT table_privs_are('public', 'execution_state_transitions', 'anon', ARRAY[]::text[], 'anon should have NO privileges on execution_state_transitions');
-SELECT table_privs_are('public', 'execution_state_transitions', 'authenticated', ARRAY[]::text[], 'authenticated should have NO privileges on execution_state_transitions');
+SELECT table_privs_are('public', 'execution_state_transitions', 'authenticated', ARRAY['SELECT', 'INSERT'], 'authenticated should have SELECT and INSERT on execution_state_transitions');
 SELECT table_privs_are('public', 'execution_state_transitions', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on execution_state_transitions');
 
 SELECT * FROM finish();

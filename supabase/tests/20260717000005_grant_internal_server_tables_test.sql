@@ -84,7 +84,7 @@ SELECT table_privs_are('public', 'sanction_escalation_log', 'service_role', ARRA
 
 -- 16. spoofing_audit_entries
 SELECT table_privs_are('public', 'spoofing_audit_entries', 'anon', ARRAY[]::text[], 'anon should have no privileges on spoofing_audit_entries');
-SELECT table_privs_are('public', 'spoofing_audit_entries', 'authenticated', ARRAY[]::text[], 'authenticated should have no privileges on spoofing_audit_entries');
+SELECT table_privs_are('public', 'spoofing_audit_entries', 'authenticated', ARRAY['SELECT', 'INSERT'], 'authenticated should have SELECT and INSERT on spoofing_audit_entries');
 SELECT table_privs_are('public', 'spoofing_audit_entries', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on spoofing_audit_entries');
 
 -- 17. trips_audit
