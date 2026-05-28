@@ -1,8 +1,11 @@
 import 'package:equatable/equatable.dart';
+import 'package:intl/intl.dart';
 import 'package:veraprob/domain/entities/column_mapping.dart';
 import 'package:veraprob/domain/entities/csv_mapping_template.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart';
 import 'package:veraprob/domain/shared/security_assertion_service.dart';
+import 'package:veraprob/shared/utils/cnpj_validator.dart';
+import 'package:veraprob/shared/utils/cpf_validator.dart';
 
 /// Represents a specific validation error for a row in the CSV.
 class CsvRowError extends Equatable {
@@ -270,8 +273,29 @@ class CsvPreflightValidator {
     int rowIndex,
     Map<String, int> documentTracker,
   ) {
-    if (documentTracker.containsKey(value)) {
-      final firstRow = documentTracker[value]!; // safe: containsKey guard above
+    final digits = value.replaceAll(RegExp(r'\D'), '');
+
+    // Structural validation: mod-11 check-digit
+    final isStructurallyValid = digits.length == 14
+        ? CnpjValidator.isValid(digits)
+        : digits.length == 11
+        ? CpfValidator.isValid(digits)
+        : false;
+
+    if (!isStructurallyValid) {
+      return CsvRowError(
+        rowIndex: rowIndex,
+        csvHeader: mapping.csvHeader,
+        targetField: mapping.targetField.dbValue,
+        errorCode: 'invalid_document',
+        message: 'Documento com dígito verificador inválido.',
+      );
+    }
+
+    // Batch dedup using normalized digits
+    if (documentTracker.containsKey(digits)) {
+      final firstRow =
+          documentTracker[digits]!; // safe: containsKey guard above
       return CsvRowError(
         rowIndex: rowIndex,
         csvHeader: mapping.csvHeader,
@@ -281,7 +305,7 @@ class CsvPreflightValidator {
             'Documento duplicado neste mesmo arquivo (visto na linha $firstRow).',
       );
     }
-    documentTracker[value] = rowIndex;
+    documentTracker[digits] = rowIndex;
     return null;
   }
 
@@ -290,16 +314,28 @@ class CsvPreflightValidator {
     ColumnMapping mapping,
     int rowIndex,
   ) {
-    if (DateTime.tryParse(value) == null && mapping.formatHint == null) {
-      return CsvRowError(
-        rowIndex: rowIndex,
-        csvHeader: mapping.csvHeader,
-        targetField: mapping.targetField.dbValue,
-        errorCode: 'invalid_date',
-        message:
-            'Data inválida ou em formato não reconhecido (use padrão ISO-8601 ou especifique formato).',
-      );
+    // Try ISO-8601 first (universal)
+    if (DateTime.tryParse(value) != null) return null;
+
+    // Try formatHint (e.g., 'dd/MM/yyyy')
+    if (mapping.formatHint != null) {
+      try {
+        DateFormat(mapping.formatHint!).parseStrict(value);
+        return null; // Valid with hint
+      } on FormatException {
+        // Falls through to error below
+      }
     }
-    return null;
+
+    return CsvRowError(
+      rowIndex: rowIndex,
+      csvHeader: mapping.csvHeader,
+      targetField: mapping.targetField.dbValue,
+      errorCode: 'invalid_date',
+      message: mapping.formatHint != null
+          ? 'Data inválida para o formato esperado (${mapping.formatHint}).'
+          : 'Data inválida ou em formato não reconhecido '
+                '(use padrão ISO-8601 ou especifique formato).',
+    );
   }
 }
