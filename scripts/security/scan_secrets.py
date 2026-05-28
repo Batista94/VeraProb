@@ -169,17 +169,17 @@ def is_whitelisted(filepath: str) -> bool:
 def write_audit_log(entries: list[str], bypass: bool = False, bypass_reason: str = "") -> None:
     os.makedirs(os.path.dirname(AUDIT_LOG), exist_ok=True)
     timestamp = datetime.datetime.utcnow().isoformat() + "Z"
-    with open(AUDIT_LOG, "a", encoding="utf-8") as f:
-        f.write(f"\n{'='*70}\n")
-        f.write(f"TIMESTAMP: {timestamp}\n")
-        f.write(f"BRANCH: {get_current_branch()}\n")
+    with open(AUDIT_LOG, "a", encoding="utf-8") as log_file:
+        log_file.write("\n" + "="*70 + "\n")
+        log_file.write("TIMESTAMP: " + timestamp + "\n")
+        log_file.write("BRANCH: " + get_current_branch() + "\n")
         if bypass:
-            f.write(f"ACTION: FORCE-BYPASS\n")
-            f.write(f"REASON: {bypass_reason}\n")
+            log_file.write("ACTION: FORCE-BYPASS\n")
+            log_file.write("REASON: " + bypass_reason + "\n")
         else:
-            f.write(f"ACTION: BLOCKED\n")
+            log_file.write("ACTION: BLOCKED\n")
         for entry in entries:
-            f.write(f"  {entry}\n")
+            log_file.write("  " + entry + "\n")
 
 
 # ── Main Scanner ──────────────────────────────────────────────────────────────
@@ -241,31 +241,31 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    print(f"\n{BOLD}{'='*62}{NC}")
-    print(f"{BOLD}  VeraProb - Forensic Secrets Scanner (INV-28){NC}")
-    print(f"{BOLD}{'='*62}{NC}")
+    print("\n" + BOLD + "="*62 + NC)
+    print(BOLD + "  VeraProb - Forensic Secrets Scanner (INV-28)" + NC)
+    print(BOLD + "="*62 + NC)
 
     # -- Gate: only run on protected context ----------------------------------
     if not is_protected_context():
         branch = get_current_branch()
-        print(f"\n{GREEN}  [OK] Branch '{branch}' is not protected - scanner skipped.{NC}")
-        print(f"  (Scanner runs only on 'main' or PR-tracked branches)\n")
+        print("\n" + GREEN + "  [OK] Branch '" + branch + "' is not protected - scanner skipped." + NC)
+        print("  (Scanner runs only on 'main' or PR-tracked branches)\n")
         return 0
 
     staged = get_staged_files()
     if not staged:
-        print(f"\n{GREEN}  [OK] No staged files — nothing to scan.{NC}\n")
+        print("\n" + GREEN + "  [OK] No staged files — nothing to scan." + NC + "\n")
         return 0
 
-    print(f"\n  Branch: {BOLD}{get_current_branch()}{NC} (protected context)")
-    print(f"  Scanning {len(staged)} staged file(s)...\n")
+    print("\n  Branch: " + BOLD + get_current_branch() + NC + " (protected context)")
+    print("  Scanning " + str(len(staged)) + " staged file(s)...\n")
 
     all_findings: list[dict] = []
     scanned = 0
 
     for filepath in staged:
         if is_whitelisted(filepath):
-            print(f"  {YELLOW}[SKIP]{NC}  {filepath} (whitelisted)")
+            print("  " + YELLOW + "[SKIP]" + NC + "  " + filepath + " (whitelisted)")
             continue
         findings = scan_file(filepath)
         all_findings.extend(findings)
@@ -273,32 +273,34 @@ def main() -> int:
 
     # -- Report ----------------------------------------------------------------
     if all_findings:
-        print(f"\n{RED}{BOLD}  [X] SECRETS DETECTED - Commit Blocked{NC}")
-        print(f"{'-'*62}")
+        print("\n" + RED + BOLD + "  [X] SECRETS DETECTED - Commit Blocked" + NC)
+        print("-" * 62)
         log_entries = []
-        for f in all_findings:
-            entry = f"[LEVEL-{f['level']}] {f['file']}:{f['line']} - {f['type']} -> {f['masked']}"
-            print(f"  {RED}{entry}{NC}")
+        for finding in all_findings:
+            entry = "[LEVEL-{}] {}:{} - {} -> {}".format(
+                finding['level'], finding['file'], finding['line'], finding['type'], finding['masked']
+            )
+            print("  " + RED + entry + NC)
             log_entries.append(entry)
 
-        print(f"\n{BOLD}  How to fix:{NC}")
-        print(f"  1. Replace hardcoded secret with an environment variable.")
-        print(f"  2. Use Supabase Vault for sensitive credentials.")
-        print(f"  3. Add secret to .env (never commit .env).")
-        print(f"  4. If false-positive, use: python scripts/scan_secrets.py --force-bypass \"reason\"\n")
+        print("\n" + BOLD + "  How to fix:" + NC)
+        print("  1. Replace hardcoded secret with an environment variable.")
+        print("  2. Use Supabase Vault for sensitive credentials.")
+        print("  3. Add secret to .env (never commit .env).")
+        print("  4. If false-positive, use: python scripts/scan_secrets.py --force-bypass \"reason\"\n")
 
         if args.force_bypass:
             write_audit_log(log_entries, bypass=True, bypass_reason=args.force_bypass)
-            print(f"{YELLOW}  [WARN] FORCE-BYPASS activated. Reason: '{args.force_bypass}'{NC}")
-            print(f"  Audit logged to: {AUDIT_LOG}\n")
+            print(YELLOW + "  [WARN] FORCE-BYPASS activated. Reason: '" + args.force_bypass + "'" + NC)
+            print("  Audit logged to: " + AUDIT_LOG + "\n")
             return 0
 
         write_audit_log(log_entries)
-        print(f"  Audit logged to: {AUDIT_LOG}\n")
+        print("  Audit logged to: " + AUDIT_LOG + "\n")
         return 1
 
-    print(f"\n{GREEN}  [OK] No secrets detected in {scanned} file(s). Clean commit.{NC}")
-    print(f"{'='*62}\n")
+    print("\n" + GREEN + "  [OK] No secrets detected in " + str(scanned) + " file(s). Clean commit." + NC)
+    print("=" * 62 + "\n")
     return 0
 
 
