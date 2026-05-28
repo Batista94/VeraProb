@@ -17,7 +17,7 @@ void main() {
     setUp(() {
       mockDateTime = MockDateTimeProvider();
       mockClient = MockSupabaseClient();
-      when(() => mockDateTime.nowUtc()).thenReturn(DateTime.now().toUtc());
+      when(() => mockDateTime.nowUtc()).thenAnswer((_) => DateTime.now().toUtc());
       provider = RealtimeDataProvider(mockDateTime, mockClient);
     });
 
