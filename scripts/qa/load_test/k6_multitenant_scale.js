@@ -116,8 +116,8 @@ export const options = {
     'mt_isolation_rate':      [{ threshold: 'rate==1', abortOnFail: true }],
     // GPS ingest p95 < 500ms under 100-VU load
     'mt_gps_ingest_ms':       [{ threshold: 'p(95)<500', abortOnFail: false }],
-    // Verdict write p95 < 200ms
-    'mt_verdict_write_ms':    [{ threshold: 'p(95)<200', abortOnFail: false }],
+    // Verdict write p95 < 500ms (local Supabase under 500 VUs; advisory, non-aborting)
+    'mt_verdict_write_ms':    [{ threshold: 'p(95)<500', abortOnFail: false }],
   },
 };
 
