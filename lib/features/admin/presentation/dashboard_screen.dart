@@ -1,14 +1,196 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'widgets/charts_section.dart';
 import 'widgets/contractual_risk_radar.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 
+/// Tier-1 OCC dashboard: an asymmetric Bento grid prioritising actionable
+/// financial signal over decoration. Left pane = financial KPIs (1-tap
+/// drill-down) + telemetry confidence; right pane = the severity-sorted
+/// command feed.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth >= 1100;
+
+        const leftPane = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            FinancialKpiRow(),
+            SizedBox(height: 24),
+            _TelemetryConfidenceCard(),
+          ],
+        );
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          children: [
+            const _DashboardHeader(),
+            const SizedBox(height: 32),
+            if (isWide)
+              const Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: 2, child: leftPane),
+                  SizedBox(width: 24),
+                  Expanded(flex: 1, child: RiskFeedList()),
+                ],
+              )
+            else ...[
+              leftPane,
+              const SizedBox(height: 24),
+              const RiskFeedList(),
+            ],
+            const SizedBox(height: 40),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 24,
+      runSpacing: 24,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      alignment: WrapAlignment.spaceBetween,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: VeraProbColors.surface,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: VeraProbColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.analytics_rounded,
+                size: 32,
+                color: VeraProbColors.primary,
+              ),
+            ),
+            const SizedBox(width: 20),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Painel de Controle',
+                  style: VeraProbTypography.kpiValue.copyWith(
+                    fontSize: 32,
+                    height: 1.1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: VeraProbColors.onTime,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Operação em Tempo Real • Receita Protegida',
+                      style: VeraProbTypography.bodySmall.copyWith(
+                        color: VeraProbColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+        if (kDebugMode) const _DevSeedButton(),
+      ],
+    );
+  }
+}
+
+/// Telemetry confidence promoted from the app-bar badge to a full KPI cell.
+class _TelemetryConfidenceCard extends ConsumerWidget {
+  const _TelemetryConfidenceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final health = ref.watch(feedHealthProjectionProvider);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: health.color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.sensors_rounded, size: 16, color: health.color),
+              const SizedBox(width: 8),
+              Text(
+                'SAÚDE DA INGESTÃO DE TELEMETRIA',
+                style: VeraProbTypography.kpiLabel,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: health.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                health.label.toUpperCase(),
+                style: VeraProbTypography.kpiValue.copyWith(
+                  color: health.color,
+                  fontSize: 24,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Debug-only operation simulator. Lives in its own widget so production
+/// builds never reserve layout for it.
+class _DevSeedButton extends ConsumerWidget {
+  const _DevSeedButton();
 
   Future<void> _seedData(BuildContext context, WidgetRef ref) async {
     final organizationId = ref.read(currentOrganizationIdProvider);
@@ -22,9 +204,7 @@ class DashboardScreen extends ConsumerWidget {
       await repository.seedPhase9(organizationId);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Dados de teste inseridos com sucesso! 🚀'),
-          ),
+          const SnackBar(content: Text('Dados de teste inseridos.')),
         );
       }
     } catch (e) {
@@ -32,7 +212,7 @@ class DashboardScreen extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Erro ao inserir dados: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }
@@ -41,98 +221,15 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            return Wrap(
-              spacing: 24,
-              runSpacing: 24,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              alignment: WrapAlignment.spaceBetween,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.surface,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: VeraProbColors.border),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.analytics_rounded,
-                        size: 32,
-                        color: VeraProbColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 20),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Painel de Controle',
-                          style: VeraProbTypography.kpiValue.copyWith(
-                            fontSize: 32,
-                            height: 1.1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: VeraProbColors.onTime,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Operação em Tempo Real • Receita Protegida',
-                              style: VeraProbTypography.bodySmall.copyWith(
-                                color: VeraProbColors.textSecondary,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                if (kDebugMode)
-                  ElevatedButton.icon(
-                    onPressed: () => _seedData(context, ref),
-                    icon: const Icon(Icons.bolt_rounded, size: 18),
-                    label: const Text('SIMULAR OPERAÇÃO'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.amber.shade900,
-                      foregroundColor: Colors.white,
-                      elevation: 4,
-                      shadowColor: Colors.amber.shade900.withValues(alpha: 0.3),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-        const SizedBox(height: 40),
-        const ChartsSection(),
-        const SizedBox(height: 32),
-        const ContractualRiskRadar(),
-        const SizedBox(height: 40),
-      ],
+    return ElevatedButton.icon(
+      onPressed: () => _seedData(context, ref),
+      icon: const Icon(Icons.bolt_rounded, size: 18),
+      label: const Text('SIMULAR OPERAÇÃO'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.amber.shade900,
+        foregroundColor: Colors.white,
+        elevation: 4,
+      ),
     );
   }
 }

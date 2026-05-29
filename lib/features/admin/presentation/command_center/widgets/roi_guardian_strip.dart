@@ -16,7 +16,7 @@ class RoiGuardianStrip extends ConsumerWidget {
 
     return Container(
       height: 42,
-      color: const Color(0xFF0A1628), // dark navy — SOC palette
+      color: VeraProbColors.background,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: switch (roiAsync) {
         AsyncLoading() => const Center(

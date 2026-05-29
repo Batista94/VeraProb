@@ -46,7 +46,7 @@ void main() {
 
   group('AppTheme Coverage', () {
     testWidgets('VeraProbColors access', (WidgetTester tester) async {
-      expect(VeraProbColors.background, const Color(0xFF0F172A));
+      expect(VeraProbColors.background, const Color(0xFF0A0A0F));
       expect(VeraProbColors.primary, const Color(0xFF2DD4BF));
       expect(VeraProbColors.success, VeraProbColors.onTime);
       expect(VeraProbColors.warning, VeraProbColors.delayed);

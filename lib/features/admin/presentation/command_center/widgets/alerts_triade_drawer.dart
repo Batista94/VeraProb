@@ -160,7 +160,7 @@ class _DrawerHeader extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                Icons.hub_rounded,
+                Icons.crisis_alert_rounded,
                 color: VeraProbColors.critical,
                 size: 20,
               ),
@@ -438,7 +438,11 @@ class _RichEvidenceCard extends ConsumerWidget {
                   message: 'Sendo tratado por outro operador',
                   child: Padding(
                     padding: EdgeInsets.only(right: 4),
-                    child: Text('👀', style: TextStyle(fontSize: 12)),
+                    child: Icon(
+                      Icons.visibility_outlined,
+                      size: 12,
+                      color: VeraProbColors.textSecondary,
+                    ),
                   ),
                 ),
               Text(timeAgo, style: VeraProbTypography.caption),
@@ -484,7 +488,9 @@ class _RichEvidenceCard extends ConsumerWidget {
                     ref
                         .read(selectedContractIdProvider.notifier)
                         .set(alert.contractId);
-                    ref.read(adminIndexProvider.notifier).set(5);
+                    ref
+                        .read(adminIndexProvider.notifier)
+                        .set(AdminNav.slaAudit.index);
                     Navigator.of(context).pop();
                   },
                 ),
@@ -517,7 +523,11 @@ class _RichEvidenceCard extends ConsumerWidget {
               width: 16,
               height: 16,
               alignment: Alignment.center,
-              child: const Text('👀', style: TextStyle(fontSize: 12)),
+              child: const Icon(
+                Icons.visibility_outlined,
+                size: 12,
+                color: VeraProbColors.textSecondary,
+              ),
             ),
           ),
         ],

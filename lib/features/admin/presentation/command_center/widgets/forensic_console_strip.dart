@@ -62,8 +62,8 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
       height: 40,
       width: double.infinity,
       decoration: const BoxDecoration(
-        color: Color(0xFF1A1A1A),
-        border: Border(top: BorderSide(color: Color(0xFF333333))),
+        color: VeraProbColors.surface,
+        border: Border(top: BorderSide(color: VeraProbColors.border)),
       ),
       child: switch (ledgerAsync) {
         AsyncData(:final value) => () {
@@ -136,7 +136,7 @@ class _ConsoleItem extends StatelessWidget {
     final iconColor = isApproved
         ? const Color(0xFF4CAF50)
         : const Color(0xFFF44336);
-    final icon = isApproved ? '✔' : '❌';
+    final iconData = isApproved ? Icons.check_rounded : Icons.close_rounded;
 
     return Center(
       child: Row(
@@ -165,7 +165,7 @@ class _ConsoleItem extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Text(icon, style: TextStyle(color: iconColor, fontSize: 10)),
+          Icon(iconData, color: iconColor, size: 12),
         ],
       ),
     );

@@ -58,13 +58,13 @@ void main() {
         findsOneWidget,
       );
 
-      // Charts Section
-      expect(find.text('Performance de Execução Operacional'), findsOneWidget);
+      // Telemetry confidence Bento cell (promoted from app-bar badge)
+      expect(find.text('SAÚDE DA INGESTÃO DE TELEMETRIA'), findsOneWidget);
 
-      // Contractual Risk Radar (B3 — replaced heatmap)
-      expect(find.text('Radar de Risco Contratual'), findsOneWidget);
+      // Command feed panel
+      expect(find.text('Viagens Programadas (Turnos)'), findsOneWidget);
 
-      // Seed Button
+      // Seed Button (debug only)
       expect(find.text('SIMULAR OPERAÇÃO'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);

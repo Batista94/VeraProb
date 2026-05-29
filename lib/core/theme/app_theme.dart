@@ -8,11 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 class VeraProbColors {
   VeraProbColors._();
 
-  // ── Industrial Slate/Zinc Theme (24/7 Fatigue Reduction) ───
-  static const Color background = Color(0xFF0F172A); // Slate-950
-  static const Color surface = Color(0xFF1E293B); // Slate-800
-  static const Color surfaceElevated = Color(0xFF334155); // Slate-700
-  static const Color border = Color(0x66334155); // Slate-700 @40%
+  // ── Industrial Dark Theme (Tier-1 OCC, 24/7 Fatigue Reduction) ───
+  static const Color background = Color(0xFF0A0A0F); // Near-black charcoal
+  static const Color surface = Color(0xFF12121F); // Deep slate-violet
+  static const Color surfaceElevated = Color(0xFF1E1E2F); // Elevated surface
+  static const Color border = Color(0x0DFFFFFF); // Whisper border (white @5%)
 
   // ── Status Colors (CFO & Ops Friendly, Desaturated for Dark Mode) ─
   static const Color onTime = Color(0xFF10B981); // Emerald Green
@@ -93,7 +93,20 @@ class VeraProbTypography {
     }
   }
 
-  static TextStyle get kpiValue => base.copyWith(
+  /// Display/heading face (Outfit) for KPI values and section titles.
+  /// Falls back to [base] in test zones where runtime font fetch is disabled.
+  static TextStyle get heading {
+    try {
+      if (!GoogleFonts.config.allowRuntimeFetching) {
+        return base;
+      }
+      return GoogleFonts.outfit();
+    } catch (_) {
+      return base;
+    }
+  }
+
+  static TextStyle get kpiValue => heading.copyWith(
     fontSize: 28,
     fontWeight: FontWeight.w700,
     color: VeraProbColors.textPrimary,
@@ -108,7 +121,7 @@ class VeraProbTypography {
     textBaseline: TextBaseline.alphabetic,
   );
 
-  static TextStyle get sectionTitle => base.copyWith(
+  static TextStyle get sectionTitle => heading.copyWith(
     fontSize: 14,
     fontWeight: FontWeight.w700,
     color: VeraProbColors.textPrimary,
@@ -167,6 +180,7 @@ class AppTheme {
       brightness: Brightness.dark,
       fontFamily: VeraProbTypography.base.fontFamily,
       scaffoldBackgroundColor: VeraProbColors.background,
+      focusColor: VeraProbColors.primary.withValues(alpha: 0.4),
       colorScheme: const ColorScheme.dark(
         primary: VeraProbColors.primary,
         secondary: VeraProbColors.secondary,
