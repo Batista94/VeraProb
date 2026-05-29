@@ -12,6 +12,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
@@ -173,6 +174,8 @@ List<Override> _baseOverrides({
     vehicleInfractionRecurrenceProvider.overrideWith((ref, key) async => null),
     evaluationTracesProvider.overrideWith((ref, id) async => const []),
     ledgerEntriesProvider.overrideWith((ref, id) async => const []),
+    // Deterministic: bypass the live Nominatim call for the infraction address.
+    reverseGeocodeProvider.overrideWith((ref, _) async => null),
   ];
 }
 

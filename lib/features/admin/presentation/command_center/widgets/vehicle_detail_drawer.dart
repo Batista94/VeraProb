@@ -14,6 +14,7 @@ import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/presentation/shared/ui/status_badge.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/geofence_evidence_map.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'occurrence_modal.dart';
 import 'package:veraprob/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart';
 import 'event_tile_widget.dart';
@@ -619,10 +620,20 @@ class _EvidenceMiniMapSection extends ConsumerWidget {
       icon: Icons.map_outlined,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-        child: GeofenceEvidenceMap(
-          infractionPoint: vehiclePos,
-          markerColor: trip.status.color,
-          height: 140,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            GeofenceEvidenceMap(
+              infractionPoint: vehiclePos,
+              markerColor: trip.status.color,
+              height: 140,
+            ),
+            const SizedBox(height: VeraProbSpacing.sm),
+            ReverseGeocodedAddress(
+              lat: vehicleState.latitude,
+              lng: vehicleState.longitude,
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,8 @@
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/i_sla_template_audit_log_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
+import 'package:veraprob/domain/sla_audit/sla_template_audit_entry.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'package:veraprob/domain/sla_audit/transport_vertical.dart';
 import 'projections/penalties_form_data.dart';
@@ -11,14 +13,17 @@ import 'projections/penalties_form_data.dart';
 class SaveSlaTemplateHandler {
   final TenantValidationService _tenantValidator;
   final SlaTemplateRepository _repository;
+  final ISlaTemplateAuditLogRepository _auditLog;
   final IDateTimeProvider _clock;
 
   SaveSlaTemplateHandler({
     required TenantValidationService tenantValidator,
     required SlaTemplateRepository repository,
+    required ISlaTemplateAuditLogRepository auditLog,
     required IDateTimeProvider clock,
   }) : _tenantValidator = tenantValidator,
        _repository = repository,
+       _auditLog = auditLog,
        _clock = clock;
 
   /// Creates or updates an [SlaTemplate] and persists it.
@@ -63,6 +68,25 @@ class SaveSlaTemplateHandler {
           );
 
     await _repository.save(template);
+
+    // INV-3 meta-audit: immutable trace of every create/update.
+    final entry = SlaTemplateAuditEntry.create(
+      organizationId: organizationId,
+      templateId: template.id,
+      actorSessionId: sessionId,
+      action: existingId != null ? 'UPDATED' : 'CREATED',
+      templateSnapshot: {
+        'id': template.id,
+        'name': template.name,
+        'description': template.description,
+        'vertical': template.vertical?.name,
+        'penalties': template.penalties.toJson(),
+        'createdAt': template.createdAt.toIso8601String(),
+      },
+      clock: _clock,
+    );
+    await _auditLog.append(entry);
+
     return template;
   }
 }

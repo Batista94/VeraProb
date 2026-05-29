@@ -1,5 +1,5 @@
 BEGIN;
-SELECT plan(7);
+SELECT plan(9);
 
 GRANT SELECT, INSERT, UPDATE ON public.csv_mapping_templates TO authenticated;
 
@@ -58,5 +58,36 @@ SELECT throws_ok(
   'TC5/INV-22: Cross-tenant insert blocked by RLS WITH CHECK'
 );
 
+-- ── TC6/P3: CHECK constraint rejects invalid target_entity ───────────────
+
+SET LOCAL request.jwt.claims = '{"role":"authenticated","app_metadata":{"org_id":"a0000000-0000-0000-0000-00000000000a"}}';
+
+SELECT throws_ok(
+  $$ INSERT INTO public.csv_mapping_templates
+       (organization_id, name, target_entity, column_mappings, created_by)
+     VALUES
+       ('a0000000-0000-0000-0000-00000000000a', 'Invalid-Entity', 'bus',
+        '[{"csv_header":"X","target_field":"identifier"}]',
+        '00000000-0000-0000-0000-000000000002') $$,
+  '23514',
+  NULL,
+  'TC6/P3: CHECK constraint rejects target_entity = bus'
+);
+
+-- ── TC7/P4: UNIQUE constraint rejects duplicate name per org+entity ──────
+
+SELECT throws_ok(
+  $$ INSERT INTO public.csv_mapping_templates
+       (organization_id, name, target_entity, column_mappings, created_by)
+     VALUES
+       ('a0000000-0000-0000-0000-00000000000a', 'Test-Template-A', 'asset',
+        '[{"csv_header":"Y","target_field":"capacity"}]',
+        '00000000-0000-0000-0000-000000000002') $$,
+  '23505',
+  NULL,
+  'TC7/P4: UNIQUE constraint rejects duplicate name for same org+entity'
+);
+
 SELECT * FROM finish();
 ROLLBACK;
+

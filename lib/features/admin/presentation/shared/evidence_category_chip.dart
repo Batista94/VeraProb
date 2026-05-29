@@ -19,7 +19,12 @@ class EvidenceCategoryChip extends StatelessWidget {
     'oper': (emoji: '🛠️', label: 'Operacional', color: VeraProbColors.delayed),
     'estado': (emoji: '📸', label: 'Estado', color: VeraProbColors.onTime),
     'doc': (emoji: '📑', label: 'Documental', color: VeraProbColors.info),
-    'outros': (emoji: '🔍', label: 'Outros', color: VeraProbColors.neutral),
+    // textSecondary, not neutral: #64748B fails WCAG AA (2.72:1) as chip text.
+    'outros': (
+      emoji: '🔍',
+      label: 'Outros',
+      color: VeraProbColors.textSecondary,
+    ),
   };
 
   @override
@@ -27,7 +32,7 @@ class EvidenceCategoryChip extends StatelessWidget {
     final entry = _map[category];
     final emoji = entry?.emoji ?? '—';
     final label = entry?.label ?? 'Sem tag';
-    final color = entry?.color ?? VeraProbColors.neutral;
+    final color = entry?.color ?? VeraProbColors.textSecondary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

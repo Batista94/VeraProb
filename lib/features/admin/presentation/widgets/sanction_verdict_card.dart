@@ -13,6 +13,7 @@ import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
@@ -325,6 +326,15 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                             ),
                         ],
                       ),
+                    ),
+                  ),
+
+                  // Human-readable address for the infraction coordinates above.
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                    child: ReverseGeocodedAddress(
+                      lat: evidence.primaryEvidenceLat,
+                      lng: evidence.primaryEvidenceLng,
                     ),
                   ),
 

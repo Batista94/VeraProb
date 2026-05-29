@@ -64,3 +64,16 @@ final geocodingSearchProvider =
           .search(query)
           .withProviderTimeout();
     });
+
+/// Resolves a (lat, lng) pair to a human-readable address.
+///
+/// Coordinates are rounded to 4dp by callers before keying so nearby points
+/// share one cache entry and one upstream call.
+final reverseGeocodeProvider = FutureProvider.autoDispose
+    .family<String?, (double, double)>((ref, coords) async {
+      final (lat, lng) = coords;
+      return ref
+          .read(geocodingRepositoryProvider)
+          .reverseGeocode(lat, lng)
+          .withProviderTimeout();
+    });

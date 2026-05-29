@@ -12,7 +12,7 @@
 VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto implementa um motor de alta performance para validação determinística de SLAs de contratos B2B a partir de fluxos de telemetria bruta.
 
 > [!WARNING]
-> **Projeto Pessoal - Build to Learn**: Este repositório é um laboratório de experimentação técnica e arquitetura. O código não foi auditado, não possui ambiente de produção e **não deve ser utilizado em sistemas reais**.
+> **Laboratório de Engenharia Especializada**: Este repositório é um ambiente de experimentação técnica. Embora implemente rigor de nível enterprise e segurança determinística, o ecossistema atual opera de forma independente, **não passou por processos de auditoria externa formal (como firmas SOC 2/Forense)** e não possui infraestrutura homologada para produção em massa.
 
 ### Objetivos Práticos
 O repositório serve como sandbox individual para validar padrões arquiteturais de alta criticidade em sistemas distribuídos:
@@ -246,7 +246,7 @@ Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, co
 VeraProb is an engineering study focused on **Forensic Contract Governance**. The project implements a high-performance engine designed for deterministic SLA validation of B2B contracts using raw telemetry streams.
 
 > [!WARNING]
-> **Personal Project - Build to Learn**: This repository is a technical playground for architecture and backend experimentation. The code is unaudited, lacks a live environment, and **must not be used in production systems**.
+> **Specialized Engineering Lab**: This repository is a technical playground. Although it implements enterprise-grade rigor and deterministic security, the current ecosystem operates independently, **has not undergone formal external auditing processes (such as SOC 2/Forensic firms)**, and lacks a live production-ready infrastructure.
 
 ### Project Objectives
 A solo sandbox designed to test high-criticality patterns in distributed systems:

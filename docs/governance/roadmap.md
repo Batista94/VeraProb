@@ -22,19 +22,19 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 12/32 itens de Readiness concluídos.
+**Status:** EM ANDAMENTO — 20/32 itens de Readiness concluídos.
 Verificar checklists detalhados de readiness e testes manuais em [roadmap_archive.md](roadmap_archive.md#milestone-gate-ready-for-first-tenant).
 
 ### Checklist "READY FOR FIRST TENANT"
 
-- [ ] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI.
+- [x] **Relatório PDF em nível 'Executive Grade'** com Sumário de ROI. ✅
 - [x] **Validação rigorosa de CNPJ** (Máscara + Unicidade) em todo o sistema.
 - [x] **Função de Reenviar Convite e Arquivamento de Tenants** ativa.
-- [ ] **Importador de contratos via CSV** com validador de dados.
-- [ ] **Importador Universal de CSV** funcional com mapeamento persistente por tenant.
-- [ ] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo.
+- [x] **Importador de contratos via CSV** com validador de dados. ✅
+- [x] **Importador Universal de CSV** funcional com mapeamento persistente por tenant. ✅
+- [x] **Relatório PDF em formato de 'Certificado'** com Sumário Executivo. ✅
 - [x] **Bot de evidências (Telegram)** integrado à Fila Auditora.
-- [ ] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA.
+- [x] **Histórico de Meta-Auditoria** ativo para alteração de regras SLA. ✅
 - [x] **RLS validada** e testada contra vazamento de dados entre tenants.
 - [x] **Fluxo de convite e ativação de conta** para novos administradores funcional.
 - [x] **Banco de dados preparado com organization_id** em todas as tabelas transacionais.
@@ -42,10 +42,10 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - [x] MFA and Edge Proxy active (Total removal of `service_role`) — Edge Proxy ✅ done (9.6.A.1), MFA ✅ done (9.6.A.2).
   - *NOTE: Local MFA validation is currently bypassed in Dev mode when server support is absent. Full end-to-end validation with TOTP enrollment MUST be confirmed in Staging/HMG before production release (INV-6).*
 - [x] **Entity Alias Mapping:** Search by Name/CNPJ in `ContractsScreen` and `ContractorManagementScreen` ✅ *(cobertura 100% das telas listadas em 9.8.F — auditoria de telas adicionais pendente)*
-- [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
-- [ ] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists.
+- [x] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations. ✅
+- [x] **Reverse Geocoding:** Functional addresses and zone names instead of raw coordinates in 100% of lists. ✅
 - [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
-- [ ] **Audit Log:** Registration of critical changes in SLA models for governance.
+- [x] **Audit Log:** Registration of critical changes in SLA models for governance. ✅
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
 - [x] **Sidebar Refactor:** Simplified sidebar (<8 items) with centralized Admin Hub.
 - [ ] **Industrial Deep Forms:** Dark theme (Industrial Deep) applied to 100% of form and drawer components.
@@ -118,16 +118,16 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard.
 - **[UX] Empty State Shortcuts:** Replace "No records" placeholders with quick action cards and contextual onboarding guides.
 
-### [ ] Phase 10.4.B — Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída)
+### [x] Phase 10.4.B — Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída)
 
-- **Status:** EM ANDAMENTO
+- **Status:** COMPLETED ✅
 - **Deliverables:**
   - [x] **[TECH/UX] Bloco 1: Entrada (Universal CSV Mapping Engine):** Interface de upload (`lib/features/admin/`) que permite ao usuário mapear colunas de arquivos externos para as entidades do sistema (Veículos, Contratos, Zonas) com validação prévia de erros (Pre-flight Validation) antes de gravar no Supabase.
-  - [/] **[BIZ/UX] Bloco 2: Saída (Executive-Grade Forensic PDF Certificate):** Geração de dossiê forense (PDF) na camada de aplicação e domínio (concluídos: `ForensicDossier` com `int savingsCents` [INV-4], `IForensicPdfGenerator` e `GenerateForensicDossierHandler` com isolamento de tenant [INV-1]; pendentes: infraestrutura física de renderização do PDF com MapTiler/Telegram bytes e botão de download na UI).
-  - [ ] **[UX] Bloco 3: Fechamento de Débitos Críticos do Checklist:**
-    - [ ] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations.
-    - [ ] **Reverse Geocoding:** Endereços legíveis e nomes de zonas em 100% das listas ao invés de coordenadas brutas.
-    - [ ] **Audit Log (Meta-Audit):** Registro de alterações críticas nos modelos de SLA para governança.
+  - [x] **[BIZ/UX] Bloco 2: Saída (Executive-Grade Forensic PDF Certificate):** Geração de dossiê forense (PDF) na camada de aplicação e domínio (concluídos: `ForensicDossier` com `int savingsCents` [INV-4], `IForensicPdfGenerator` e `GenerateForensicDossierHandler` com isolamento de tenant [INV-1] e rastreamento híbrido na cadeia de custódia via `pdf_dossier_logs` append-only).
+  - [x] **[UX] Bloco 3: Fechamento de Débitos Críticos do Checklist:**
+    - [x] **Accessibility Gate:** Visual contrast validated (WCAG 2.1 AA) for 24/7 operations via `contrast_checker.dart` validations.
+    - [x] **Reverse Geocoding:** Endereços legíveis e nomes de zonas em 100% das listas ao invés de coordenadas brutas via `reverse_geocoded_address.dart`.
+    - [x] **Audit Log (Meta-Audit):** Registro de alterações críticas nos modelos de SLA para governança via persistência imutável em `sla_template_audit_log`.
 
 ### [ ] Phase 10.5 — First Pilot Tenant Onboarding
 

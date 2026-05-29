@@ -3,12 +3,15 @@ import 'package:veraprob/application/sla_audit/projections/sla_template_view.dar
 import 'package:veraprob/application/sla_audit/clone_sla_template_handler.dart';
 import 'package:veraprob/application/sla_audit/save_sla_template_handler.dart';
 import 'package:veraprob/application/sla_audit/sla_template_presets.dart';
+import 'package:veraprob/domain/sla_audit/i_sla_template_audit_log_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_template.dart';
 import 'package:veraprob/domain/sla_audit/sla_template_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_audit_log_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_template_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_audit_log_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
@@ -25,12 +28,23 @@ final slaTemplateRepositoryProvider = Provider<SlaTemplateRepository>((ref) {
   };
 });
 
+final slaTemplateAuditLogRepositoryProvider =
+    Provider<ISlaTemplateAuditLogRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory => InMemorySlaTemplateAuditLogRepository(),
+        PersistenceMode.postgres => PostgresSlaTemplateAuditLogRepository(
+          ref.watch(supabaseClientProvider),
+        ),
+      };
+    });
+
 // ── Handlers ─────────────────────────────────────────────────
 
 final saveSlaTemplateHandlerProvider = Provider<SaveSlaTemplateHandler>((ref) {
   return SaveSlaTemplateHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     repository: ref.watch(slaTemplateRepositoryProvider),
+    auditLog: ref.watch(slaTemplateAuditLogRepositoryProvider),
     clock: ref.watch(dateTimeProviderProvider),
   );
 });
@@ -91,12 +105,6 @@ final slaTemplateByIdProvider = FutureProvider.family<SlaTemplateView?, String>(
 );
 
 // ── Mutations ────────────────────────────────────────────────
-
-/// Saves a template and invalidates the list cache.
-Future<void> saveSlaTemplate(SlaTemplate template, WidgetRef ref) async {
-  await ref.read(slaTemplateRepositoryProvider).save(template);
-  ref.invalidate(slaTemplatesProvider);
-}
 
 /// Deletes a template and invalidates the list cache.
 Future<void> deleteSlaTemplate(

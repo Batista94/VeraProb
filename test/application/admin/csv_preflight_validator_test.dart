@@ -63,14 +63,14 @@ void main() {
         {
           'PLACA': 'ABC-1234',
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
         {
           'PLACA': 'DEF-5678',
           'CAPACIDADE': '42',
-          'CNPJ': '456',
+          'CNPJ': '11.444.777/0001-61',
           'DATA': '2024-01-02',
           'LAT': '-23.6',
         },
@@ -88,7 +88,7 @@ void main() {
         {
           'PLACA': '   ',
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
@@ -105,7 +105,7 @@ void main() {
       final rows = [
         {
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         }, // PLACA is missing completely
@@ -122,7 +122,7 @@ void main() {
         {
           'PLACA': 'ABC-1234',
           'CAPACIDADE': 'quarenta',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
@@ -139,7 +139,7 @@ void main() {
         {
           'PLACA': 'ABC-1234',
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '91.5',
         },
@@ -156,14 +156,14 @@ void main() {
         {
           'PLACA': 'ABC-1234',
           'CAPACIDADE': '40',
-          'CNPJ': '123456',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
         {
           'PLACA': 'DEF-5678',
           'CAPACIDADE': '42',
-          'CNPJ': '123456',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-02',
           'LAT': '-23.6',
         }, // duplicate
@@ -183,7 +183,7 @@ void main() {
         {
           'PLACA': '=cmd|/C!',
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
@@ -200,7 +200,7 @@ void main() {
         {
           'PLACA': '@SUM(1,1)',
           'CAPACIDADE': '40',
-          'CNPJ': '123',
+          'CNPJ': '11.222.333/0001-81',
           'DATA': '2024-01-01',
           'LAT': '-23.5',
         },
@@ -219,7 +219,7 @@ void main() {
           {
             'PLACA': '<script>alert(1)</script>ABC-1234',
             'CAPACIDADE': '40',
-            'CNPJ': '123',
+            'CNPJ': '11.222.333/0001-81',
             'DATA': '2024-01-01',
             'LAT': '-23.5',
           },
@@ -229,5 +229,80 @@ void main() {
         expect(report.isClean, true);
       },
     );
+
+    // ── G1: mod-11 structural validation ──────────────────────────────────
+
+    test('V2-new: Rejects CNPJ with invalid mod-11 check digit', () {
+      final rows = [
+        {
+          'PLACA': 'ABC-1234',
+          'CAPACIDADE': '40',
+          'CNPJ': '12345678000199',
+          'DATA': '2024-01-01',
+          'LAT': '-23.5',
+        },
+      ];
+
+      final report = validator.validate(rows, template);
+
+      expect(report.hasErrors, true);
+      expect(report.errors.first.errorCode, 'invalid_document');
+      expect(report.errors.first.rowIndex, 1);
+    });
+
+    // ── G2: formatHint date parse ─────────────────────────────────────────
+
+    test('V5-fix: Parses date with formatHint dd/MM/yyyy correctly', () {
+      final templateWithHint = CsvMappingTemplate(
+        id: '2',
+        organizationId: 'org1',
+        name: 'Date Hint Template',
+        targetEntity: 'contract',
+        columnMappings: [
+          const ColumnMapping(
+            csvHeader: 'DATA',
+            targetField: CsvTargetField.startDate,
+            formatHint: 'dd/MM/yyyy',
+          ),
+        ],
+        createdAt: DateTime.now().toUtc(),
+        updatedAt: DateTime.now().toUtc(),
+      );
+
+      final rows = [
+        {'DATA': '25/12/2024'},
+      ];
+
+      final report = validator.validate(rows, templateWithHint);
+      expect(report.isClean, true);
+      expect(report.validRows, 1);
+    });
+
+    test('V5b: Rejects invalid date even with formatHint', () {
+      final templateWithHint = CsvMappingTemplate(
+        id: '3',
+        organizationId: 'org1',
+        name: 'Date Hint Template',
+        targetEntity: 'contract',
+        columnMappings: [
+          const ColumnMapping(
+            csvHeader: 'DATA',
+            targetField: CsvTargetField.startDate,
+            formatHint: 'dd/MM/yyyy',
+          ),
+        ],
+        createdAt: DateTime.now().toUtc(),
+        updatedAt: DateTime.now().toUtc(),
+      );
+
+      final rows = [
+        {'DATA': '99/99/9999'},
+      ];
+
+      final report = validator.validate(rows, templateWithHint);
+      expect(report.hasErrors, true);
+      expect(report.errors.first.errorCode, 'invalid_date');
+      expect(report.errors.first.message, contains('dd/MM/yyyy'));
+    });
   });
 }
