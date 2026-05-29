@@ -19,5 +19,12 @@ class PlaceSuggestion {
     required this.displayName,
     required this.lat,
     required this.lng,
-  });
+  }) : assert(
+         lat >= -90.0 && lat <= 90.0,
+         'Latitude must be between -90 and 90',
+       ),
+       assert(
+         lng >= -180.0 && lng <= 180.0,
+         'Longitude must be between -180 and 180',
+       );
 }
