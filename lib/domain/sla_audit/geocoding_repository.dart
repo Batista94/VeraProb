@@ -1,5 +1,10 @@
 abstract class GeocodingRepository {
   Future<List<PlaceSuggestion>> search(String query);
+
+  /// Resolves [lat]/[lng] to a human-readable address.
+  ///
+  /// Returns `null` when the location cannot be resolved.
+  Future<String?> reverseGeocode(double lat, double lng);
 }
 
 class PlaceSuggestion {

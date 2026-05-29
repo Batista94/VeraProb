@@ -49,6 +49,9 @@ class _FakeGeocodingRepository implements GeocodingRepository {
     callCount++;
     return _results;
   }
+
+  @override
+  Future<String?> reverseGeocode(double lat, double lng) async => null;
 }
 
 // ── Host widget factory ───────────────────────────────────────

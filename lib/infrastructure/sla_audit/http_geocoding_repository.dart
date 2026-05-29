@@ -40,4 +40,30 @@ class HttpGeocodingRepository implements GeocodingRepository {
         )
         .toList();
   }
+
+  @override
+  Future<String?> reverseGeocode(double lat, double lng) async {
+    // Round to 4dp (~11m): caps Nominatim call volume and stabilizes caching.
+    final rLat = double.parse(lat.toStringAsFixed(4));
+    final rLng = double.parse(lng.toStringAsFixed(4));
+
+    final uri = Uri.https('nominatim.openstreetmap.org', '/reverse', {
+      'lat': rLat.toString(),
+      'lon': rLng.toString(),
+      'format': 'json',
+    });
+
+    final response = await _client.get(
+      uri,
+      headers: {
+        'User-Agent': 'veraprob/1.0 (admin@veraprob.app)',
+        'Accept-Language': 'pt-BR,pt;q=0.9',
+      },
+    );
+
+    if (response.statusCode != 200) return null;
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return json['display_name'] as String?;
+  }
 }
