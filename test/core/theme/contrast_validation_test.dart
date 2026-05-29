@@ -86,16 +86,22 @@ void main() {
       });
     });
 
-    test('raw neutral fails AA as chip text (regression guard)', () {
-      // #64748B ≈ 2.72:1 over its own 0.12 composite — below 3:1.
-      // EvidenceCategoryChip MUST use textSecondary for the neutral fallback;
-      // this guard prevents anyone re-introducing neutral as chip text.
-      final ratio = ContrastChecker.alphaBlendedRatio(
+    test('textSecondary outperforms raw neutral as chip text (design rule)', () {
+      // EvidenceCategoryChip MUST use textSecondary for the neutral fallback.
+      // The Industrial Dark surface lifted raw neutral above the 3:1 floor, so
+      // the guard now asserts the durable rule independent of palette tuning:
+      // textSecondary is strictly the higher-contrast choice over neutral.
+      final neutralRatio = ContrastChecker.alphaBlendedRatio(
         VeraProbColors.neutral,
         0.12,
         VeraProbColors.surface,
       );
-      expect(ratio, lessThan(uiComponent));
+      final secondaryRatio = ContrastChecker.alphaBlendedRatio(
+        VeraProbColors.textSecondary,
+        0.12,
+        VeraProbColors.surface,
+      );
+      expect(secondaryRatio, greaterThan(neutralRatio));
     });
   });
 }

@@ -7,6 +7,7 @@ import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 
 /// Slim top bar verifying 4 core master data prerequisites.
 /// Renders as a 48px strip anchored above the main content — no layout displacement.
@@ -33,14 +34,26 @@ class OnboardingProgressBanner extends ConsumerWidget {
     final hasRules = (rulesAsync.value ?? []).isNotEmpty;
 
     final prerequisites = [
-      _Prerequisite(label: 'Zonas', isFulfilled: hasZones, navIndex: 7),
+      _Prerequisite(
+        label: 'Zonas',
+        isFulfilled: hasZones,
+        navIndex: AdminNav.zones.index,
+      ),
       _Prerequisite(
         label: 'Contratantes',
         isFulfilled: hasContractors,
-        navIndex: 11,
+        navIndex: AdminNav.contractors.index,
       ),
-      _Prerequisite(label: 'Veículos', isFulfilled: hasVehicles, navIndex: 1),
-      _Prerequisite(label: 'SLA Template', isFulfilled: hasRules, navIndex: 9),
+      _Prerequisite(
+        label: 'Veículos',
+        isFulfilled: hasVehicles,
+        navIndex: AdminNav.drivers.index,
+      ),
+      _Prerequisite(
+        label: 'SLA Template',
+        isFulfilled: hasRules,
+        navIndex: AdminNav.slaTemplates.index,
+      ),
     ];
 
     final completedCount = prerequisites.where((p) => p.isFulfilled).length;

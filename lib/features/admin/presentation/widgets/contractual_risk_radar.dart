@@ -6,6 +6,7 @@ import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_n
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
 import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 final _timeFormat = DateFormat('HH:mm');
@@ -23,9 +24,9 @@ class ContractualRiskRadar extends ConsumerWidget {
       children: [
         _buildHeader(),
         const SizedBox(height: 24),
-        const _FinancialKpiRow(),
+        const FinancialKpiRow(),
         const SizedBox(height: 32),
-        const _RiskFeedList(),
+        const RiskFeedList(),
       ],
     );
   }
@@ -67,12 +68,15 @@ class ContractualRiskRadar extends ConsumerWidget {
 // CFO KPIs
 // ═══════════════════════════════════════════════════════════════
 
-class _FinancialKpiRow extends ConsumerWidget {
-  const _FinancialKpiRow();
+class FinancialKpiRow extends ConsumerWidget {
+  const FinancialKpiRow({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final impactAsync = ref.watch(financialImpactProvider);
+    // Provenance: every KPI is one tap from the raw impact ledger.
+    void drillDown() =>
+        ref.read(adminIndexProvider.notifier).go(AdminNav.financialImpact);
 
     return switch (impactAsync) {
       AsyncLoading() => const Center(
@@ -92,6 +96,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               value: 'R\$ ${(value.protectedRevenue / 100).toStringAsFixed(2)}',
               color: VeraProbColors.success,
               icon: Icons.shield,
+              onTap: drillDown,
             ),
           ),
           const SizedBox(width: 16),
@@ -101,6 +106,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               value: 'R\$ ${(value.revenueAtRisk / 100).toStringAsFixed(2)}',
               color: VeraProbColors.warning,
               icon: Icons.warning_amber_rounded,
+              onTap: drillDown,
             ),
           ),
           const SizedBox(width: 16),
@@ -110,6 +116,7 @@ class _FinancialKpiRow extends ConsumerWidget {
               value: 'R\$ ${(value.lostRevenue / 100).toStringAsFixed(2)}',
               color: VeraProbColors.error,
               icon: Icons.gavel,
+              onTap: drillDown,
             ),
           ),
         ],
@@ -123,51 +130,68 @@ class _KpiCard extends StatelessWidget {
   final String value;
   final Color color;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const _KpiCard({
     required this.title,
     required this.value,
     required this.color,
     required this.icon,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VeraProbColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 16, color: color),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  title,
-                  style: VeraProbTypography.caption.copyWith(
-                    letterSpacing: 0.5,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+    return Semantics(
+      button: onTap != null,
+      label: '$title: $value',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withValues(alpha: 0.25)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 16, color: color),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: VeraProbTypography.kpiLabel,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    if (onTap != null)
+                      const Icon(
+                        Icons.north_east_rounded,
+                        size: 14,
+                        color: VeraProbColors.textDisabled,
+                      ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            value,
-            style: VeraProbTypography.kpiValue.copyWith(
-              color: color,
-              fontWeight: FontWeight.w700,
+                const SizedBox(height: 12),
+                Text(
+                  value,
+                  style: VeraProbTypography.kpiValue.copyWith(
+                    color: color,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -177,8 +201,8 @@ class _KpiCard extends StatelessWidget {
 // Timeline Feed
 // ═══════════════════════════════════════════════════════════════
 
-class _RiskFeedList extends ConsumerWidget {
-  const _RiskFeedList();
+class RiskFeedList extends ConsumerWidget {
+  const RiskFeedList({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -206,14 +230,21 @@ class _RiskFeedList extends ConsumerWidget {
                   color: VeraProbColors.info,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  'Viagens Programadas (Turnos)',
-                  style: VeraProbTypography.sectionTitle,
+                Flexible(
+                  child: Text(
+                    'Viagens Programadas (Turnos)',
+                    style: VeraProbTypography.sectionTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
-                const Spacer(),
-                Text(
-                  'Ordenado por Severidade',
-                  style: VeraProbTypography.caption,
+                const SizedBox(width: 8),
+                const Tooltip(
+                  message: 'Ordenado por Severidade',
+                  child: Icon(
+                    Icons.sort_rounded,
+                    size: 16,
+                    color: VeraProbColors.textSecondary,
+                  ),
                 ),
               ],
             ),

@@ -286,13 +286,13 @@ void main() {
 
     // ── Header static elements ─────────────────────────────────────────────
 
-    testWidgets('header exibe ícone hub e botão de fechar com tooltip', (
+    testWidgets('header exibe ícone de alerta e botão de fechar com tooltip', (
       tester,
     ) async {
       await buildHost(tester);
       alertStreamController.add([]);
       await tester.pump();
-      expect(find.byIcon(Icons.hub_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.crisis_alert_rounded), findsOneWidget);
       expect(find.byTooltip('Fechar'), findsOneWidget);
     });
 

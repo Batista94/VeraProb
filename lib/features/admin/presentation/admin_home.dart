@@ -17,9 +17,18 @@ import 'screens/contractor_management_screen.dart';
 import 'screens/auditor_queue_screen.dart';
 import 'screens/defense_portal_screen.dart';
 import 'screens/sla_template_library_screen.dart';
+import 'screens/admin_hub_screen.dart';
+import 'screens/evidence_reconciliation_screen.dart';
+import 'package:veraprob/presentation/shell/settings_screen.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
 
+/// Admin shell composition.
+///
+/// `children` order MUST stay aligned with the `AdminNav` enum
+/// (`admin_navigation_provider.dart`) — index identity is the contract that
+/// keeps the sidebar, hub launcher, onboarding banner and command-center
+/// drawer in sync.
 class AdminHome extends ConsumerWidget {
   const AdminHome({super.key});
 
@@ -31,71 +40,12 @@ class AdminHome extends ConsumerWidget {
     );
 
     return AdminLayout(
+      // ── 6 operational pillars (rail destinations) ──────────
       destinations: [
         const NavigationRailDestination(
           icon: Icon(Icons.dashboard_outlined),
           selectedIcon: Icon(Icons.dashboard),
-          label: Text('Visão Geral'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.people_outlined),
-          selectedIcon: Icon(Icons.people),
-          label: Text('Motoristas'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.access_time_outlined),
-          selectedIcon: Icon(Icons.access_time_filled),
-          label: Text('Ponto Eletrônico'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.history_outlined),
-          selectedIcon: Icon(Icons.history),
-          label: Text('Auditoria OCC'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.description_outlined),
-          selectedIcon: Icon(Icons.description),
-          label: Text('Contratos'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.verified_user_outlined),
-          selectedIcon: Icon(Icons.verified_user),
-          label: Text('Auditoria de SLA'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.account_balance_outlined),
-          selectedIcon: Icon(Icons.account_balance),
-          label: Text('Impacto Financeiro'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.place_outlined),
-          selectedIcon: Icon(Icons.place),
-          label: Text('Zonas Operacionais'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.summarize_outlined),
-          selectedIcon: Icon(Icons.summarize),
-          label: Text('Relatórios'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.business_outlined),
-          selectedIcon: Icon(Icons.business),
-          label: Text('Organização'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.manage_accounts_outlined),
-          selectedIcon: Icon(Icons.manage_accounts),
-          label: Text('Usuários'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.handshake_outlined),
-          selectedIcon: Icon(Icons.handshake),
-          label: Text('Contratantes'),
-        ),
-        const NavigationRailDestination(
-          icon: Icon(Icons.library_books_outlined),
-          selectedIcon: Icon(Icons.library_books),
-          label: Text('Modelos SLA'),
+          label: Text('Painel de Controle'),
         ),
         NavigationRailDestination(
           icon: Badge(
@@ -123,23 +73,42 @@ class AdminHome extends ConsumerWidget {
           ),
           label: const Text('Portal Defesa'),
         ),
+        const NavigationRailDestination(
+          icon: Icon(Icons.account_balance_outlined),
+          selectedIcon: Icon(Icons.account_balance),
+          label: Text('Impacto Financeiro'),
+        ),
+        const NavigationRailDestination(
+          icon: Icon(Icons.history_outlined),
+          selectedIcon: Icon(Icons.history),
+          label: Text('Auditoria OCC'),
+        ),
+        const NavigationRailDestination(
+          icon: Icon(Icons.admin_panel_settings_outlined),
+          selectedIcon: Icon(Icons.admin_panel_settings),
+          label: Text('Administração'),
+        ),
       ],
+      // ── 18 screens (order == AdminNav) ─────────────────────
       children: const [
-        DashboardScreen(),
-        DriversScreen(),
-        TimecardReportsScreen(),
-        OperationalAuditScreen(),
-        ContractsScreen(),
-        SlaAuditScreen(),
-        SlaFinancialImpactScreen(),
-        OperationalZonesScreen(),
-        BillingCycleReportsScreen(),
-        OrgSettingsScreen(),
-        UserManagementScreen(),
-        ContractorManagementScreen(),
-        SlaTemplateLibraryScreen(),
-        AuditorQueueScreen(),
-        DefensePortalScreen(),
+        DashboardScreen(), // 0  dashboard
+        AuditorQueueScreen(), // 1  auditorQueue
+        DefensePortalScreen(), // 2  defensePortal
+        SlaFinancialImpactScreen(), // 3  financialImpact
+        OperationalAuditScreen(), // 4  operationalAudit
+        AdminHubScreen(), // 5  adminHub (launcher)
+        DriversScreen(), // 6  drivers
+        TimecardReportsScreen(), // 7  timecards
+        ContractsScreen(), // 8  contracts
+        SlaAuditScreen(), // 9  slaAudit
+        OperationalZonesScreen(), // 10 zones
+        BillingCycleReportsScreen(), // 11 billingReports
+        SlaTemplateLibraryScreen(), // 12 slaTemplates
+        OrgSettingsScreen(), // 13 orgSettings
+        UserManagementScreen(), // 14 userManagement
+        ContractorManagementScreen(), // 15 contractors
+        SettingsScreen(), // 16 settings
+        EvidenceReconciliationScreen(), // 17 evidence
       ],
     );
   }

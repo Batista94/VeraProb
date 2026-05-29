@@ -1,96 +1,56 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/admin_providers.dart';
 
-class _MockHttpOverrides extends HttpOverrides {
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback = (_, _, _) => true;
-  }
-}
-
-Widget _buildHub() {
-  return ProviderScope(
-    overrides: [
-      currentOperatorIdProvider.overrideWithValue('test-user-id'),
-      currentOperatorNameProvider.overrideWithValue('Operador Teste'),
-      orgMembersProvider.overrideWith((ref) => Future.value([])),
-      orgInvitationsProvider.overrideWith((ref) => Future.value([])),
-      orgSettingsProvider.overrideWith((ref) => Future.value(null)),
-    ],
-    child: const MaterialApp(home: AdminHubScreen()),
+Widget _buildHub(ProviderContainer container) {
+  return UncontrolledProviderScope(
+    container: container,
+    child: const MaterialApp(home: Scaffold(body: AdminHubScreen())),
   );
 }
 
 void main() {
-  setUp(() => HttpOverrides.global = _MockHttpOverrides());
-  tearDown(() => HttpOverrides.global = null);
+  late ProviderContainer container;
 
-  group('AdminHubScreen', () {
-    testWidgets('renders three tab labels', (tester) async {
-      tester.view.physicalSize = const Size(1200, 900);
+  setUp(() {
+    container = ProviderContainer(
+      overrides: [currentUserRoleProvider.overrideWithValue(UserRole.auditor)],
+    );
+  });
+
+  tearDown(() => container.dispose());
+
+  group('AdminHubScreen launcher', () {
+    testWidgets('renders grouped registry cards', (tester) async {
+      tester.view.physicalSize = const Size(1400, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_buildHub());
+      await tester.pumpWidget(_buildHub(container));
       await tester.pump();
 
-      expect(find.text('Ajustes'), findsOneWidget);
-      expect(find.text('Equipe'), findsOneWidget);
-      expect(find.text('Organização'), findsOneWidget);
+      expect(find.text('CADASTROS & RECURSOS'), findsOneWidget);
+      expect(find.text('Motoristas'), findsOneWidget);
+      expect(find.text('Contratos'), findsOneWidget);
     });
 
-    testWidgets('renders settings content on first tab by default', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
+    testWidgets('tapping a card navigates to its screen index', (tester) async {
+      tester.view.physicalSize = const Size(1400, 2000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_buildHub());
-      await tester.pumpAndSettle();
+      await tester.pumpWidget(_buildHub(container));
+      await tester.pump();
 
-      // SettingsScreen renders "CONFIGURAÇÕES DO SISTEMA"
-      expect(find.text('CONFIGURAÇÕES DO SISTEMA'), findsOneWidget);
-    });
+      await tester.tap(find.text('Motoristas'));
+      await tester.pump();
 
-    testWidgets('tab switch to Equipe shows user management content', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(_buildHub());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Equipe'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Gestao de Equipe'), findsOneWidget);
-    });
-
-    testWidgets('tab switch to Organização shows org settings content', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(_buildHub());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Organização'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Configurações da Organização'), findsOneWidget);
+      expect(container.read(adminIndexProvider), AdminNav.drivers.index);
     });
   });
 }
