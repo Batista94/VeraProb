@@ -46,18 +46,10 @@ REVOKE EXECUTE ON FUNCTION public.super_admin_archive_organization(uuid, text, u
 REVOKE EXECUTE ON FUNCTION public.super_admin_unarchive_organization(uuid, text, uuid)
   FROM PUBLIC, anon;
 
-DO $$
-DECLARE
-  r RECORD;
-BEGIN
-  FOR r IN (
-    SELECT oid::regprocedure AS sig
-      FROM pg_proc
-     WHERE proname = 'super_admin_update_organization_quota'
-  ) LOOP
-    EXECUTE 'REVOKE EXECUTE ON FUNCTION ' || r.sig || ' FROM PUBLIC, anon';
-  END LOOP;
-END $$;
+REVOKE EXECUTE ON FUNCTION public.super_admin_update_organization_quota(
+  uuid, text, integer, integer, uuid, text, jsonb, bigint, integer, smallint,
+  text, text, text, text, text, timestamp with time zone
+) FROM PUBLIC, anon;
 
 REVOKE EXECUTE ON FUNCTION public.super_admin_add_org_admin(
   uuid, text, uuid, uuid, timestamp with time zone, uuid
