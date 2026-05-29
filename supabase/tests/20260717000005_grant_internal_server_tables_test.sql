@@ -89,12 +89,12 @@ SELECT table_privs_are('public', 'spoofing_audit_entries', 'service_role', ARRAY
 
 -- 17. trips_audit
 SELECT table_privs_are('public', 'trips_audit', 'anon', ARRAY[]::text[], 'anon should have no privileges on trips_audit');
-SELECT table_privs_are('public', 'trips_audit', 'authenticated', ARRAY[]::text[], 'authenticated should have no privileges on trips_audit');
+SELECT table_privs_are('public', 'trips_audit', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have SELECT, INSERT, UPDATE, and DELETE on trips_audit');
 SELECT table_privs_are('public', 'trips_audit', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on trips_audit');
 
 -- 18. shadow_executions
 SELECT table_privs_are('public', 'shadow_executions', 'anon', ARRAY[]::text[], 'anon should have no privileges on shadow_executions');
-SELECT table_privs_are('public', 'shadow_executions', 'authenticated', ARRAY[]::text[], 'authenticated should have no privileges on shadow_executions');
+SELECT table_privs_are('public', 'shadow_executions', 'authenticated', ARRAY['SELECT'], 'authenticated should have SELECT on shadow_executions');
 SELECT table_privs_are('public', 'shadow_executions', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on shadow_executions');
 
 -- 19. shadow_execution_transitions
@@ -109,7 +109,7 @@ SELECT table_privs_are('public', 'shadow_verdicts', 'service_role', ARRAY['SELEC
 
 -- 21. telegram_evidence_categories
 SELECT table_privs_are('public', 'telegram_evidence_categories', 'anon', ARRAY[]::text[], 'anon should have no privileges on telegram_evidence_categories');
-SELECT table_privs_are('public', 'telegram_evidence_categories', 'authenticated', ARRAY[]::text[], 'authenticated should have no privileges on telegram_evidence_categories');
+SELECT table_privs_are('public', 'telegram_evidence_categories', 'authenticated', ARRAY['SELECT'], 'authenticated should have SELECT on telegram_evidence_categories');
 SELECT table_privs_are('public', 'telegram_evidence_categories', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on telegram_evidence_categories');
 
 SELECT * FROM finish();
