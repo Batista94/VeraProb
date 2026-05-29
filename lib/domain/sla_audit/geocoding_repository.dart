@@ -4,7 +4,10 @@ abstract class GeocodingRepository {
   /// Resolves [lat]/[lng] to a human-readable address.
   ///
   /// Returns `null` when the location cannot be resolved.
-  Future<String?> reverseGeocode(double lat, double lng);
+  Future<String?> reverseGeocode(
+    double lat, // Physical Metric - Double Required
+    double lng, // Physical Metric - Double Required
+  );
 }
 
 class PlaceSuggestion {
