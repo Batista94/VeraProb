@@ -54,11 +54,12 @@ Com base nas especificações forenses (`forensic-standards.md`) e nos requisito
 * **Objetivo:** Validar a importação completa de dados usando o mapeador universal com colunas válidas.
 * **Pré-condições:** Logado como `admin-a@veraprob.dev`.
 * **Passos:**
-  1. Navegar até o menu de Administração / Importador de Dados (CSV).
-  2. Selecionar o arquivo CSV de teste contendo veículos ou contratos.
-  3. Na interface de mapeamento, correlacionar as colunas do CSV aos campos do sistema (ex: "Placa" -> "vehicle_plate").
-  4. Clicar em "Executar Pre-flight".
-  5. Após aprovação visual sem erros, clicar em "Confirmar Importação".
+  1. Selecionar o pilar **"Administração"** no menu lateral e abrir a tela **"Zonas Operacionais"** (ou **"Contratantes"**).
+  2. Clicar no botão **"Importar CSV"** no topo da tela para abrir o modal do Importador Universal.
+  3. Selecionar o arquivo CSV de teste contendo veículos ou contratantes.
+  4. Na interface de mapeamento, correlacionar as colunas do CSV aos campos do sistema (ex: "Placa" -> "vehicle_plate").
+  5. Clicar em "Executar Pre-flight".
+  6. Após aprovação visual sem erros, clicar em "Confirmar Importação".
 * **Cenário Esperado:** O sistema exibe o progresso de importação e uma mensagem de sucesso ao final.
 * **O que validar:**
   * Os registros aparecem nas respectivas listas (ex: Frota/Contratos).

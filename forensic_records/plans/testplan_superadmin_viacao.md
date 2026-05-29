@@ -74,9 +74,8 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
 * **Objetivo:** Validar o cadastro básico de uma nova organização com dados válidos completos.
 * **Pré-condições:** SuperAdmin logado na plataforma.
 * **Passos:**
-  1. Acessar o menu "Organizações" ou "Dashboard do SuperAdmin".
-  2. Clicar no botão "Nova Organização".
-  3. **Passo 1 (Dados Fiscais):** Preencher os campos:
+  1. No menu lateral (NavigationRail) do SuperAdmin, selecionar a aba **"Nova Org"** (carrega o Wizard diretamente).
+  2. **Passo 1 (Dados Fiscais):** Preencher os campos:
      * **Razão Social:** Estrela Dalva Transportes Ltda
      * **Nome Fantasia:** Viação Estrela Dalva
      * **CNPJ:** `45.518.855/0001-47`
@@ -86,16 +85,16 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
      * **Plano:** `Starter`
      * **Timezone:** `America/Sao_Paulo`
      * **Moeda:** `BRL`
-  4. **Passo 2 (Limites & Config):** Preencher os campos:
+  3. **Passo 2 (Limites & Config):** Preencher os campos:
      * **Limite de Veículos:** `50`
      * **Limite de Contratos Ativos:** `10`
      * **Custo Mensal da Ferramenta:** `R$ 5.000,00`
      * **Tempo de Parada Padrão:** `300 segundos`
      * **Justificativa:** `Implantação inicial da Viação Estrela Dalva`
      * **Capabilities:** Selecionar Lacre, Carregamento, Cargo Check, Incidente, Doc.
-  5. **Passo 3 (Convite Admin):** Preencher os e-mails dos administradores:
+  4. **Passo 3 (Convite Admin):** Preencher os e-mails dos administradores:
      * `joao@estreladalva.com.br`
-  6. Clicar em "Criar e Enviar Convite".
+  5. Clicar em "Criar e Enviar Convite".
 * **Cenário Esperado:** A organização é criada com sucesso e o modal com o token/link de convite é exibido.
 * **O que validar:**
   * Persistência dos dados no banco de dados (incluindo CRM, Dia de Faturamento e Custo).
@@ -507,7 +506,7 @@ As seguintes regras foram extraídas diretamente dos serviços Dart e das trigge
   1. Realizar login como Admin de Organização.
   2. Inspecionar o menu lateral (Sidebar/NavigationRail).
 * **Cenário Esperado:**
-  * Os ícones de **"Organizações"** e **"Log de Auditoria Global"** (Lupa) **não devem aparecer**.
+  * Os ícones de **"Tenants"**, **"Nova Org"** e **"Audit Log"** (Lupa) **não devem aparecer** no menu lateral (NavigationRail).
   * A interface deve exibir apenas os módulos contratados (ex: Frota, Operação, Configurações locais).
 
 ---
