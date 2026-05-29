@@ -61,6 +61,7 @@ class _CsvMappingStepState extends ConsumerState<CsvMappingStep> {
                 csvHeader: header,
                 currentField: mapping?.targetField,
                 currentTransform: mapping?.transform,
+                targetEntity: state.targetEntity,
                 previewValue: state.previewRows.isNotEmpty
                     ? (state.previewRows.first[header] ?? '')
                     : '',
@@ -166,6 +167,7 @@ class _MappingRow extends StatelessWidget {
     required this.csvHeader,
     required this.currentField,
     required this.currentTransform,
+    required this.targetEntity,
     required this.previewValue,
     required this.onFieldChanged,
     required this.onTransformChanged,
@@ -174,6 +176,7 @@ class _MappingRow extends StatelessWidget {
   final String csvHeader;
   final CsvTargetField? currentField;
   final String? currentTransform;
+  final String targetEntity;
   final String previewValue;
   final ValueChanged<CsvTargetField?> onFieldChanged;
   final ValueChanged<String?> onTransformChanged;
@@ -212,6 +215,7 @@ class _MappingRow extends StatelessWidget {
               width: narrow ? double.infinity : 220,
               child: _TargetFieldDropdown(
                 value: currentField,
+                targetEntity: targetEntity,
                 onChanged: onFieldChanged,
               ),
             ),
@@ -239,9 +243,14 @@ class _MappingRow extends StatelessWidget {
 // ── Target Field Dropdown ─────────────────────────────────────────────────────
 
 class _TargetFieldDropdown extends StatelessWidget {
-  const _TargetFieldDropdown({required this.value, required this.onChanged});
+  const _TargetFieldDropdown({
+    required this.value,
+    required this.targetEntity,
+    required this.onChanged,
+  });
 
   final CsvTargetField? value;
+  final String targetEntity;
   final ValueChanged<CsvTargetField?> onChanged;
 
   @override
@@ -277,7 +286,8 @@ class _TargetFieldDropdown extends StatelessWidget {
             style: CsvT.labelStyle(color: CsvT.textLo, size: 12),
           ),
         ),
-        ...CsvTargetField.values.map((f) {
+        // Bloco 1A: filter by entity scope — never show Latitude for Contractor, etc.
+        ...CsvTargetField.forEntity(targetEntity).map((f) {
           return DropdownMenuItem(
             value: f,
             child: Text(

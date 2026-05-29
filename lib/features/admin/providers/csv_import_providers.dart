@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/application/admin/import_csv_handler.dart';
@@ -229,6 +231,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
         for (final h in headers) h: null,
       };
 
+      // Bloco 1B: auto-match headers to target fields.
+      // Pre-fills mappings so the user needs minimal manual intervention.
+      final autoMappings = _autoMatch(headers: headers, entity: _targetEntity);
+
       state = CsvImportMapped(
         targetEntity: _targetEntity,
         fileName: file.name,
@@ -236,7 +242,7 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
         previewRows: previewRows,
         allRows: dataRows,
         rawBytes: bytes.toList(),
-        mappings: emptyMappings,
+        mappings: autoMappings,
       );
     } on FormatException {
       _setError('Arquivo não pôde ser decodificado como UTF-8.');
@@ -430,6 +436,133 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       message: message,
     );
   }
+
+  // ── Auto-Match (Bloco 1B) ────────────────────────────────────────────────
+
+  /// Lexical auto-match: maps CSV headers to [CsvTargetField] using
+  /// normalised string comparison (lowercase, strip non-alphanumeric).
+  ///
+  /// Entity-scoped: a pattern matching [CsvTargetField.latitude] will produce
+  /// `null` if `entity == 'contractor'` because latitude is not whitelisted.
+  Map<String, ColumnMapping?> _autoMatch({
+    required List<String> headers,
+    required String entity,
+  }) {
+    final scopedFields = CsvTargetField.forEntity(entity);
+    final result = <String, ColumnMapping?>{};
+    for (final header in headers) {
+      final normalized = _normalizeHeader(header);
+      final match = _kAutoMatchRules.firstWhereOrNull(
+        (rule) =>
+            rule.$1.hasMatch(normalized) && scopedFields.contains(rule.$2),
+      );
+      result[header] = match == null
+          ? null
+          : ColumnMapping(csvHeader: header, targetField: match.$2);
+    }
+    return result;
+  }
+
+  /// Exposes [_autoMatch] for unit testing without breaking encapsulation.
+  @visibleForTesting
+  Map<String, ColumnMapping?> autoMatchForTest({
+    required List<String> headers,
+    required String entity,
+  }) => _autoMatch(headers: headers, entity: entity);
+
+  /// Normalises a CSV header for fuzzy matching:
+  /// lowercases and strips all non-alphanumeric characters.
+  static String _normalizeHeader(String h) =>
+      h.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  /// Priority-ordered match rules: (pattern, field).
+  ///
+  /// IMPORTANT: evaluated in declaration order — more specific rules first.
+  static final List<(RegExp, CsvTargetField)> _kAutoMatchRules = [
+    // ── externalId (highest priority — integration anchor) ────────────────
+    (
+      RegExp(r'^(idexterno|externalid|ext_id|extid|chaveintegracao)$'),
+      CsvTargetField.externalId,
+    ),
+
+    // ── contractor document ────────────────────────────────────────────────
+    (
+      RegExp(
+        r'^(cnpj|cnpjcliente|cnpjcontratante|taxid|documentocontratante|documento|doc)$',
+      ),
+      CsvTargetField.contractorDocument,
+    ),
+
+    // ── operator document (CPF — 11 digits) ───────────────────────────────
+    // 'documento'/'doc' appears above for contractorDocument; for operator
+    // entities the entity scope guard ensures contractorDocument is not
+    // in scopedFields, so the firstWhereOrNull continues to this rule.
+    (
+      RegExp(r'^(cpf|documentooperador|documentomotorista|documento|doc)$'),
+      CsvTargetField.operatorDocument,
+    ),
+
+    // ── asset identifier ───────────────────────────────────────────────────
+    (
+      RegExp(r'^(placa|plate|identificador|serial|chassi|frota)$'),
+      CsvTargetField.identifier,
+    ),
+
+    // ── operator fields ────────────────────────────────────────────────────
+    (
+      RegExp(r'^(nome|name|nomecompleto|nomeoperador|razaosocial)$'),
+      CsvTargetField.operatorName,
+    ),
+    (
+      RegExp(r'^(habilitacao|cnh|licensenumber|license|carteira)$'),
+      CsvTargetField.operatorLicense,
+    ),
+    (
+      RegExp(r'^(telefone|phone|celular|contato|cel)$'),
+      CsvTargetField.operatorPhone,
+    ),
+
+    // ── asset fields ───────────────────────────────────────────────────────
+    (RegExp(r'^(modelo|model|marca)$'), CsvTargetField.assetModel),
+    (
+      RegExp(r'^(capacidade|capacity|lugares|assentos|seats)$'),
+      CsvTargetField.capacity,
+    ),
+    (RegExp(r'^(status|situacao|estado)$'), CsvTargetField.assetStatus),
+
+    // ── contract fields ────────────────────────────────────────────────────
+    (
+      RegExp(r'^(codigocontrato|contractcode|contrato|numcontrato)$'),
+      CsvTargetField.contractCode,
+    ),
+    (
+      RegExp(r'^(datainicio|startdate|inicio|start|vigenciainicio)$'),
+      CsvTargetField.startDate,
+    ),
+    (
+      RegExp(r'^(datafim|enddate|fim|end|vigenciafim|termino)$'),
+      CsvTargetField.endDate,
+    ),
+
+    // ── zone fields ───────────────────────────────────────────────────────
+    (RegExp(r'^(nomezona|zonename|zona|nome)$'), CsvTargetField.zoneName),
+    (
+      RegExp(r'^(codigozona|zonecode|codigoexterno|codigo)$'),
+      CsvTargetField.zoneCode,
+    ),
+    (RegExp(r'^(lat|latitude)$'), CsvTargetField.latitude),
+    (RegExp(r'^(lon|lng|longitude)$'), CsvTargetField.longitude),
+    (
+      RegExp(r'^(raio|radius|radiometros|radiusmeters)$'),
+      CsvTargetField.radiusMeters,
+    ),
+
+    // ── notes ─────────────────────────────────────────────────────────────
+    (
+      RegExp(r'^(observacoes|notes|obs|nota|observacao)$'),
+      CsvTargetField.notes,
+    ),
+  ];
 }
 
 final csvImportFlowProvider =

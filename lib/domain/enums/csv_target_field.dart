@@ -31,9 +31,55 @@ enum CsvTargetField {
   radiusMeters, // Geofence radius
 
   // ── Shared ──
-  externalId, // Client-side ID for dedup
+  externalId, // Client-side ID for dedup (ERP integration anchor)
   notes; // Free-text observations
 
   /// DB-safe snake_case value.
   String get dbValue => name;
+
+  /// Returns the whitelisted fields for a given entity type.
+  ///
+  /// Entity Isolation (Bloco 1A): prevents cross-contamination of unrelated
+  /// fields in the UI dropdown (e.g., "Latitude" must never appear for
+  /// "contractor" — INV-22 oracle prevention).
+  ///
+  /// [externalId] and [notes] are shared across all entities as the
+  /// idempotency anchor and free-form annotation channel respectively.
+  static List<CsvTargetField> forEntity(String entity) => switch (entity) {
+    'asset' => const [
+      identifier,
+      assetModel,
+      capacity,
+      assetStatus,
+      externalId,
+      notes,
+    ],
+    'operator' => const [
+      operatorName,
+      operatorDocument,
+      operatorLicense,
+      operatorPhone,
+      externalId,
+      notes,
+    ],
+    'contractor' => const [contractorDocument, externalId, notes],
+    'contract' => const [
+      contractCode,
+      contractorDocument,
+      startDate,
+      endDate,
+      externalId,
+      notes,
+    ],
+    'zone' => const [
+      zoneName,
+      zoneCode,
+      latitude,
+      longitude,
+      radiusMeters,
+      externalId,
+      notes,
+    ],
+    _ => values, // Safe fallback: show all for unknown entities
+  };
 }
