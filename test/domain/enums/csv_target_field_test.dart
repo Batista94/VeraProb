@@ -81,6 +81,7 @@ void main() {
         CsvTargetField.latitude,
         CsvTargetField.longitude,
         CsvTargetField.radiusMeters,
+        CsvTargetField.address,
       };
       for (final f in zoneFields) {
         expect(CsvTargetField.values, contains(f));
@@ -104,16 +105,16 @@ void main() {
       expect(CsvTargetField.values, contains(CsvTargetField.notes));
     });
 
-    // ── Regression guard ──────────────────────────────────────────────────────
+    // ── Regression guard ──
 
     test(
-      'total field count matches taxonomy (22 fields — regression guard)',
+      'total field count matches taxonomy (23 fields — regression guard)',
       () {
         // If this fails after adding a new field, update the expected count
         // AND add the field to the appropriate taxonomy group test above.
         expect(
           CsvTargetField.values.length,
-          equals(22),
+          equals(23),
           reason:
               'CsvTargetField field count changed. Update this test and '
               'ensure the new field is covered by a taxonomy group test.',
