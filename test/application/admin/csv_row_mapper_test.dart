@@ -168,10 +168,7 @@ void main() {
             csvHeader: 'RAIO',
             targetField: CsvTargetField.radiusMeters,
           ),
-          ColumnMapping(
-            csvHeader: 'END',
-            targetField: CsvTargetField.address,
-          ),
+          ColumnMapping(csvHeader: 'END', targetField: CsvTargetField.address),
         ]),
         resolvedContractors: const {},
       );
