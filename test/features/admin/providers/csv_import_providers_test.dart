@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/admin/csv_foreign_key_validator.dart';
+import 'package:veraprob/application/admin/csv_import_persister.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/application/admin/import_csv_handler.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/domain/admin/i_csv_mapping_template_repository.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -150,8 +154,51 @@ ImportCsvHandler _mismatchHandler() {
     ),
     templateRepo: _FakeCsvMappingTemplateRepository(),
     validator: CsvPreflightValidator(),
+    foreignKeyValidator: CsvForeignKeyValidator(
+      contractorRepo: _NoopContractorRepository(),
+    ),
+    persister: _NoopCsvImportPersister(),
     dateTimeProvider: _UtcDateTimeProvider(),
   );
+}
+
+/// Persistence is never reached — the handler fails fast at the tenant check.
+class _NoopCsvImportPersister implements CsvImportPersister {
+  @override
+  Future<int> persist({
+    required String organizationId,
+    required String targetEntity,
+    required List<Map<String, String>> rows,
+    required CsvMappingTemplate template,
+    required Map<String, Contractor> resolvedContractors,
+  }) async => 0;
+}
+
+class _NoopContractorRepository implements ContractorRepository {
+  @override
+  Future<Map<String, Contractor>> findByTaxIds(
+    String organizationId,
+    Set<String> taxIds,
+  ) async => const {};
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+
+  @override
+  Future<List<Contractor>> findByOrganization(String organizationId) async =>
+      const [];
+
+  @override
+  Future<Contractor?> findById(String organizationId, String id) async => null;
+
+  @override
+  Future<void> save(Contractor contractor) async {}
+
+  @override
+  Future<void> delete(String organizationId, String id) async {}
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────

@@ -10,6 +10,16 @@ class InMemoryOperationalZoneRepository implements OperationalZoneRepository {
   final Map<String, OperationalZone> _store = {};
 
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    // In-memory fake: CSV batch upsert is exercised against the Postgres RPC
+    // (pgTAP). Here we only report the affected count for orchestration tests.
+    return rows.length;
+  }
+
+  @override
   Future<void> save(OperationalZone zone) async {
     _store[zone.id] = zone;
   }

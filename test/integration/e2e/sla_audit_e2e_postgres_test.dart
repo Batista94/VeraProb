@@ -914,6 +914,13 @@ class _MockAuthRepository extends Mock implements IAuthRepository {}
 /// in [DeclareContractualPlanHandler], which would write an extra
 /// CONTRACT_ACTIVATED ledger entry and break Stage 3's count assertion.
 class MockContractRepository implements ContractRepository {
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async =>
+      rows.length;
   @override
   Future<Contract?> findById(
     String id, {
@@ -947,6 +954,13 @@ class MockContractRepository implements ContractRepository {
 }
 
 class _StubZoneRepository implements OperationalZoneRepository {
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async =>
+      rows.length;
   final List<OperationalZone>? _explicitZones;
 
   const _StubZoneRepository({List<OperationalZone>? zones})

@@ -19,6 +19,22 @@ class PostgresContractRepository extends BasePostgresRepository
     implements ContractRepository {
   PostgresContractRepository(super.client);
 
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      final result = await client.rpc<dynamic>(
+        'batch_upsert_contracts',
+        params: {'p_org_id': organizationId, 'p_rows': rows},
+      );
+      return (result as num).toInt();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'contract');
+    }
+  }
+
   static const _requiredFields = [
     'id',
     'organization_id',

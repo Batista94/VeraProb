@@ -38,8 +38,14 @@ import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'auth_providers.dart';
 import 'package:veraprob/domain/admin/i_csv_mapping_template_repository.dart';
 import 'package:veraprob/infrastructure/admin/postgres_csv_mapping_template_repository.dart';
+import 'package:veraprob/application/admin/csv_foreign_key_validator.dart';
+import 'package:veraprob/application/admin/csv_import_persister.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/application/admin/import_csv_handler.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/state/providers/assets_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
 
 // ── Infrastructure Providers ──────────────────────────────────────────────────
 
@@ -221,11 +227,29 @@ final csvPreflightValidatorProvider = Provider<CsvPreflightValidator>((ref) {
   return CsvPreflightValidator();
 });
 
+final csvForeignKeyValidatorProvider = Provider<CsvForeignKeyValidator>((ref) {
+  return CsvForeignKeyValidator(
+    contractorRepo: ref.watch(contractorRepositoryProvider),
+  );
+});
+
+final csvImportPersisterProvider = Provider<CsvImportPersister>((ref) {
+  return DefaultCsvImportPersister(
+    vehicleRepo: ref.watch(vehicleAssetRepositoryProvider),
+    driverRepo: ref.watch(driverRepositoryProvider),
+    contractorRepo: ref.watch(contractorRepositoryProvider),
+    contractRepo: ref.watch(contractRepositoryProvider),
+    zoneRepo: ref.watch(operationalZoneRepositoryProvider),
+  );
+});
+
 final importCsvHandlerProvider = Provider<ImportCsvHandler>((ref) {
   return ImportCsvHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     templateRepo: ref.watch(csvMappingTemplateRepositoryProvider),
     validator: ref.watch(csvPreflightValidatorProvider),
+    foreignKeyValidator: ref.watch(csvForeignKeyValidatorProvider),
+    persister: ref.watch(csvImportPersisterProvider),
     dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );
 });

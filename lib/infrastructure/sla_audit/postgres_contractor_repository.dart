@@ -50,6 +50,61 @@ class PostgresContractorRepository
   }
 
   @override
+  Future<Map<String, Contractor>> findByTaxIds(
+    String organizationId,
+    Set<String> taxIds,
+  ) async {
+    if (taxIds.isEmpty) return {};
+    try {
+      // Tenant-scoped fetch + Dart-side digit normalisation. tax_id is stored
+      // verbatim (masked or not), so a server-side IN filter on raw strings
+      // would miss formatting variants. Normalising both sides in Dart keeps
+      // the match exact while staying within RLS scope (anti-oracle).
+      final wanted = taxIds.map(_digits).toSet();
+      final response = await _client
+          .from('contractors')
+          .select()
+          .eq('organization_id', organizationId);
+
+      final result = <String, Contractor>{};
+      for (final row in response as List) {
+        final c = _fromMap(row as Map<String, dynamic>);
+        final d = _digits(c.taxId ?? '');
+        if (d.isNotEmpty && wanted.contains(d)) result[d] = c;
+      }
+      return result;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contractor',
+        resourceId: organizationId,
+      );
+    }
+  }
+
+  static String _digits(String s) => s.replaceAll(RegExp(r'\D'), '');
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      final result = await _client.rpc<dynamic>(
+        'batch_upsert_contractors',
+        params: {'p_org_id': organizationId, 'p_rows': rows},
+      );
+      return (result as num).toInt();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contractor',
+        resourceId: organizationId,
+      );
+    }
+  }
+
+  @override
   Future<void> save(Contractor contractor) async {
     try {
       await _client.from('contractors').upsert({

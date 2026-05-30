@@ -13,4 +13,13 @@ abstract class IDriverRepository {
   /// INV-3: Soft-archive via offboard_driver RPC. No hard DELETE.
   Future<void> archiveDriver(String id);
   Future<void> updateDriver(Driver driver);
+
+  /// Bloco 1D: idempotent batch upsert from CSV import.
+  ///
+  /// [rows] are DB-shaped maps whose keys match the `batch_upsert_drivers`
+  /// RPC recordset. Returns the number of affected rows (INV-16).
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  );
 }

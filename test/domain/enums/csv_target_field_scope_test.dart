@@ -62,6 +62,16 @@ void main() {
       expect(fields, isNot(contains(CsvTargetField.contractCode)));
     });
 
+    test(
+      'operator: MUST NOT contain contractor-specific fields (scope isolation)',
+      () {
+        final fields = CsvTargetField.forEntity('operator');
+        expect(fields, isNot(contains(CsvTargetField.contractorName)));
+        expect(fields, isNot(contains(CsvTargetField.contractorEmail)));
+        expect(fields, isNot(contains(CsvTargetField.contractorContactName)));
+      },
+    );
+
     // ── contractor ────────────────────────────────────────────────────────────
 
     test('contractor: contains contractorDocument, externalId, notes', () {
@@ -75,6 +85,22 @@ void main() {
         ]),
       );
     });
+
+    test(
+      'contractor: contains contractorName, contractorEmail, contractorContactName '
+      '(Bloco 1C.0 — NOT NULL columns coverable)',
+      () {
+        final fields = CsvTargetField.forEntity('contractor');
+        expect(
+          fields,
+          containsAll([
+            CsvTargetField.contractorName,
+            CsvTargetField.contractorEmail,
+            CsvTargetField.contractorContactName,
+          ]),
+        );
+      },
+    );
 
     test(
       'contractor: MUST NOT contain latitude (INV-22 oracle prevention)',

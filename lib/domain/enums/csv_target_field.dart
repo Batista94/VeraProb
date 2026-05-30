@@ -17,6 +17,11 @@ enum CsvTargetField {
   operatorLicense, // License number
   operatorPhone, // Contact
 
+  // ── Contractor fields ──
+  contractorName, // Legal/company name (NOT NULL)
+  contractorEmail, // Primary email (NOT NULL)
+  contractorContactName, // Contact person (NOT NULL)
+
   // ── Contract fields ──
   contractCode, // External contract reference
   contractorDocument, // CNPJ of the contractor
@@ -62,7 +67,14 @@ enum CsvTargetField {
       externalId,
       notes,
     ],
-    'contractor' => const [contractorDocument, externalId, notes],
+    'contractor' => const [
+      contractorName,
+      contractorDocument,
+      contractorEmail,
+      contractorContactName,
+      externalId,
+      notes,
+    ],
     'contract' => const [
       contractCode,
       contractorDocument,

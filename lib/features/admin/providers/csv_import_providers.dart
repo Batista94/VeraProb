@@ -227,10 +227,6 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
 
       final previewRows = dataRows.take(3).toList();
 
-      final emptyMappings = <String, ColumnMapping?>{
-        for (final h in headers) h: null,
-      };
-
       // Bloco 1B: auto-match headers to target fields.
       // Pre-fills mappings so the user needs minimal manual intervention.
       final autoMappings = _autoMatch(headers: headers, entity: _targetEntity);
@@ -520,6 +516,22 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     (
       RegExp(r'^(telefone|phone|celular|contato|cel)$'),
       CsvTargetField.operatorPhone,
+    ),
+
+    // ── contractor fields (Bloco 1C.0) ─────────────────────────────────────
+    // Scope guard keeps these from colliding with operator/zone name rules:
+    // contractorName is only in scope for entity 'contractor'.
+    (
+      RegExp(r'^(nomecontratante|razaosocial|nomefantasia|nome|name)$'),
+      CsvTargetField.contractorName,
+    ),
+    (
+      RegExp(r'^(email|emailcontratante|emailprincipal|emailcontato)$'),
+      CsvTargetField.contractorEmail,
+    ),
+    (
+      RegExp(r'^(contato|responsavel|nomecontato|pessoacontato)$'),
+      CsvTargetField.contractorContactName,
     ),
 
     // ── asset fields ───────────────────────────────────────────────────────

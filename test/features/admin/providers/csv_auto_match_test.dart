@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart'; // pr_scanner: ignore
 import 'package:veraprob/features/admin/providers/csv_import_providers.dart';
-import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 ProviderContainer _makeContainer({String entity = 'contractor'}) {
@@ -72,6 +71,56 @@ void main() {
       expect(
         autoMappings['Documento']?.targetField,
         equals(CsvTargetField.contractorDocument),
+      );
+    });
+
+    // ── Bloco 1C.0: contractor name/email/contact ──────────────────────────
+
+    test('AM-11: header "Razao Social" → contractorName for contractor', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+      final autoMappings = notifier.autoMatchForTest(
+        headers: ['Razao Social'],
+        entity: 'contractor',
+      );
+
+      expect(
+        autoMappings['Razao Social']?.targetField,
+        equals(CsvTargetField.contractorName),
+      );
+    });
+
+    test('AM-12: header "Email" → contractorEmail for contractor', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+      final autoMappings = notifier.autoMatchForTest(
+        headers: ['Email'],
+        entity: 'contractor',
+      );
+
+      expect(
+        autoMappings['Email']?.targetField,
+        equals(CsvTargetField.contractorEmail),
+      );
+    });
+
+    test('AM-13: header "Responsavel" → contractorContactName for contractor', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+      final autoMappings = notifier.autoMatchForTest(
+        headers: ['Responsavel'],
+        entity: 'contractor',
+      );
+
+      expect(
+        autoMappings['Responsavel']?.targetField,
+        equals(CsvTargetField.contractorContactName),
       );
     });
 

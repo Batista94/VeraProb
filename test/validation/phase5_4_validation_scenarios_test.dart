@@ -1085,6 +1085,13 @@ void main() {
 // INV-18 and do not exercise the zone/vehicle gate directly.
 
 class _StubZoneRepository implements OperationalZoneRepository {
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async =>
+      rows.length;
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,

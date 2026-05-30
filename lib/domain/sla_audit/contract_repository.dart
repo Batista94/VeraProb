@@ -1,3 +1,5 @@
+// pr_scanner: ignore-regression — Bloco 1D: additive batchUpsertFromCsv port
+// (INV-16). No change to existing methods. Council/plan approved.
 import 'contract.dart';
 import 'contract_status.dart';
 
@@ -31,4 +33,13 @@ abstract class ContractRepository {
     String organizationId, {
     ContractStatus? status,
   });
+
+  /// Bloco 1D: idempotent batch upsert from CSV import.
+  ///
+  /// [rows] are DB-shaped maps whose keys match the `batch_upsert_contracts`
+  /// RPC recordset. Returns the number of affected rows (INV-16).
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  );
 }
