@@ -105,25 +105,7 @@ class ImportCsvHandler {
     SecurityAssertionService.assertPlainTextMagicBytes(command.rawBytes);
 
     // 3. Resolve template
-    CsvMappingTemplate template;
-    if (command.templateId != null) {
-      final t = (await _templateRepo.getTemplates(
-        organizationId: command.organizationId, // INV-1
-        targetEntity: command.targetEntity,
-      )).firstWhere((t) => t.id == command.templateId);
-      template = t;
-    } else {
-      template = CsvMappingTemplate(
-        id: 'ephemeral',
-        organizationId: command.organizationId,
-        name: 'AdHoc',
-        targetEntity: command.targetEntity,
-        columnMappings: command.adhocMappings ?? [],
-        createdAt: _dateTimeProvider.nowUtc(),
-        updatedAt: _dateTimeProvider.nowUtc(),
-      );
-      template.assertValid();
-    }
+    final template = await _resolveTemplate(command);
 
     // 4. Parse CSV bytes
     final csvString = utf8.decode(command.rawBytes);
@@ -140,21 +122,7 @@ class ImportCsvHandler {
       ); // Empty or headers only
     }
 
-    final headers = rawRows.first
-        .map((Object? e) => (e ?? '').toString().trim())
-        .toList();
-    final List<Map<String, String>> mappedRows = [];
-
-    for (var i = 1; i < rawRows.length; i++) {
-      final row = rawRows[i];
-      final map = <String, String>{};
-      for (var j = 0; j < headers.length; j++) {
-        if (j < row.length) {
-          map[headers[j]] = row[j].toString();
-        }
-      }
-      mappedRows.add(map);
-    }
+    final mappedRows = _parseMappedRows(rawRows);
 
     // 5. Preflight validation (synchronous: format, security, bounds)
     final report = _validator.validate(mappedRows, template);
@@ -196,5 +164,45 @@ class ImportCsvHandler {
       savedTemplateId: command.templateId,
       errors: allErrors, // UI will use this to generate the delta CSV
     );
+  }
+
+  Future<CsvMappingTemplate> _resolveTemplate(ImportCsvCommand command) async {
+    if (command.templateId != null) {
+      return (await _templateRepo.getTemplates(
+        organizationId: command.organizationId, // INV-1
+        targetEntity: command.targetEntity,
+      )).firstWhere((t) => t.id == command.templateId);
+    } else {
+      final template = CsvMappingTemplate(
+        id: 'ephemeral',
+        organizationId: command.organizationId,
+        name: 'AdHoc',
+        targetEntity: command.targetEntity,
+        columnMappings: command.adhocMappings ?? [],
+        createdAt: _dateTimeProvider.nowUtc(),
+        updatedAt: _dateTimeProvider.nowUtc(),
+      );
+      template.assertValid();
+      return template;
+    }
+  }
+
+  List<Map<String, String>> _parseMappedRows(List<List<dynamic>> rawRows) {
+    final headers = rawRows.first
+        .map((Object? e) => (e ?? '').toString().trim())
+        .toList();
+    final List<Map<String, String>> mappedRows = [];
+
+    for (var i = 1; i < rawRows.length; i++) {
+      final row = rawRows[i];
+      final map = <String, String>{};
+      for (var j = 0; j < headers.length; j++) {
+        if (j < row.length) {
+          map[headers[j]] = row[j].toString();
+        }
+      }
+      mappedRows.add(map);
+    }
+    return mappedRows;
   }
 }
