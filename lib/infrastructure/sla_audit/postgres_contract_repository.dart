@@ -25,11 +25,11 @@ class PostgresContractRepository extends BasePostgresRepository
     List<Map<String, dynamic>> rows,
   ) async {
     try {
-      final result = await client.rpc<dynamic>(
-        'batch_upsert_contracts',
-        params: {'p_org_id': organizationId, 'p_rows': rows},
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_contracts',
+        organizationId: organizationId,
+        rows: rows,
       );
-      return (result as num).toInt();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'contract');
     }

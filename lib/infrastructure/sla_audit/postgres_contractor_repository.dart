@@ -1,19 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
-class PostgresContractorRepository
-    with PostgresErrorInterceptor
+class PostgresContractorRepository extends BasePostgresRepository
     implements ContractorRepository {
-  final SupabaseClient _client;
-
-  PostgresContractorRepository(this._client);
+  PostgresContractorRepository(super.client);
 
   @override
   Future<List<Contractor>> findByOrganization(String organizationId) async {
     try {
-      final response = await _client
+      final response = await client
           .from('contractors')
           .select()
           .eq('organization_id', organizationId);
@@ -31,7 +28,7 @@ class PostgresContractorRepository
   @override
   Future<Contractor?> findById(String organizationId, String id) async {
     try {
-      final response = await _client
+      final response = await client
           .from('contractors')
           .select()
           .eq('organization_id', organizationId)
@@ -61,7 +58,7 @@ class PostgresContractorRepository
       // would miss formatting variants. Normalising both sides in Dart keeps
       // the match exact while staying within RLS scope (anti-oracle).
       final wanted = taxIds.map(_digits).toSet();
-      final response = await _client
+      final response = await client
           .from('contractors')
           .select()
           .eq('organization_id', organizationId);
@@ -90,11 +87,11 @@ class PostgresContractorRepository
     List<Map<String, dynamic>> rows,
   ) async {
     try {
-      final result = await _client.rpc<dynamic>(
-        'batch_upsert_contractors',
-        params: {'p_org_id': organizationId, 'p_rows': rows},
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_contractors',
+        organizationId: organizationId,
+        rows: rows,
       );
-      return (result as num).toInt();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(
         e,
@@ -107,7 +104,7 @@ class PostgresContractorRepository
   @override
   Future<void> save(Contractor contractor) async {
     try {
-      await _client.from('contractors').upsert({
+      await client.from('contractors').upsert({
         'id': contractor.id,
         'organization_id': contractor.organizationId,
         'name': contractor.name,
@@ -128,7 +125,7 @@ class PostgresContractorRepository
   @override
   Future<void> delete(String organizationId, String id) async {
     try {
-      await _client
+      await client
           .from('contractors')
           .delete()
           .eq('organization_id', organizationId)

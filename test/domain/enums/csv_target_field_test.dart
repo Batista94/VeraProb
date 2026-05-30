@@ -87,6 +87,18 @@ void main() {
       }
     });
 
+    test('Contractor group contains required fields (INV-14)', () {
+      final contractorFields = {
+        CsvTargetField.contractorName,
+        CsvTargetField.contractorDocument,
+        CsvTargetField.contractorEmail,
+        CsvTargetField.contractorContactName,
+      };
+      for (final f in contractorFields) {
+        expect(CsvTargetField.values, contains(f));
+      }
+    });
+
     test('Shared fields exist (externalId, notes)', () {
       expect(CsvTargetField.values, contains(CsvTargetField.externalId));
       expect(CsvTargetField.values, contains(CsvTargetField.notes));
@@ -95,13 +107,13 @@ void main() {
     // ── Regression guard ──────────────────────────────────────────────────────
 
     test(
-      'total field count matches taxonomy (19 fields — regression guard)',
+      'total field count matches taxonomy (22 fields — regression guard)',
       () {
         // If this fails after adding a new field, update the expected count
         // AND add the field to the appropriate taxonomy group test above.
         expect(
           CsvTargetField.values.length,
-          equals(19),
+          equals(22),
           reason:
               'CsvTargetField field count changed. Update this test and '
               'ensure the new field is covered by a taxonomy group test.',

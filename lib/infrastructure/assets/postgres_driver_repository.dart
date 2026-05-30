@@ -18,11 +18,11 @@ class PostgresDriverRepository extends BasePostgresRepository
     List<Map<String, dynamic>> rows,
   ) async {
     try {
-      final result = await client.rpc<dynamic>(
-        'batch_upsert_drivers',
-        params: {'p_org_id': organizationId, 'p_rows': rows},
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_drivers',
+        organizationId: organizationId,
+        rows: rows,
       );
-      return (result as num).toInt();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'driver');
     }

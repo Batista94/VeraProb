@@ -19,11 +19,11 @@ class PostgresOperationalZoneRepository extends BasePostgresRepository
     List<Map<String, dynamic>> rows,
   ) async {
     try {
-      final result = await client.rpc<dynamic>(
-        'batch_upsert_operational_zones',
-        params: {'p_org_id': organizationId, 'p_rows': rows},
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_operational_zones',
+        organizationId: organizationId,
+        rows: rows,
       );
-      return (result as num).toInt();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'operational_zone');
     }
