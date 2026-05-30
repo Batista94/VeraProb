@@ -60,7 +60,10 @@ class DefaultCsvImportPersister implements CsvImportPersister {
     return switch (targetEntity) {
       'asset' => _vehicleRepo.batchUpsertFromCsv(organizationId, dbRows),
       'operator' => _driverRepo.batchUpsertFromCsv(organizationId, dbRows),
-      'contractor' => _contractorRepo.batchUpsertFromCsv(organizationId, dbRows),
+      'contractor' => _contractorRepo.batchUpsertFromCsv(
+        organizationId,
+        dbRows,
+      ),
       'contract' => _contractRepo.batchUpsertFromCsv(organizationId, dbRows),
       'zone' => _zoneRepo.batchUpsertFromCsv(organizationId, dbRows),
       _ => Future<int>.value(0),

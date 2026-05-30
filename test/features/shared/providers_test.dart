@@ -18,13 +18,11 @@ class MockVehiclePositionService extends Mock
 class MockTripRepository extends Mock implements ITripRepository {}
 
 class FakeDriverRepository implements IDriverRepository {
-
   @override
   Future<int> batchUpsertFromCsv(
     String organizationId,
     List<Map<String, dynamic>> rows,
-  ) async =>
-      rows.length;
+  ) async => rows.length;
   @override
   Future<List<Driver>> getDrivers() async => [
     const Driver(

@@ -20,13 +20,11 @@ import '../postgres/postgres_test_config.dart';
 
 class _TestContractRepository extends BasePostgresRepository
     implements ContractRepository {
-
   @override
   Future<int> batchUpsertFromCsv(
     String organizationId,
     List<Map<String, dynamic>> rows,
-  ) async =>
-      rows.length;
+  ) async => rows.length;
   _TestContractRepository(super.client);
 
   @override

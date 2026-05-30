@@ -108,21 +108,24 @@ void main() {
       );
     });
 
-    test('AM-13: header "Responsavel" → contractorContactName for contractor', () {
-      final container = _makeContainer();
-      addTearDown(container.dispose);
+    test(
+      'AM-13: header "Responsavel" → contractorContactName for contractor',
+      () {
+        final container = _makeContainer();
+        addTearDown(container.dispose);
 
-      final notifier = container.read(csvImportFlowProvider.notifier);
-      final autoMappings = notifier.autoMatchForTest(
-        headers: ['Responsavel'],
-        entity: 'contractor',
-      );
+        final notifier = container.read(csvImportFlowProvider.notifier);
+        final autoMappings = notifier.autoMatchForTest(
+          headers: ['Responsavel'],
+          entity: 'contractor',
+        );
 
-      expect(
-        autoMappings['Responsavel']?.targetField,
-        equals(CsvTargetField.contractorContactName),
-      );
-    });
+        expect(
+          autoMappings['Responsavel']?.targetField,
+          equals(CsvTargetField.contractorContactName),
+        );
+      },
+    );
 
     // ── asset entity ──────────────────────────────────────────────────────────
 

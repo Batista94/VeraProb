@@ -63,31 +63,36 @@ void main() {
   });
 
   group('DefaultCsvImportPersister (Bloco 1D)', () {
-    test('asset → vehicleRepo.batchUpsertFromCsv once, others untouched', () async {
-      when(
-        () => vehicleRepo.batchUpsertFromCsv(any(), any()),
-      ).thenAnswer((_) async => 2);
+    test(
+      'asset → vehicleRepo.batchUpsertFromCsv once, others untouched',
+      () async {
+        when(
+          () => vehicleRepo.batchUpsertFromCsv(any(), any()),
+        ).thenAnswer((_) async => 2);
 
-      final n = await persister.persist(
-        organizationId: 'org-a',
-        targetEntity: 'asset',
-        rows: const [
-          {'PLACA': 'AAA-1', 'CAP': '40'},
-          {'PLACA': 'BBB-2', 'CAP': '30'},
-        ],
-        template: _assetTpl(),
-        resolvedContractors: const {},
-      );
+        final n = await persister.persist(
+          organizationId: 'org-a',
+          targetEntity: 'asset',
+          rows: const [
+            {'PLACA': 'AAA-1', 'CAP': '40'},
+            {'PLACA': 'BBB-2', 'CAP': '30'},
+          ],
+          template: _assetTpl(),
+          resolvedContractors: const {},
+        );
 
-      expect(n, 2);
-      final captured = verify(
-        () => vehicleRepo.batchUpsertFromCsv('org-a', captureAny()),
-      ).captured.single as List<Map<String, dynamic>>;
-      expect(captured, hasLength(2));
-      expect(captured.first['plate'], 'AAA-1');
-      verifyNever(() => driverRepo.batchUpsertFromCsv(any(), any()));
-      verifyNever(() => contractRepo.batchUpsertFromCsv(any(), any()));
-    });
+        expect(n, 2);
+        final captured =
+            verify(
+                  () => vehicleRepo.batchUpsertFromCsv('org-a', captureAny()),
+                ).captured.single
+                as List<Map<String, dynamic>>;
+        expect(captured, hasLength(2));
+        expect(captured.first['plate'], 'AAA-1');
+        verifyNever(() => driverRepo.batchUpsertFromCsv(any(), any()));
+        verifyNever(() => contractRepo.batchUpsertFromCsv(any(), any()));
+      },
+    );
 
     test('empty input short-circuits — no repo call', () async {
       final n = await persister.persist(

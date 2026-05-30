@@ -89,25 +89,31 @@ void main() {
     const ownedDigits = '11222333000181';
     const absentCnpj = '99888777000166';
 
-    test('a: contractor CNPJ owned by org → no FK error, resolved upward', () async {
-      final validator = CsvForeignKeyValidator(
-        contractorRepo: _FakeContractorRepository([
-          _contractor('org-a', ownedCnpj),
-        ]),
-      );
+    test(
+      'a: contractor CNPJ owned by org → no FK error, resolved upward',
+      () async {
+        final validator = CsvForeignKeyValidator(
+          contractorRepo: _FakeContractorRepository([
+            _contractor('org-a', ownedCnpj),
+          ]),
+        );
 
-      final result = await validator.validate(
-        organizationId: 'org-a',
-        targetEntity: 'contract',
-        rows: const [
-          {'CODIGO': 'CT-1', 'CNPJ': ownedCnpj},
-        ],
-        template: _contractTemplate(),
-      );
+        final result = await validator.validate(
+          organizationId: 'org-a',
+          targetEntity: 'contract',
+          rows: const [
+            {'CODIGO': 'CT-1', 'CNPJ': ownedCnpj},
+          ],
+          template: _contractTemplate(),
+        );
 
-      expect(result.errors, isEmpty);
-      expect(result.resolvedContractors[ownedDigits]?.organizationId, 'org-a');
-    });
+        expect(result.errors, isEmpty);
+        expect(
+          result.resolvedContractors[ownedDigits]?.organizationId,
+          'org-a',
+        );
+      },
+    );
 
     test('b: CNPJ absent in tenant → foreign_key_not_found', () async {
       final validator = CsvForeignKeyValidator(

@@ -56,6 +56,7 @@ class FakeContractorRepository implements ContractorRepository {
     List<Map<String, dynamic>> rows,
   ) async => rows.length;
 }
+
 class FakeTenantValidationService implements TenantValidationService {
   @override
   Future<void> assertTenantMatches({
@@ -255,8 +256,7 @@ void main() {
 
         // Row 1 references the owned CNPJ → valid; row 2 references a valid but
         // unowned CNPJ → foreign_key_not_found, skipped.
-        const csvText =
-            'CODIGO,CNPJ\nCT-1,11222333000181\nCT-2,11444777000161';
+        const csvText = 'CODIGO,CNPJ\nCT-1,11222333000181\nCT-2,11444777000161';
         final command = ImportCsvCommand(
           sessionId: 'valid_session',
           organizationId: 'valid_org',
