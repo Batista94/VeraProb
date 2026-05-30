@@ -254,9 +254,18 @@ class _ErrorTable extends StatelessWidget {
                       ),
                     ),
                     DataCell(
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 260),
-                        child: Text(e.message, overflow: TextOverflow.ellipsis),
+                      Tooltip(
+                        message: e.message,
+                        preferBelow: false,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 360),
+                          child: Text(
+                            e.message,
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 2,
+                            softWrap: true,
+                          ),
+                        ),
                       ),
                     ),
                   ],

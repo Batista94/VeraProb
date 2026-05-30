@@ -176,6 +176,7 @@ class CsvRowMapper {
       'radius_meters',
       radius == null ? null : int.tryParse(radius),
     );
+    _putIfPresent(map, 'address', _raw(row, t, CsvTargetField.address));
     _putIfPresent(map, 'external_id', _raw(row, t, CsvTargetField.externalId));
     return map;
   }

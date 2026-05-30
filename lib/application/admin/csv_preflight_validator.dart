@@ -234,7 +234,7 @@ class CsvPreflightValidator {
         csvHeader: mapping.csvHeader,
         targetField: mapping.targetField.dbValue,
         errorCode: 'invalid_number',
-        message: 'Capacidade deve ser um número inteiro válido.',
+        message: 'Capacidade deve ser um número inteiro válido. Exemplo: 46',
       );
     }
     return null;
@@ -258,7 +258,8 @@ class CsvPreflightValidator {
       csvHeader: mapping.csvHeader,
       targetField: mapping.targetField.dbValue,
       errorCode: 'invalid_coordinate',
-      message: 'Coordenada geolocalizada fora dos limites permitidos.',
+      message: 'Coordenada geolocalizada fora dos limites permitidos '
+          '(Latitude de -90 a 90, Longitude de -180 a 180). Exemplo: -23.550520',
     );
   }
 
@@ -288,7 +289,9 @@ class CsvPreflightValidator {
         csvHeader: mapping.csvHeader,
         targetField: mapping.targetField.dbValue,
         errorCode: 'invalid_document',
-        message: 'Documento com dígito verificador inválido.',
+        message: 'Documento com dígito verificador inválido. '
+            'Use um CNPJ (14 dígitos) ou CPF (11 dígitos) matematicamente válido. '
+            'Exemplo: 11.222.333/0001-81',
       );
     }
 
@@ -333,9 +336,10 @@ class CsvPreflightValidator {
       targetField: mapping.targetField.dbValue,
       errorCode: 'invalid_date',
       message: mapping.formatHint != null
-          ? 'Data inválida para o formato esperado (${mapping.formatHint}).'
-          : 'Data inválida ou em formato não reconhecido '
-                '(use padrão ISO-8601 ou especifique formato).',
+          ? 'Data inválida para o formato esperado (${mapping.formatHint}). '
+              'Exemplo: ${mapping.formatHint == 'dd/MM/yyyy' ? '30/05/2026' : '2026-05-30'}'
+          : 'Data inválida ou em formato não reconhecido. '
+              'Use o padrão ISO-8601 (Exemplo: 2026-05-30) ou informe o formato esperado no mapeamento.',
     );
   }
 }

@@ -142,11 +142,17 @@ void main() {
       },
     );
 
-    test('zone: lat/lng→double, radius→int', () {
+    test('zone: lat/lng→double, radius→int, address', () {
       final rows = mapper.toDbRows(
         targetEntity: 'zone',
         rows: const [
-          {'NOME': 'Garagem', 'LAT': '-23.5', 'LNG': '-46.6', 'RAIO': '500'},
+          {
+            'NOME': 'Garagem',
+            'LAT': '-23.5',
+            'LNG': '-46.6',
+            'RAIO': '500',
+            'END': 'Av. Paulista, 1000',
+          },
         ],
         template: _tpl('zone', const [
           ColumnMapping(
@@ -162,6 +168,10 @@ void main() {
             csvHeader: 'RAIO',
             targetField: CsvTargetField.radiusMeters,
           ),
+          ColumnMapping(
+            csvHeader: 'END',
+            targetField: CsvTargetField.address,
+          ),
         ]),
         resolvedContractors: const {},
       );
@@ -170,6 +180,7 @@ void main() {
       expect(rows.single['latitude'], -23.5);
       expect(rows.single['longitude'], -46.6);
       expect(rows.single['radius_meters'], 500);
+      expect(rows.single['address'], 'Av. Paulista, 1000');
     });
 
     test('omits unmapped/empty external_id (NULL → fallback path)', () {

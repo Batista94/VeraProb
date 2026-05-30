@@ -34,6 +34,7 @@ enum CsvTargetField {
   latitude, // Geofence center lat
   longitude, // Geofence center lng
   radiusMeters, // Geofence radius
+  address, // Physical address
 
   // ── Shared ──
   externalId, // Client-side ID for dedup (ERP integration anchor)
@@ -89,6 +90,7 @@ enum CsvTargetField {
       latitude,
       longitude,
       radiusMeters,
+      address,
       externalId,
       notes,
     ],
