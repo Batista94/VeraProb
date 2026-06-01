@@ -2,6 +2,7 @@
 
 import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
+import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/auth/auth_failure_exception.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -141,13 +142,19 @@ class SupabaseAuthRepository
         return null;
       }
 
-      if (user.appMetadata['org_id'] == null) {
-        // Tenant isolation violation — no org in app_metadata
+      // Read org_id from JWT access token claims (hook-injected).
+      // raw_app_meta_data (user.appMetadata) is not updated by the hook.
+      final jwtClaims = decodeJwtPayload(sessionId);
+      final jwtAppMeta = jwtClaims['app_metadata'] as Map<String, dynamic>?;
+      if (jwtAppMeta?['org_id'] == null) {
         _invalidateCache();
         return null;
       }
 
-      final authUser = SupabaseUserMapper.mapToAuthUser(user);
+      final authUser = SupabaseUserMapper.mapToAuthUserFromJwtClaims(
+        user,
+        jwtClaims,
+      );
 
       // Populate cache with both cache TTL and actual session expiry.
       // INV-6: Convert Unix timestamp (int seconds) to DateTime UTC.
@@ -172,6 +179,11 @@ class SupabaseAuthRepository
     } catch (e) {
       // Server-side auth failure (invalid JWT, revoked, etc.)
       // or network error
+      if (e is sb.AuthException && e.code == 'session_not_found') {
+        try {
+          await _client.auth.signOut(scope: sb.SignOutScope.local);
+        } catch (_) {}
+      }
       _invalidateCache();
       return null;
     }
@@ -223,5 +235,5 @@ class SupabaseAuthRepository
     }
   }
 
-  // ── Error Mapping ──────────────────────────────────────────────────────
+  // ── Error Mapping ──────────────────────────────────────────────────────────
 }

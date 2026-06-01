@@ -48,7 +48,7 @@ fi
 echo -e "\n\033[1;33m[chaos]\033[0m Generating test tokens and extracting Supabase keys..."
 eval "$($NODE_CMD scripts/qa/generate_load_test_tokens.mjs | grep '^export ')"
 
-# ── Parse args ────────────────────────────────────────────────────────────────
+# -- Parse args ----------------------------------------------------------------
 SKIP_CRASH=false
 ONLY_SCENARIO=""
 
@@ -59,7 +59,7 @@ for arg in "$@"; do
   esac
 done
 
-# ── Env defaults ──────────────────────────────────────────────────────────────
+# -- Env defaults --------------------------------------------------------------
 SUPABASE_URL="${SUPABASE_URL:-http://localhost:54321}"
 SERVICE_ROLE_KEY="${SERVICE_ROLE_KEY:-}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-}"
@@ -81,11 +81,11 @@ FAILED=0
 START_TIME=$(date +%s)
 
 log()    { echo -e "${BLUE}[suite]${NC} $1"; }
-ok()     { echo -e "${GREEN}âœ…${NC} $1"; PASSED=$((PASSED + 1)); }
-err()    { echo -e "${RED}âŒ${NC} $1"; FAILED=$((FAILED + 1)); }
-header() { echo -e "\n${YELLOW}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"; echo -e "${YELLOW}  $1${NC}"; echo -e "${YELLOW}â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•${NC}"; }
+ok()     { echo -e "${GREEN}[PASS]${NC} $1"; PASSED=$((PASSED + 1)); }
+err()    { echo -e "${RED}[FAIL]${NC} $1"; FAILED=$((FAILED + 1)); }
+header() { echo -e "\n${YELLOW}=================================================${NC}"; echo -e "${YELLOW}  $1${NC}"; echo -e "${YELLOW}=================================================${NC}"; }
 
-# â”€â”€ Check prerequisites â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Check prerequisites ------------------------------------------------------
 
 header "Prerequisites Check"
 
@@ -138,7 +138,7 @@ fi
 
 mkdir -p "${RESULTS_DIR}"
 
-# â”€â”€ K6 runner helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- K6 runner helper ---------------------------------------------------------
 
 run_k6() {
   local name="$1"
@@ -175,7 +175,7 @@ run_k6() {
   fi
 }
 
-# â”€â”€ Scenario 1: SLA Racing & Determinism (INV-15) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Scenario 1: SLA Racing & Determinism (INV-15) ----------------------------
 
 if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "1" ]]; then
   header "Scenario 1: SLA Racing & Determinism (INV-15)"
@@ -184,7 +184,7 @@ if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "1" ]]; then
   run_k6 "SLA Race" "k6_sla_race.js" || true
 fi
 
-# â”€â”€ Scenario 2: Shadow Crash Recovery (INV-11) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Scenario 2: Shadow Crash Recovery (INV-11) -------------------------------
 
 if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "2" ]]; then
   header "Scenario 2: Shadow Recovery & Crash Resilience (INV-11)"
@@ -205,7 +205,7 @@ if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "2" ]]; then
     "BOUND_CHAT_ID=${BOUND_CHAT_ID}" || true
 fi
 
-# â”€â”€ Scenario 3: Multi-Tenant Isolation at Scale (INV-1) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Scenario 3: Multi-Tenant Isolation at Scale (INV-1) ----------------------
 
 if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "3" ]]; then
   header "Scenario 3: Multi-Tenant Isolation at Scale (INV-1, INV-22)"
@@ -224,7 +224,7 @@ if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "3" ]]; then
     "ORG_COUNT=${ORG_COUNT}" "${EXTRA_ORG_ENV[@]:-}" || true
 fi
 
-# â”€â”€ Scenario 4: Fluid FSM Shadow Auto-Link (INV-11, Phase 10.3) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Scenario 4: Fluid FSM Shadow Auto-Link (INV-11, Phase 10.3) --------------
 
 if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "4" ]]; then
   header "Scenario 4: Fluid FSM Shadow Auto-Link (Phase 10.3)"
@@ -235,9 +235,9 @@ if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "4" ]]; then
     "OPERATOR_ID=${OPERATOR_ID:-00000000-0000-0000-0000-000000000099}" || true
 fi
 
-# â”€â”€ Final Report â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# --- Final Report -------------------------------------------------------------
 
-# ── Scenario 5: INV-6 Timestamp Hardening + pg_cron Seal (Phase 10.4) ────────
+# --- Scenario 5: INV-6 Timestamp Hardening + pg_cron Seal (Phase 10.4) --------
 
 if [[ -z "$ONLY_SCENARIO" || "$ONLY_SCENARIO" == "5" ]]; then
   header "Scenario 5: INV-6 Timestamp Hardening + pg_cron Seal Validation"
@@ -254,7 +254,7 @@ fi
 END_TIME=$(date +%s)
 DURATION=$((END_TIME - START_TIME))
 
-header "Phase 10 Chaos Suite â€” Final Report"
+header "Phase 10 Chaos Suite - Final Report"
 
 echo ""
 echo "  Duration:      ${DURATION}s"
@@ -264,16 +264,16 @@ echo -e "  Failed:        ${RED}${FAILED}${NC}"
 echo ""
 
 if [[ $FAILED -eq 0 ]]; then
-  echo -e "${GREEN}ðŸŸ¢ ALL CHAOS SCENARIOS PASSED â€” Engine is resilient${NC}"
+  echo -e "${GREEN}[OK] ALL CHAOS SCENARIOS PASSED -- Engine is resilient${NC}"
   echo ""
-  echo "  INV-1  (org_id isolation):       âœ… verified at scale (10 orgs, 100 concurrent)"
-  echo "  INV-11 (idempotency/shadow):     âœ… SIGKILL + Telegram retry = no orphan rows"
-  echo "  INV-15 (determinism):            âœ… concurrent race â†’ exactly 1 completion"
-  echo "  Phase 10.3 (Fluid FSM):          âœ… retroactive auto-link without hash collision"
-  echo "  INV-6  (TIMESTAMPTZ hardening):  ✅ NOT NULL guard + graceful Edge Function + pg_cron safe"
+  echo "  INV-1  (org_id isolation):       [PASS] verified at scale (10 orgs, 100 concurrent)"
+  echo "  INV-11 (idempotency/shadow):     [PASS] SIGKILL + Telegram retry = no orphan rows"
+  echo "  INV-15 (determinism):            [PASS] concurrent race -> exactly 1 completion"
+  echo "  Phase 10.3 (Fluid FSM):          [PASS] retroactive auto-link without hash collision"
+  echo "  INV-6  (TIMESTAMPTZ hardening):  [PASS] NOT NULL guard + graceful Edge Function + pg_cron safe"
 
 else
-  echo -e "${RED}ðŸ”´ ${FAILED} SCENARIO(S) FAILED â€” Review output above${NC}"
+  echo -e "${RED}[!!] ${FAILED} SCENARIO(S) FAILED -- Review output above${NC}"
   echo ""
   echo "  Results saved to: ${RESULTS_DIR}/"
   echo "  Re-run individual scenario: --scenario=N"

@@ -14,6 +14,22 @@ class PostgresOperationalZoneRepository extends BasePostgresRepository
   PostgresOperationalZoneRepository(super.client);
 
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_operational_zones',
+        organizationId: organizationId,
+        rows: rows,
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'operational_zone');
+    }
+  }
+
+  @override
   Future<void> save(OperationalZone zone) async {
     try {
       await client.from('operational_zones').upsert({

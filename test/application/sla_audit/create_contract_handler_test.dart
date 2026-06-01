@@ -21,6 +21,11 @@ class MockAuthRepository extends Mock implements IAuthRepository {}
 /// Fake repository that raises a Postgres P0001 on [save].
 class _QuotaExceededContractRepository implements ContractRepository {
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+  @override
   Future<Contract> save(Contract contract) async {
     throw const PostgrestException(
       message: 'Cota de contratos ativos atingida para este tenant.',
@@ -284,6 +289,11 @@ void main() {
 /// Repository that throws an unexpected exception (not DomainException or
 /// SovereigntyViolationException) to test the catch-all branch of submitForm.
 class _BombContractRepository implements ContractRepository {
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
   @override
   Future<Contract> save(Contract contract) async {
     throw Exception('database on fire');

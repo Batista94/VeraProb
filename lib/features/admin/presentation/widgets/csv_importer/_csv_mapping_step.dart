@@ -32,7 +32,8 @@ class _CsvMappingStepState extends ConsumerState<CsvMappingStep> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     if (state is! CsvImportMapped) return const SizedBox.shrink();
 
     final notifier = ref.read(csvImportFlowProvider.notifier);
@@ -61,6 +62,7 @@ class _CsvMappingStepState extends ConsumerState<CsvMappingStep> {
                 csvHeader: header,
                 currentField: mapping?.targetField,
                 currentTransform: mapping?.transform,
+                targetEntity: state.targetEntity,
                 previewValue: state.previewRows.isNotEmpty
                     ? (state.previewRows.first[header] ?? '')
                     : '',
@@ -97,7 +99,8 @@ class _TemplatePicker extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final templatesAsync = ref.watch(csvTemplatesProvider(targetEntity));
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     final notifier = ref.read(csvImportFlowProvider.notifier);
     final selectedId = state is CsvImportMapped
         ? state.selectedTemplateId
@@ -166,6 +169,7 @@ class _MappingRow extends StatelessWidget {
     required this.csvHeader,
     required this.currentField,
     required this.currentTransform,
+    required this.targetEntity,
     required this.previewValue,
     required this.onFieldChanged,
     required this.onTransformChanged,
@@ -174,6 +178,7 @@ class _MappingRow extends StatelessWidget {
   final String csvHeader;
   final CsvTargetField? currentField;
   final String? currentTransform;
+  final String targetEntity;
   final String previewValue;
   final ValueChanged<CsvTargetField?> onFieldChanged;
   final ValueChanged<String?> onTransformChanged;
@@ -212,6 +217,7 @@ class _MappingRow extends StatelessWidget {
               width: narrow ? double.infinity : 220,
               child: _TargetFieldDropdown(
                 value: currentField,
+                targetEntity: targetEntity,
                 onChanged: onFieldChanged,
               ),
             ),
@@ -239,9 +245,14 @@ class _MappingRow extends StatelessWidget {
 // ── Target Field Dropdown ─────────────────────────────────────────────────────
 
 class _TargetFieldDropdown extends StatelessWidget {
-  const _TargetFieldDropdown({required this.value, required this.onChanged});
+  const _TargetFieldDropdown({
+    required this.value,
+    required this.targetEntity,
+    required this.onChanged,
+  });
 
   final CsvTargetField? value;
+  final String targetEntity;
   final ValueChanged<CsvTargetField?> onChanged;
 
   @override
@@ -277,7 +288,8 @@ class _TargetFieldDropdown extends StatelessWidget {
             style: CsvT.labelStyle(color: CsvT.textLo, size: 12),
           ),
         ),
-        ...CsvTargetField.values.map((f) {
+        // Bloco 1A: filter by entity scope — never show Latitude for Contractor, etc.
+        ...CsvTargetField.forEntity(targetEntity).map((f) {
           return DropdownMenuItem(
             value: f,
             child: Text(

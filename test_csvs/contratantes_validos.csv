@@ -1,0 +1,4 @@
+nomecontratante,cnpj,emailcontratante,nomecontato,idexterno
+"Alpha Logistica Ltda","12.345.678/0001-95","contato@alphalog.com","Joao Silva","EXT_CONTR_001"
+"Beta Transportes S.A.","98.765.432/0001-98","financeiro@betatransp.com","Maria Santos","EXT_CONTR_002"
+"Gamma Distribuicao Ltda","45.678.901/0001-75","contato@gammadist.com","Pedro Oliveira","EXT_CONTR_003"

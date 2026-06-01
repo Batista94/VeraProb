@@ -1,7 +1,9 @@
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/application/admin/import_csv_handler.dart';
@@ -9,6 +11,8 @@ import 'package:veraprob/domain/entities/column_mapping.dart';
 import 'package:veraprob/domain/entities/csv_mapping_template.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart'; // pr_scanner: ignore
 import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/features/admin/presentation/utils/csv_target_field_labels.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
@@ -136,9 +140,11 @@ class CsvImportError extends CsvImportFlowState {
     required super.targetEntity,
     required super.currentStep,
     required this.message,
+    this.previousState,
   });
 
   final String message;
+  final CsvImportFlowState? previousState;
 }
 
 // ── Templates provider ────────────────────────────────────────────────────────
@@ -225,9 +231,9 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
 
       final previewRows = dataRows.take(3).toList();
 
-      final emptyMappings = <String, ColumnMapping?>{
-        for (final h in headers) h: null,
-      };
+      // Bloco 1B: auto-match headers to target fields.
+      // Pre-fills mappings so the user needs minimal manual intervention.
+      final autoMappings = _autoMatch(headers: headers, entity: _targetEntity);
 
       state = CsvImportMapped(
         targetEntity: _targetEntity,
@@ -236,17 +242,26 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
         previewRows: previewRows,
         allRows: dataRows,
         rawBytes: bytes.toList(),
-        mappings: emptyMappings,
+        mappings: autoMappings,
       );
-    } on FormatException {
+    } on FormatException catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Decodification Error] $e\n$stack');
+      }
       _setError('Arquivo não pôde ser decodificado como UTF-8.');
-    } catch (_) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Processing Error] $e\n$stack');
+      }
       _setError('Erro ao processar o arquivo CSV.');
     }
   }
 
   void applyTemplate(CsvMappingTemplate template) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
     final newMappings = Map<String, ColumnMapping?>.from(current.mappings);
@@ -266,7 +281,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     CsvTargetField? targetField,
     String? transform,
   ) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
     final newMappings = Map<String, ColumnMapping?>.from(current.mappings);
@@ -286,24 +304,54 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
   }
 
   void toggleSaveTemplate(bool value) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
     state = current.copyWithMapping(saveAsTemplate: value);
   }
 
   void setTemplateName(String name) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
     state = current.copyWithMapping(templateName: name);
   }
 
+  /// Active mappings with [ColumnMapping.required] set for every field the
+  /// target entity needs (NOT-NULL DB columns). Lets the preflight reject a
+  /// blank required cell per-row, in addition to the unmapped-column gate.
+  List<ColumnMapping> _activeMappings(
+    Map<String, ColumnMapping?> mappings,
+    String entity,
+  ) {
+    final required = CsvTargetField.requiredForEntity(entity).toSet();
+    return mappings.values.whereType<ColumnMapping>().map((m) {
+      if (!required.contains(m.targetField) || m.required) return m;
+      return ColumnMapping(
+        csvHeader: m.csvHeader,
+        targetField: m.targetField,
+        transform: m.transform,
+        required: true,
+        formatHint: m.formatHint,
+      );
+    }).toList();
+  }
+
   void validate() {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
-    final activeMappings = current.mappings.values
-        .whereType<ColumnMapping>()
-        .toList();
+    final activeMappings = _activeMappings(
+      current.mappings,
+      current.targetEntity,
+    );
 
     if (activeMappings.isEmpty) {
       _setError('Mapeie ao menos uma coluna antes de validar.');
@@ -327,7 +375,8 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     );
 
     final validator = ref.read(csvPreflightValidatorProvider);
-    final report = validator.validate(current.allRows, template);
+    final rowReport = validator.validate(current.allRows, template);
+    final report = _withCoverage(rowReport, validator, template);
 
     state = CsvImportValidated(
       targetEntity: current.targetEntity,
@@ -344,8 +393,42 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     );
   }
 
+  /// Merges the mapping-coverage gate into the row-level [rowReport]: a required
+  /// NOT-NULL field with no column mapping makes EVERY row invalid, so we force
+  /// `validRows: 0` and surface a blocking error per missing field. The Import
+  /// CTA is gated on `validRows > 0`, so this stops the import before the RPC
+  /// raises a 23502 null-value violation (INV-10 fail-fast).
+  CsvPreflightReport _withCoverage(
+    CsvPreflightReport rowReport,
+    CsvPreflightValidator validator,
+    CsvMappingTemplate template,
+  ) {
+    final unmapped = validator.findUnmappedRequired(template);
+    if (unmapped.isEmpty) return rowReport;
+    return CsvPreflightReport(
+      totalRows: rowReport.totalRows,
+      validRows: 0,
+      errors: [
+        for (final field in unmapped)
+          CsvRowError(
+            rowIndex: 0,
+            csvHeader: '—',
+            targetField: field.dbValue,
+            errorCode: 'unmapped_required',
+            message:
+                'Coluna obrigatória "${csvTargetFieldLabel(field)}" não foi '
+                'mapeada a nenhuma coluna do CSV.',
+          ),
+        ...rowReport.errors,
+      ],
+    );
+  }
+
   Future<void> submit() async {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportValidated) return;
 
     final orgId = ref.read(currentOrganizationIdProvider);
@@ -370,9 +453,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     );
 
     try {
-      final activeMappings = current.mappings.values
-          .whereType<ColumnMapping>()
-          .toList();
+      final activeMappings = _activeMappings(
+        current.mappings,
+        current.targetEntity,
+      );
 
       final command = ImportCsvCommand(
         sessionId: sessionId,
@@ -389,15 +473,29 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       final result = await handler.handle(command);
 
       state = CsvImportDone(targetEntity: current.targetEntity, result: result);
+    } on SovereigntyViolationException {
+      _setError(
+        'Sessão expirada ou inválida. Por favor, faça login novamente.',
+        current,
+      );
     } on IntegrityException catch (e) {
-      _setError(e.message);
-    } catch (_) {
-      _setError('Falha ao importar. Verifique sua conexão e tente novamente.');
+      _setError(e.message, current);
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Submission Error] $e\n$stack');
+      }
+      _setError(
+        'Falha ao importar. Verifique sua conexão e tente novamente.',
+        current,
+      );
     }
   }
 
   void goBack() {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     switch (current) {
       case CsvImportValidated():
         state = CsvImportMapped(
@@ -423,16 +521,181 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     state = CsvImportInitial(targetEntity: _targetEntity);
   }
 
-  void _setError(String message) {
+  void _setError(String message, [CsvImportFlowState? previousState]) {
+    final previousNonErrorState =
+        previousState ??
+        (state is CsvImportError
+            ? (state as CsvImportError).previousState
+            : state);
     state = CsvImportError(
       targetEntity: _targetEntity,
       currentStep: state.currentStep,
       message: message,
+      previousState: previousNonErrorState,
     );
   }
+
+  // ── Auto-Match (Bloco 1B) ────────────────────────────────────────────────
+
+  /// Lexical auto-match: maps CSV headers to [CsvTargetField] using
+  /// normalised string comparison (lowercase, strip non-alphanumeric).
+  ///
+  /// Entity-scoped: a pattern matching [CsvTargetField.latitude] will produce
+  /// `null` if `entity == 'contractor'` because latitude is not whitelisted.
+  Map<String, ColumnMapping?> _autoMatch({
+    required List<String> headers,
+    required String entity,
+  }) {
+    final scopedFields = CsvTargetField.forEntity(entity);
+    final result = <String, ColumnMapping?>{};
+    for (final header in headers) {
+      final normalized = _normalizeHeader(header);
+      final match = _kAutoMatchRules.firstWhereOrNull(
+        (rule) =>
+            rule.$1.hasMatch(normalized) && scopedFields.contains(rule.$2),
+      );
+      result[header] = match == null
+          ? null
+          : ColumnMapping(csvHeader: header, targetField: match.$2);
+    }
+    return result;
+  }
+
+  /// Exposes [_autoMatch] for unit testing without breaking encapsulation.
+  @visibleForTesting
+  Map<String, ColumnMapping?> autoMatchForTest({
+    required List<String> headers,
+    required String entity,
+  }) => _autoMatch(headers: headers, entity: entity);
+
+  /// Normalises a CSV header for fuzzy matching:
+  /// lowercases and strips all non-alphanumeric characters.
+  static String _normalizeHeader(String h) =>
+      h.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  /// Priority-ordered match rules: (pattern, field).
+  ///
+  /// IMPORTANT: evaluated in declaration order — more specific rules first.
+  static final List<(RegExp, CsvTargetField)> _kAutoMatchRules = [
+    // ── externalId (highest priority — integration anchor) ────────────────
+    (
+      RegExp(r'^(idexterno|externalid|ext_id|extid|chaveintegracao)$'),
+      CsvTargetField.externalId,
+    ),
+
+    // ── contractor document ────────────────────────────────────────────────
+    (
+      RegExp(
+        r'^(cnpj|cnpjcliente|cnpjcontratante|taxid|documentocontratante|documento|doc|contractordocument)$',
+      ),
+      CsvTargetField.contractorDocument,
+    ),
+
+    // ── operator document (CPF — 11 digits) ───────────────────────────────
+    // 'documento'/'doc' appears above for contractorDocument; for operator
+    // entities the entity scope guard ensures contractorDocument is not
+    // in scopedFields, so the firstWhereOrNull continues to this rule.
+    (
+      RegExp(r'^(cpf|documentooperador|documentomotorista|documento|doc)$'),
+      CsvTargetField.operatorDocument,
+    ),
+
+    // ── asset identifier ───────────────────────────────────────────────────
+    (
+      RegExp(r'^(placa|plate|identificador|serial|chassi|frota)$'),
+      CsvTargetField.identifier,
+    ),
+
+    // ── operator fields ────────────────────────────────────────────────────
+    (
+      RegExp(r'^(nome|name|nomecompleto|nomeoperador|razaosocial)$'),
+      CsvTargetField.operatorName,
+    ),
+    (
+      RegExp(r'^(habilitacao|cnh|licensenumber|license|carteira)$'),
+      CsvTargetField.operatorLicense,
+    ),
+    (
+      RegExp(r'^(telefone|phone|celular|contato|cel)$'),
+      CsvTargetField.operatorPhone,
+    ),
+
+    // ── contractor fields (Bloco 1C.0) ─────────────────────────────────────
+    // Scope guard keeps these from colliding with operator/zone name rules:
+    // contractorName is only in scope for entity 'contractor'.
+    (
+      RegExp(
+        r'^(nomecontratante|razaosocial|nomefantasia|nome|name|contractorname)$',
+      ),
+      CsvTargetField.contractorName,
+    ),
+    (
+      RegExp(
+        r'^(email|emailcontratante|emailprincipal|emailcontato|contractoremail)$',
+      ),
+      CsvTargetField.contractorEmail,
+    ),
+    (
+      RegExp(
+        r'^(contato|responsavel|nomecontato|pessoacontato|contractorcontactname)$',
+      ),
+      CsvTargetField.contractorContactName,
+    ),
+
+    // ── asset fields ───────────────────────────────────────────────────────
+    (RegExp(r'^(modelo|model|marca)$'), CsvTargetField.assetModel),
+    (
+      RegExp(r'^(capacidade|capacity|lugares|assentos|seats)$'),
+      CsvTargetField.capacity,
+    ),
+    (RegExp(r'^(status|situacao|estado)$'), CsvTargetField.assetStatus),
+
+    // ── contract fields ────────────────────────────────────────────────────
+    (
+      RegExp(r'^(codigocontrato|contractcode|contrato|numcontrato)$'),
+      CsvTargetField.contractCode,
+    ),
+    (
+      RegExp(r'^(datainicio|startdate|inicio|start|vigenciainicio)$'),
+      CsvTargetField.startDate,
+    ),
+    (
+      RegExp(r'^(datafim|enddate|fim|end|vigenciafim|termino)$'),
+      CsvTargetField.endDate,
+    ),
+
+    // ── zone fields ───────────────────────────────────────────────────────
+    (RegExp(r'^(nomezona|zonename|zona|nome)$'), CsvTargetField.zoneName),
+    (
+      RegExp(r'^(codigozona|zonecode|codigoexterno|codigo)$'),
+      CsvTargetField.zoneCode,
+    ),
+    (RegExp(r'^(lat|latitude)$'), CsvTargetField.latitude),
+    (RegExp(r'^(lon|lng|longitude)$'), CsvTargetField.longitude),
+    (
+      RegExp(r'^(raio|radius|radiometros|radiusmeters)$'),
+      CsvTargetField.radiusMeters,
+    ),
+
+    // ── notes ─────────────────────────────────────────────────────────────
+    (
+      RegExp(r'^(observacoes|notes|obs|nota|observacao)$'),
+      CsvTargetField.notes,
+    ),
+  ];
 }
 
 final csvImportFlowProvider =
     NotifierProvider.autoDispose<CsvImportFlowNotifier, CsvImportFlowState>(
       CsvImportFlowNotifier.new,
     );
+
+extension CsvImportFlowStateX on CsvImportFlowState {
+  CsvImportFlowState get activeState {
+    final self = this;
+    if (self is CsvImportError && self.previousState != null) {
+      return self.previousState!;
+    }
+    return self;
+  }
+}

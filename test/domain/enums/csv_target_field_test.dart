@@ -55,6 +55,8 @@ void main() {
         CsvTargetField.operatorName,
         CsvTargetField.operatorDocument,
         CsvTargetField.operatorLicense,
+        CsvTargetField.operatorLicenseCategory,
+        CsvTargetField.operatorLicenseExpiry,
         CsvTargetField.operatorPhone,
       };
       for (final f in operatorFields) {
@@ -81,8 +83,21 @@ void main() {
         CsvTargetField.latitude,
         CsvTargetField.longitude,
         CsvTargetField.radiusMeters,
+        CsvTargetField.address,
       };
       for (final f in zoneFields) {
+        expect(CsvTargetField.values, contains(f));
+      }
+    });
+
+    test('Contractor group contains required fields (INV-14)', () {
+      final contractorFields = {
+        CsvTargetField.contractorName,
+        CsvTargetField.contractorDocument,
+        CsvTargetField.contractorEmail,
+        CsvTargetField.contractorContactName,
+      };
+      for (final f in contractorFields) {
         expect(CsvTargetField.values, contains(f));
       }
     });
@@ -92,20 +107,101 @@ void main() {
       expect(CsvTargetField.values, contains(CsvTargetField.notes));
     });
 
-    // ── Regression guard ──────────────────────────────────────────────────────
+    // ── Regression guard ──
 
     test(
-      'total field count matches taxonomy (19 fields — regression guard)',
+      'total field count matches taxonomy (23 fields — regression guard)',
       () {
         // If this fails after adding a new field, update the expected count
         // AND add the field to the appropriate taxonomy group test above.
         expect(
           CsvTargetField.values.length,
-          equals(19),
+          equals(25),
           reason:
               'CsvTargetField field count changed. Update this test and '
               'ensure the new field is covered by a taxonomy group test.',
         );
+      },
+    );
+
+    // ── requiredForEntity (NOT-NULL coverage SSOT) ────────────────────────────
+
+    test('contractor required fields are name, document, email, contact', () {
+      expect(
+        CsvTargetField.requiredForEntity('contractor'),
+        equals(const [
+          CsvTargetField.contractorName,
+          CsvTargetField.contractorDocument,
+          CsvTargetField.contractorEmail,
+          CsvTargetField.contractorContactName,
+        ]),
+      );
+    });
+
+    test('asset requires only the identifier (plate)', () {
+      expect(
+        CsvTargetField.requiredForEntity('asset'),
+        equals(const [CsvTargetField.identifier]),
+      );
+    });
+
+    test('operator requires name and license', () {
+      expect(
+        CsvTargetField.requiredForEntity('operator'),
+        equals(const [
+          CsvTargetField.operatorName,
+          CsvTargetField.operatorLicense,
+        ]),
+      );
+    });
+
+    test('contract requires code, document and both dates', () {
+      expect(
+        CsvTargetField.requiredForEntity('contract'),
+        equals(const [
+          CsvTargetField.contractCode,
+          CsvTargetField.contractorDocument,
+          CsvTargetField.startDate,
+          CsvTargetField.endDate,
+        ]),
+      );
+    });
+
+    test('zone requires name and full geofence', () {
+      expect(
+        CsvTargetField.requiredForEntity('zone'),
+        equals(const [
+          CsvTargetField.zoneName,
+          CsvTargetField.latitude,
+          CsvTargetField.longitude,
+          CsvTargetField.radiusMeters,
+        ]),
+      );
+    });
+
+    test('unknown entity has no coverage constraint (safe fallback)', () {
+      expect(CsvTargetField.requiredForEntity('galaxy'), isEmpty);
+    });
+
+    test(
+      'every required field is whitelisted for its entity (consistency)',
+      () {
+        for (final entity in const [
+          'asset',
+          'operator',
+          'contractor',
+          'contract',
+          'zone',
+        ]) {
+          final scoped = CsvTargetField.forEntity(entity).toSet();
+          for (final field in CsvTargetField.requiredForEntity(entity)) {
+            expect(
+              scoped,
+              contains(field),
+              reason: 'Required $field must be mappable for entity $entity.',
+            );
+          }
+        }
       },
     );
 

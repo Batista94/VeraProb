@@ -1086,6 +1086,11 @@ void main() {
 
 class _StubZoneRepository implements OperationalZoneRepository {
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+  @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
   ) async => [

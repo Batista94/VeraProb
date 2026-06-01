@@ -268,6 +268,30 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
     return sha256.convert(utf8.encode(canonicalJson)).toString();
   }
 
+  /// Runs a batch RPC upsert in chunks of [chunkSize] (default 1000) to prevent
+  /// PostgREST Payload Too Large (413) or execution timeouts (DoS protection).
+  ///
+  /// Returns the sum of all upserted rows.
+  Future<int> executeBatchUpsertInChunks({
+    required String rpcFunction,
+    required String organizationId,
+    required List<Map<String, dynamic>> rows,
+    int chunkSize = 1000,
+  }) async {
+    if (rows.isEmpty) return 0;
+    int totalCount = 0;
+    for (var i = 0; i < rows.length; i += chunkSize) {
+      final end = (i + chunkSize < rows.length) ? i + chunkSize : rows.length;
+      final chunk = rows.sublist(i, end);
+      final result = await client.rpc<dynamic>(
+        rpcFunction,
+        params: {'p_org_id': organizationId, 'p_rows': chunk},
+      );
+      totalCount += (result as num).toInt();
+    }
+    return totalCount;
+  }
+
   // ── Test Hooks (public access to private static methods) ──────────────────
 
   /// Public wrapper for [_hashPayloadIfPresent] — used by tests to verify

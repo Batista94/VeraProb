@@ -344,6 +344,11 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 /// Allows the handler to validate and activate contracts during tests.
 class MockContractRepository implements ContractRepository {
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+  @override
   Future<Contract?> findById(
     String id, {
     required String organizationId,

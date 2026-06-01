@@ -1,0 +1,8 @@
+contractorCode;contractorDocument;startDate;endDate;externalId;notes
+CONTRATO-VALIDO-01;07.311.415/0001-06;01/01/2026;31/12/2026;CONT-004;Linha valida para importacao parcial
+;40.688.134/0001-61;01/02/2026;01/02/2027;CONT-005;Erro esperado codigo obrigatorio ausente
+CONTRATO-FK-ERRO;99.888.777/0001-66;01/03/2026;01/03/2027;CONT-006;Erro esperado foreign_key_not_found
+CONTRATO-DATA-INVALIDA;61.142.302/0001-09;2026-05-29;INDETERMINADA;CONT-007;Erro esperado formato de data invalido
+CONTRATO-DATA-INVERTIDA;40.688.134/0001-61;01/01/2026;01/01/2025;CONT-008;Erro esperado termino anterior ao inicio
+CONTRATO-VALIDO-01;61.142.302/0001-09;15/05/2026;15/05/2028;CONT-009;Erro esperado duplicidade no lote
+=3+3;07.311.415/0001-06;01/04/2026;01/04/2027;CONT-010;Erro esperado tentativa de injecao CSV

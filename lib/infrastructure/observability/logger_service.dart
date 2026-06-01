@@ -9,7 +9,7 @@ class LoggerService {
   void log(String message, {String? component}) {
     if (kReleaseMode) {
       // In production, send to Crashlytics or Supabase Logs
-      // For MVP, we might suppress or log only critical errors
+      // Future: integrate production log draining service
       return;
     }
     final timestamp = DateTime.now().toUtc().toIso8601String();

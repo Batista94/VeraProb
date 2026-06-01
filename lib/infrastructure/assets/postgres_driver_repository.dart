@@ -12,6 +12,22 @@ class PostgresDriverRepository extends BasePostgresRepository
     implements IDriverRepository {
   PostgresDriverRepository(super.client);
 
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_drivers',
+        organizationId: organizationId,
+        rows: rows,
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'driver');
+    }
+  }
+
   String get _orgId {
     final orgId =
         client.auth.currentSession?.user.appMetadata['org_id'] as String?;

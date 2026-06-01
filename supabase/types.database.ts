@@ -1,4 +1,3 @@
-Connecting to db 5432
 export type Json =
   | string
   | number
@@ -477,29 +476,32 @@ export type Database = {
         Row: {
           contact_name: string
           created_at_utc: string
+          external_id: string | null
           id: string
           name: string
           organization_id: string
           primary_email: string
-          tax_id: string | null
+          tax_id: string
         }
         Insert: {
           contact_name: string
           created_at_utc?: string
+          external_id?: string | null
           id?: string
           name: string
           organization_id: string
           primary_email: string
-          tax_id?: string | null
+          tax_id: string
         }
         Update: {
           contact_name?: string
           created_at_utc?: string
+          external_id?: string | null
           id?: string
           name?: string
           organization_id?: string
           primary_email?: string
-          tax_id?: string | null
+          tax_id?: string
         }
         Relationships: [
           {
@@ -536,11 +538,13 @@ export type Database = {
           created_at_utc: string
           current_hash: string | null
           description: string | null
+          external_id: string | null
           financial_ceiling_cents: number | null
           id: string
           latitude: number | null
           longitude: number | null
           name: string
+          notes: string | null
           organization_id: string
           penalty_multiplier: number
           previous_hash: string | null
@@ -560,11 +564,13 @@ export type Database = {
           created_at_utc?: string
           current_hash?: string | null
           description?: string | null
+          external_id?: string | null
           financial_ceiling_cents?: number | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           name: string
+          notes?: string | null
           organization_id: string
           penalty_multiplier?: number
           previous_hash?: string | null
@@ -584,11 +590,13 @@ export type Database = {
           created_at_utc?: string
           current_hash?: string | null
           description?: string | null
+          external_id?: string | null
           financial_ceiling_cents?: number | null
           id?: string
           latitude?: number | null
           longitude?: number | null
           name?: string
+          notes?: string | null
           organization_id?: string
           penalty_multiplier?: number
           previous_hash?: string | null
@@ -961,31 +969,46 @@ export type Database = {
       drivers: {
         Row: {
           archived_at_utc: string | null
+          cpf: string | null
           created_at: string | null
+          external_id: string | null
           full_name: string
           id: string
+          license_category: string | null
+          license_expiry_utc: string | null
           license_number: string
           organization_id: string | null
+          phone: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
           archived_at_utc?: string | null
+          cpf?: string | null
           created_at?: string | null
+          external_id?: string | null
           full_name: string
           id?: string
+          license_category?: string | null
+          license_expiry_utc?: string | null
           license_number: string
           organization_id?: string | null
+          phone?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
           archived_at_utc?: string | null
+          cpf?: string | null
           created_at?: string | null
+          external_id?: string | null
           full_name?: string
           id?: string
+          license_category?: string | null
+          license_expiry_utc?: string | null
           license_number?: string
           organization_id?: string | null
+          phone?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -1701,6 +1724,7 @@ export type Database = {
           contractor_label: string | null
           created_at: string
           created_at_utc: string
+          external_id: string | null
           id: string
           latitude: number | null
           longitude: number | null
@@ -1716,6 +1740,7 @@ export type Database = {
           contractor_label?: string | null
           created_at?: string
           created_at_utc?: string
+          external_id?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -1731,6 +1756,7 @@ export type Database = {
           contractor_label?: string | null
           created_at?: string
           created_at_utc?: string
+          external_id?: string | null
           id?: string
           latitude?: number | null
           longitude?: number | null
@@ -3785,6 +3811,7 @@ export type Database = {
           capacity: number
           created_at: string
           device_serial: string | null
+          external_id: string | null
           id: string
           model: string | null
           organization_id: string
@@ -3797,6 +3824,7 @@ export type Database = {
           capacity?: number
           created_at?: string
           device_serial?: string | null
+          external_id?: string | null
           id?: string
           model?: string | null
           organization_id: string
@@ -3809,6 +3837,7 @@ export type Database = {
           capacity?: number
           created_at?: string
           device_serial?: string | null
+          external_id?: string | null
           id?: string
           model?: string | null
           organization_id?: string
@@ -4209,6 +4238,26 @@ export type Database = {
           }
       batch_update_contracts: { Args: { p_updates: Json }; Returns: Json }
       batch_update_vehicles: { Args: { p_updates: Json }; Returns: Json }
+      batch_upsert_contractors: {
+        Args: { p_org_id: string; p_rows: Json }
+        Returns: number
+      }
+      batch_upsert_contracts: {
+        Args: { p_org_id: string; p_rows: Json }
+        Returns: number
+      }
+      batch_upsert_drivers: {
+        Args: { p_org_id: string; p_rows: Json }
+        Returns: number
+      }
+      batch_upsert_operational_zones: {
+        Args: { p_org_id: string; p_rows: Json }
+        Returns: number
+      }
+      batch_upsert_vehicles: {
+        Args: { p_org_id: string; p_rows: Json }
+        Returns: number
+      }
       check_and_close_execution_autonomously: {
         Args: {
           p_current_lat?: number
@@ -6121,9 +6170,4 @@ export const Constants = {
     },
   },
 } as const
-
-// A new version of Supabase CLI is available: v2.101.0 (currently installed v2.95.4)
-// We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli
-// touch
-
 

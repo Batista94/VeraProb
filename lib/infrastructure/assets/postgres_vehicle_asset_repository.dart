@@ -13,6 +13,22 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
     implements IVehicleAssetRepository {
   PostgresVehicleAssetRepository(super.client);
 
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_vehicles',
+        organizationId: organizationId,
+        rows: rows,
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
+    }
+  }
+
   String get _orgId {
     final orgId =
         client.auth.currentSession?.user.appMetadata['org_id'] as String?;

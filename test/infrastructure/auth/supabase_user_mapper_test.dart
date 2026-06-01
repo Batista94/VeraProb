@@ -85,6 +85,20 @@ void main() {
       );
     }
 
+    /// Minimal user — appMetadata has no org_id (simulates tenant admin
+    /// provisioned only via user_roles insert, without Admin API app_metadata
+    /// update). Used to test mapToAuthUserFromJwtClaims.
+    supabase.User createUserWithoutOrgInAppMetadata() {
+      return supabase.User(
+        id: 'user-jwt-1',
+        email: 'jwt-admin@veraprob.com',
+        appMetadata: {},
+        userMetadata: {},
+        aud: 'authenticated',
+        createdAt: DateTime.now().toUtc().toIso8601String(),
+      );
+    }
+
     // ── Testes ─────────────────────────────────────────────────────────────
 
     group('mapToAuthUser', () {
@@ -203,6 +217,119 @@ void main() {
         );
 
         final result = SupabaseUserMapper.mapToAuthUser(user);
+        expect(result.role, isNull);
+      });
+    });
+
+    // ── mapToAuthUserFromJwtClaims ─────────────────────────────────────────
+
+    group('mapToAuthUserFromJwtClaims', () {
+      test(
+        'returns AuthUser with tenantId from JWT app_metadata.org_id [INV-1]',
+        () {
+          final user = createUserWithoutOrgInAppMetadata();
+          final jwtClaims = <String, dynamic>{
+            'sub': 'user-jwt-1',
+            'app_metadata': {
+              'org_id': 'org-hook-injected',
+              'role': 'TENANT_ADMIN',
+            },
+          };
+
+          final result = SupabaseUserMapper.mapToAuthUserFromJwtClaims(
+            user,
+            jwtClaims,
+          );
+
+          expect(result.id, equals('user-jwt-1'));
+          expect(result.tenantId, equals('org-hook-injected'));
+          expect(result.role, equals(UserRole.admin));
+          expect(result.isMfaEnabled, isFalse);
+        },
+      );
+
+      test(
+        'throws AuthFailureException when JWT app_metadata lacks org_id [INV-1]',
+        () {
+          final user = createUserWithoutOrgInAppMetadata();
+          final jwtClaims = <String, dynamic>{
+            'sub': 'user-jwt-1',
+            'app_metadata': {'role': 'OPERATOR'},
+          };
+
+          expect(
+            () =>
+                SupabaseUserMapper.mapToAuthUserFromJwtClaims(user, jwtClaims),
+            throwsA(
+              isA<AuthFailureException>().having(
+                (e) => e.message,
+                'message',
+                contains('organização'),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'throws AuthFailureException when JWT has no app_metadata key [INV-1]',
+        () {
+          final user = createUserWithoutOrgInAppMetadata();
+          final jwtClaims = <String, dynamic>{'sub': 'user-jwt-1'};
+
+          expect(
+            () =>
+                SupabaseUserMapper.mapToAuthUserFromJwtClaims(user, jwtClaims),
+            throwsA(isA<AuthFailureException>()),
+          );
+        },
+      );
+
+      test('reads mfa_enabled from JWT app_metadata', () {
+        final user = createUserWithoutOrgInAppMetadata();
+        final jwtClaims = <String, dynamic>{
+          'app_metadata': {
+            'org_id': 'org-mfa',
+            'role': 'AUDITOR',
+            'mfa_enabled': true,
+          },
+        };
+
+        final result = SupabaseUserMapper.mapToAuthUserFromJwtClaims(
+          user,
+          jwtClaims,
+        );
+
+        expect(result.isMfaEnabled, isTrue);
+        expect(result.role, equals(UserRole.auditor));
+      });
+
+      test('uses user.id and user.email from the Supabase User object', () {
+        final user = createUserWithoutOrgInAppMetadata();
+        final jwtClaims = <String, dynamic>{
+          'app_metadata': {'org_id': 'org-x', 'role': 'OPERATOR'},
+        };
+
+        final result = SupabaseUserMapper.mapToAuthUserFromJwtClaims(
+          user,
+          jwtClaims,
+        );
+
+        expect(result.id, equals('user-jwt-1'));
+        expect(result.email, equals('jwt-admin@veraprob.com'));
+      });
+
+      test('handles unknown role string gracefully (null role)', () {
+        final user = createUserWithoutOrgInAppMetadata();
+        final jwtClaims = <String, dynamic>{
+          'app_metadata': {'org_id': 'org-x', 'role': 'LEGACY_ROLE'},
+        };
+
+        final result = SupabaseUserMapper.mapToAuthUserFromJwtClaims(
+          user,
+          jwtClaims,
+        );
+
         expect(result.role, isNull);
       });
     });

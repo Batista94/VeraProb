@@ -375,6 +375,11 @@ ContractualServiceInput _makeService(DateTime start) {
 /// Satisfies the INV-18 zone gate for any org without polluting lifecycle tests.
 class _StubZoneRepository implements OperationalZoneRepository {
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+  @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,
   ) async => [

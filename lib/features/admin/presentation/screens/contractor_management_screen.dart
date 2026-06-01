@@ -63,7 +63,7 @@ class _ContractorManagementScreenState
                   onPressed: () async {
                     final imported = await showUniversalCsvImporter(
                       context,
-                      targetEntity: 'contract',
+                      targetEntity: 'contractor',
                     );
                     if (imported) ref.invalidate(contractorListProvider);
                   },

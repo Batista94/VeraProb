@@ -98,7 +98,9 @@ export const options = {
 
   thresholds: {
     // 100% of shadows must be auto-linked after retroactive trip creation (INV-11)
-    'fluid_fsm_autolink_success_rate': [{ threshold: 'rate==1', abortOnFail: true }],
+    // abortOnFail: false — this is a TDD gate that FAILS before migration is applied;
+    // aborting mid-run kills the concurrent_autolink scenario with a signal interrupt.
+    'fluid_fsm_autolink_success_rate': [{ threshold: 'rate==1', abortOnFail: false }],
     // Zero hash collisions (forensic hash immutability — INV-9)
     'fluid_fsm_hash_collision_count':  [{ threshold: 'count==0', abortOnFail: true }],
     // Zero duplicate reconciliation rows (INV-15)
@@ -282,6 +284,8 @@ export function autolinkScenario() {
   group('step_1_create_orphan_evidence', () => {
     const ev = createEvidenceRow(chatId, messageId, messageTs);
     check(ev, { 'evidence created': e => e !== null && e.id !== undefined });
+    // If evidence creation fails (e.g. driver FK missing — seed OPERATOR_ID in drivers),
+    // skip this VU entirely rather than recording a 0 on the autolink rate.
     if (!ev) return;
 
     const shadowId = createShadowExecution(ev.id, chatId, messageTs);

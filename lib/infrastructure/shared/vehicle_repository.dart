@@ -33,7 +33,7 @@ class VehicleRepository implements IVehiclePositionService {
       (_) => [], // Placeholder for Supabase data
     );
 
-    // Merge streams logic (simplified for MVP)
+    // Merge streams logic (initial implementation)
     // We basically want to emit whenever we get fresh data,
     // prioritizing API data if it exists and is recent.
 
@@ -57,7 +57,7 @@ class VehicleRepository implements IVehiclePositionService {
     };
 
     try {
-      // For MVP without creds, just log clearly
+      // Local development mode: log upload trace
       // ignore: avoid_print
       print(
         '🚀 UPLOAD [${position.source}] Trip ${position.tripId}: ${position.latitude}, ${position.longitude}',

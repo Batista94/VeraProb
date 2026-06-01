@@ -1,6 +1,6 @@
 # Engineering Council: B2B Strategy & Architectural Review
 
-The Engineering Council has convened to evaluate the 7 strategic architectural gaps identified in the transition from an MVP to a true B2B Operational Platform.
+The Engineering Council has convened to evaluate the 7 strategic architectural gaps identified in the transition from an early prototype to a true B2B Operational Platform.
 
 Our unanimous consensus: **The risk of building an "Engineering Prototype" instead of a usable product is critical.** The current architecture is a powerful evaluation engine (Ferrari), but it lacks the steering wheel (Admin/Configuration) and dashboard (Explainability/Alerting) required for a real organization to drive it.
 

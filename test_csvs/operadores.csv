@@ -1,0 +1,5 @@
+nome,cpf,habilitacao,categoria,validade,telefone,idexterno
+"Motorista Invalido A","12.345.678/0001-95","CNH123456","AD","2027-12-31","11999999999","EXT_OP_A"
+"Motorista Invalido B","123.456.789-09","CNH234567","X","2027-12-31","11999999999","EXT_OP_B"
+"Motorista Invalido C","987.654.321-00","CNH345678","AD","99/99/9999","11999999999","EXT_OP_C"
+"Motorista Limpo","456.789.012-49","CNH456789","AD","2027-12-31","11999999999","EXT_OP_D"

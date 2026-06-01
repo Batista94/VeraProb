@@ -133,6 +133,19 @@ class CsvPreflightValidator {
     );
   }
 
+  /// Coverage check — distinct from per-row validation: the required
+  /// NOT-NULL fields for [template.targetEntity] that have no column mapping.
+  ///
+  /// An unmapped required field makes every row invalid (the value can never be
+  /// supplied), so the caller MUST block the import before the `batch_upsert`
+  /// RPC raises a 23502 null-value violation (INV-10 fail-fast).
+  List<CsvTargetField> findUnmappedRequired(CsvMappingTemplate template) {
+    final mapped = template.columnMappings.map((m) => m.targetField).toSet();
+    return CsvTargetField.requiredForEntity(
+      template.targetEntity,
+    ).where((f) => !mapped.contains(f)).toList();
+  }
+
   _FieldPreprocessResult _preprocessField(
     String? rawValue,
     ColumnMapping mapping,
@@ -207,6 +220,9 @@ class CsvPreflightValidator {
     if (_dateFields.contains(mapping.targetField)) {
       return _validateDate(value, mapping, rowIndex);
     }
+    if (mapping.targetField == CsvTargetField.operatorLicenseCategory) {
+      return _validateLicenseCategory(value, mapping, rowIndex);
+    }
     return null;
   }
 
@@ -221,6 +237,21 @@ class CsvPreflightValidator {
   static const Set<CsvTargetField> _dateFields = {
     CsvTargetField.startDate,
     CsvTargetField.endDate,
+    CsvTargetField.operatorLicenseExpiry,
+  };
+
+  /// Brazilian CNH categories (single + valid combinations, incl. ACC).
+  static const Set<String> _licenseCategories = {
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'AB',
+    'AC',
+    'AD',
+    'AE',
+    'ACC',
   };
 
   CsvRowError? _validateCapacity(
@@ -234,10 +265,27 @@ class CsvPreflightValidator {
         csvHeader: mapping.csvHeader,
         targetField: mapping.targetField.dbValue,
         errorCode: 'invalid_number',
-        message: 'Capacidade deve ser um número inteiro válido.',
+        message: 'Capacidade deve ser um número inteiro válido. Exemplo: 46',
       );
     }
     return null;
+  }
+
+  CsvRowError? _validateLicenseCategory(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    if (_licenseCategories.contains(value.toUpperCase().trim())) return null;
+    return CsvRowError(
+      rowIndex: rowIndex,
+      csvHeader: mapping.csvHeader,
+      targetField: mapping.targetField.dbValue,
+      errorCode: 'invalid_license_category',
+      message:
+          'Categoria de CNH inválida. Use uma categoria válida '
+          '(A, B, C, D, E ou combinações AB, AC, AD, AE, ACC). Exemplo: AD',
+    );
   }
 
   CsvRowError? _validateCoordinate(
@@ -258,7 +306,9 @@ class CsvPreflightValidator {
       csvHeader: mapping.csvHeader,
       targetField: mapping.targetField.dbValue,
       errorCode: 'invalid_coordinate',
-      message: 'Coordenada geolocalizada fora dos limites permitidos.',
+      message:
+          'Coordenada geolocalizada fora dos limites permitidos '
+          '(Latitude de -90 a 90, Longitude de -180 a 180). Exemplo: -23.550520',
     );
   }
 
@@ -275,12 +325,15 @@ class CsvPreflightValidator {
   ) {
     final digits = value.replaceAll(RegExp(r'\D'), '');
 
-    // Structural validation: mod-11 check-digit
-    final isStructurallyValid = digits.length == 14
+    // Contextual document policy (consolidated-ERP practice):
+    //   contractorDocument → strictly CNPJ (14 digits); CPF rejected.
+    //   operatorDocument    → strictly CPF (11 digits); CNPJ rejected.
+    final isContractor =
+        mapping.targetField == CsvTargetField.contractorDocument;
+
+    final isStructurallyValid = isContractor
         ? CnpjValidator.isValid(digits)
-        : digits.length == 11
-        ? CpfValidator.isValid(digits)
-        : false;
+        : CpfValidator.isValid(digits);
 
     if (!isStructurallyValid) {
       return CsvRowError(
@@ -288,7 +341,13 @@ class CsvPreflightValidator {
         csvHeader: mapping.csvHeader,
         targetField: mapping.targetField.dbValue,
         errorCode: 'invalid_document',
-        message: 'Documento com dígito verificador inválido.',
+        message: isContractor
+            ? 'CNPJ inválido. O documento do contratante deve ser um CNPJ '
+                  'com 14 dígitos e dígito verificador válido. '
+                  'Exemplo: 11.222.333/0001-81'
+            : 'CPF inválido. O documento do operador deve ser um CPF '
+                  'com 11 dígitos e dígito verificador válido. '
+                  'Exemplo: 529.982.247-25',
       );
     }
 
@@ -333,9 +392,10 @@ class CsvPreflightValidator {
       targetField: mapping.targetField.dbValue,
       errorCode: 'invalid_date',
       message: mapping.formatHint != null
-          ? 'Data inválida para o formato esperado (${mapping.formatHint}).'
-          : 'Data inválida ou em formato não reconhecido '
-                '(use padrão ISO-8601 ou especifique formato).',
+          ? 'Data inválida para o formato esperado (${mapping.formatHint}). '
+                'Exemplo: ${mapping.formatHint == 'dd/MM/yyyy' ? '30/05/2026' : '2026-05-30'}'
+          : 'Data inválida ou em formato não reconhecido. '
+                'Use o padrão ISO-8601 (Exemplo: 2026-05-30) ou informe o formato esperado no mapeamento.',
     );
   }
 }

@@ -240,7 +240,7 @@ void main() {
         reason: 'State not yet created by evaluation engine sweep',
       );
 
-      // For MVP, if external system hasn't created the state yet, the engine won't see it.
+      // If the external system hasn't created the state yet, the engine won't see it.
       // Wait, let's artificially initialize it as if the scheduler spawned it.
       final newState = ContractualExecutionState.create(
         organizationId: '00000000-0000-0000-0000-000000000001',
@@ -915,6 +915,11 @@ class _MockAuthRepository extends Mock implements IAuthRepository {}
 /// CONTRACT_ACTIVATED ledger entry and break Stage 3's count assertion.
 class MockContractRepository implements ContractRepository {
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+  @override
   Future<Contract?> findById(
     String id, {
     required String organizationId,
@@ -947,6 +952,11 @@ class MockContractRepository implements ContractRepository {
 }
 
 class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
   final List<OperationalZone>? _explicitZones;
 
   const _StubZoneRepository({List<OperationalZone>? zones})

@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Test harness that exposes the static methods of [BasePostgresRepository].
@@ -320,4 +323,80 @@ void main() {
       );
     });
   });
+
+  group('BasePostgresRepository.executeBatchUpsertInChunks', () {
+    late _MockSupabaseClient mockClient;
+    late _TestRepository repo;
+
+    setUpAll(() {
+      registerFallbackValue(<Map<String, dynamic>>[]);
+    });
+
+    setUp(() {
+      mockClient = _MockSupabaseClient();
+      repo = _TestRepository(mockClient);
+    });
+
+    test('returns 0 immediately if rows are empty', () async {
+      final result = await repo.executeBatchUpsertInChunks(
+        rpcFunction: 'test_rpc',
+        organizationId: 'org-1',
+        rows: [],
+      );
+      expect(result, equals(0));
+    });
+
+    test('calls client.rpc in chunks and sums return values', () async {
+      final rows = List.generate(2500, (i) => {'id': i});
+
+      var callCount = 0;
+      final expectedChunks = [
+        rows.sublist(0, 1000),
+        rows.sublist(1000, 2000),
+        rows.sublist(2000, 2500),
+      ];
+
+      when(
+        () => mockClient.rpc<dynamic>(any(), params: any(named: 'params')),
+      ).thenAnswer((inv) {
+        final params =
+            inv.namedArguments[const Symbol('params')] as Map<String, dynamic>;
+        expect(params['p_org_id'], equals('org-1'));
+        final chunk = params['p_rows'] as List<Map<String, dynamic>>;
+        expect(chunk, equals(expectedChunks[callCount]));
+        callCount++;
+        return _FakeRpcBuilder<dynamic>(chunk.length);
+      });
+
+      final result = await repo.executeBatchUpsertInChunks(
+        rpcFunction: 'test_rpc',
+        organizationId: 'org-1',
+        rows: rows,
+        chunkSize: 1000,
+      );
+
+      expect(result, equals(2500));
+      expect(callCount, equals(3));
+    });
+  });
+}
+
+class _MockSupabaseClient extends Mock implements SupabaseClient {}
+
+class _TestRepository extends BasePostgresRepository {
+  _TestRepository(super.client);
+}
+
+class _FakeRpcBuilder<T> extends Fake implements PostgrestFilterBuilder<T> {
+  final T _awaitResult;
+
+  _FakeRpcBuilder(this._awaitResult);
+
+  @override
+  Future<S> then<S>(
+    FutureOr<S> Function(T value) onValue, {
+    Function? onError,
+  }) {
+    return Future<T>.value(_awaitResult).then(onValue, onError: onError);
+  }
 }

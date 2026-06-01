@@ -217,26 +217,49 @@ class SupabaseDataSeedingRepository
       }
     }
 
-    // 5. Create Financial Snapshot
-    try {
-      await _supabase.from('contractual_financial_snapshot').insert({
-        'id': const Uuid().v4(),
-        'organization_id': organizationId,
-        'contract_id': contract['id'],
-        'operational_date_utc': yesterday.toIso8601String().split('T').first,
-        'operational_timezone': 'America/Sao_Paulo',
-        'closed_at_utc': _dateTimeProvider.nowUtc().toIso8601String(),
-        'total_contracted_revenue_cents': 40000,
-        'protected_revenue_cents': 20000,
-        'revenue_at_risk_cents': 0,
-        'lost_revenue_cents': 20000,
-        'risk_percentage_bps': 0,
-        'loss_percentage_bps': 5000,
-        'total_obligations': 4,
-        'executed_count': 4,
-      });
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+    // 5. Create Financial Snapshots for the last 15 days
+    final now = _dateTimeProvider.nowUtc();
+    for (int d = 1; d <= 15; d++) {
+      final opDate = now.subtract(Duration(days: d));
+      final dateStr = opDate.toIso8601String().split('T').first;
+
+      // Vary calculations slightly so the graphs look real and full:
+      // Base revenue: between 300,000 and 600,000 cents
+      final contracted = 300000 + (d * 20000) % 300000;
+      final lost = (d % 3 == 0)
+          ? (contracted * 0.1).round()
+          : ((d % 5 == 0) ? (contracted * 0.2).round() : 0);
+      final risk = (d % 4 == 0) ? (contracted * 0.15).round() : 0;
+      final protected = contracted - lost - risk;
+      final lossBps = ((lost / contracted) * 10000).round();
+      final riskBps = ((risk / contracted) * 10000).round();
+      final obligations = 5 + d % 5;
+      final executed = obligations - (lost > 0 ? 1 : 0);
+
+      try {
+        await _supabase.from('contractual_financial_snapshot').insert({
+          'id': const Uuid().v4(),
+          'organization_id': organizationId,
+          'contract_id': contract['id'],
+          'operational_date_utc': dateStr,
+          'operational_timezone': 'America/Sao_Paulo',
+          'closed_at_utc': now.toIso8601String(),
+          'total_contracted_revenue_cents': contracted,
+          'protected_revenue_cents': protected,
+          'revenue_at_risk_cents': risk,
+          'lost_revenue_cents': lost,
+          'risk_percentage_bps': riskBps,
+          'loss_percentage_bps': lossBps,
+          'total_obligations': obligations,
+          'executed_count': executed,
+          'engine_version': 1,
+        });
+      } on PostgrestException catch (e) {
+        // Skip duplicate errors gracefully
+        if (e.code != '23505') {
+          throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        }
+      }
     }
 
     // 6. Seed some RAW Telemetry
@@ -376,6 +399,105 @@ class SupabaseDataSeedingRepository
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
+
+    // Seed active operational alerts
+    final alerts = [
+      {
+        'organization_id': organizationId,
+        'entity_id': 'sim-alert-entity',
+        'contract_id': contract['id'],
+        'alert_type': 'NO_SHOW',
+        'severity': 'CRITICAL',
+        'status': 'ACTIVE',
+        'triggered_at_utc': now
+            .subtract(const Duration(minutes: 5))
+            .toIso8601String(),
+        'context': {
+          'message':
+              'Veículo planejado não compareceu ao ponto inicial dentro da janela de tolerância.',
+        },
+      },
+      {
+        'organization_id': organizationId,
+        'entity_id': 'sim-alert-entity',
+        'contract_id': contract['id'],
+        'alert_type': 'DEVIATION',
+        'severity': 'HIGH',
+        'status': 'ACTIVE',
+        'triggered_at_utc': now
+            .subtract(const Duration(minutes: 15))
+            .toIso8601String(),
+        'context': {
+          'message':
+              'Desvio de rota crítica detectado no trecho da Rodovia dos Bandeirantes.',
+        },
+      },
+      {
+        'organization_id': organizationId,
+        'entity_id': 'sim-alert-entity',
+        'contract_id': contract['id'],
+        'alert_type': 'EVIDENCE_GAP',
+        'severity': 'WARNING',
+        'status': 'ACTIVE',
+        'triggered_at_utc': now
+            .subtract(const Duration(minutes: 30))
+            .toIso8601String(),
+        'context': {
+          'message': 'Ausência de pings de telemetria por mais de 5 minutos.',
+        },
+      },
+      {
+        'organization_id': organizationId,
+        'entity_id': 'sim-alert-entity',
+        'contract_id': contract['id'],
+        'alert_type': 'TELEGRAM_ORPHAN',
+        'severity': 'CRITICAL',
+        'status': 'ACTIVE',
+        'triggered_at_utc': now
+            .subtract(const Duration(minutes: 45))
+            .toIso8601String(),
+        'context': {
+          'message':
+              'Evidência enviada via Telegram pendente de vinculação com viagem ativa.',
+        },
+      },
+      {
+        'organization_id': organizationId,
+        'entity_id': 'sim-alert-entity',
+        'contract_id': contract['id'],
+        'alert_type': 'POTENTIAL_TIME_FRAUD',
+        'severity': 'CRITICAL',
+        'status': 'ACTIVE',
+        'triggered_at_utc': now
+            .subtract(const Duration(hours: 1))
+            .toIso8601String(),
+        'context': {
+          'message':
+              'Suspeita de adulteração de relógio do dispositivo de telemetria.',
+          'evidence_id': const Uuid().v4(),
+        },
+      },
+    ];
+
+    for (var alert in alerts) {
+      try {
+        final exists = await _supabase
+            .from('operational_alerts')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('alert_type', alert['alert_type']!)
+            .eq('status', 'ACTIVE')
+            .limit(1)
+            .maybeSingle();
+        if (exists == null) {
+          await _supabase.from('operational_alerts').insert(alert);
+        }
+      } on PostgrestException catch (e) {
+        if (e.code != '23505') {
+          throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        }
+      }
+    }
   }
 
   @override
@@ -383,6 +505,7 @@ class SupabaseDataSeedingRepository
     await _seedSmartCnpjContractors(organizationId);
     await _seedQuotaLimits(organizationId);
     await _seedHeartbeatAndLateArrivalScenarios(organizationId);
+    await _seedJustifications(organizationId);
   }
 
   Future<void> _seedSmartCnpjContractors(String organizationId) async {
@@ -505,6 +628,85 @@ class SupabaseDataSeedingRepository
       } on PostgrestException catch (e) {
         throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
       }
+    }
+  }
+
+  Future<void> _seedJustifications(String organizationId) async {
+    Map<String, dynamic>? contract;
+    try {
+      contract = await _supabase
+          .from('contracts')
+          .select()
+          .eq('organization_id', organizationId)
+          .limit(1)
+          .maybeSingle();
+    } catch (_) {}
+
+    if (contract == null) return;
+
+    final now = _dateTimeProvider.nowUtc();
+    final justifications = [
+      {
+        'organization_id': organizationId,
+        'contract_id': contract['id'],
+        'set_id': 'sim-set-justification-1',
+        'category': 'TRAFFIC',
+        'description':
+            'Simulação de contingência: Veículo retido no trânsito da Marginal Tietê devido a acidente grave envolvendo caminhão.',
+        'status': 'PENDING',
+        'created_at_utc': now
+            .subtract(const Duration(hours: 2))
+            .toIso8601String(),
+      },
+      {
+        'organization_id': organizationId,
+        'contract_id': contract['id'],
+        'set_id': 'sim-set-justification-2',
+        'category': 'MECHANICAL',
+        'description':
+            'Simulação de contingência: Quebra da embreagem do veículo no KM 120 da rodovia, necessitando acionamento de guincho.',
+        'status': 'APPROVED',
+        'created_at_utc': now
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
+        'reviewed_by_user_id': '00000000-0000-0000-0000-ffffffffffff',
+        'reviewed_at_utc': now
+            .subtract(const Duration(hours: 12))
+            .toIso8601String(),
+        'resolution_notes': 'Aprovado pelo seeder automático.',
+      },
+      {
+        'organization_id': organizationId,
+        'contract_id': contract['id'],
+        'set_id': 'sim-set-justification-3',
+        'category': 'COMMUNICATION',
+        'description':
+            'Simulação de contingência: Problemas de sinal no rastreador Sascar impediram o envio de pings durante todo o trajeto.',
+        'status': 'REJECTED',
+        'created_at_utc': now
+            .subtract(const Duration(days: 2))
+            .toIso8601String(),
+        'reviewed_by_user_id': '00000000-0000-0000-0000-ffffffffffff',
+        'reviewed_at_utc': now
+            .subtract(const Duration(days: 1))
+            .toIso8601String(),
+        'resolution_notes': 'Rejeitado pelo seeder automático.',
+      },
+    ];
+
+    for (var j in justifications) {
+      try {
+        final exists = await _supabase
+            .from('contractor_justifications')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('set_id', j['set_id']!)
+            .limit(1)
+            .maybeSingle();
+        if (exists == null) {
+          await _supabase.from('contractor_justifications').insert(j);
+        }
+      } catch (_) {}
     }
   }
 }

@@ -1,0 +1,7 @@
+contractorName;contractorDocument;contractorEmail;contractorContactName;externalId;notes
+Delta Tecnologia Ltda;18.764.221/0001-57;contato@deltatec.com.br;Patricia Gomes;CTR-004;Linha valida para importacao parcial
+;27.981.443/0001-80;semnome@teste.com.br;Joao Silva;CTR-005;Erro esperado nome obrigatorio ausente
+Empresa CNPJ Repetido;11.111.111/1111-11;cnpjinvalido@teste.com.br;Maria Souza;CTR-006;Erro esperado CNPJ malformado
+Empresa DV Invalido;40.688.134/0001-99;dvinvalido@teste.com.br;Ricardo Lima;CTR-007;Erro esperado digito verificador incorreto
+Delta Tecnologia Duplicada;18.764.221/0001-57;duplicado@teste.com.br;Patricia Gomes;CTR-008;Erro esperado duplicidade no lote
+=SUM(A1:A2);83.529.614/0001-44;formula@teste.com.br;Lucas Martins;CTR-009;Erro esperado tentativa de injecao CSV

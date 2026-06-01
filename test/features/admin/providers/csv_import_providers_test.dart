@@ -1,8 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/admin/csv_foreign_key_validator.dart';
+import 'package:veraprob/application/admin/csv_import_persister.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/application/admin/import_csv_handler.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
+import 'package:veraprob/domain/sla_audit/contractor.dart';
+import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/domain/admin/i_csv_mapping_template_repository.dart';
 import 'package:veraprob/domain/auth/auth_user.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -150,8 +154,51 @@ ImportCsvHandler _mismatchHandler() {
     ),
     templateRepo: _FakeCsvMappingTemplateRepository(),
     validator: CsvPreflightValidator(),
+    foreignKeyValidator: CsvForeignKeyValidator(
+      contractorRepo: _NoopContractorRepository(),
+    ),
+    persister: _NoopCsvImportPersister(),
     dateTimeProvider: _UtcDateTimeProvider(),
   );
+}
+
+/// Persistence is never reached — the handler fails fast at the tenant check.
+class _NoopCsvImportPersister implements CsvImportPersister {
+  @override
+  Future<int> persist({
+    required String organizationId,
+    required String targetEntity,
+    required List<Map<String, String>> rows,
+    required CsvMappingTemplate template,
+    required Map<String, Contractor> resolvedContractors,
+  }) async => 0;
+}
+
+class _NoopContractorRepository implements ContractorRepository {
+  @override
+  Future<Map<String, Contractor>> findByTaxIds(
+    String organizationId,
+    Set<String> taxIds,
+  ) async => const {};
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
+
+  @override
+  Future<List<Contractor>> findByOrganization(String organizationId) async =>
+      const [];
+
+  @override
+  Future<Contractor?> findById(String organizationId, String id) async => null;
+
+  @override
+  Future<void> save(Contractor contractor) async {}
+
+  @override
+  Future<void> delete(String organizationId, String id) async {}
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -218,8 +265,48 @@ void main() {
       final finalState = container.read(csvImportFlowProvider);
       expect(finalState, isA<CsvImportError>());
       final err = finalState as CsvImportError;
-      expect(err.message, isNotEmpty);
+      expect(
+        err.message,
+        equals('Sessão expirada ou inválida. Por favor, faça login novamente.'),
+      );
     });
+
+    test(
+      'P2b: submit error preserves CsvImportValidated as previousState',
+      () async {
+        final container = _makeContainer(handler: _mismatchHandler());
+        addTearDown(container.dispose);
+
+        final notifier = container.read(csvImportFlowProvider.notifier);
+        final report = _emptyReport();
+
+        final initialValidated = CsvImportValidated(
+          targetEntity: 'operator',
+          fileName: 'test.csv',
+          headers: const ['PLACA'],
+          previewRows: const [],
+          allRows: const [],
+          rawBytes: const [0x74, 0x65, 0x73, 0x74],
+          mappings: const {
+            'PLACA': ColumnMapping(
+              csvHeader: 'PLACA',
+              targetField: CsvTargetField.identifier,
+            ),
+          },
+          report: report,
+        );
+
+        // ignore: invalid_use_of_protected_member
+        notifier.state = initialValidated;
+
+        await notifier.submit();
+
+        final finalState = container.read(csvImportFlowProvider);
+        expect(finalState, isA<CsvImportError>());
+        final err = finalState as CsvImportError;
+        expect(err.previousState, equals(initialValidated));
+      },
+    );
 
     // P3 — goBack from CsvImportValidated → CsvImportMapped (not Validated)
     test('P3: goBack from CsvImportValidated yields CsvImportMapped', () {
@@ -271,6 +358,141 @@ void main() {
       final s = container.read(csvImportFlowProvider);
       expect(s, isA<CsvImportError>());
       expect(s, isNot(isA<CsvImportValidated>()));
+    });
+
+    // ── Coverage gate (CT01 null-name regression) ──────────────────────────
+
+    // CT01 repro: contractor file with only externalId mapped → validate must
+    // block (validRows 0, unmapped_required) instead of letting submit reach
+    // batch_upsert_contractors with a null name (23502).
+    test('validate blocks contractor import missing required name', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['externalId'],
+        previewRows: [],
+        allRows: [
+          {'externalId': 'CTR-1'},
+        ],
+        mappings: {
+          'externalId': ColumnMapping(
+            csvHeader: 'externalId',
+            targetField: CsvTargetField.externalId,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      expect(s, isA<CsvImportValidated>());
+      final report = (s as CsvImportValidated).report;
+      expect(report.validRows, 0);
+      expect(report.hasErrors, isTrue);
+      expect(
+        report.errors.map((e) => e.errorCode),
+        contains('unmapped_required'),
+      );
+    });
+
+    // Happy path: all required fields mapped + filled → ready to import.
+    test('validate passes when all required contractor fields mapped', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['name', 'doc', 'email', 'contact'],
+        previewRows: [],
+        allRows: [
+          {
+            'name': 'Alfa Ltda',
+            'doc': '11.222.333/0001-81',
+            'email': 'a@b.com',
+            'contact': 'Carlos',
+          },
+        ],
+        mappings: {
+          'name': ColumnMapping(
+            csvHeader: 'name',
+            targetField: CsvTargetField.contractorName,
+          ),
+          'doc': ColumnMapping(
+            csvHeader: 'doc',
+            targetField: CsvTargetField.contractorDocument,
+          ),
+          'email': ColumnMapping(
+            csvHeader: 'email',
+            targetField: CsvTargetField.contractorEmail,
+          ),
+          'contact': ColumnMapping(
+            csvHeader: 'contact',
+            targetField: CsvTargetField.contractorContactName,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      expect(s, isA<CsvImportValidated>());
+      final report = (s as CsvImportValidated).report;
+      expect(report.isClean, isTrue);
+      expect(report.validRows, 1);
+    });
+
+    // A mapped-but-blank required cell is caught per-row (required flag is
+    // forced on required fields by _activeMappings).
+    test('validate flags a blank required cell on a mapped column', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['name', 'email', 'contact'],
+        previewRows: [],
+        allRows: [
+          {'name': '   ', 'email': 'a@b.com', 'contact': 'Carlos'},
+        ],
+        mappings: {
+          'name': ColumnMapping(
+            csvHeader: 'name',
+            targetField: CsvTargetField.contractorName,
+          ),
+          'email': ColumnMapping(
+            csvHeader: 'email',
+            targetField: CsvTargetField.contractorEmail,
+          ),
+          'contact': ColumnMapping(
+            csvHeader: 'contact',
+            targetField: CsvTargetField.contractorContactName,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      final report = (s as CsvImportValidated).report;
+      expect(report.validRows, 0);
+      expect(report.errors.map((e) => e.errorCode), contains('required'));
     });
 
     // goBack from CsvImportMapped → CsvImportInitial

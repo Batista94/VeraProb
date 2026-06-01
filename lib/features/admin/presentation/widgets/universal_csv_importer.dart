@@ -93,7 +93,8 @@ class _UniversalCsvImporterDialogState
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
 
     return Dialog(
       backgroundColor: CsvT.bgDeep,
@@ -106,8 +107,12 @@ class _UniversalCsvImporterDialogState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _DialogHeader(step: state.currentStep, onClose: _onCloseRequested),
-            if (state is CsvImportError) _ErrorBanner(message: state.message),
+            _DialogHeader(
+              step: rawState.currentStep,
+              onClose: _onCloseRequested,
+            ),
+            if (rawState is CsvImportError)
+              _ErrorBanner(message: rawState.message),
             Flexible(
               child: AnimatedSwitcher(
                 duration: CsvT.animDuration,
@@ -119,7 +124,7 @@ class _UniversalCsvImporterDialogState
                 ),
               ),
             ),
-            _DialogFooter(state: state),
+            _DialogFooter(state: rawState),
           ],
         ),
       ),
@@ -301,30 +306,37 @@ class _DialogFooter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(csvImportFlowProvider.notifier);
+    final activeState = state.activeState;
 
     // Done state: footer hidden (CsvResultStep owns its own CTA).
-    if (state is CsvImportDone) return const SizedBox.shrink();
+    if (activeState is CsvImportDone) return const SizedBox.shrink();
 
-    final isSubmitting = state is CsvImportSubmitting;
-    final canGoBack = state is CsvImportMapped || state is CsvImportValidated;
+    final isSubmitting =
+        state is CsvImportSubmitting || activeState is CsvImportSubmitting;
+    final canGoBack =
+        activeState is CsvImportMapped || activeState is CsvImportValidated;
 
     Widget? primaryBtn;
-    if (state is CsvImportValidated && state is! CsvImportSubmitting) {
-      final report = (state as CsvImportValidated).report;
+    if (activeState is CsvImportValidated &&
+        activeState is! CsvImportSubmitting) {
+      final report = activeState.report;
+      final canImport = report.validRows > 0;
       primaryBtn = FilledButton.icon(
-        onPressed: notifier.submit,
+        onPressed: canImport ? notifier.submit : null,
         icon: const Icon(Icons.cloud_upload_outlined, size: 16),
         label: Text('Importar ${report.validRows} linha(s)'),
         style: FilledButton.styleFrom(
           backgroundColor: CsvT.action,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: CsvT.bgSlate,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(CsvT.radiusChip),
           ),
         ),
       );
-    } else if (state is CsvImportMapped && state is! CsvImportValidated) {
-      final mapped = state as CsvImportMapped;
+    } else if (activeState is CsvImportMapped &&
+        activeState is! CsvImportValidated) {
+      final mapped = activeState;
       final hasMapping = mapped.mappings.values.any((m) => m != null);
       primaryBtn = FilledButton.icon(
         onPressed: hasMapping ? notifier.validate : null,

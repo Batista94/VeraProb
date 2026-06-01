@@ -12,6 +12,16 @@ class InMemoryContractRepository implements ContractRepository {
   final Map<String, Contract> _store = {};
 
   @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    // In-memory fake: CSV batch upsert is exercised against the Postgres RPC
+    // (pgTAP). Here we only report the affected count for orchestration tests.
+    return rows.length;
+  }
+
+  @override
   Future<Contract> save(Contract contract) async {
     _store[contract.id] = contract;
     return contract;

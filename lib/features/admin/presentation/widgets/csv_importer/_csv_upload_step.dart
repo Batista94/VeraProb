@@ -9,7 +9,8 @@ class CsvUploadStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     final notifier = ref.read(csvImportFlowProvider.notifier);
 
     final targetEntity = state is CsvImportInitial
@@ -39,7 +40,8 @@ class CsvUploadStep extends ConsumerWidget {
 
 const _kEntityLabels = {
   'operator': 'Operadores / Motoristas',
-  'contract': 'Contratos / Contratantes',
+  'contractor': 'Contratantes',
+  'contract': 'Contratos',
   'zone': 'Zonas Operacionais',
   'asset': 'Ativos (Veículos)',
 };

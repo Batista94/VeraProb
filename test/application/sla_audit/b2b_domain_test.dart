@@ -265,6 +265,11 @@ class MockRuleRepo implements ContractualRuleRepository {
 }
 
 class MockContractRepo implements ContractRepository {
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
   final String orgId;
   final String contractId;
   MockContractRepo(this.orgId, this.contractId);

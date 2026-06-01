@@ -1,19 +1,16 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
-import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
-class PostgresContractorRepository
-    with PostgresErrorInterceptor
+class PostgresContractorRepository extends BasePostgresRepository
     implements ContractorRepository {
-  final SupabaseClient _client;
-
-  PostgresContractorRepository(this._client);
+  PostgresContractorRepository(super.client);
 
   @override
   Future<List<Contractor>> findByOrganization(String organizationId) async {
     try {
-      final response = await _client
+      final response = await client
           .from('contractors')
           .select()
           .eq('organization_id', organizationId);
@@ -31,7 +28,7 @@ class PostgresContractorRepository
   @override
   Future<Contractor?> findById(String organizationId, String id) async {
     try {
-      final response = await _client
+      final response = await client
           .from('contractors')
           .select()
           .eq('organization_id', organizationId)
@@ -50,9 +47,64 @@ class PostgresContractorRepository
   }
 
   @override
+  Future<Map<String, Contractor>> findByTaxIds(
+    String organizationId,
+    Set<String> taxIds,
+  ) async {
+    if (taxIds.isEmpty) return {};
+    try {
+      // Tenant-scoped fetch + Dart-side digit normalisation. tax_id is stored
+      // verbatim (masked or not), so a server-side IN filter on raw strings
+      // would miss formatting variants. Normalising both sides in Dart keeps
+      // the match exact while staying within RLS scope (anti-oracle).
+      final wanted = taxIds.map(_digits).toSet();
+      final response = await client
+          .from('contractors')
+          .select()
+          .eq('organization_id', organizationId);
+
+      final result = <String, Contractor>{};
+      for (final row in response as List) {
+        final c = _fromMap(row as Map<String, dynamic>);
+        final d = _digits(c.taxId ?? '');
+        if (d.isNotEmpty && wanted.contains(d)) result[d] = c;
+      }
+      return result;
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contractor',
+        resourceId: organizationId,
+      );
+    }
+  }
+
+  static String _digits(String s) => s.replaceAll(RegExp(r'\D'), '');
+
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async {
+    try {
+      return await executeBatchUpsertInChunks(
+        rpcFunction: 'batch_upsert_contractors',
+        organizationId: organizationId,
+        rows: rows,
+      );
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'contractor',
+        resourceId: organizationId,
+      );
+    }
+  }
+
+  @override
   Future<void> save(Contractor contractor) async {
     try {
-      await _client.from('contractors').upsert({
+      await client.from('contractors').upsert({
         'id': contractor.id,
         'organization_id': contractor.organizationId,
         'name': contractor.name,
@@ -73,7 +125,7 @@ class PostgresContractorRepository
   @override
   Future<void> delete(String organizationId, String id) async {
     try {
-      await _client
+      await client
           .from('contractors')
           .delete()
           .eq('organization_id', organizationId)

@@ -42,7 +42,7 @@ void main() {
           ),
           const ColumnMapping(
             csvHeader: 'CNPJ',
-            targetField: CsvTargetField.operatorDocument,
+            targetField: CsvTargetField.contractorDocument,
           ),
           const ColumnMapping(
             csvHeader: 'DATA',
@@ -81,6 +81,64 @@ void main() {
       expect(report.errors, isEmpty);
       expect(report.validRows, 2);
       expect(report.totalRows, 2);
+    });
+
+    // ── findUnmappedRequired (NOT-NULL coverage gate) ─────────────────────────
+
+    CsvMappingTemplate contractorTemplate(List<ColumnMapping> mappings) =>
+        CsvMappingTemplate(
+          id: 'c',
+          organizationId: 'org1',
+          name: 'Contractors',
+          targetEntity: 'contractor',
+          columnMappings: mappings,
+          createdAt: DateTime.now().toUtc(),
+          updatedAt: DateTime.now().toUtc(),
+        );
+
+    test('findUnmappedRequired flags the missing contractor name', () {
+      // Repro of the CT01 bug: only externalId mapped, name/email/contact absent.
+      final t = contractorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'externalId',
+          targetField: CsvTargetField.externalId,
+        ),
+      ]);
+
+      final missing = validator.findUnmappedRequired(t);
+
+      expect(
+        missing,
+        equals(const [
+          CsvTargetField.contractorName,
+          CsvTargetField.contractorDocument,
+          CsvTargetField.contractorEmail,
+          CsvTargetField.contractorContactName,
+        ]),
+      );
+    });
+
+    test('findUnmappedRequired is empty when all required fields mapped', () {
+      final t = contractorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'contractorName',
+          targetField: CsvTargetField.contractorName,
+        ),
+        ColumnMapping(
+          csvHeader: 'contractorDocument',
+          targetField: CsvTargetField.contractorDocument,
+        ),
+        ColumnMapping(
+          csvHeader: 'contractorEmail',
+          targetField: CsvTargetField.contractorEmail,
+        ),
+        ColumnMapping(
+          csvHeader: 'contractorContactName',
+          targetField: CsvTargetField.contractorContactName,
+        ),
+      ]);
+
+      expect(validator.findUnmappedRequired(t), isEmpty);
     });
 
     test('Rejects missing required field', () {
@@ -248,6 +306,131 @@ void main() {
       expect(report.hasErrors, true);
       expect(report.errors.first.errorCode, 'invalid_document');
       expect(report.errors.first.rowIndex, 1);
+    });
+
+    // ── Contextual document policy (CNPJ↔contractor, CPF↔operator) ─────────
+
+    CsvMappingTemplate singleDocTemplate(CsvTargetField field) =>
+        CsvMappingTemplate(
+          id: 'doc',
+          organizationId: 'org1',
+          name: 'Doc Template',
+          targetEntity: field == CsvTargetField.contractorDocument
+              ? 'contract'
+              : 'operator',
+          columnMappings: [ColumnMapping(csvHeader: 'DOC', targetField: field)],
+          createdAt: DateTime.now().toUtc(),
+          updatedAt: DateTime.now().toUtc(),
+        );
+
+    test('contractorDocument rejects a CPF (CNPJ-only) with CNPJ message', () {
+      final t = singleDocTemplate(CsvTargetField.contractorDocument);
+      // 529.982.247-25 is a structurally valid CPF — must still be rejected.
+      final report = validator.validate([
+        {'DOC': '529.982.247-25'},
+      ], t);
+
+      expect(report.hasErrors, true);
+      expect(report.errors.first.errorCode, 'invalid_document');
+      expect(report.errors.first.message, contains('CNPJ'));
+      expect(report.errors.first.message, isNot(contains('CPF')));
+    });
+
+    test('contractorDocument accepts a valid CNPJ', () {
+      final t = singleDocTemplate(CsvTargetField.contractorDocument);
+      final report = validator.validate([
+        {'DOC': '11.222.333/0001-81'},
+      ], t);
+
+      expect(report.isClean, true);
+      expect(report.validRows, 1);
+    });
+
+    test('operatorDocument rejects a CNPJ (CPF-only) with CPF message', () {
+      final t = singleDocTemplate(CsvTargetField.operatorDocument);
+      // 11.222.333/0001-81 is a structurally valid CNPJ — must be rejected.
+      final report = validator.validate([
+        {'DOC': '11.222.333/0001-81'},
+      ], t);
+
+      expect(report.hasErrors, true);
+      expect(report.errors.first.errorCode, 'invalid_document');
+      expect(report.errors.first.message, contains('CPF'));
+      expect(report.errors.first.message, isNot(contains('CNPJ')));
+    });
+
+    test('operatorDocument accepts a valid CPF', () {
+      final t = singleDocTemplate(CsvTargetField.operatorDocument);
+      final report = validator.validate([
+        {'DOC': '529.982.247-25'},
+      ], t);
+
+      expect(report.isClean, true);
+      expect(report.validRows, 1);
+    });
+
+    // ── CNH category + expiry (operator compliance fields) ────────────────
+
+    CsvMappingTemplate operatorTemplate(List<ColumnMapping> mappings) =>
+        CsvMappingTemplate(
+          id: 'op',
+          organizationId: 'org1',
+          name: 'Operators',
+          targetEntity: 'operator',
+          columnMappings: mappings,
+          createdAt: DateTime.now().toUtc(),
+          updatedAt: DateTime.now().toUtc(),
+        );
+
+    test('operatorLicenseCategory rejects an invalid category', () {
+      final t = operatorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'CAT',
+          targetField: CsvTargetField.operatorLicenseCategory,
+        ),
+      ]);
+      final report = validator.validate([
+        {'CAT': 'X'},
+      ], t);
+
+      expect(report.hasErrors, true);
+      expect(report.errors.first.errorCode, 'invalid_license_category');
+    });
+
+    test(
+      'operatorLicenseCategory accepts a valid category (case-insensitive)',
+      () {
+        final t = operatorTemplate(const [
+          ColumnMapping(
+            csvHeader: 'CAT',
+            targetField: CsvTargetField.operatorLicenseCategory,
+          ),
+        ]);
+        final report = validator.validate([
+          {'CAT': 'ad'},
+        ], t);
+
+        expect(report.isClean, true);
+      },
+    );
+
+    test('operatorLicenseExpiry is validated as a date', () {
+      final t = operatorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'VAL',
+          targetField: CsvTargetField.operatorLicenseExpiry,
+          formatHint: 'dd/MM/yyyy',
+        ),
+      ]);
+      final bad = validator.validate([
+        {'VAL': '99/99/9999'},
+      ], t);
+      expect(bad.errors.first.errorCode, 'invalid_date');
+
+      final good = validator.validate([
+        {'VAL': '31/12/2027'},
+      ], t);
+      expect(good.isClean, true);
     });
 
     // ── G2: formatHint date parse ─────────────────────────────────────────

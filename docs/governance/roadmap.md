@@ -118,7 +118,7 @@ Verificar checklists detalhados de readiness e testes manuais em [roadmap_archiv
 - **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard.
 - **[UX] Empty State Shortcuts:** Replace "No records" placeholders with quick action cards and contextual onboarding guides.
 
-### [x] Phase 10.4.B — Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída)
+### [x] Phase 10.4.B — Gate de Ativação do Primeiro Inquilino (Fluxo de Entrada/Saída)
 
 - **Status:** COMPLETED ✅
 - **Deliverables:**

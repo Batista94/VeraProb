@@ -1,0 +1,9 @@
+codigocontrato,cnpj,datainicio,datafim,idexterno,observacoes
+,"12.345.678/0001-95","2026-06-01","2027-06-01","EXT_C_ERR_1","Codigo vazio"
+"CONTR_ERR_2","12.345.678/0001-95","texto_invalido","2027-06-01","EXT_C_ERR_2","Data de inicio invalida"
+"CONTR_ERR_3","11.111.111/1111-11","2026-06-01","2027-06-01","EXT_C_ERR_3","CNPJ Mod-11 invalido"
+"CONTR_ERR_4","11.111.111/1111-11","2026-06-01","2027-06-01","EXT_C_ERR_4","Duplicado no mesmo lote"
+"CONTR_ERR_5","12.345.678/0001-95","2026/05/29","2027-06-01","EXT_C_ERR_5","Data malformada"
+"CONTR_ERR_6","12.345.678/0001-95","2026-06-01","2027-06-01","EXT_C_ERR_6","=SUM(A1:A2)"
+"CONTR_ERR_7","55.555.555/0001-91","2026-06-01","2027-06-01","EXT_C_ERR_7","CNPJ valido mas nao cadastrado (FK erro)"
+"CONTR_OK_8","12.345.678/0001-95","2026-06-01","2027-06-01","EXT_C_OK_8","Linha limpa"

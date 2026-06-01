@@ -1,0 +1,4 @@
+codigocontrato,cnpj,datainicio,datafim,idexterno,observacoes
+"CONTR_001","12.345.678/0001-95","2026-06-01","2027-06-01","EXT_C_001","Contrato Alpha Valido"
+"CONTR_002","98.765.432/0001-98","2026-06-01","2027-06-01","EXT_C_002","Contrato Beta Valido"
+"CONTR_003","45.678.901/0001-75","2026-06-01","2027-06-01","EXT_C_003","Contrato Gamma Valido"

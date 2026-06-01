@@ -75,6 +75,11 @@ import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 /// Retorna um contrato draft em memória — permite que o handler ative sem
 /// precisar de PostgresContractRepository nos grupos de plano.
 class _SmokeContractStub implements ContractRepository {
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
   const _SmokeContractStub({required this.contractId, required this.orgId});
 
   final String contractId;
@@ -111,6 +116,11 @@ class _SmokeContractStub implements ContractRepository {
 }
 
 class _StubZoneRepository implements OperationalZoneRepository {
+  @override
+  Future<int> batchUpsertFromCsv(
+    String organizationId,
+    List<Map<String, dynamic>> rows,
+  ) async => rows.length;
   @override
   Future<List<OperationalZone>> findByOrganization(
     String organizationId,

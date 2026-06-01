@@ -120,7 +120,7 @@ ON CONFLICT (id) DO UPDATE SET
 
 -- ── 4. Active Contracts ───────────────────────────────────────────────────────
 -- IDs fixos para que os env vars do k6 possam ser hardcoded no helper script.
--- valid_from/until cobre ±1 ano a partir do reset — suficiente para MVP.
+-- valid_from/until cobre ±1 ano a partir do reset — suficiente para testes locais.
 -- Não tem FK para contractors — contractor_name é TEXT livre nesta tabela.
 INSERT INTO public.contracts (
   id,
