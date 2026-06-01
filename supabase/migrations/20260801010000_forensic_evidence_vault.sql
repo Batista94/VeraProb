@@ -329,6 +329,9 @@ COMMENT ON FUNCTION public.verify_forensic_evidence(UUID, UUID) IS
 -- writes are impossible (Backend Authority, Req 5). service_role for backend ops.
 
 GRANT SELECT ON TABLE public.forensic_evidence_snapshots TO authenticated;
+-- Strip any inherited write privilege (schema default-privileges): the vault is
+-- read-only for tenants; the sole write path is the DEFINER seal RPC (Req 5).
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.forensic_evidence_snapshots FROM authenticated;
 GRANT ALL    ON TABLE public.forensic_evidence_snapshots TO service_role;
 
 GRANT EXECUTE ON FUNCTION public.seal_forensic_evidence(
