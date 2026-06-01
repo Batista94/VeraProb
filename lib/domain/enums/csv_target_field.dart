@@ -13,8 +13,10 @@ enum CsvTargetField {
 
   // ── Operator fields ──
   operatorName, // Full name
-  operatorDocument, // CPF/CNPJ
-  operatorLicense, // License number
+  operatorDocument, // CPF (identity — strict 11 digits)
+  operatorLicense, // CNH registration number
+  operatorLicenseCategory, // CNH category (A/B/C/D/E + combinations)
+  operatorLicenseExpiry, // CNH expiry (TIMESTAMPTZ)
   operatorPhone, // Contact
 
   // ── Contractor fields ──
@@ -49,8 +51,9 @@ enum CsvTargetField {
   /// fields in the UI dropdown (e.g., "Latitude" must never appear for
   /// "contractor" — INV-22 oracle prevention).
   ///
-  /// [externalId] and [notes] are shared across all entities as the
-  /// idempotency anchor and free-form annotation channel respectively.
+  /// [externalId] is shared across all entities as the idempotency anchor.
+  /// [notes] is scoped to `contract` only (the single entity with a `notes`
+  /// column); exposing it elsewhere would silently drop the value at persist.
   static List<CsvTargetField> forEntity(String entity) => switch (entity) {
     'asset' => const [
       identifier,
@@ -58,15 +61,15 @@ enum CsvTargetField {
       capacity,
       assetStatus,
       externalId,
-      notes,
     ],
     'operator' => const [
       operatorName,
       operatorDocument,
       operatorLicense,
+      operatorLicenseCategory,
+      operatorLicenseExpiry,
       operatorPhone,
       externalId,
-      notes,
     ],
     'contractor' => const [
       contractorName,
@@ -74,7 +77,6 @@ enum CsvTargetField {
       contractorEmail,
       contractorContactName,
       externalId,
-      notes,
     ],
     'contract' => const [
       contractCode,
@@ -86,13 +88,11 @@ enum CsvTargetField {
     ],
     'zone' => const [
       zoneName,
-      zoneCode,
       latitude,
       longitude,
       radiusMeters,
       address,
       externalId,
-      notes,
     ],
     _ => values, // Safe fallback: show all for unknown entities
   };
@@ -112,6 +112,7 @@ enum CsvTargetField {
         'operator' => const [operatorName, operatorLicense],
         'contractor' => const [
           contractorName,
+          contractorDocument,
           contractorEmail,
           contractorContactName,
         ],

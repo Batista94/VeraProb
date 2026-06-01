@@ -34,7 +34,10 @@ Com base nas especificações forenses (`forensic-standards.md`) e nos requisito
 2. **Representação Monetária (INV-4):** Os valores financeiros no Dossiê PDF (ex: economia acumulada) devem ser representados como `int` em centavos na aplicação e formatados com separador de milhar e decimal em reais (`R$ X.XXX,XX`) na UI.
 3. **Cadeia de Custódia Imutável (INV-3):** Toda emissão de Dossiê PDF gera um hash SHA-256 (INV-9) e é registrada na tabela `pdf_dossier_logs` em modo append-only. Os privilégios de `UPDATE` e `DELETE` são explicitamente revogados para os perfis `authenticated` e `anon`.
 4. **Idempotência de Dossiê (INV-15):** A tabela `pdf_dossier_logs` possui uma restrição UNIQUE para `(organization_id, sla_ledger_entry_id, document_hash_sha256)`, evitando duplicações ao re-emitir ou visualizar o mesmo veredito.
-5. **Pre-flight de Entrada e Sanitização (CSV):** Qualquer erro de integridade de tipo (ex: capacidade numérica), formato estrutural de CNPJ/CPF (validação baseada no dígito verificador Mod-11), coordenada geográfica (Latitude/Longitude dentro dos limites físicos) ou injeção de fórmulas CSV/Stored XSS deve ser interceptado na pré-análise do CSV antes de persistir no banco.
+5. **Pre-flight de Entrada e Sanitização (CSV):** Qualquer erro de integridade de tipo (ex: capacidade numérica), documento (validação **contextual** por entidade — ver abaixo), coordenada geográfica (Latitude/Longitude dentro dos limites físicos), categoria de CNH ou injeção de fórmulas CSV/Stored XSS deve ser interceptado na pré-análise do CSV antes de persistir no banco.
+   * **Validação contextual de documento (Mod-11):** O campo `contractorDocument` (Contratante) aceita **estritamente CNPJ** (14 dígitos) — CPF é rejeitado com mensagem focada em CNPJ (*"CNPJ inválido..."*). O campo `operatorDocument` (Operador/Motorista) aceita **estritamente CPF** (11 dígitos) — CNPJ é rejeitado com mensagem focada em CPF (*"CPF inválido..."*). Ambos validam o dígito verificador Mod-11.
+   * **Categoria de CNH:** O campo `operatorLicenseCategory` aceita apenas categorias válidas (A, B, C, D, E ou combinações AB, AC, AD, AE, ACC), caso contrário levanta `invalid_license_category`.
+   * **Validade de CNH:** O campo `operatorLicenseExpiry` é validado como data (ISO-8601 ou conforme o format hint), normalizada para UTC (INV-6).
 6. **Estratégia de Importação Parcial (Partial Import):** Em caso de erros nas linhas do arquivo, o importador não bloqueia o lote inteiro (Emenda 2). Apenas as linhas com erros são ignoradas (com logs cirúrgicos exibidos na tela), enquanto as linhas limpas/válidas são importadas normalmente.
 7. **Validação de Referência Estrangeira (FK Pre-flight):** No caso de contratos, se o CNPJ do contratante informado no CSV não estiver cadastrado sob a mesma organização ativa, a linha correspondente é marcada com erro `foreign_key_not_found` e pulada.
 8. **Segurança de Ingestão de Binários (MIME Sniffing):** Enviar um arquivo binário disfarçado de CSV (ex: cabeçalho executável MZ `0x4D, 0x5A`) resulta em rejeição sumária e erro fatal de orquestração (`IntegrityException`), impedindo qualquer persistência (Emenda 1).
@@ -62,17 +65,18 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
    * **Onde clicar:** No painel de Administração, clique na opção **"Zonas Operacionais"**.
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
    * **Entidade associada:** `zone`.
-   * **Campos mapeáveis:** Nome da zona, código da zona, latitude, longitude, raio (metros), endereço, ID externo e observações.
+   * **Campos mapeáveis:** Nome da zona, latitude, longitude, raio (metros), endereço e ID externo. *(Observações e "código da zona" não são mais oferecidos — sem coluna no banco; use ID externo como código.)*
 2. **Operadores (Motoristas):**
    * **Onde clicar:** No painel de Administração, clique na opção **"Motoristas"** (ou "Motoristas da Frota").
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
    * **Entidade associada:** `operator`.
-   * **Campos mapeáveis:** Nome do motorista, CPF/CNPJ, CNH/habilitação, telefone, ID externo e observações.
+   * **Campos mapeáveis:** Nome do motorista, **CPF** (estrito, 11 dígitos), Número da CNH, Categoria da CNH, Validade da CNH, Telefone e ID externo. *(Observações não é oferecido — sem coluna no banco.)*
 3. **Contratantes (Contractors):**
    * **Onde clicar:** No painel de Administração, clique na opção **"Contratantes"**.
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
    * **Entidade associada:** `contractor`.
-   * **Campos mapeáveis:** Nome do contratante, CNPJ do contratante, e-mail do contratante, nome do contato, ID externo e observações.
+   * **Campos mapeáveis:** Nome do contratante, **CNPJ do contratante (obrigatório)**, e-mail do contratante, nome do contato e ID externo. *(Observações não é oferecido — sem coluna no banco.)*
+   * **⚠️ MUDANÇA:** O CNPJ (`contractorDocument`) agora é **campo obrigatório** (chave de negócio + FK dos contratos). Se não for mapeado, o pre-flight levanta `unmapped_required`; valor em branco levanta `required`.
 4. **Contratos (Contracts):**
    * **Onde clicar:** No painel de Administração, clique na opção **"Contratos"**.
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
@@ -131,7 +135,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
   * O modal deve avançar para o passo **VALIDAÇÃO** exibindo uma tabela cirúrgica com os erros correspondentes:
     * **Linha 1:** Código `required` | *"Valor obrigatório não preenchido."*
     * **Linha 2:** Código `invalid_coordinate` ou `invalid_date` dependendo da tela.
-    * **Linha 3:** Código `invalid_document` | *"Documento com dígito verificador inválido."*
+    * **Linha 3:** Código `invalid_document` | *"CNPJ inválido. O documento do contratante deve ser um CNPJ com 14 dígitos e dígito verificador válido."* (mensagem contextual de CNPJ — este é um CSV de contratos, campo `contractorDocument`).
     * **Linha 4:** Código `duplicate_in_batch` | *"Documento duplicado neste mesmo arquivo."*
     * **Linha 5:** Código `invalid_date` | *"Data inválida para o formato esperado."*
     * **Linha 6:** Código `injection_detected` | *"Valor bloqueado por segurança (fórmula suspeita detectada)."*
@@ -157,6 +161,26 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Cenário Esperado & O que validar no UAT:**
   * O sistema executa o pre-flight sob o isolamento do JWT `auth.jwt()`. Qualquer CNPJ de outra organização é tratado como não existente no banco (gera erro `foreign_key_not_found` e o registro não é exposto).
   * Os dados inseridos no banco via upsert de CSV devem herdar automaticamente o `organization_id` do JWT ativo, impossibilitando gravação cruzada.
+
+#### CT03-B: Importação de Operadores (CPF estrito + Compliance de CNH)
+* **Objetivo:** Validar os campos consolidados de cadastro de motorista (CPF de identidade, número/categoria/validade de CNH) e a validação contextual de documento (CPF estrito).
+* **Pré-condições:** Logado como `admin-a@veraprob.dev`. Importador aberto na tela **"Motoristas"** (`operator`).
+* **Passos:**
+  1. Subir um CSV de motoristas com colunas: `nome`, `cpf`, `cnh` (número), `categoria`, `validade`, `telefone`.
+  2. Mapear: `nome`→Nome do motorista, `cpf`→**CPF do Operador**, `cnh`→Número da CNH, `categoria`→Categoria da CNH, `validade`→Validade da CNH (format hint `dd/MM/yyyy`), `telefone`→Telefone.
+  3. Incluir linhas adversas:
+     * **Linha A (CNPJ no lugar de CPF):** Preencher `cpf` com um CNPJ válido (14 dígitos).
+     * **Linha B (Categoria inválida):** Categoria `X` (fora de A/B/C/D/E/AB/AC/AD/AE/ACC).
+     * **Linha C (Validade malformada):** `99/99/9999`.
+     * **Linha D (Limpa):** CPF válido (11 dígitos), categoria `AD`, validade `31/12/2027`.
+  4. Validar (Pre-flight).
+* **Cenário Esperado & O que validar no UAT:**
+  * **Linha A:** `invalid_document` | *"CPF inválido. O documento do operador deve ser um CPF com 11 dígitos..."* (mensagem focada em **CPF**, pois é a entidade Operador — CNPJ é rejeitado aqui).
+  * **Linha B:** `invalid_license_category` | *"Categoria de CNH inválida..."*.
+  * **Linha C:** `invalid_date` | *"Data inválida para o formato esperado (dd/MM/yyyy)."*.
+  * **Linha D:** importada; categoria gravada em maiúsculas (`AD`), validade normalizada para UTC ISO-8601.
+  * **Isolamento de dropdown:** apenas campos de `operator` aparecem (sem `contractorDocument`, sem latitude). "Observações" **não** é oferecido (sem coluna).
+* **Requisito de Sucesso:** CPF validado estritamente; CNH categoria/validade validadas; linha limpa persistida com os novos campos.
 
 ---
 ---

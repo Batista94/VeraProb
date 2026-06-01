@@ -49,6 +49,60 @@ void main() {
       expect(rows.single['external_id'], 'ERP-1');
     });
 
+    test(
+      'operator: cpf, phone, license_category(upper), license_expiry(ISO UTC)',
+      () {
+        final rows = mapper.toDbRows(
+          targetEntity: 'operator',
+          rows: const [
+            {
+              'NOME': 'João Motorista',
+              'CNH': 'SP-12345',
+              'CPF': '529.982.247-25',
+              'TEL': '11999990000',
+              'CAT': 'ad',
+              'VAL': '31/12/2027',
+            },
+          ],
+          template: _tpl('operator', const [
+            ColumnMapping(
+              csvHeader: 'NOME',
+              targetField: CsvTargetField.operatorName,
+            ),
+            ColumnMapping(
+              csvHeader: 'CNH',
+              targetField: CsvTargetField.operatorLicense,
+            ),
+            ColumnMapping(
+              csvHeader: 'CPF',
+              targetField: CsvTargetField.operatorDocument,
+            ),
+            ColumnMapping(
+              csvHeader: 'TEL',
+              targetField: CsvTargetField.operatorPhone,
+            ),
+            ColumnMapping(
+              csvHeader: 'CAT',
+              targetField: CsvTargetField.operatorLicenseCategory,
+            ),
+            ColumnMapping(
+              csvHeader: 'VAL',
+              targetField: CsvTargetField.operatorLicenseExpiry,
+              formatHint: 'dd/MM/yyyy',
+            ),
+          ]),
+          resolvedContractors: const {},
+        );
+
+        expect(rows.single['full_name'], 'João Motorista');
+        expect(rows.single['license_number'], 'SP-12345');
+        expect(rows.single['cpf'], '529.982.247-25');
+        expect(rows.single['phone'], '11999990000');
+        expect(rows.single['license_category'], 'AD'); // upper-cased
+        expect(rows.single['license_expiry_utc'], '2027-12-31T00:00:00.000Z');
+      },
+    );
+
     test('contractor: all four NOT NULL columns mapped', () {
       final rows = mapper.toDbRows(
         targetEntity: 'contractor',
@@ -110,6 +164,7 @@ void main() {
               'CNPJ': '11.222.333/0001-81',
               'INI': '01/03/2026',
               'FIM': '31/12/2026',
+              'OBS': 'Contrato anual',
             },
           ],
           template: _tpl('contract', const [
@@ -131,6 +186,7 @@ void main() {
               targetField: CsvTargetField.endDate,
               formatHint: 'dd/MM/yyyy',
             ),
+            ColumnMapping(csvHeader: 'OBS', targetField: CsvTargetField.notes),
           ]),
           resolvedContractors: resolved,
         );
@@ -139,6 +195,7 @@ void main() {
         expect(rows.single['contractor_name'], 'Resolved Contractor SA');
         expect(rows.single['valid_from_utc'], '2026-03-01T00:00:00.000Z');
         expect(rows.single['valid_until_utc'], '2026-12-31T00:00:00.000Z');
+        expect(rows.single['notes'], 'Contrato anual');
       },
     );
 

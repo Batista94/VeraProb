@@ -188,7 +188,8 @@
       "Bash(make test-db *)",
       "PowerShell(ls -Name \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\application\\\\admin\\\\\" | Where-Object { $_ -match '\\\\.dart$' } | Sort-Object)",
       "PowerShell(supabase status *)",
-      "PowerShell(supabase db *)"
+      "PowerShell(supabase db *)",
+      "Bash(xargs -I{} sed -n '/CREATE TABLE/,/\\);/p' {})"
     ]
   },
   "enabledMcpjsonServers": [

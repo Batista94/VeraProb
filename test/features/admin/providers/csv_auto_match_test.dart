@@ -134,40 +134,48 @@ void main() {
         addTearDown(container.dispose);
 
         final notifier = container.read(csvImportFlowProvider.notifier);
-        final autoMappings = notifier.autoMatchForTest(
+
+        // 1. Test contractor-scoped canonical headers
+        final autoMappingsContractor = notifier.autoMatchForTest(
           headers: const [
             'contractorName',
             'contractorDocument',
             'contractorEmail',
             'contractorContactName',
             'externalId',
-            'notes',
           ],
           entity: 'contractor',
         );
 
         expect(
-          autoMappings['contractorName']?.targetField,
+          autoMappingsContractor['contractorName']?.targetField,
           equals(CsvTargetField.contractorName),
         );
         expect(
-          autoMappings['contractorDocument']?.targetField,
+          autoMappingsContractor['contractorDocument']?.targetField,
           equals(CsvTargetField.contractorDocument),
         );
         expect(
-          autoMappings['contractorEmail']?.targetField,
+          autoMappingsContractor['contractorEmail']?.targetField,
           equals(CsvTargetField.contractorEmail),
         );
         expect(
-          autoMappings['contractorContactName']?.targetField,
+          autoMappingsContractor['contractorContactName']?.targetField,
           equals(CsvTargetField.contractorContactName),
         );
         expect(
-          autoMappings['externalId']?.targetField,
+          autoMappingsContractor['externalId']?.targetField,
           equals(CsvTargetField.externalId),
         );
+
+        // 2. Test contract-scoped canonical headers (notes)
+        final autoMappingsContract = notifier.autoMatchForTest(
+          headers: const ['notes'],
+          entity: 'contract',
+        );
+
         expect(
-          autoMappings['notes']?.targetField,
+          autoMappingsContract['notes']?.targetField,
           equals(CsvTargetField.notes),
         );
       },

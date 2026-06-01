@@ -413,15 +413,24 @@ void main() {
       notifier.state = const CsvImportMapped(
         targetEntity: 'contractor',
         fileName: 'contratantes.csv',
-        headers: ['name', 'email', 'contact'],
+        headers: ['name', 'doc', 'email', 'contact'],
         previewRows: [],
         allRows: [
-          {'name': 'Alfa Ltda', 'email': 'a@b.com', 'contact': 'Carlos'},
+          {
+            'name': 'Alfa Ltda',
+            'doc': '11.222.333/0001-81',
+            'email': 'a@b.com',
+            'contact': 'Carlos',
+          },
         ],
         mappings: {
           'name': ColumnMapping(
             csvHeader: 'name',
             targetField: CsvTargetField.contractorName,
+          ),
+          'doc': ColumnMapping(
+            csvHeader: 'doc',
+            targetField: CsvTargetField.contractorDocument,
           ),
           'email': ColumnMapping(
             csvHeader: 'email',

@@ -89,6 +89,18 @@ class CsvRowMapper {
       'license_number',
       _raw(row, t, CsvTargetField.operatorLicense),
     );
+    _putIfPresent(map, 'cpf', _raw(row, t, CsvTargetField.operatorDocument));
+    _putIfPresent(map, 'phone', _raw(row, t, CsvTargetField.operatorPhone));
+    final category = _raw(row, t, CsvTargetField.operatorLicenseCategory);
+    _putIfPresent(map, 'license_category', category?.toUpperCase());
+    _putIfPresent(
+      map,
+      'license_expiry_utc',
+      _isoUtc(
+        _raw(row, t, CsvTargetField.operatorLicenseExpiry),
+        _formatHint(t, CsvTargetField.operatorLicenseExpiry),
+      ),
+    );
     _putIfPresent(map, 'external_id', _raw(row, t, CsvTargetField.externalId));
     return map;
   }
@@ -147,6 +159,7 @@ class CsvRowMapper {
         _formatHint(t, CsvTargetField.endDate),
       ),
     );
+    _putIfPresent(map, 'notes', _raw(row, t, CsvTargetField.notes));
     _putIfPresent(map, 'external_id', _raw(row, t, CsvTargetField.externalId));
     return map;
   }

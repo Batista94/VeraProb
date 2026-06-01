@@ -55,6 +55,8 @@ void main() {
         CsvTargetField.operatorName,
         CsvTargetField.operatorDocument,
         CsvTargetField.operatorLicense,
+        CsvTargetField.operatorLicenseCategory,
+        CsvTargetField.operatorLicenseExpiry,
         CsvTargetField.operatorPhone,
       };
       for (final f in operatorFields) {
@@ -114,7 +116,7 @@ void main() {
         // AND add the field to the appropriate taxonomy group test above.
         expect(
           CsvTargetField.values.length,
-          equals(23),
+          equals(25),
           reason:
               'CsvTargetField field count changed. Update this test and '
               'ensure the new field is covered by a taxonomy group test.',
@@ -124,11 +126,12 @@ void main() {
 
     // ── requiredForEntity (NOT-NULL coverage SSOT) ────────────────────────────
 
-    test('contractor required fields are name, email, contact', () {
+    test('contractor required fields are name, document, email, contact', () {
       expect(
         CsvTargetField.requiredForEntity('contractor'),
         equals(const [
           CsvTargetField.contractorName,
+          CsvTargetField.contractorDocument,
           CsvTargetField.contractorEmail,
           CsvTargetField.contractorContactName,
         ]),

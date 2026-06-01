@@ -220,6 +220,9 @@ class CsvPreflightValidator {
     if (_dateFields.contains(mapping.targetField)) {
       return _validateDate(value, mapping, rowIndex);
     }
+    if (mapping.targetField == CsvTargetField.operatorLicenseCategory) {
+      return _validateLicenseCategory(value, mapping, rowIndex);
+    }
     return null;
   }
 
@@ -234,6 +237,21 @@ class CsvPreflightValidator {
   static const Set<CsvTargetField> _dateFields = {
     CsvTargetField.startDate,
     CsvTargetField.endDate,
+    CsvTargetField.operatorLicenseExpiry,
+  };
+
+  /// Brazilian CNH categories (single + valid combinations, incl. ACC).
+  static const Set<String> _licenseCategories = {
+    'A',
+    'B',
+    'C',
+    'D',
+    'E',
+    'AB',
+    'AC',
+    'AD',
+    'AE',
+    'ACC',
   };
 
   CsvRowError? _validateCapacity(
@@ -251,6 +269,23 @@ class CsvPreflightValidator {
       );
     }
     return null;
+  }
+
+  CsvRowError? _validateLicenseCategory(
+    String value,
+    ColumnMapping mapping,
+    int rowIndex,
+  ) {
+    if (_licenseCategories.contains(value.toUpperCase().trim())) return null;
+    return CsvRowError(
+      rowIndex: rowIndex,
+      csvHeader: mapping.csvHeader,
+      targetField: mapping.targetField.dbValue,
+      errorCode: 'invalid_license_category',
+      message:
+          'Categoria de CNH inválida. Use uma categoria válida '
+          '(A, B, C, D, E ou combinações AB, AC, AD, AE, ACC). Exemplo: AD',
+    );
   }
 
   CsvRowError? _validateCoordinate(
@@ -290,12 +325,15 @@ class CsvPreflightValidator {
   ) {
     final digits = value.replaceAll(RegExp(r'\D'), '');
 
-    // Structural validation: mod-11 check-digit
-    final isStructurallyValid = digits.length == 14
+    // Contextual document policy (consolidated-ERP practice):
+    //   contractorDocument → strictly CNPJ (14 digits); CPF rejected.
+    //   operatorDocument    → strictly CPF (11 digits); CNPJ rejected.
+    final isContractor =
+        mapping.targetField == CsvTargetField.contractorDocument;
+
+    final isStructurallyValid = isContractor
         ? CnpjValidator.isValid(digits)
-        : digits.length == 11
-        ? CpfValidator.isValid(digits)
-        : false;
+        : CpfValidator.isValid(digits);
 
     if (!isStructurallyValid) {
       return CsvRowError(
@@ -303,10 +341,13 @@ class CsvPreflightValidator {
         csvHeader: mapping.csvHeader,
         targetField: mapping.targetField.dbValue,
         errorCode: 'invalid_document',
-        message:
-            'Documento com dígito verificador inválido. '
-            'Use um CNPJ (14 dígitos) ou CPF (11 dígitos) matematicamente válido. '
-            'Exemplo: 11.222.333/0001-81',
+        message: isContractor
+            ? 'CNPJ inválido. O documento do contratante deve ser um CNPJ '
+                  'com 14 dígitos e dígito verificador válido. '
+                  'Exemplo: 11.222.333/0001-81'
+            : 'CPF inválido. O documento do operador deve ser um CPF '
+                  'com 11 dígitos e dígito verificador válido. '
+                  'Exemplo: 529.982.247-25',
       );
     }
 

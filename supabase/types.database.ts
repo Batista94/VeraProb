@@ -481,7 +481,7 @@ export type Database = {
           name: string
           organization_id: string
           primary_email: string
-          tax_id: string | null
+          tax_id: string
         }
         Insert: {
           contact_name: string
@@ -491,7 +491,7 @@ export type Database = {
           name: string
           organization_id: string
           primary_email: string
-          tax_id?: string | null
+          tax_id: string
         }
         Update: {
           contact_name?: string
@@ -501,7 +501,7 @@ export type Database = {
           name?: string
           organization_id?: string
           primary_email?: string
-          tax_id?: string | null
+          tax_id?: string
         }
         Relationships: [
           {
@@ -544,6 +544,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           name: string
+          notes: string | null
           organization_id: string
           penalty_multiplier: number
           previous_hash: string | null
@@ -569,6 +570,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name: string
+          notes?: string | null
           organization_id: string
           penalty_multiplier?: number
           previous_hash?: string | null
@@ -594,6 +596,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           name?: string
+          notes?: string | null
           organization_id?: string
           penalty_multiplier?: number
           previous_hash?: string | null
@@ -966,34 +969,46 @@ export type Database = {
       drivers: {
         Row: {
           archived_at_utc: string | null
+          cpf: string | null
           created_at: string | null
           external_id: string | null
           full_name: string
           id: string
+          license_category: string | null
+          license_expiry_utc: string | null
           license_number: string
           organization_id: string | null
+          phone: string | null
           status: string | null
           updated_at: string | null
         }
         Insert: {
           archived_at_utc?: string | null
+          cpf?: string | null
           created_at?: string | null
           external_id?: string | null
           full_name: string
           id?: string
+          license_category?: string | null
+          license_expiry_utc?: string | null
           license_number: string
           organization_id?: string | null
+          phone?: string | null
           status?: string | null
           updated_at?: string | null
         }
         Update: {
           archived_at_utc?: string | null
+          cpf?: string | null
           created_at?: string | null
           external_id?: string | null
           full_name?: string
           id?: string
+          license_category?: string | null
+          license_expiry_utc?: string | null
           license_number?: string
           organization_id?: string | null
+          phone?: string | null
           status?: string | null
           updated_at?: string | null
         }

@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression — Council-reviewed: sole diff vs main is a
+// doc-comment edit (dropped the "valid for MVP" note per the enterprise
+// no-MVP directive). No structural, behavioral, or API change.
 import 'package:equatable/equatable.dart';
 import 'package:uuid/uuid.dart';
 

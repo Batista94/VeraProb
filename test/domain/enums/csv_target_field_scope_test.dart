@@ -9,7 +9,7 @@ void main() {
     // ── asset ─────────────────────────────────────────────────────────────────
 
     test(
-      'asset: contains identifier, assetModel, capacity, assetStatus, externalId, notes',
+      'asset: contains identifier, assetModel, capacity, assetStatus, externalId',
       () {
         final fields = CsvTargetField.forEntity('asset');
         expect(
@@ -20,26 +20,27 @@ void main() {
             CsvTargetField.capacity,
             CsvTargetField.assetStatus,
             CsvTargetField.externalId,
-            CsvTargetField.notes,
           ]),
         );
       },
     );
 
     test(
-      'asset: MUST NOT contain contractorDocument or latitude or longitude',
+      'asset: MUST NOT contain contractorDocument, latitude, longitude or notes',
       () {
         final fields = CsvTargetField.forEntity('asset');
         expect(fields, isNot(contains(CsvTargetField.contractorDocument)));
         expect(fields, isNot(contains(CsvTargetField.latitude)));
         expect(fields, isNot(contains(CsvTargetField.longitude)));
+        // notes has no backing column on assets — must not be offered.
+        expect(fields, isNot(contains(CsvTargetField.notes)));
       },
     );
 
     // ── operator ──────────────────────────────────────────────────────────────
 
     test(
-      'operator: contains operatorName, operatorDocument, operatorLicense, operatorPhone',
+      'operator: contains name, document(CPF), license(+category,expiry), phone',
       () {
         final fields = CsvTargetField.forEntity('operator');
         expect(
@@ -48,18 +49,20 @@ void main() {
             CsvTargetField.operatorName,
             CsvTargetField.operatorDocument,
             CsvTargetField.operatorLicense,
+            CsvTargetField.operatorLicenseCategory,
+            CsvTargetField.operatorLicenseExpiry,
             CsvTargetField.operatorPhone,
             CsvTargetField.externalId,
-            CsvTargetField.notes,
           ]),
         );
       },
     );
 
-    test('operator: MUST NOT contain latitude or contractCode', () {
+    test('operator: MUST NOT contain latitude, contractCode or notes', () {
       final fields = CsvTargetField.forEntity('operator');
       expect(fields, isNot(contains(CsvTargetField.latitude)));
       expect(fields, isNot(contains(CsvTargetField.contractCode)));
+      expect(fields, isNot(contains(CsvTargetField.notes)));
     });
 
     test(
@@ -74,16 +77,17 @@ void main() {
 
     // ── contractor ────────────────────────────────────────────────────────────
 
-    test('contractor: contains contractorDocument, externalId, notes', () {
+    test('contractor: contains contractorDocument, externalId', () {
       final fields = CsvTargetField.forEntity('contractor');
       expect(
         fields,
         containsAll([
           CsvTargetField.contractorDocument,
           CsvTargetField.externalId,
-          CsvTargetField.notes,
         ]),
       );
+      // notes has no backing column on contractors — must not be offered.
+      expect(fields, isNot(contains(CsvTargetField.notes)));
     });
 
     test(
@@ -141,29 +145,34 @@ void main() {
     // ── zone ──────────────────────────────────────────────────────────────────
 
     test(
-      'zone: contains zoneName, zoneCode, latitude, longitude, radiusMeters',
+      'zone: contains zoneName, latitude, longitude, radiusMeters, address',
       () {
         final fields = CsvTargetField.forEntity('zone');
         expect(
           fields,
           containsAll([
             CsvTargetField.zoneName,
-            CsvTargetField.zoneCode,
             CsvTargetField.latitude,
             CsvTargetField.longitude,
             CsvTargetField.radiusMeters,
+            CsvTargetField.address,
             CsvTargetField.externalId,
-            CsvTargetField.notes,
           ]),
         );
       },
     );
 
-    test('zone: MUST NOT contain operatorDocument or capacity', () {
-      final fields = CsvTargetField.forEntity('zone');
-      expect(fields, isNot(contains(CsvTargetField.operatorDocument)));
-      expect(fields, isNot(contains(CsvTargetField.capacity)));
-    });
+    test(
+      'zone: MUST NOT contain operatorDocument, capacity, zoneCode or notes',
+      () {
+        final fields = CsvTargetField.forEntity('zone');
+        expect(fields, isNot(contains(CsvTargetField.operatorDocument)));
+        expect(fields, isNot(contains(CsvTargetField.capacity)));
+        // zoneCode is redundant with externalId; notes has no column — neither offered.
+        expect(fields, isNot(contains(CsvTargetField.zoneCode)));
+        expect(fields, isNot(contains(CsvTargetField.notes)));
+      },
+    );
 
     // ── unknown entity fallback ───────────────────────────────────────────────
 
