@@ -68,12 +68,17 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
    * **Entidade associada:** `operator`.
    * **Campos mapeáveis:** Nome do motorista, CPF/CNPJ, CNH/habilitação, telefone, ID externo e observações.
-3. **Contratos (Contracts):**
-   * **Onde clicar:** No painel de Administração, clique na opção **"Contratantes"** (Atenção: A tela "Contratos" gerencia rascunhos e vigências manuais; o importador em lote de Contratos está acoplado à tela de "Contratantes" e injeta a entidade `contract`).
+3. **Contratantes (Contractors):**
+   * **Onde clicar:** No painel de Administração, clique na opção **"Contratantes"**.
+   * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
+   * **Entidade associada:** `contractor`.
+   * **Campos mapeáveis:** Nome do contratante, CNPJ do contratante, e-mail do contratante, nome do contato, ID externo e observações.
+4. **Contratos (Contracts):**
+   * **Onde clicar:** No painel de Administração, clique na opção **"Contratos"**.
    * **Ação:** Clique no ícone de "Importar CSV" no cabeçalho da tela (canto superior direito).
    * **Entidade associada:** `contract`.
    * **Campos mapeáveis:** Código do contrato, CNPJ do contratante, data de início, data de término, ID externo e observações.
-   * **⚠️ PRÉ-REQUISITO UAT:** O CNPJ informado no CSV como contratante (`contractorDocument`) **deve já estar cadastrado** como contratante na base do tenant (cadastre um contratante manualmente na tela "Contratantes" com o CNPJ que será usado no CSV antes de rodar o teste, ou o pre-flight levantará `foreign_key_not_found`).
+   * **⚠️ PRÉ-REQUISITO UAT:** O CNPJ informado no CSV como contratante (`contractorDocument`) **deve já estar cadastrado** como contratante na base do tenant (cadastre um contratante manualmente na tela "Contratantes", ou via importação de CSV de Contratantes, com o CNPJ que será usado no CSV de contratos antes de rodar o teste de contratos, ou o pre-flight de contratos levantará `foreign_key_not_found`).
 
 ---
 
@@ -83,10 +88,10 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Objetivo:** Validar a importação completa de dados usando o mapeador universal com colunas válidas.
 * **Pré-condições:** Logado como `admin-a@veraprob.dev` e possuir contratante previamente cadastrado na base (CNPJ: `11.222.333/0001-81`).
 * **Passos:**
-  1. Acessar a tela correspondente à entidade desejada (ex: **"Contratantes"** para Contratos).
+  1. Acessar a tela correspondente à entidade desejada (ex: **"Contratantes"** para Contratantes ou **"Contratos"** para Contratos).
   2. Clicar no botão **"Importar CSV"** no topo da tela para abrir o modal do Importador Universal.
-  3. Fazer o upload de um arquivo CSV de teste contendo registros de contratos válidos (ex: código do contrato, CNPJ contratante, datas de início e fim).
-  4. Na interface de mapeamento, correlacionar as colunas do CSV aos campos do sistema (ex: "COD_CONTRATO" -> `contractCode`, "CNPJ_CLIENTE" -> `contractorDocument`).
+  3. Fazer o upload de um arquivo CSV de teste contendo registros válidos (ex: para Contratantes: nome, CNPJ, e-mail; ou para Contratos: código do contrato, CNPJ contratante, datas de início e fim).
+  4. Na interface de mapeamento, correlacionar as colunas do CSV aos campos do sistema (ex: para Contratos, "COD_CONTRATO" -> `contractCode`, "CNPJ_CLIENTE" -> `contractorDocument`).
   5. Clicar em **"Validar"** para rodar o Pre-flight.
   6. Com aprovação visual (0 erros e 100% das linhas válidas), clicar em **"Importar X linha(s)"**.
 * **Cenário Esperado:** A interface exibe a transição de passos: `UPLOAD` -> `MAPEAMENTO` -> `VALIDAÇÃO` -> `RESULTADO`, mostrando mensagem de sucesso e progresso de conclusão.

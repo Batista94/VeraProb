@@ -418,12 +418,15 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
 
       state = CsvImportDone(targetEntity: current.targetEntity, result: result);
     } on IntegrityException catch (e) {
-      _setError(e.message);
+      _setError(e.message, current);
     } catch (e, stack) {
       if (kDebugMode) {
         print('[CSV Import Submission Error] $e\n$stack');
       }
-      _setError('Falha ao importar. Verifique sua conexão e tente novamente.');
+      _setError(
+        'Falha ao importar. Verifique sua conexão e tente novamente.',
+        current,
+      );
     }
   }
 
@@ -457,10 +460,12 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     state = CsvImportInitial(targetEntity: _targetEntity);
   }
 
-  void _setError(String message) {
-    final previousNonErrorState = state is CsvImportError
-        ? (state as CsvImportError).previousState
-        : state;
+  void _setError(String message, [CsvImportFlowState? previousState]) {
+    final previousNonErrorState =
+        previousState ??
+        (state is CsvImportError
+            ? (state as CsvImportError).previousState
+            : state);
     state = CsvImportError(
       targetEntity: _targetEntity,
       currentStep: state.currentStep,

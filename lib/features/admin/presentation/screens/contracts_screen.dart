@@ -9,6 +9,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
 import 'create_contract_form.dart';
 import 'contract_detail_screen.dart';
@@ -86,6 +87,18 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                 ],
               ),
               const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.upload_file_outlined),
+                tooltip: 'Importar CSV',
+                onPressed: () async {
+                  final imported = await showUniversalCsvImporter(
+                    context,
+                    targetEntity: 'contract',
+                  );
+                  if (imported) ref.invalidate(contractListProvider);
+                },
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 icon: const Icon(Icons.add_rounded, size: 20),
                 label: const Text('Novo Contrato'),

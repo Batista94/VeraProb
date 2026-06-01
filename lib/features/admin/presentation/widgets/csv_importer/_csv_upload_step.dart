@@ -40,7 +40,8 @@ class CsvUploadStep extends ConsumerWidget {
 
 const _kEntityLabels = {
   'operator': 'Operadores / Motoristas',
-  'contract': 'Contratos / Contratantes',
+  'contractor': 'Contratantes',
+  'contract': 'Contratos',
   'zone': 'Zonas Operacionais',
   'asset': 'Ativos (Veículos)',
 };
