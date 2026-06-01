@@ -1,0 +1,4 @@
+nomezona,lat,lon,raio,endereco,idexterno
+"Zona Central",-23.55052,-46.633308,500,"Av. Paulista, 1000","EXT_ZONE_001"
+"Zona Norte",-23.50000,-46.600000,1000,"Rua Voluntarios da Patria, 500","EXT_ZONE_002"
+"Zona Sul",-23.60000,-46.650000,800,"Av. Ibirapuera, 2000","EXT_ZONE_003"

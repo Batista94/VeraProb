@@ -95,7 +95,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Fase 1: Importação de Contratantes (Massa Base)**
   1. Acessar a tela **"Contratantes"** em Administração.
   2. Clicar no botão **"Importar CSV"** no canto superior direito para abrir o modal.
-  3. Fazer o upload do arquivo [contratantes_validos.csv].
+  3. Fazer o upload do arquivo `test_csvs/contratantes_validos.csv`.
   4. Mapear as colunas (ex: `contractorName` -> Nome, `contractorDocument` -> Documento).
   5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
   * *Resultado:* Contratantes cadastrados com sucesso.
@@ -103,7 +103,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Fase 2: Importação de Contratos (Dependente)**
   1. Acessar a tela **"Contratos"** em Administração.
   2. Clicar em **"Importar CSV"** no canto superior direito.
-  3. Fazer o upload do arquivo [contratos_validos.csv].
+  3. Fazer o upload do arquivo `test_csvs/contratos_validos.csv`.
   4. Mapear as colunas (ex: `contractCode` -> Código, `contractorDocument` -> Documento do Contratante).
   5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
   * *Resultado:* Contratos importados com sucesso, pois os CNPJs já existem na base (Fase 1).
@@ -118,7 +118,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 #### CT02: Pré-validação com Dados Inválidos e Importação Parcial
 * **Objetivo:** Verificar a resiliência do parser a dados malformados, injeções perigosas, chaves inexistentes e a execução correta da Importação Parcial (Partial Import).
 * **Passos:**
-  1. Montar e subir um arquivo CSV de contratos contendo:
+  1. Fazer o upload do arquivo `test_csvs/contratos_invalidos.csv` contendo:
      * **Linha 1 (Vazio Obrigatório):** Código do contrato vazio (mapeado para `contractCode` obrigatório).
      * **Linha 2 (Valor Inválido):** Coordenada de latitude com valor `95.0` (fora de [-90, 90]) caso testado na tela de Zonas, ou Data inválida (ex: `"texto"`) para contratos.
      * **Linha 3 (CNPJ Inválido - Mod11):** CNPJ com formato numérico inválido ou dígitos repetidos (ex: `11.111.111/1111-11`).
@@ -157,7 +157,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 #### CT03: Isolamento Cross-Tenant na Importação (Segurança)
 * **Objetivo:** Garantir que dados de outros inquilinos não sejam modificados ou criados.
 * **Passos:**
-  1. Subir um CSV contendo CNPJs ou IDs que pertencem a outra organização (ex: Org Beta).
+  1. Subir o arquivo `test_csvs/contratos_cross_tenant.csv` contendo CNPJs ou IDs que pertencem a outra organização (ex: Org Beta).
 * **Cenário Esperado & O que validar no UAT:**
   * O sistema executa o pre-flight sob o isolamento do JWT `auth.jwt()`. Qualquer CNPJ de outra organização é tratado como não existente no banco (gera erro `foreign_key_not_found` e o registro não é exposto).
   * Os dados inseridos no banco via upsert de CSV devem herdar automaticamente o `organization_id` do JWT ativo, impossibilitando gravação cruzada.
@@ -166,7 +166,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Objetivo:** Validar os campos consolidados de cadastro de motorista (CPF de identidade, número/categoria/validade de CNH) e a validação contextual de documento (CPF estrito).
 * **Pré-condições:** Logado como `admin-a@veraprob.dev`. Importador aberto na tela **"Motoristas"** (`operator`).
 * **Passos:**
-  1. Subir um CSV de motoristas com colunas: `nome`, `cpf`, `cnh` (número), `categoria`, `validade`, `telefone`.
+  1. Subir o arquivo `test_csvs/operadores.csv` de motoristas com colunas: `nome`, `cpf`, `cnh` (número), `categoria`, `validade`, `telefone`.
   2. Mapear: `nome`→Nome do motorista, `cpf`→**CPF do Operador**, `cnh`→Número da CNH, `categoria`→Categoria da CNH, `validade`→Validade da CNH (format hint `dd/MM/yyyy`), `telefone`→Telefone.
   3. Incluir linhas adversas:
      * **Linha A (CNPJ no lugar de CPF):** Preencher `cpf` com um CNPJ válido (14 dígitos).

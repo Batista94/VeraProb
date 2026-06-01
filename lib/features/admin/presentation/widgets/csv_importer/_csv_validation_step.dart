@@ -235,6 +235,8 @@ class _ErrorTable extends StatelessWidget {
               dataTextStyle: CsvT.labelStyle(color: CsvT.textHi, size: 12),
               columnSpacing: 16,
               horizontalMargin: 12,
+              dataRowMinHeight: 48,
+              dataRowMaxHeight: double.infinity,
               columns: const [
                 DataColumn(label: Text('Linha')),
                 DataColumn(label: Text('Coluna CSV')),
@@ -245,9 +247,7 @@ class _ErrorTable extends StatelessWidget {
                 return DataRow(
                   cells: [
                     DataCell(Text('${e.rowIndex}')),
-                    DataCell(
-                      Text(e.csvHeader, overflow: TextOverflow.ellipsis),
-                    ),
+                    DataCell(Text(e.csvHeader)),
                     DataCell(
                       Text(
                         e.errorCode,
@@ -255,17 +255,11 @@ class _ErrorTable extends StatelessWidget {
                       ),
                     ),
                     DataCell(
-                      Tooltip(
-                        message: e.message,
-                        preferBelow: false,
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 360),
-                          child: Text(
-                            e.message,
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 2,
-                            softWrap: true,
-                          ),
+                          constraints: const BoxConstraints(maxWidth: 480),
+                          child: Text(e.message, softWrap: true),
                         ),
                       ),
                     ),

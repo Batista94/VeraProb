@@ -1,0 +1,4 @@
+nome,cpf,habilitacao,categoria,validade,telefone,idexterno
+"Carlos Souza","123.456.789-09","CNH111111","A","2027-12-31","11988888888","EXT_OP_VAL_1"
+"Ana Costa","987.654.321-00","CNH222222","B","2028-05-15","11977777777","EXT_OP_VAL_2"
+"Marcos Oliveira","456.789.012-49","CNH333333","AD","2029-10-20","11966666666","EXT_OP_VAL_3"
