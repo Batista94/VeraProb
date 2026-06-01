@@ -96,4 +96,32 @@ enum CsvTargetField {
     ],
     _ => values, // Safe fallback: show all for unknown entities
   };
+
+  /// Fields mapping to NOT-NULL-without-default DB columns: they MUST be mapped
+  /// for an import of [entity] to succeed. The preflight gate fails fast when
+  /// any is unmapped (INV-10), preventing a 23502 null-value violation at the
+  /// `batch_upsert_<entity>` RPC.
+  ///
+  /// Derived from the table DDL: contractors(name, primary_email, contact_name);
+  /// vehicles(plate); drivers(full_name, license_number);
+  /// contracts(name, contractor_name←document, valid_from_utc, valid_until_utc);
+  /// operational_zones(name, latitude, longitude, radius_meters).
+  static List<CsvTargetField> requiredForEntity(String entity) =>
+      switch (entity) {
+        'asset' => const [identifier],
+        'operator' => const [operatorName, operatorLicense],
+        'contractor' => const [
+          contractorName,
+          contractorEmail,
+          contractorContactName,
+        ],
+        'contract' => const [
+          contractCode,
+          contractorDocument,
+          startDate,
+          endDate,
+        ],
+        'zone' => const [zoneName, latitude, longitude, radiusMeters],
+        _ => const [], // Unknown entity: no coverage constraint
+      };
 }

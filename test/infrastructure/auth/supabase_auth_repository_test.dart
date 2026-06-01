@@ -6,11 +6,15 @@
 /// - getCurrentUser extracts tenantId exclusively from app_metadata (INV-1)
 /// - Session lifecycle (signOut, refresh, authStatusStream)
 /// - Offline connectivity handling (SocketException)
+/// - getUserBySessionId reads org_id from JWT access token claims (not
+///   raw_app_meta_data), because the custom_access_token_hook injects claims
+///   only into the JWT and does NOT write to auth.users.raw_app_meta_data.
 ///
 /// TDD: Written BEFORE implementation (Red phase).
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +47,47 @@ class _FakeUserResponse implements supabase.UserResponse {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
+/// Builds a minimal JWT access token whose payload contains
+/// `app_metadata.org_id` and `app_metadata.role`, matching what
+/// `custom_access_token_hook` injects at sign-in.
+String _buildJwt({
+  String orgId = 'org-123',
+  String role = 'TENANT_ADMIN',
+  bool mfaEnabled = false,
+}) {
+  final payload = {
+    'sub': 'user-1',
+    'app_metadata': {'org_id': orgId, 'role': role, 'mfa_enabled': mfaEnabled},
+    'exp':
+        DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 1))
+            .millisecondsSinceEpoch ~/
+        1000,
+  };
+  final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.$encoded.fake-sig';
+}
+
+/// JWT with no app_metadata.org_id — simulates a user provisioned without
+/// a tenant role (e.g. bootstrap omitted user_roles insert).
+String _buildJwtWithoutOrg() {
+  final payload = {
+    'sub': 'user-norg',
+    'app_metadata': {'role': 'OPERATOR'},
+    'exp':
+        DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 1))
+            .millisecondsSinceEpoch ~/
+        1000,
+  };
+  final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
+  return 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.$encoded.fake-sig';
+}
+
+/// Creates a Supabase User where appMetadata has org_id (Admin API synced).
+/// Used for getCurrentUser() tests which read raw_app_meta_data.
 supabase.User _createSecureUser() {
   return supabase.User(
     id: 'user-1',
@@ -54,7 +99,10 @@ supabase.User _createSecureUser() {
   );
 }
 
-supabase.User _createUserWithoutOrg() {
+/// Creates a Supabase User without org_id in appMetadata.
+/// Simulates a tenant admin whose raw_app_meta_data was NOT updated by
+/// the Admin API (only user_roles insert was done).
+supabase.User _createUserWithoutOrgInAppMetadata() {
   return supabase.User(
     id: 'user-norg',
     email: 'norg@veraprob.com',
@@ -67,7 +115,7 @@ supabase.User _createUserWithoutOrg() {
 
 supabase.Session _createSession(supabase.User user) {
   return supabase.Session(
-    accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fake.fake',
+    accessToken: _buildJwt(),
     tokenType: 'bearer',
     user: user,
   );
@@ -527,7 +575,9 @@ void main() {
       test(
         'throws AuthFailureException when app_metadata lacks org_id [INV-1]',
         () async {
-          when(() => mockAuth.currentUser).thenReturn(_createUserWithoutOrg());
+          when(
+            () => mockAuth.currentUser,
+          ).thenReturn(_createUserWithoutOrgInAppMetadata());
 
           expect(
             () => repo.getCurrentUser(),
@@ -709,17 +759,35 @@ void main() {
         return session;
       }
 
+      test('cache miss calls getUser() server-side and returns validated user '
+          'when JWT access token has app_metadata.org_id [INV-1]', () async {
+        // The user returned by getUser() has no org_id in appMetadata —
+        // simulating a tenant admin whose raw_app_meta_data was not updated
+        // by the Admin API (only hook-injected claims exist).
+        mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
+        mockSessionWithExpiry(_createUserWithoutOrgInAppMetadata());
+
+        // JWT access token contains hook-injected org_id in app_metadata.
+        final jwt = _buildJwt(orgId: 'org-123', role: 'TENANT_ADMIN');
+
+        final result = await repo.getUserBySessionId(jwt);
+
+        expect(result, isA<AuthUser>());
+        expect(result!.tenantId, equals('org-123'));
+        verify(() => mockAuth.getUser()).called(1);
+      });
+
       test(
-        'cache miss calls getUser() server-side and returns validated user',
+        'cache miss — JWT without app_metadata.org_id returns null [INV-1]',
         () async {
-          mockGetUserSuccess(secureUser);
-          mockSessionWithExpiry(secureUser);
+          mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
+          when(() => mockAuth.currentSession).thenReturn(null);
 
-          final result = await repo.getUserBySessionId('session-1');
+          final jwt = _buildJwtWithoutOrg();
 
-          expect(result, isA<AuthUser>());
-          expect(result!.tenantId, equals('org-123'));
-          // Verify server-side getUser() was called
+          final result = await repo.getUserBySessionId(jwt);
+
+          expect(result, isNull);
           verify(() => mockAuth.getUser()).called(1);
         },
       );
@@ -727,33 +795,37 @@ void main() {
       test(
         'cache hit on second call within TTL does NOT call getUser()',
         () async {
-          mockGetUserSuccess(secureUser);
-          mockSessionWithExpiry(secureUser);
+          mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
+          mockSessionWithExpiry(_createUserWithoutOrgInAppMetadata());
 
-          // First call — cache miss, calls getUser() server-side
-          final result1 = await repo.getUserBySessionId('session-1');
+          final jwt = _buildJwt(orgId: 'org-123');
+
+          // First call — cache miss
+          final result1 = await repo.getUserBySessionId(jwt);
           expect(result1, isA<AuthUser>());
           verify(() => mockAuth.getUser()).called(1);
 
           // Second call — cache hit, NO server-side call
-          final result2 = await repo.getUserBySessionId('session-1');
+          final result2 = await repo.getUserBySessionId(jwt);
           expect(result2, isA<AuthUser>());
           expect(result2!.tenantId, equals('org-123'));
 
-          // getUser() still only called once (first call was cached)
+          // getUser() still only called once
           verifyNever(() => mockAuth.getUser());
         },
       );
 
       test('cache invalidates on signOut', () async {
-        mockGetUserSuccess(secureUser);
-        mockSessionWithExpiry(secureUser);
+        mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
+        mockSessionWithExpiry(_createUserWithoutOrgInAppMetadata());
         when(
           () => mockAuth.signOut(scope: any(named: 'scope')),
         ).thenAnswer((_) async {});
 
+        final jwt = _buildJwt(orgId: 'org-123');
+
         // Populate cache
-        await repo.getUserBySessionId('session-1');
+        await repo.getUserBySessionId(jwt);
 
         // Clear interaction history for clean verification
         clearInteractions(mockAuth);
@@ -768,15 +840,14 @@ void main() {
         when(() => mockAuth.currentSession).thenReturn(null);
 
         // Next call — cache miss, getUser() returns null
-        final result = await repo.getUserBySessionId('session-1');
+        final result = await repo.getUserBySessionId(jwt);
         expect(result, isNull);
-        // getUser() was called after signOut
         verify(() => mockAuth.getUser()).called(1);
       });
 
       test('cache invalidates on refreshSession', () async {
-        mockGetUserSuccess(secureUser);
-        mockSessionWithExpiry(secureUser);
+        mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
+        mockSessionWithExpiry(_createUserWithoutOrgInAppMetadata());
         final emptyResponse = supabase.AuthResponse(
           user: _createSecureUser(),
           session: null,
@@ -785,8 +856,10 @@ void main() {
           () => mockAuth.refreshSession(),
         ).thenAnswer((_) async => emptyResponse);
 
+        final jwt = _buildJwt(orgId: 'org-123');
+
         // Populate cache
-        await repo.getUserBySessionId('session-1');
+        await repo.getUserBySessionId(jwt);
 
         // Clear interaction history
         clearInteractions(mockAuth);
@@ -801,7 +874,7 @@ void main() {
         when(() => mockAuth.currentSession).thenReturn(null);
 
         // Next call — cache miss
-        final result = await repo.getUserBySessionId('session-1');
+        final result = await repo.getUserBySessionId(jwt);
         expect(result, isNull);
         verify(() => mockAuth.getUser()).called(1);
       });
@@ -812,7 +885,9 @@ void main() {
         ).thenAnswer((_) async => _FakeUserResponse(null));
         when(() => mockAuth.currentSession).thenReturn(secureSession);
 
-        final result = await repo.getUserBySessionId('session-revoked');
+        final jwt = _buildJwt();
+
+        final result = await repo.getUserBySessionId(jwt);
 
         expect(result, isNull);
         verify(() => mockAuth.getUser()).called(1);
@@ -826,17 +901,46 @@ void main() {
           ).thenThrow(supabase.AuthException('Invalid JWT'));
           when(() => mockAuth.currentSession).thenReturn(secureSession);
 
-          final result = await repo.getUserBySessionId('session-invalid');
+          final jwt = _buildJwt();
+
+          final result = await repo.getUserBySessionId(jwt);
 
           expect(result, isNull);
         },
       );
 
-      test('user without org_id from getUser() returns null', () async {
-        mockGetUserSuccess(_createUserWithoutOrg());
+      test(
+        'getUser() AuthException with session_not_found signs out locally',
+        () async {
+          when(() => mockAuth.getUser()).thenThrow(
+            const supabase.AuthException(
+              'Session not found',
+              code: 'session_not_found',
+            ),
+          );
+          when(
+            () => mockAuth.signOut(scope: any(named: 'scope')),
+          ).thenAnswer((_) async {});
+          when(() => mockAuth.currentSession).thenReturn(secureSession);
+
+          final jwt = _buildJwt();
+
+          final result = await repo.getUserBySessionId(jwt);
+
+          expect(result, isNull);
+          verify(
+            () => mockAuth.signOut(scope: supabase.SignOutScope.local),
+          ).called(1);
+        },
+      );
+
+      test('JWT without org_id in claims returns null [INV-1]', () async {
+        mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
         when(() => mockAuth.currentSession).thenReturn(null);
 
-        final result = await repo.getUserBySessionId('session-no-org');
+        final jwt = _buildJwtWithoutOrg();
+
+        final result = await repo.getUserBySessionId(jwt);
 
         expect(result, isNull);
         verify(() => mockAuth.getUser()).called(1);
@@ -846,7 +950,7 @@ void main() {
           'even if cache TTL is still valid', () async {
         // Test: session with a PAST expiresAt is rejected on the FIRST call.
         // getUser() is called because cache is bypassed.
-        mockGetUserSuccess(secureUser);
+        mockGetUserSuccess(_createUserWithoutOrgInAppMetadata());
         final sessionExpiredLongAgo = MockSession();
         final pastExpiresAt =
             DateTime.now()
@@ -856,10 +960,14 @@ void main() {
             1000;
         when(() => sessionExpiredLongAgo.expiresAt).thenReturn(pastExpiresAt);
         when(() => sessionExpiredLongAgo.isExpired).thenReturn(true);
-        when(() => sessionExpiredLongAgo.user).thenReturn(secureUser);
+        when(
+          () => sessionExpiredLongAgo.user,
+        ).thenReturn(_createUserWithoutOrgInAppMetadata());
         when(() => mockAuth.currentSession).thenReturn(sessionExpiredLongAgo);
 
-        final result = await repo.getUserBySessionId('session-expired');
+        final jwt = _buildJwt(orgId: 'org-123');
+
+        final result = await repo.getUserBySessionId(jwt);
 
         // getUser() validates server-side, so this returns valid user
         // (the old session's expiresAt is irrelevant — server says user is valid)

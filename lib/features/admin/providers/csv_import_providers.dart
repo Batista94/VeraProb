@@ -11,6 +11,8 @@ import 'package:veraprob/domain/entities/column_mapping.dart';
 import 'package:veraprob/domain/entities/csv_mapping_template.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart'; // pr_scanner: ignore
 import 'package:veraprob/domain/shared/integrity_exception.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/features/admin/presentation/utils/csv_target_field_labels.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
@@ -319,6 +321,26 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     state = current.copyWithMapping(templateName: name);
   }
 
+  /// Active mappings with [ColumnMapping.required] set for every field the
+  /// target entity needs (NOT-NULL DB columns). Lets the preflight reject a
+  /// blank required cell per-row, in addition to the unmapped-column gate.
+  List<ColumnMapping> _activeMappings(
+    Map<String, ColumnMapping?> mappings,
+    String entity,
+  ) {
+    final required = CsvTargetField.requiredForEntity(entity).toSet();
+    return mappings.values.whereType<ColumnMapping>().map((m) {
+      if (!required.contains(m.targetField) || m.required) return m;
+      return ColumnMapping(
+        csvHeader: m.csvHeader,
+        targetField: m.targetField,
+        transform: m.transform,
+        required: true,
+        formatHint: m.formatHint,
+      );
+    }).toList();
+  }
+
   void validate() {
     var current = state;
     if (current is CsvImportError && current.previousState != null) {
@@ -326,9 +348,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     }
     if (current is! CsvImportMapped) return;
 
-    final activeMappings = current.mappings.values
-        .whereType<ColumnMapping>()
-        .toList();
+    final activeMappings = _activeMappings(
+      current.mappings,
+      current.targetEntity,
+    );
 
     if (activeMappings.isEmpty) {
       _setError('Mapeie ao menos uma coluna antes de validar.');
@@ -352,7 +375,8 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     );
 
     final validator = ref.read(csvPreflightValidatorProvider);
-    final report = validator.validate(current.allRows, template);
+    final rowReport = validator.validate(current.allRows, template);
+    final report = _withCoverage(rowReport, validator, template);
 
     state = CsvImportValidated(
       targetEntity: current.targetEntity,
@@ -366,6 +390,37 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       saveAsTemplate: current.saveAsTemplate,
       templateName: current.templateName,
       report: report,
+    );
+  }
+
+  /// Merges the mapping-coverage gate into the row-level [rowReport]: a required
+  /// NOT-NULL field with no column mapping makes EVERY row invalid, so we force
+  /// `validRows: 0` and surface a blocking error per missing field. The Import
+  /// CTA is gated on `validRows > 0`, so this stops the import before the RPC
+  /// raises a 23502 null-value violation (INV-10 fail-fast).
+  CsvPreflightReport _withCoverage(
+    CsvPreflightReport rowReport,
+    CsvPreflightValidator validator,
+    CsvMappingTemplate template,
+  ) {
+    final unmapped = validator.findUnmappedRequired(template);
+    if (unmapped.isEmpty) return rowReport;
+    return CsvPreflightReport(
+      totalRows: rowReport.totalRows,
+      validRows: 0,
+      errors: [
+        for (final field in unmapped)
+          CsvRowError(
+            rowIndex: 0,
+            csvHeader: '—',
+            targetField: field.dbValue,
+            errorCode: 'unmapped_required',
+            message:
+                'Coluna obrigatória "${csvTargetFieldLabel(field)}" não foi '
+                'mapeada a nenhuma coluna do CSV.',
+          ),
+        ...rowReport.errors,
+      ],
     );
   }
 
@@ -398,9 +453,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     );
 
     try {
-      final activeMappings = current.mappings.values
-          .whereType<ColumnMapping>()
-          .toList();
+      final activeMappings = _activeMappings(
+        current.mappings,
+        current.targetEntity,
+      );
 
       final command = ImportCsvCommand(
         sessionId: sessionId,
@@ -417,6 +473,11 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       final result = await handler.handle(command);
 
       state = CsvImportDone(targetEntity: current.targetEntity, result: result);
+    } on SovereigntyViolationException {
+      _setError(
+        'Sessão expirada ou inválida. Por favor, faça login novamente.',
+        current,
+      );
     } on IntegrityException catch (e) {
       _setError(e.message, current);
     } catch (e, stack) {
@@ -525,7 +586,7 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     // ── contractor document ────────────────────────────────────────────────
     (
       RegExp(
-        r'^(cnpj|cnpjcliente|cnpjcontratante|taxid|documentocontratante|documento|doc)$',
+        r'^(cnpj|cnpjcliente|cnpjcontratante|taxid|documentocontratante|documento|doc|contractordocument)$',
       ),
       CsvTargetField.contractorDocument,
     ),
@@ -563,15 +624,21 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     // Scope guard keeps these from colliding with operator/zone name rules:
     // contractorName is only in scope for entity 'contractor'.
     (
-      RegExp(r'^(nomecontratante|razaosocial|nomefantasia|nome|name)$'),
+      RegExp(
+        r'^(nomecontratante|razaosocial|nomefantasia|nome|name|contractorname)$',
+      ),
       CsvTargetField.contractorName,
     ),
     (
-      RegExp(r'^(email|emailcontratante|emailprincipal|emailcontato)$'),
+      RegExp(
+        r'^(email|emailcontratante|emailprincipal|emailcontato|contractoremail)$',
+      ),
       CsvTargetField.contractorEmail,
     ),
     (
-      RegExp(r'^(contato|responsavel|nomecontato|pessoacontato)$'),
+      RegExp(
+        r'^(contato|responsavel|nomecontato|pessoacontato|contractorcontactname)$',
+      ),
       CsvTargetField.contractorContactName,
     ),
 

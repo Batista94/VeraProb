@@ -44,6 +44,32 @@ class SupabaseUserMapper {
     );
   }
 
+  /// Maps a Supabase [supabase.User] to [AuthUser] using hook-injected JWT claims.
+  /// Use when the sessionId/accessToken is available (getUserBySessionId flow).
+  /// raw_app_meta_data (user.appMetadata) is NOT populated by the hook.
+  static AuthUser mapToAuthUserFromJwtClaims(
+    supabase.User user,
+    Map<String, dynamic> jwtClaims,
+  ) {
+    final jwtAppMeta = jwtClaims['app_metadata'] as Map<String, dynamic>?;
+    final tenantId = jwtAppMeta?['org_id'] as String?;
+    if (tenantId == null) {
+      throw const AuthFailureException(
+        'Usuário sem organização vinculada [INV-1].',
+      );
+    }
+    final roleString = jwtAppMeta?['role'] as String?;
+    final role = _mapRole(roleString);
+    final isMfaEnabled = jwtAppMeta?['mfa_enabled'] == true;
+    return AuthUser(
+      id: user.id,
+      email: user.email,
+      tenantId: tenantId,
+      role: role,
+      isMfaEnabled: isMfaEnabled,
+    );
+  }
+
   /// Maps a role string from JWT claims to domain [UserRole].
   ///
   /// Returns `null` for unknown roles — the caller decides how to handle.

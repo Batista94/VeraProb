@@ -320,13 +320,15 @@ class _DialogFooter extends ConsumerWidget {
     if (activeState is CsvImportValidated &&
         activeState is! CsvImportSubmitting) {
       final report = activeState.report;
+      final canImport = report.validRows > 0;
       primaryBtn = FilledButton.icon(
-        onPressed: notifier.submit,
+        onPressed: canImport ? notifier.submit : null,
         icon: const Icon(Icons.cloud_upload_outlined, size: 16),
         label: Text('Importar ${report.validRows} linha(s)'),
         style: FilledButton.styleFrom(
           backgroundColor: CsvT.action,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: CsvT.bgSlate,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(CsvT.radiusChip),
           ),

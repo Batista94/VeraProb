@@ -183,7 +183,7 @@ async function ensureSuperAdmin(url, serviceKey, user) {
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, email: user.email },
   );
-  
+
   if (res.status !== 200 && res.status !== 201 && res.status !== 204 && res.status !== 409) {
     throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
   }
@@ -204,7 +204,19 @@ async function ensureTenantAdmin(url, serviceKey, user) {
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
     { user_id: user.id, organization_id: user.org_id, role: 'TENANT_ADMIN', is_active: true },
   );
-  if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) return;
+  if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) {
+    // Sync raw_app_meta_data so getCurrentUser() (which reads user.appMetadata)
+    // also resolves org_id without relying solely on the JWT hook claims.
+    const res2 = await put(
+      `${url}/auth/v1/admin/users/${user.id}`,
+      authHeaders(serviceKey),
+      { app_metadata: { org_id: user.org_id, role: 'TENANT_ADMIN' } },
+    );
+    if (!res2.ok) {
+      throw new Error(`app_metadata update failed: HTTP ${res2.status}: ${JSON.stringify(res2.data)}`);
+    }
+    return;
+  }
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
 
@@ -448,7 +460,7 @@ async function ensureAntiFloodScenario(url, serviceKey, orgId) {
 async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverId) {
   process.stdout.write('      [5.2] Cenários Backdating (INV-6)... ');
   const now = new Date();
-  
+
   const scenarios = [
     { id: 'BDT-SET-01', note: '10 min ago (Closed)' },
     { id: 'BDT-SET-02', note: 'NULL fallback (Pending)' },

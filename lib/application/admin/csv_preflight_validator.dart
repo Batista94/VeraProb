@@ -133,6 +133,19 @@ class CsvPreflightValidator {
     );
   }
 
+  /// Coverage check — distinct from per-row validation: the required
+  /// NOT-NULL fields for [template.targetEntity] that have no column mapping.
+  ///
+  /// An unmapped required field makes every row invalid (the value can never be
+  /// supplied), so the caller MUST block the import before the `batch_upsert`
+  /// RPC raises a 23502 null-value violation (INV-10 fail-fast).
+  List<CsvTargetField> findUnmappedRequired(CsvMappingTemplate template) {
+    final mapped = template.columnMappings.map((m) => m.targetField).toSet();
+    return CsvTargetField.requiredForEntity(
+      template.targetEntity,
+    ).where((f) => !mapped.contains(f)).toList();
+  }
+
   _FieldPreprocessResult _preprocessField(
     String? rawValue,
     ColumnMapping mapping,

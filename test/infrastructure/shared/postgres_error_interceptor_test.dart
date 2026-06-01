@@ -85,6 +85,26 @@ void main() {
       expect(result, isA<IntegrityException>());
     });
 
+    test('maps 23502 (not_null_violation) to a clear IntegrityException', () {
+      const exception = PostgrestException(
+        message:
+            'null value in column "name" of relation "contractors" '
+            'violates not-null constraint',
+        code: '23502',
+      );
+
+      final result = testClass.mapPostgrestToDomainException(
+        exception,
+        resourceType: 'contractor',
+      );
+
+      expect(result, isA<IntegrityException>());
+      final de = result as IntegrityException;
+      // Raw DB column text must NOT leak; a domain-language message is shown.
+      expect(de.message, contains('Campo obrigatório'));
+      expect(de.message, isNot(contains('not-null')));
+    });
+
     test('rethrows unhandled error codes (fail-fast)', () {
       const exception = PostgrestException(
         message: 'Some unknown PostgREST error',

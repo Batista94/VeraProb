@@ -83,6 +83,59 @@ void main() {
       expect(report.totalRows, 2);
     });
 
+    // ── findUnmappedRequired (NOT-NULL coverage gate) ─────────────────────────
+
+    CsvMappingTemplate contractorTemplate(List<ColumnMapping> mappings) =>
+        CsvMappingTemplate(
+          id: 'c',
+          organizationId: 'org1',
+          name: 'Contractors',
+          targetEntity: 'contractor',
+          columnMappings: mappings,
+          createdAt: DateTime.now().toUtc(),
+          updatedAt: DateTime.now().toUtc(),
+        );
+
+    test('findUnmappedRequired flags the missing contractor name', () {
+      // Repro of the CT01 bug: only externalId mapped, name/email/contact absent.
+      final t = contractorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'externalId',
+          targetField: CsvTargetField.externalId,
+        ),
+      ]);
+
+      final missing = validator.findUnmappedRequired(t);
+
+      expect(
+        missing,
+        equals(const [
+          CsvTargetField.contractorName,
+          CsvTargetField.contractorEmail,
+          CsvTargetField.contractorContactName,
+        ]),
+      );
+    });
+
+    test('findUnmappedRequired is empty when all required fields mapped', () {
+      final t = contractorTemplate(const [
+        ColumnMapping(
+          csvHeader: 'contractorName',
+          targetField: CsvTargetField.contractorName,
+        ),
+        ColumnMapping(
+          csvHeader: 'contractorEmail',
+          targetField: CsvTargetField.contractorEmail,
+        ),
+        ColumnMapping(
+          csvHeader: 'contractorContactName',
+          targetField: CsvTargetField.contractorContactName,
+        ),
+      ]);
+
+      expect(validator.findUnmappedRequired(t), isEmpty);
+    });
+
     test('Rejects missing required field', () {
       final rows = [
         {

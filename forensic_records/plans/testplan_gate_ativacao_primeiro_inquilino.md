@@ -91,7 +91,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Fase 1: Importação de Contratantes (Massa Base)**
   1. Acessar a tela **"Contratantes"** em Administração.
   2. Clicar no botão **"Importar CSV"** no canto superior direito para abrir o modal.
-  3. Fazer o upload do arquivo [contratantes_validos.csv](file:///c:/Users/wes_b/Projects/VeraProb/test_fixtures/contratantes_validos.csv).
+  3. Fazer o upload do arquivo [contratantes_validos.csv].
   4. Mapear as colunas (ex: `contractorName` -> Nome, `contractorDocument` -> Documento).
   5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
   * *Resultado:* Contratantes cadastrados com sucesso.
@@ -99,7 +99,7 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 * **Fase 2: Importação de Contratos (Dependente)**
   1. Acessar a tela **"Contratos"** em Administração.
   2. Clicar em **"Importar CSV"** no canto superior direito.
-  3. Fazer o upload do arquivo [contratos_validos.csv](file:///c:/Users/wes_b/Projects/VeraProb/test_fixtures/contratos_validos.csv).
+  3. Fazer o upload do arquivo [contratos_validos.csv].
   4. Mapear as colunas (ex: `contractCode` -> Código, `contractorDocument` -> Documento do Contratante).
   5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
   * *Resultado:* Contratos importados com sucesso, pois os CNPJs já existem na base (Fase 1).

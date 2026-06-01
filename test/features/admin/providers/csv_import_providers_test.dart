@@ -265,7 +265,10 @@ void main() {
       final finalState = container.read(csvImportFlowProvider);
       expect(finalState, isA<CsvImportError>());
       final err = finalState as CsvImportError;
-      expect(err.message, isNotEmpty);
+      expect(
+        err.message,
+        equals('Sessão expirada ou inválida. Por favor, faça login novamente.'),
+      );
     });
 
     test(
@@ -355,6 +358,132 @@ void main() {
       final s = container.read(csvImportFlowProvider);
       expect(s, isA<CsvImportError>());
       expect(s, isNot(isA<CsvImportValidated>()));
+    });
+
+    // ── Coverage gate (CT01 null-name regression) ──────────────────────────
+
+    // CT01 repro: contractor file with only externalId mapped → validate must
+    // block (validRows 0, unmapped_required) instead of letting submit reach
+    // batch_upsert_contractors with a null name (23502).
+    test('validate blocks contractor import missing required name', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['externalId'],
+        previewRows: [],
+        allRows: [
+          {'externalId': 'CTR-1'},
+        ],
+        mappings: {
+          'externalId': ColumnMapping(
+            csvHeader: 'externalId',
+            targetField: CsvTargetField.externalId,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      expect(s, isA<CsvImportValidated>());
+      final report = (s as CsvImportValidated).report;
+      expect(report.validRows, 0);
+      expect(report.hasErrors, isTrue);
+      expect(
+        report.errors.map((e) => e.errorCode),
+        contains('unmapped_required'),
+      );
+    });
+
+    // Happy path: all required fields mapped + filled → ready to import.
+    test('validate passes when all required contractor fields mapped', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['name', 'email', 'contact'],
+        previewRows: [],
+        allRows: [
+          {'name': 'Alfa Ltda', 'email': 'a@b.com', 'contact': 'Carlos'},
+        ],
+        mappings: {
+          'name': ColumnMapping(
+            csvHeader: 'name',
+            targetField: CsvTargetField.contractorName,
+          ),
+          'email': ColumnMapping(
+            csvHeader: 'email',
+            targetField: CsvTargetField.contractorEmail,
+          ),
+          'contact': ColumnMapping(
+            csvHeader: 'contact',
+            targetField: CsvTargetField.contractorContactName,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      expect(s, isA<CsvImportValidated>());
+      final report = (s as CsvImportValidated).report;
+      expect(report.isClean, isTrue);
+      expect(report.validRows, 1);
+    });
+
+    // A mapped-but-blank required cell is caught per-row (required flag is
+    // forced on required fields by _activeMappings).
+    test('validate flags a blank required cell on a mapped column', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+
+      final notifier = container.read(csvImportFlowProvider.notifier);
+
+      // ignore: invalid_use_of_protected_member
+      notifier.state = const CsvImportMapped(
+        targetEntity: 'contractor',
+        fileName: 'contratantes.csv',
+        headers: ['name', 'email', 'contact'],
+        previewRows: [],
+        allRows: [
+          {'name': '   ', 'email': 'a@b.com', 'contact': 'Carlos'},
+        ],
+        mappings: {
+          'name': ColumnMapping(
+            csvHeader: 'name',
+            targetField: CsvTargetField.contractorName,
+          ),
+          'email': ColumnMapping(
+            csvHeader: 'email',
+            targetField: CsvTargetField.contractorEmail,
+          ),
+          'contact': ColumnMapping(
+            csvHeader: 'contact',
+            targetField: CsvTargetField.contractorContactName,
+          ),
+        },
+        rawBytes: [],
+      );
+
+      notifier.validate();
+
+      final s = container.read(csvImportFlowProvider);
+      final report = (s as CsvImportValidated).report;
+      expect(report.validRows, 0);
+      expect(report.errors.map((e) => e.errorCode), contains('required'));
     });
 
     // goBack from CsvImportMapped → CsvImportInitial

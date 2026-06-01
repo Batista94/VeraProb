@@ -127,6 +127,52 @@ void main() {
       },
     );
 
+    test(
+      'AM-14: canonical enum-name headers auto-map (CT01 null-name regression)',
+      () {
+        final container = _makeContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(csvImportFlowProvider.notifier);
+        final autoMappings = notifier.autoMatchForTest(
+          headers: const [
+            'contractorName',
+            'contractorDocument',
+            'contractorEmail',
+            'contractorContactName',
+            'externalId',
+            'notes',
+          ],
+          entity: 'contractor',
+        );
+
+        expect(
+          autoMappings['contractorName']?.targetField,
+          equals(CsvTargetField.contractorName),
+        );
+        expect(
+          autoMappings['contractorDocument']?.targetField,
+          equals(CsvTargetField.contractorDocument),
+        );
+        expect(
+          autoMappings['contractorEmail']?.targetField,
+          equals(CsvTargetField.contractorEmail),
+        );
+        expect(
+          autoMappings['contractorContactName']?.targetField,
+          equals(CsvTargetField.contractorContactName),
+        );
+        expect(
+          autoMappings['externalId']?.targetField,
+          equals(CsvTargetField.externalId),
+        );
+        expect(
+          autoMappings['notes']?.targetField,
+          equals(CsvTargetField.notes),
+        );
+      },
+    );
+
     // ── asset entity ──────────────────────────────────────────────────────────
 
     test('AM-4: header "Placa" → identifier for entity asset', () {

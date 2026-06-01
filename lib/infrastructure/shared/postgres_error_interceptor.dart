@@ -40,6 +40,7 @@ import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 /// | PGRST204       | column_not_found           | ResourceNotFoundException        |
 /// | P0001          | RAISE EXCEPTION            | IntegrityException(message)      |
 /// | 23505          | unique_violation           | IntegrityException               |
+/// | 23502          | not_null_violation         | IntegrityException               |
 /// | 42501          | insufficient_privilege     | SovereigntyViolationException    |
 mixin PostgresErrorInterceptor {
   /// Maps a [PostgrestException] to the appropriate domain-layer exception.
@@ -84,6 +85,14 @@ mixin PostgresErrorInterceptor {
         field: _extractFieldFromUniqueViolation(
           e.details is String ? e.details as String : null,
         ),
+      ),
+
+      // Not-null violation: a required field arrived null (e.g. an unmapped CSV
+      // column). Surface a clear domain error instead of leaking the raw DB
+      // code or letting it masquerade as a transport/connection failure.
+      '23502' => const IntegrityException(
+        'Campo obrigatório não preenchido em uma ou mais linhas. '
+        'Verifique o mapeamento das colunas obrigatórias.',
       ),
 
       // Fail-Fast: Unhandled codes are rethrown — no silent failures (INV-10)

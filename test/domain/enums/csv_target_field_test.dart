@@ -122,6 +122,86 @@ void main() {
       },
     );
 
+    // ── requiredForEntity (NOT-NULL coverage SSOT) ────────────────────────────
+
+    test('contractor required fields are name, email, contact', () {
+      expect(
+        CsvTargetField.requiredForEntity('contractor'),
+        equals(const [
+          CsvTargetField.contractorName,
+          CsvTargetField.contractorEmail,
+          CsvTargetField.contractorContactName,
+        ]),
+      );
+    });
+
+    test('asset requires only the identifier (plate)', () {
+      expect(
+        CsvTargetField.requiredForEntity('asset'),
+        equals(const [CsvTargetField.identifier]),
+      );
+    });
+
+    test('operator requires name and license', () {
+      expect(
+        CsvTargetField.requiredForEntity('operator'),
+        equals(const [
+          CsvTargetField.operatorName,
+          CsvTargetField.operatorLicense,
+        ]),
+      );
+    });
+
+    test('contract requires code, document and both dates', () {
+      expect(
+        CsvTargetField.requiredForEntity('contract'),
+        equals(const [
+          CsvTargetField.contractCode,
+          CsvTargetField.contractorDocument,
+          CsvTargetField.startDate,
+          CsvTargetField.endDate,
+        ]),
+      );
+    });
+
+    test('zone requires name and full geofence', () {
+      expect(
+        CsvTargetField.requiredForEntity('zone'),
+        equals(const [
+          CsvTargetField.zoneName,
+          CsvTargetField.latitude,
+          CsvTargetField.longitude,
+          CsvTargetField.radiusMeters,
+        ]),
+      );
+    });
+
+    test('unknown entity has no coverage constraint (safe fallback)', () {
+      expect(CsvTargetField.requiredForEntity('galaxy'), isEmpty);
+    });
+
+    test(
+      'every required field is whitelisted for its entity (consistency)',
+      () {
+        for (final entity in const [
+          'asset',
+          'operator',
+          'contractor',
+          'contract',
+          'zone',
+        ]) {
+          final scoped = CsvTargetField.forEntity(entity).toSet();
+          for (final field in CsvTargetField.requiredForEntity(entity)) {
+            expect(
+              scoped,
+              contains(field),
+              reason: 'Required $field must be mappable for entity $entity.',
+            );
+          }
+        }
+      },
+    );
+
     // ── Serialization round-trip ──────────────────────────────────────────────
 
     test('all fields parseable from dbValue via values lookup', () {
