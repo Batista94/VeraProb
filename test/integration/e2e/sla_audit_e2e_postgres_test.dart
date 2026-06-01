@@ -240,7 +240,7 @@ void main() {
         reason: 'State not yet created by evaluation engine sweep',
       );
 
-      // For MVP, if external system hasn't created the state yet, the engine won't see it.
+      // If the external system hasn't created the state yet, the engine won't see it.
       // Wait, let's artificially initialize it as if the scheduler spawned it.
       final newState = ContractualExecutionState.create(
         organizationId: '00000000-0000-0000-0000-000000000001',

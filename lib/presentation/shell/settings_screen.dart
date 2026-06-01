@@ -64,7 +64,7 @@ class SettingsScreen extends ConsumerWidget {
                   const _SectionHeader(title: 'Sobre a Plataforma'),
                   const _SettingTile(
                     label: 'Versão do Software',
-                    value: '1.0.0-mvp.hardening',
+                    value: '1.0.0-b2b.hardening',
                     icon: Icons.info_outline,
                   ),
                   const _SettingTile(

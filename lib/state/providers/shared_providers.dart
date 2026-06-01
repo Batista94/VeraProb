@@ -61,7 +61,7 @@ final currentDriverProvider = NotifierProvider<_CurrentDriverNotifier, Driver?>(
 
 // ── Search stream ─────────────────────────────────────────────────────────────
 
-// Global Broadcast Controller for Search (Simple MVP Pattern)
+// Global Broadcast Controller for Search
 final searchController = StreamController<String>.broadcast();
 final searchControllerProvider = Provider((ref) => searchController);
 

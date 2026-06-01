@@ -268,6 +268,43 @@ void main() {
       expect(err.message, isNotEmpty);
     });
 
+    test(
+      'P2b: submit error preserves CsvImportValidated as previousState',
+      () async {
+        final container = _makeContainer(handler: _mismatchHandler());
+        addTearDown(container.dispose);
+
+        final notifier = container.read(csvImportFlowProvider.notifier);
+        final report = _emptyReport();
+
+        final initialValidated = CsvImportValidated(
+          targetEntity: 'operator',
+          fileName: 'test.csv',
+          headers: const ['PLACA'],
+          previewRows: const [],
+          allRows: const [],
+          rawBytes: const [0x74, 0x65, 0x73, 0x74],
+          mappings: const {
+            'PLACA': ColumnMapping(
+              csvHeader: 'PLACA',
+              targetField: CsvTargetField.identifier,
+            ),
+          },
+          report: report,
+        );
+
+        // ignore: invalid_use_of_protected_member
+        notifier.state = initialValidated;
+
+        await notifier.submit();
+
+        final finalState = container.read(csvImportFlowProvider);
+        expect(finalState, isA<CsvImportError>());
+        final err = finalState as CsvImportError;
+        expect(err.previousState, equals(initialValidated));
+      },
+    );
+
     // P3 — goBack from CsvImportValidated → CsvImportMapped (not Validated)
     test('P3: goBack from CsvImportValidated yields CsvImportMapped', () {
       final container = _makeContainer();

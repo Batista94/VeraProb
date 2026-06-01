@@ -9,7 +9,8 @@ class CsvUploadStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     final notifier = ref.read(csvImportFlowProvider.notifier);
 
     final targetEntity = state is CsvImportInitial

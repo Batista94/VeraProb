@@ -150,7 +150,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
         planVersion: command.planVersion,
         originalFileHash: command.originalFileHash,
         declaredAtUtc: command.declaredAtUtc,
-        ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
+        ruleSnapshot: const RuleSnapshot([]), // Default empty snapshot
         shiftPatterns: command.shiftPatterns,
         nowUtc: _clock.nowUtc(),
       );
@@ -162,7 +162,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
       planVersion: command.planVersion,
       originalFileHash: command.originalFileHash,
       declaredAtUtc: command.declaredAtUtc,
-      ruleSnapshot: const RuleSnapshot([]), // Simplified for MVP
+      ruleSnapshot: const RuleSnapshot([]), // Default empty snapshot
       services: command.services
           .map(
             (input) => ContractualServiceExecution.create(

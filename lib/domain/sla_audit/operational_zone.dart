@@ -16,7 +16,7 @@ enum ZoneScope { global, exclusive }
 /// Optional geofence configuration for an [OperationalZone].
 ///
 /// When present, the engine may use proximity checks against lat/lng.
-/// When absent, the zone is matched by id/name only — valid for MVP.
+/// When absent, the zone is matched by id/name only.
 ///
 /// Making this a dedicated value object ensures the three geo fields are
 /// always present together or absent together, preventing partial-null states

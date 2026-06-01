@@ -8,6 +8,10 @@ Universal context for AI coding agents. Follows [agents.md](https://agents.md/) 
 
 SLA/Finance Protection + Forensic Governance for high-frequency operational telemetry. Acts as an Agnostic Forensic Engine: ingests raw telemetry, ranks evidence, issues immutable verdicts auditable in <10 seconds.
 
+> [!IMPORTANT]
+> **Enterprise Directive:** This project is NOT an MVP. Avoid any code, architectural, or testing shortcuts justified by "MVP simplifications". Implement production-ready, highly reliable, and enterprise-grade B2B solutions.
+
+
 ## Stack
 
 - **Frontend:** Flutter (Wasm/CanvasKit), Riverpod Generator.

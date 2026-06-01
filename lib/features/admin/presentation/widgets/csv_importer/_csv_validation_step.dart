@@ -12,7 +12,8 @@ class CsvValidationStep extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     if (state is! CsvImportValidated) return const SizedBox.shrink();
 
     final report = state.report;

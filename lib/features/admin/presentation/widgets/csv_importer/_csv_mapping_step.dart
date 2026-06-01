@@ -32,7 +32,8 @@ class _CsvMappingStepState extends ConsumerState<CsvMappingStep> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     if (state is! CsvImportMapped) return const SizedBox.shrink();
 
     final notifier = ref.read(csvImportFlowProvider.notifier);
@@ -98,7 +99,8 @@ class _TemplatePicker extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final templatesAsync = ref.watch(csvTemplatesProvider(targetEntity));
-    final state = ref.watch(csvImportFlowProvider);
+    final rawState = ref.watch(csvImportFlowProvider);
+    final state = rawState.activeState;
     final notifier = ref.read(csvImportFlowProvider.notifier);
     final selectedId = state is CsvImportMapped
         ? state.selectedTemplateId

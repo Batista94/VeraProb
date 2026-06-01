@@ -138,9 +138,11 @@ class CsvImportError extends CsvImportFlowState {
     required super.targetEntity,
     required super.currentStep,
     required this.message,
+    this.previousState,
   });
 
   final String message;
+  final CsvImportFlowState? previousState;
 }
 
 // ── Templates provider ────────────────────────────────────────────────────────
@@ -240,15 +242,24 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
         rawBytes: bytes.toList(),
         mappings: autoMappings,
       );
-    } on FormatException {
+    } on FormatException catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Decodification Error] $e\n$stack');
+      }
       _setError('Arquivo não pôde ser decodificado como UTF-8.');
-    } catch (_) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Processing Error] $e\n$stack');
+      }
       _setError('Erro ao processar o arquivo CSV.');
     }
   }
 
   void applyTemplate(CsvMappingTemplate template) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
     final newMappings = Map<String, ColumnMapping?>.from(current.mappings);
@@ -268,7 +279,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     CsvTargetField? targetField,
     String? transform,
   ) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
     final newMappings = Map<String, ColumnMapping?>.from(current.mappings);
@@ -288,19 +302,28 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
   }
 
   void toggleSaveTemplate(bool value) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
     state = current.copyWithMapping(saveAsTemplate: value);
   }
 
   void setTemplateName(String name) {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
     state = current.copyWithMapping(templateName: name);
   }
 
   void validate() {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportMapped) return;
 
     final activeMappings = current.mappings.values
@@ -347,7 +370,10 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
   }
 
   Future<void> submit() async {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     if (current is! CsvImportValidated) return;
 
     final orgId = ref.read(currentOrganizationIdProvider);
@@ -393,13 +419,19 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       state = CsvImportDone(targetEntity: current.targetEntity, result: result);
     } on IntegrityException catch (e) {
       _setError(e.message);
-    } catch (_) {
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Submission Error] $e\n$stack');
+      }
       _setError('Falha ao importar. Verifique sua conexão e tente novamente.');
     }
   }
 
   void goBack() {
-    final current = state;
+    var current = state;
+    if (current is CsvImportError && current.previousState != null) {
+      current = current.previousState!;
+    }
     switch (current) {
       case CsvImportValidated():
         state = CsvImportMapped(
@@ -426,10 +458,14 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
   }
 
   void _setError(String message) {
+    final previousNonErrorState = state is CsvImportError
+        ? (state as CsvImportError).previousState
+        : state;
     state = CsvImportError(
       targetEntity: _targetEntity,
       currentStep: state.currentStep,
       message: message,
+      previousState: previousNonErrorState,
     );
   }
 
@@ -581,3 +617,13 @@ final csvImportFlowProvider =
     NotifierProvider.autoDispose<CsvImportFlowNotifier, CsvImportFlowState>(
       CsvImportFlowNotifier.new,
     );
+
+extension CsvImportFlowStateX on CsvImportFlowState {
+  CsvImportFlowState get activeState {
+    final self = this;
+    if (self is CsvImportError && self.previousState != null) {
+      return self.previousState!;
+    }
+    return self;
+  }
+}

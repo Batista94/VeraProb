@@ -1,6 +1,6 @@
-# Plano de Testes Consolidado: Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída)
+# Plano de Testes Consolidado: Gate de Ativação do Primeiro Inquilino (Fluxo de Entrada/Saída)
 
-Este documento apresenta o plano de testes manuais para a homologação das entregas do Gate de Ativação do Primeiro Inquilino (MVP de Entrada/Saída) no projeto VeraProb.
+Este documento apresenta o plano de testes manuais para a homologação das entregas do Gate de Ativação do Primeiro Inquilino (Fluxo de Entrada/Saída) no projeto VeraProb.
 
 ---
 
