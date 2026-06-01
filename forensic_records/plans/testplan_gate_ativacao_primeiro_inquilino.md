@@ -13,7 +13,7 @@ O objetivo deste plano é certificar os fluxos de entrada (Importador Universal 
 * **Perfil:** Admin — Org Alpha (Inquilino Piloto)
 * **E-mail:** `admin-a@veraprob.dev`
 * **Senha:** `123456`
-* **Org ID:** `00000000-0000-0000-0000-000000000001` (CNPJ: `11.222.333/0001-81`)
+* **Org ID:** `00000000-0000-0000-0000-000000000001` (CNPJ: `78.423.287/0001-50`)
 
 ### 🚀 Inicialização do Ambiente
 
@@ -84,23 +84,32 @@ Para testar a importação de CSV no ambiente, o usuário deve selecionar o pila
 
 ### Grupo 1: Universal CSV Mapping Engine (Entrada)
 
-#### CT01: Importação de CSV com Mapeamento Válido (Happy Path)
-* **Objetivo:** Validar a importação completa de dados usando o mapeador universal com colunas válidas.
-* **Pré-condições:** Logado como `admin-a@veraprob.dev` e possuir contratante previamente cadastrado na base (CNPJ: `11.222.333/0001-81`).
-* **Passos:**
-  1. Acessar a tela correspondente à entidade desejada (ex: **"Contratantes"** para Contratantes ou **"Contratos"** para Contratos).
-  2. Clicar no botão **"Importar CSV"** no topo da tela para abrir o modal do Importador Universal.
-  3. Fazer o upload de um arquivo CSV de teste contendo registros válidos (ex: para Contratantes: nome, CNPJ, e-mail; ou para Contratos: código do contrato, CNPJ contratante, datas de início e fim).
-  4. Na interface de mapeamento, correlacionar as colunas do CSV aos campos do sistema (ex: para Contratos, "COD_CONTRATO" -> `contractCode`, "CNPJ_CLIENTE" -> `contractorDocument`).
-  5. Clicar em **"Validar"** para rodar o Pre-flight.
-  6. Com aprovação visual (0 erros e 100% das linhas válidas), clicar em **"Importar X linha(s)"**.
-* **Cenário Esperado:** A interface exibe a transição de passos: `UPLOAD` -> `MAPEAMENTO` -> `VALIDAÇÃO` -> `RESULTADO`, mostrando mensagem de sucesso e progresso de conclusão.
+#### CT01: Importação de CSV com Mapeamento Válido (Happy Path — Premissa Fundamental)
+* **Objetivo:** Validar a importação completa de dados usando o mapeador universal com colunas válidas em sua ordem de dependência lógica.
+* **Pré-condições:** Logado como `admin-a@veraprob.dev`.
+
+* **Fase 1: Importação de Contratantes (Massa Base)**
+  1. Acessar a tela **"Contratantes"** em Administração.
+  2. Clicar no botão **"Importar CSV"** no canto superior direito para abrir o modal.
+  3. Fazer o upload do arquivo [contratantes_validos.csv](file:///c:/Users/wes_b/Projects/VeraProb/test_fixtures/contratantes_validos.csv).
+  4. Mapear as colunas (ex: `contractorName` -> Nome, `contractorDocument` -> Documento).
+  5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
+  * *Resultado:* Contratantes cadastrados com sucesso.
+
+* **Fase 2: Importação de Contratos (Dependente)**
+  1. Acessar a tela **"Contratos"** em Administração.
+  2. Clicar em **"Importar CSV"** no canto superior direito.
+  3. Fazer o upload do arquivo [contratos_validos.csv](file:///c:/Users/wes_b/Projects/VeraProb/test_fixtures/contratos_validos.csv).
+  4. Mapear as colunas (ex: `contractCode` -> Código, `contractorDocument` -> Documento do Contratante).
+  5. Clicar em **"Validar"** (Pre-flight) e depois em **"Importar 3 linha(s)"**.
+  * *Resultado:* Contratos importados com sucesso, pois os CNPJs já existem na base (Fase 1).
+
 * **O que validar no UAT:**
   * **Auto-Mapeamento (Fuzzy Matching):** Ao subir o CSV, colunas com nomes normalizados semelhantes (ex: "cnpj", "datainicio") devem vir automaticamente pré-selecionadas no menu de mapeamento de colunas.
   * **Isolamento de Dropdowns (Entity Isolation):** No dropdown de mapeamento, apenas os campos permitidos para a entidade ativa devem aparecer (ex: latitude e longitude não podem aparecer ao importar contratos).
   * **Visualização pós-importação:** Os registros devem aparecer na listagem do sistema correspondente ao fechar o modal.
   * **Tenant Lock:** O `organization_id` gravado no banco de dados deve ser obrigatoriamente o da Org Alpha (`00000000-0000-0000-0000-000000000001`).
-* **Requisito de Sucesso:** Mensagem visual de sucesso ("RESULTADO" concluído com 0 erros). Nenhum erro no console.
+* **Requisito de Sucesso:** Ambas as importações concluídas com sucesso ("RESULTADO" com 0 erros). Dados visíveis na listagem de Contratos e Contratantes.
 
 #### CT02: Pré-validação com Dados Inválidos e Importação Parcial
 * **Objetivo:** Verificar a resiliência do parser a dados malformados, injeções perigosas, chaves inexistentes e a execução correta da Importação Parcial (Partial Import).

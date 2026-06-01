@@ -218,7 +218,7 @@ async function enrichSeedOrganizations(url, serviceKey) {
       id: '00000000-0000-0000-0000-000000000001',
       data: {
         legal_name: 'Alpha Transportes e Logística Ltda',
-        cnpj: '11.222.333/0001-81',
+        cnpj: '78.423.287/0001-50',
         plan_type: 'professional',
         max_vehicles: 80,
         max_active_contracts: 15,
@@ -245,7 +245,7 @@ async function enrichSeedOrganizations(url, serviceKey) {
       id: '00000000-0000-0000-0000-000000000002',
       data: {
         legal_name: 'Beta Viação e Turismo S.A.',
-        cnpj: '44.555.666/0001-72',
+        cnpj: '29.653.604/0001-19',
         plan_type: 'starter',
         max_vehicles: 30,
         max_active_contracts: 5,
