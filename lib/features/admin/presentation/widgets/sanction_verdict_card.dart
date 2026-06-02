@@ -7,7 +7,6 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
-import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
@@ -176,14 +175,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Zona 1: Identity Strip ─────────────────────────────────────
-                  _buildIdentityStrip(evidence: evidence, item: item),
+                  _buildIdentityStrip(item: item),
 
                   const SizedBox(height: 12),
 
                   // ── Zona 2: Financial Hero ─────────────────────────────────────
                   _buildFinancialHero(
                     item: item,
-                    evidence: evidence,
                     displayName: displayName,
                     confidenceColor: confidenceColor,
                   ),
@@ -418,15 +416,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     );
   }
 
-  Widget _buildIdentityStrip({
-    required VerdictEvidence evidence,
-    required SanctionQueueItemView item,
-  }) {
+  Widget _buildIdentityStrip({required SanctionQueueItemView item}) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
       child: Row(
         children: [
-          _ClauseBadge(clauseRef: evidence.clauseRef),
+          _ClauseBadge(clauseRef: item.verdictEvidence.clauseRef),
           const Spacer(),
           Text(
             _formatLocalDate(item.createdAtUtc),
@@ -442,7 +437,6 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
 
   Widget _buildFinancialHero({
     required SanctionQueueItemView item,
-    required VerdictEvidence evidence,
     required String displayName,
     required Color confidenceColor,
   }) {
@@ -492,7 +486,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           ),
           const SizedBox(width: 12),
           _ConfidenceBadge(
-            score: evidence.confidenceScore,
+            score: item.verdictEvidence.confidenceScore,
             color: confidenceColor,
           ),
         ],

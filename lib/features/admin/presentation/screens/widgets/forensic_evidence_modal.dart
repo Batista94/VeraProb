@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/sla_audit/projections/evidence_snapshot_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
-import 'package:veraprob/domain/shared/integrity_exception.dart';
-import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
-import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot.dart';
-import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
-import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/forensic_evidence_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
@@ -19,8 +15,8 @@ import 'package:veraprob/state/providers/security_incident_provider.dart';
 ///   constraint of `85%` of the screen height to prevent overflows.
 /// - **Imutabilidade Visual:** Zero inputs (TextFields, Dropdowns) and no
 ///   Save/Edit buttons. Uses lock icons and "Cópia Autenticada" badges.
-/// - **Anti-Tampering & Escalation:** On [IntegrityException], it triggers
-///   a silent security log immediately and presents a button to manually
+/// - **Anti-Tampering & Escalation:** On [EvidenceSnapshotStatus.tampered], it
+///   triggers a silent security log immediately and presents a button to manually
 ///   escalate the incident to SOC administrators.
 /// - **Timezone Translation:** All UTC timestamps are translated to the
 ///   operator's local time and suffix the timezone abbreviation (e.g. BRT).
@@ -145,34 +141,32 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
     return 'R\$ ${formatThousands(whole)},$decimal';
   }
 
-  Widget _buildRuleConfigHuman(RuleSnapshotItem rule) {
+  Widget _buildRuleConfigHuman(FrozenRuleView rule) {
     final config = rule.config;
-    final type = rule.ruleType;
-
-    return switch (type) {
-      SlaRuleType.maxToleranceDelay => _buildReadOnlyRow(
+    return switch (rule.ruleTypeKey) {
+      'MAX_TOLERANCE_DELAY' => _buildReadOnlyRow(
         'Tolerância Máxima de Atraso',
         '${config['threshold_minutes'] ?? 'N/A'} minutos',
       ),
-      SlaRuleType.maxEvidenceGap => _buildReadOnlyRow(
+      'MAX_EVIDENCE_GAP' => _buildReadOnlyRow(
         'Intervalo Máximo de Evidência',
         '${config['max_gap_seconds'] ?? 'N/A'} segundos',
       ),
-      SlaRuleType.minGeofenceCoverage => _buildReadOnlyRow(
+      'MIN_GEOFENCE_COVERAGE' => _buildReadOnlyRow(
         'Tempo Mínimo na Cerca Virtual',
         '${config['min_dwell_seconds'] ?? 'N/A'} segundos',
       ),
-      SlaRuleType.noShowPenalty => _buildReadOnlyRow(
+      'NO_SHOW_PENALTY' => _buildReadOnlyRow(
         'Valor da Penalidade por No-Show',
         _formatFine((config['penalty_amount_cents'] as num?)?.toInt() ?? 0),
       ),
-      SlaRuleType.requiredEvidence => () {
+      'REQUIRED_EVIDENCE' => () {
         final typesList = config['types'] as List?;
         final typesStr = typesList?.join(', ') ?? 'Nenhuma';
         return _buildReadOnlyRow('Evidências Obrigatórias', typesStr);
       }(),
-      SlaRuleType.excessiveSpeed => _buildReadOnlyRow(
-        'Velocidade Excessiva',
+      _ => _buildReadOnlyRow(
+        'Configuração',
         config.entries.map((e) => '${e.key}: ${e.value}').join(', '),
       ),
     };
@@ -227,11 +221,12 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
       forensicEvidenceVerificationProvider(widget.ledgerEntryId),
     );
 
-    // Listen for integrity compromises to log silently exactly once.
-    ref.listen<AsyncValue<EvidenceVerification>>(
+    // Listen for tampered status to log silently exactly once.
+    ref.listen<AsyncValue<EvidenceSnapshotView>>(
       forensicEvidenceVerificationProvider(widget.ledgerEntryId),
       (previous, next) {
-        if (next is AsyncError && next.error is IntegrityException) {
+        if (next is AsyncData &&
+            next.value!.status == EvidenceSnapshotStatus.tampered) {
           _logTamperedIncident(ref);
         }
       },
@@ -296,23 +291,19 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
                       child: CircularProgressIndicator(),
                     ),
                   ),
-                  AsyncError(:final error) => () {
-                    if (error is IntegrityException) {
-                      return _buildTamperedView();
-                    }
-                    return Center(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 40),
-                        child: Text(
-                          'Erro ao carregar evidência: $error',
-                          style: const TextStyle(color: VeraProbColors.error),
-                        ),
+                  AsyncError(:final error) => Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        'Erro ao carregar evidência: $error',
+                        style: const TextStyle(color: VeraProbColors.error),
                       ),
-                    );
-                  }(),
-                  AsyncData(:final value) => _buildAuthenticView(
-                    value.snapshot,
+                    ),
                   ),
+                  AsyncData(:final value) =>
+                    value.status == EvidenceSnapshotStatus.tampered
+                        ? _buildTamperedView()
+                        : _buildAuthenticView(value),
                 },
               ),
             ),
@@ -322,7 +313,7 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
     );
   }
 
-  Widget _buildAuthenticView(ForensicEvidenceSnapshot snapshot) {
+  Widget _buildAuthenticView(EvidenceSnapshotView snapshot) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -403,7 +394,7 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
           ),
         ),
         const SizedBox(height: 12),
-        ...snapshot.rules.rules.map((rule) {
+        ...snapshot.rules.map((rule) {
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(16),
