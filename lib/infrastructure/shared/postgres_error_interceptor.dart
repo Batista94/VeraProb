@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
@@ -53,7 +55,12 @@ mixin PostgresErrorInterceptor {
     String? resourceType,
     String? resourceId,
   }) {
-    return switch (e.code) {
+    final nested = _parseNestedError(e.message);
+    final code = nested['code'] ?? e.code;
+    final message = nested['message'] ?? e.message;
+    final details = nested['details'] ?? (e.details as String?);
+
+    return switch (code) {
       // Information Disclosure: Malformed UUIDs, missing columns, not-found rows,
       // FK violations (referenced resource doesn't exist or belongs to another org)
       // All map to ResourceNotFoundException → canonical 404 (INV-26)
@@ -68,7 +75,7 @@ mixin PostgresErrorInterceptor {
 
       // Business Logic: RAISE EXCEPTION from Postgres functions/triggers
       // Message is passed through for domain-level handling
-      'P0001' => IntegrityException(e.message),
+      'P0001' => IntegrityException(message),
 
       // Tenant Isolation: RLS denied access — map to SovereigntyViolation
       // so callers never inspect raw DB codes (INV-2 / INV-26 Oracle Attack prevention).
@@ -81,10 +88,8 @@ mixin PostgresErrorInterceptor {
       // Integrity: Unique constraint violations
       // Mapped to IntegrityException for caller-level handling
       '23505' => IntegrityException(
-        e.message,
-        field: _extractFieldFromUniqueViolation(
-          e.details is String ? e.details as String : null,
-        ),
+        message,
+        field: _extractFieldFromUniqueViolation(details),
       ),
 
       // Not-null violation: a required field arrived null (e.g. an unmapped CSV
@@ -98,6 +103,24 @@ mixin PostgresErrorInterceptor {
       // Fail-Fast: Unhandled codes are rethrown — no silent failures (INV-10)
       _ => throw e,
     };
+  }
+
+  /// Decodes nested error payload inside [message] if it is JSON-formatted.
+  Map<String, String?> _parseNestedError(String message) {
+    final trimmed = message.trim();
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      try {
+        final decoded = json.decode(trimmed) as Map<String, dynamic>;
+        return {
+          'code': decoded['code']?.toString(),
+          'message': decoded['message']?.toString(),
+          'details': decoded['details']?.toString(),
+        };
+      } catch (_) {
+        // Not a JSON or failed to decode
+      }
+    }
+    return const {};
   }
 
   /// Extracts the field name from a unique violation details string.

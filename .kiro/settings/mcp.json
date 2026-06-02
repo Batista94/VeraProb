@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": false,
+      "disabled": true,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
@@ -42,7 +42,7 @@
         "mcp-server-docker"
       ],
       "env": {},
-      "disabled": true,
+      "disabled": false,
       "autoApprove": [
         "list_containers",
         "fetch_container_logs",

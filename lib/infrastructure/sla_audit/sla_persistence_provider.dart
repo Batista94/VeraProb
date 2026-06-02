@@ -4,6 +4,7 @@ import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
@@ -16,6 +17,7 @@ import 'package:veraprob/state/providers/shared_providers.dart';
 import 'in_memory_contract_repository.dart';
 import 'in_memory_contractual_execution_state_repository.dart';
 import 'in_memory_contractual_financial_snapshot_repository.dart';
+import 'in_memory_forensic_evidence_snapshot_repository.dart';
 import 'in_memory_plan_declaration_repository.dart';
 import 'in_memory_sanction_review_queue_repository.dart';
 import 'in_memory_sla_audit_ledger_repository.dart';
@@ -29,6 +31,7 @@ import 'in_memory_idempotency_store.dart';
 import 'postgres_plan_declaration_repository.dart';
 import 'in_memory_vehicle_infraction_recurrence_repository.dart';
 import 'postgres_sanction_review_queue_repository.dart';
+import 'postgres_forensic_evidence_snapshot_repository.dart';
 import 'postgres_sla_audit_ledger_repository.dart';
 import 'postgres_vehicle_infraction_recurrence_repository.dart';
 
@@ -71,6 +74,17 @@ final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
     ),
   };
 });
+
+final forensicEvidenceSnapshotRepositoryProvider =
+    Provider<ForensicEvidenceSnapshotRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory =>
+          InMemoryForensicEvidenceSnapshotRepository(),
+        PersistenceMode.postgres => PostgresForensicEvidenceSnapshotRepository(
+          ref.watch(supabaseClientProvider),
+        ),
+      };
+    });
 
 final contractualFinancialSnapshotRepositoryProvider =
     Provider<ContractualFinancialSnapshotRepository>((ref) {

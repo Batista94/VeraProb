@@ -30,21 +30,38 @@ SELECT has_column('public', 'operational_zones',
   'external_id', '1e: operational_zones.external_id exists');
 
 -- ── 2. Nullable (INV-3: manual rows unaffected) ───────────────────────────────
+-- Portable check via information_schema (local pgTAP lacks the 4-arg
+-- schema-qualified col_is_nullable overload).
 
-SELECT col_is_nullable('public', 'vehicles',
-  'external_id', '2a: vehicles.external_id is nullable');
+SELECT ok(
+  (SELECT is_nullable = 'YES' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'vehicles'
+     AND column_name = 'external_id'),
+  '2a: vehicles.external_id is nullable');
 
-SELECT col_is_nullable('public', 'drivers',
-  'external_id', '2b: drivers.external_id is nullable');
+SELECT ok(
+  (SELECT is_nullable = 'YES' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'drivers'
+     AND column_name = 'external_id'),
+  '2b: drivers.external_id is nullable');
 
-SELECT col_is_nullable('public', 'contractors',
-  'external_id', '2c: contractors.external_id is nullable');
+SELECT ok(
+  (SELECT is_nullable = 'YES' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'contractors'
+     AND column_name = 'external_id'),
+  '2c: contractors.external_id is nullable');
 
-SELECT col_is_nullable('public', 'contracts',
-  'external_id', '2d: contracts.external_id is nullable');
+SELECT ok(
+  (SELECT is_nullable = 'YES' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'contracts'
+     AND column_name = 'external_id'),
+  '2d: contracts.external_id is nullable');
 
-SELECT col_is_nullable('public', 'operational_zones',
-  'external_id', '2e: operational_zones.external_id is nullable');
+SELECT ok(
+  (SELECT is_nullable = 'YES' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'operational_zones'
+     AND column_name = 'external_id'),
+  '2e: operational_zones.external_id is nullable');
 
 -- ── 3. Partial unique indexes exist ──────────────────────────────────────────
 
@@ -100,10 +117,16 @@ SELECT ok(
 
 -- ── 4. Column type is TEXT ────────────────────────────────────────────────────
 
-SELECT col_type_is('public', 'vehicles', 'external_id', 'text',
+SELECT ok(
+  (SELECT data_type = 'text' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'vehicles'
+     AND column_name = 'external_id'),
   '4: external_id is TEXT on vehicles');
 
-SELECT col_type_is('public', 'contractors', 'external_id', 'text',
+SELECT ok(
+  (SELECT data_type = 'text' FROM information_schema.columns
+   WHERE table_schema = 'public' AND table_name = 'contractors'
+     AND column_name = 'external_id'),
   '4b: external_id is TEXT on contractors');
 
 SELECT finish();
