@@ -8,6 +8,7 @@ import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
@@ -327,3 +328,30 @@ final sealedSanctionsNotifierProvider =
     NotifierProvider.autoDispose<SealedSanctionsNotifier, SealedSanctionsState>(
       SealedSanctionsNotifier.new,
     );
+
+// ── Simulation wrapper (state layer — features must not import domain) ────────
+
+/// Calls [SanctionSimulationService.simulateSpeedViolation] and converts
+/// [DomainException] to a human-readable message so features never import
+/// from the domain layer directly (INV-13).
+///
+/// Returns null on success; returns the error message string on failure.
+Future<String?> runSanctionSimulation(
+  WidgetRef ref, {
+  required String organizationId,
+  required String vehiclePlate,
+}) async {
+  try {
+    await ref
+        .read(sanctionSimulationServiceProvider)
+        .simulateSpeedViolation(
+          organizationId: organizationId,
+          vehiclePlate: vehiclePlate,
+        );
+    return null;
+  } on DomainException catch (e) {
+    return e.message;
+  } catch (_) {
+    return null;
+  }
+}

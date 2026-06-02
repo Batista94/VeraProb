@@ -15,8 +15,8 @@ enum AdminDestination {
   commandCenter(
     icon: Icons.radar_outlined,
     selectedIcon: Icons.radar,
-    label: 'Controle',
-    tooltip: 'Centro de Controle',
+    label: 'Vereditos',
+    tooltip: 'Tribunal de Auditoria',
     minimumRole: UserRole.auditor,
   ),
   trips(
@@ -33,19 +33,19 @@ enum AdminDestination {
     tooltip: 'Motoristas, Veículos, Rotas',
     minimumRole: UserRole.operator,
   ),
+  audit(
+    icon: Icons.history_outlined,
+    selectedIcon: Icons.history,
+    label: 'OCC',
+    tooltip: 'Histórico OCC — Exceções e Órfãos',
+    minimumRole: UserRole.auditor,
+  ),
   system(
     icon: Icons.monitor_heart_outlined,
     selectedIcon: Icons.monitor_heart,
     label: 'Sistema',
     tooltip: 'Saúde do Sistema',
     minimumRole: UserRole.admin,
-  ),
-  audit(
-    icon: Icons.history_outlined,
-    selectedIcon: Icons.history,
-    label: 'Auditoria',
-    tooltip: 'Auditoria OCC',
-    minimumRole: UserRole.auditor,
   ),
   adminHub(
     icon: Icons.settings_applications_outlined,
@@ -125,7 +125,7 @@ class _AdminShellState extends ConsumerState<AdminShell> {
                   child: Container(
                     margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: VeraProbColors.surface,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -181,7 +181,11 @@ class _AdminHeader extends StatelessWidget {
           CircleAvatar(
             radius: 18,
             backgroundColor: AppTheme.primaryColor,
-            child: const Icon(Icons.person, color: Colors.white, size: 20),
+            child: const Icon(
+              Icons.person,
+              color: VeraProbColors.surface,
+              size: 20,
+            ),
           ),
         ],
       ),
@@ -249,7 +253,7 @@ class _AdminSidebar extends ConsumerWidget {
                             child: Text(
                               'PF',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: VeraProbColors.surface,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
                               ),

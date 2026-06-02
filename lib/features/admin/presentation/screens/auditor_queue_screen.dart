@@ -5,7 +5,6 @@ import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_v
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/telemetry_sync_map.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
@@ -243,13 +242,17 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
     }
     setState(() => _loading = true);
     try {
-      await ref
-          .read(sanctionSimulationServiceProvider)
-          .simulateSpeedViolation(
-            organizationId: orgId,
-            vehiclePlate: 'TST-0001',
-          );
-      if (mounted) {
+      final error = await runSanctionSimulation(
+        ref,
+        organizationId: orgId,
+        vehiclePlate: 'TST-0001',
+      );
+      if (!mounted) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: VeraProbColors.error),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -259,7 +262,6 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
         );
       }
     } catch (_) {
-      // INV-26: No internal details leaked — generic error only
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

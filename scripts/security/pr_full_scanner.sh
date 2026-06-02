@@ -59,13 +59,22 @@ TEST_GATE_BLOCK="false"
 [[ "${GITHUB_BASE_REF:-}" == "main" ]] && TEST_GATE_BLOCK="true"
 [[ "${STRICT_TESTS:-0}" == "1" ]] && TEST_GATE_BLOCK="true"
 
-# ── Color codes ──────────────────────────────────────────────────────────────
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
+# ── Color codes (TTY-gated — no escape codes in piped/VSCode contexts) ───────
+if [[ -t 1 ]]; then
+  RED='\033[0;31m'
+  YELLOW='\033[1;33m'
+  GREEN='\033[0;32m'
+  BLUE='\033[0;34m'
+  BOLD='\033[1m'
+  NC='\033[0m'
+else
+  RED=''
+  YELLOW=''
+  GREEN=''
+  BLUE=''
+  BOLD=''
+  NC=''
+fi
 
 # ── Command Detection (top-level, shared by all steps) ───────────────────────
 NODE_CMD="node"

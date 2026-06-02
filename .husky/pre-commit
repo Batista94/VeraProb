@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
-. "$(dirname "$0")/_/husky.sh"
 
 echo ">>> VeraProb Unified Guardian: Running all hooks..."
 bash scripts/pre_commit_all.sh

@@ -57,7 +57,9 @@ Thumbs.db
 .claude/settings.*.json
 .claude/logs/
 .claude/*.log
+.claude/worktrees/
 !.claude/skills/
+agent-*
 
 
 # Supabase Local Infrastructure
