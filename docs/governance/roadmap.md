@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-06-01
-**Current Status:** Phase 10.4.B (Completed) · [NEXT: Phase 10.4.C — Forensic Evidence Snapshot & Immutability]
+**Current Status:** Phase 10.4.C (Completed) · [NEXT: Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)]
 
 ---
 
@@ -36,13 +36,17 @@
 
 ## Phase 10 — CI/CD & Launch Preparation
 
-### [ ] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
-
+### [x] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
 - Implementar a persistência de um snapshot JSON imutável da regra de SLA exata no momento em que um veredito é selado. O objetivo é garantir proteção jurídica temporal, provando que alterações futuras no cadastro do contrato não afetam infrações passadas.
 
-### [ ] Phase 10.5 — Automated Enterprise Showcase (Seed & Provisioning)
+### [ ] Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)
 
 - Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
+
+### [ ] Phase 10.5.B — Bulk SLA & Contractor Consent Flow
+
+- [ ] **[BIZ] Bulk SLA Rule Importer (CSV):** Implementar funcionalidade de importação em massa para parâmetros de regras de SLA vinculadas a contratos (multas, limites de tolerância), evitando a necessidade de cadastro manual individual pós-importação de contratos.
+- [ ] **[BIZ] Rule Update Consent Flow (Contractor Sign-off):** Implementar fluxo de consentimento/aceite digital por parte da transportadora quando regras ou penalidades de SLA forem alteradas ou renegociadas no Rule Studio, mitigando riscos de alegações de alteração unilateral de regras em auditorias futuras.
 
 ### [ ] Phase 10.6 — Professional Service & Compliance Finish
 
