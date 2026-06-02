@@ -189,7 +189,8 @@
       "PowerShell(ls -Name \"C:\\\\Users\\\\wes_b\\\\Projects\\\\VeraProb\\\\lib\\\\application\\\\admin\\\\\" | Where-Object { $_ -match '\\\\.dart$' } | Sort-Object)",
       "PowerShell(supabase status *)",
       "PowerShell(supabase db *)",
-      "Bash(xargs -I{} sed -n '/CREATE TABLE/,/\\);/p' {})"
+      "Bash(xargs -I{} sed -n '/CREATE TABLE/,/\\);/p' {})",
+      "Bash(npx prettier *)"
     ]
   },
   "enabledMcpjsonServers": [

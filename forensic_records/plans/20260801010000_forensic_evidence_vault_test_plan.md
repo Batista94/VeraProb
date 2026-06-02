@@ -28,8 +28,8 @@ transaction. The vault is append-only and immutable even to privileged roles.
 | INV-2 | Read RLS via `auth.jwt() -> 'app_metadata' ->> 'org_id'`; verify RPC is INVOKER |
 | INV-3 | Append-only: BEFORE UPDATE/DELETE triggers reject all mutation |
 | INV-6 | All datetime columns `TIMESTAMPTZ`; `sealed_at_utc` server-clock authority |
-| INV-9 | SHA-256 hash over canonical `snapshot::text` |
-| INV-15 | Deterministic: `jsonb_agg(... ORDER BY evaluation_order)` + jsonb canonical text |
+| INV-9 | SHA-256 hash over the JCS (RFC 8785) canonical form via `jsonb_canonical_text` |
+| INV-15 | Deterministic: `jsonb_agg(... ORDER BY evaluation_order)` + JCS canonical text (engine-independent, reproducible in Dart) |
 | INV-21 | Verdict (ledger entry) → snapshot id binding |
 | INV-22 | Tenant-A never reads Tenant-B; red-team test |
 | INV-26 | Cross-tenant / unknown verdict → empty (404 parity) |
@@ -57,7 +57,9 @@ transaction. The vault is append-only and immutable even to privileged roles.
    ledger entry; the `unique_violation` handler covers the concurrent race without
    leaving an orphan ledger row.
 7. **Silent tamper (Req 2.5, 8.5):** `verify_forensic_evidence` recomputes the hash
-   over the stored snapshot and reports `tampered` on mismatch.
+   over the stored snapshot and reports `tampered` on mismatch. Proven against a
+   trigger-bypass forgery in pgTAP (test 11): even when the immutability trigger is
+   administratively disabled and the snapshot mutated, verification exposes it.
 
 > **Hard-block logging limitation (Req 3.5 / 9.3):** a BEFORE trigger that RAISEs
 > aborts the transaction and therefore cannot persist a rejection row in an
@@ -99,10 +101,30 @@ File: `supabase/tests/20260801010000_forensic_evidence_vault_test.sql`:
    `42501`.
 10. Cross-tenant read (INV-22): Tenant-B authenticated caller sees zero rows for a
     Tenant-A snapshot (404 parity, INV-26).
+11. **Tamper detection (Req 2.5 / 8.5):** the immutability trigger is administratively
+    `DISABLE`d, the sealed `snapshot` is mutated in place, the trigger re-enabled;
+    `verify_forensic_evidence` still reports `status = 'tampered'` and the recomputed
+    hash diverges from the sealed hash. This is the last line of defense for the
+    insider/superuser who circumvents the BEFORE trigger.
+12. **Rule-window boundary (Req 5.3 / 12.2):** a rule set whose only version is active
+    over the half-open interval `[active_from, active_to)`; seal at `occurred ==
+    active_from` (inclusive → seals), `occurred < active_from` (`P0002`), `occurred <
+    active_to` (seals), `occurred == active_to` (exclusive → `P0002`). Pins the exact
+    `<=` / `>` boundary semantics against an off-by-one on the verdict timestamp.
+13. **Canonical key ordering (Req 11):** `jsonb_canonical_text('{ "b":2,"a":1,"c":3 }')`
+    returns `{"a":1,"b":2,"c":3}` — keys lexicographically sorted, insignificant
+    whitespace stripped. This is the property that makes the SHA-256 reproducible
+    outside Postgres (the DB's native `jsonb::text` orders keys by length/bytewise
+    and is not portable).
+14. **Canonical recursion (Req 11 / INV-15):** nested objects and array elements are
+    canonicalized recursively (`{"z":[{"y":1,"x":2}],"a":"v"}` →
+    `{"a":"v","z":[{"x":2,"y":1}]}`), so the frozen `rules` array + each `rule_config`
+    hash deterministically regardless of source key order.
 
 Trusted write paths run as `postgres` (RLS bypass; `auth.jwt()` NULL → guard
 permits). Cross-tenant cases run under `authenticated` with crafted
-`request.jwt.claims`.
+`request.jwt.claims` (cleared with `RESET request.jwt.claims` afterwards, since
+`RESET ROLE` does not touch GUCs).
 
 ---
 
@@ -113,6 +135,9 @@ permits). Cross-tenant cases run under `authenticated` with crafted
 | Entity hash determinism + equality | `test/domain/sla_audit/forensic_evidence_snapshot_test.dart` | canonical Dart hash stable; `fromJson`/`toJson` round-trips; UTC + non-empty guards raise `IntegrityException` |
 | Handler idempotency / tenant validation | `test/application/sla_audit/seal_forensic_evidence_handler_test.dart` | double-seal → single repo call result; non-UTC / empty org rejected |
 | Repo org-scoping | `test/infrastructure/sla_audit/postgres_forensic_evidence_snapshot_repository_test.dart` | read URL carries `organization_id=eq.<org>`; `rpc('seal_forensic_evidence')` invoked with mapped params; `verify` maps tampered → `IntegrityException` |
+| Repo seal round-trip (live DB) | same file (integration, skipped when Supabase offline) | seeds an active rule, calls `seal`, asserts 64-hex hash + frozen rule, then `verify` → authentic — exercises both RPC param maps Dart→SQL (param-drift guard) |
+| Repo concurrent seal (live DB) | same file (integration) | **6** `seal` futures with one idempotency key all resolve to the same snapshot id + ledger entry, and **exactly one** verdict row exists for that key — proves the `unique_violation` rollback leaves no orphan ledger entry (INV-11 race) |
+| Cross-language hash parity (live DB) | same file (integration) | Dart recomputes SHA-256 over `canonicalJsonEncode(stored snapshot)` and reproduces the DB's `integrity_hash` byte-for-byte — proves the seal is verifiable by any RFC 8785 tool, not just Postgres (Req 11, INV-9 portability) |
 
 ---
 

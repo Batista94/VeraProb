@@ -4654,6 +4654,7 @@ export type Database = {
         };
         Returns: undefined;
       };
+      jsonb_canonical_text: { Args: { p_input: Json }; Returns: string };
       longtransactionsenabled: { Args: never; Returns: boolean };
       mark_alert_viewed: {
         Args: { p_alert_id: string; p_user_id: string };

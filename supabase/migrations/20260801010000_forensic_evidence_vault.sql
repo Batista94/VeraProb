@@ -115,6 +115,60 @@ CREATE TRIGGER trg_fes_no_delete
   BEFORE DELETE ON public.forensic_evidence_snapshots
   FOR EACH ROW EXECUTE FUNCTION public.prevent_evidence_vault_mutation();
 
+-- ── 4b. Canonical Serialization (Req 11, INV-15) ─────────────────────────────
+-- Cross-language integrity authority. Postgres `jsonb::text` is deterministic but
+-- orders object keys by (length, bytewise) — NOT portable: a verifier outside
+-- Postgres (Dart, an auditor's own tool) cannot recompute the byte string. This
+-- function emits RFC 8785 (JCS) canonical form: object keys sorted by code unit,
+-- no insignificant whitespace, scalars left as their canonical jsonb text. Dart's
+-- canonicalJsonEncode produces the same bytes, so the SHA-256 is reproducible in
+-- any language — the forensic guarantee no longer depends on the DB engine.
+--
+-- SCOPE CAVEAT (documented, INV-4-bound): JCS number canonicalization (ECMAScript
+-- Number→String) is NOT implemented. Safe here because every numeric in the
+-- snapshot is an integer (money is BIGINT cents, thresholds are bps/int — INV-4),
+-- which renders identically in Postgres and Dart. Key sort uses COLLATE "C" (byte
+-- order); for the all-ASCII key set this equals UTF-16 code-unit order. A future
+-- non-ASCII key or non-integer numeric would require full JCS number/\\u handling.
+
+CREATE OR REPLACE FUNCTION public.jsonb_canonical_text(p_input jsonb)
+RETURNS text
+LANGUAGE plpgsql
+IMMUTABLE
+SET search_path = public
+AS $$
+DECLARE
+  v_key   text;
+  v_elem  jsonb;
+  v_parts text[] := '{}';
+BEGIN
+  CASE jsonb_typeof(p_input)
+    WHEN 'object' THEN
+      FOR v_key IN
+        SELECT k FROM jsonb_object_keys(p_input) AS k ORDER BY k COLLATE "C"
+      LOOP
+        v_parts := v_parts
+          || (to_jsonb(v_key)::text || ':' || public.jsonb_canonical_text(p_input -> v_key));
+      END LOOP;
+      RETURN '{' || array_to_string(v_parts, ',') || '}';
+    WHEN 'array' THEN
+      FOR v_elem IN SELECT value FROM jsonb_array_elements(p_input)
+      LOOP
+        v_parts := v_parts || public.jsonb_canonical_text(v_elem);
+      END LOOP;
+      RETURN '[' || array_to_string(v_parts, ',') || ']';
+    ELSE
+      -- scalar (string/number/boolean/null): jsonb scalar text is canonical
+      RETURN p_input::text;
+  END CASE;
+END;
+$$;
+
+COMMENT ON FUNCTION public.jsonb_canonical_text(jsonb) IS
+  'RFC 8785 (JCS) canonical serialization: lexicographic object keys, no '
+  'whitespace. Makes the SHA-256 integrity hash reproducible outside Postgres '
+  '(Dart canonicalJsonEncode parity). Integer-numeric only (INV-4). Req 11, INV-15.';
+
 -- ── 5. Atomic Sealing RPC (Backend Authority — Req 5, 10, 13) ─────────────────
 -- SECURITY DEFINER: the seal must atomically append the verdict ledger entry and
 -- write the snapshot across the immutable vault in one txn. Tenant isolation on
@@ -220,8 +274,8 @@ BEGIN
      p_occurred_at_utc)
   RETURNING id INTO v_ledger_id;
 
-  -- 5f. Canonical, self-contained snapshot (Req 11, 12). jsonb::text is the
-  --     documented canonical serialization: byte-identical for identical content.
+  -- 5f. Self-contained snapshot (Req 11, 12). Serialized canonically by
+  --     jsonb_canonical_text (JCS) at hash time -> reproducible in any language.
   v_snapshot := jsonb_build_object(
     'schema_version',     1,
     'organization_id',    p_organization_id,
@@ -238,8 +292,8 @@ BEGIN
     'rules',              v_rules
   );
 
-  -- 5g. Integrity hash (Req 2.2, INV-9).
-  v_hash := encode(extensions.digest(v_snapshot::text, 'sha256'), 'hex');
+  -- 5g. Integrity hash (Req 2.2, INV-9) over the JCS canonical form.
+  v_hash := encode(extensions.digest(public.jsonb_canonical_text(v_snapshot), 'sha256'), 'hex');
 
   -- 5h. Persist into the vault (same txn -> rolls back with the ledger on failure).
   INSERT INTO public.forensic_evidence_snapshots
@@ -305,7 +359,7 @@ BEGIN
       USING ERRCODE = 'P0002';
   END IF;
 
-  v_computed := encode(extensions.digest(v_row.snapshot::text, 'sha256'), 'hex');
+  v_computed := encode(extensions.digest(public.jsonb_canonical_text(v_row.snapshot), 'sha256'), 'hex');
 
   RETURN jsonb_build_object(
     'ledger_entry_id', v_row.ledger_entry_id,
@@ -338,3 +392,6 @@ GRANT EXECUTE ON FUNCTION public.seal_forensic_evidence(
   UUID, UUID, TEXT, TEXT, INT, TIMESTAMPTZ, UUID, TEXT) TO authenticated, service_role;
 GRANT EXECUTE ON FUNCTION public.verify_forensic_evidence(UUID, UUID)
   TO authenticated, service_role;
+-- verify_forensic_evidence is SECURITY INVOKER -> the authenticated caller executes
+-- the canonical serializer directly; grant it explicitly (do not rely on PUBLIC).
+GRANT EXECUTE ON FUNCTION public.jsonb_canonical_text(jsonb) TO authenticated, service_role;

@@ -13,7 +13,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(31);
 
 -- ── Seed tenants ──────────────────────────────────────────────────────────────
 INSERT INTO public.organizations (
@@ -188,6 +188,108 @@ SELECT is(
   0, '23/INV-22: Org B sees zero of Org A snapshots (RLS)');
 
 RESET ROLE;
+-- Clear the forged tenant claim from test 22 (RESET ROLE does not touch GUCs).
+-- The trusted backend path below must present a NULL jwt org so the in-RPC
+-- tenant guard permits seals for org a1.
+RESET request.jwt.claims;
+
+-- ── 24-25. Tamper detection (Req 2.5 / 8.5) ──────────────────────────────────
+-- Insider/superuser bypass: the immutability trigger is administratively
+-- disabled, the sealed snapshot is mutated in place, the trigger re-enabled.
+-- verify_forensic_evidence MUST still expose the forgery by recomputing the
+-- SHA-256 over the stored snapshot and finding it no longer matches the sealed
+-- hash. This is the last line of defense when the BEFORE-trigger is circumvented.
+
+ALTER TABLE public.forensic_evidence_snapshots DISABLE TRIGGER trg_fes_no_update;
+UPDATE public.forensic_evidence_snapshots
+   SET snapshot = jsonb_set(snapshot, '{rules}', '[]'::jsonb)
+ WHERE organization_id = '00000000-0000-0000-0000-0000000000a1';
+ALTER TABLE public.forensic_evidence_snapshots ENABLE TRIGGER trg_fes_no_update;
+
+SELECT is(
+  (SELECT public.verify_forensic_evidence(
+     '00000000-0000-0000-0000-0000000000a1',
+     (SELECT (j->>'ledger_entry_id')::uuid FROM seal_out)) ->> 'status'),
+  'tampered', '24/Req8.5: post-hoc snapshot mutation detected as tampered');
+
+SELECT isnt(
+  (SELECT public.verify_forensic_evidence(
+     '00000000-0000-0000-0000-0000000000a1',
+     (SELECT (j->>'ledger_entry_id')::uuid FROM seal_out)) ->> 'computed_hash'),
+  (SELECT public.verify_forensic_evidence(
+     '00000000-0000-0000-0000-0000000000a1',
+     (SELECT (j->>'ledger_entry_id')::uuid FROM seal_out)) ->> 'stored_hash'),
+  '25/Req2.5: recomputed hash diverges from the sealed hash');
+
+-- ── 26-29. Rule-window boundary (Req 5.3 / 12.2) ─────────────────────────────
+-- A rule set EXISTS for contract cc, but its single version is only active over
+-- the half-open interval [2026-03-01, 2026-06-01). The seal resolves the active
+-- rule with `active_from_utc <= occurred AND (active_to_utc IS NULL OR > occurred)`.
+-- These cases pin the exact inclusive/exclusive boundary semantics (off-by-one
+-- on the verdict timestamp would silently freeze the wrong — or no — rule).
+
+INSERT INTO public.contract_rule_sets (id, organization_id, contract_id)
+VALUES ('00000000-0000-0000-0000-0000000000c2',
+        '00000000-0000-0000-0000-0000000000a1',
+        '00000000-0000-0000-0000-0000000000cc');
+
+INSERT INTO public.contract_rule_versions
+  (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
+   active_from_utc, active_to_utc)
+VALUES
+  ('00000000-0000-0000-0000-0000000000d2',
+   '00000000-0000-0000-0000-0000000000c2',
+   'NO_SHOW_PENALTY', '{"penalty_amount_cents": 50000}'::jsonb, 1, 0,
+   '2026-03-01T00:00:00Z', '2026-06-01T00:00:00Z');
+
+-- 26. occurred == active_from -> inclusive -> seals.
+SELECT lives_ok(
+  $$ SELECT public.seal_forensic_evidence(
+       '00000000-0000-0000-0000-0000000000a1',
+       '00000000-0000-0000-0000-0000000000cc',
+       'set-b', 'NO_SHOW_PENALTY', 1, '2026-03-01T00:00:00Z',
+       '00000000-0000-0000-0000-0000000000f1', 'idem-b-from') $$,
+  '26/Req12.2: occurred == active_from is inclusive (rule active)');
+
+-- 27. occurred just before active_from -> excluded -> no active rule.
+SELECT throws_ok(
+  $$ SELECT public.seal_forensic_evidence(
+       '00000000-0000-0000-0000-0000000000a1',
+       '00000000-0000-0000-0000-0000000000cc',
+       'set-b', 'NO_SHOW_PENALTY', 1, '2026-02-28T23:59:59Z',
+       '00000000-0000-0000-0000-0000000000f1', 'idem-b-before') $$,
+  'P0002', NULL, '27/Req5.3: occurred < active_from rejected (no active rule)');
+
+-- 28. occurred just before active_to -> still inside the window -> seals.
+SELECT lives_ok(
+  $$ SELECT public.seal_forensic_evidence(
+       '00000000-0000-0000-0000-0000000000a1',
+       '00000000-0000-0000-0000-0000000000cc',
+       'set-b', 'NO_SHOW_PENALTY', 1, '2026-05-31T23:59:59Z',
+       '00000000-0000-0000-0000-0000000000f1', 'idem-b-in') $$,
+  '28/Req12.2: occurred < active_to is inside the window (rule active)');
+
+-- 29. occurred == active_to -> exclusive upper bound -> no active rule.
+SELECT throws_ok(
+  $$ SELECT public.seal_forensic_evidence(
+       '00000000-0000-0000-0000-0000000000a1',
+       '00000000-0000-0000-0000-0000000000cc',
+       'set-b', 'NO_SHOW_PENALTY', 1, '2026-06-01T00:00:00Z',
+       '00000000-0000-0000-0000-0000000000f1', 'idem-b-at-to') $$,
+  'P0002', NULL, '29/Req12.2: occurred == active_to rejected (exclusive bound)');
+
+-- 30. Canonical serializer sorts object keys lexicographically + strips whitespace
+--     (JCS / Req 11). This is what makes the hash reproducible outside Postgres.
+SELECT is(
+  public.jsonb_canonical_text('{ "b": 2, "a": 1, "c": 3 }'::jsonb),
+  '{"a":1,"b":2,"c":3}',
+  '30/Req11: jsonb_canonical_text orders keys + drops whitespace');
+
+-- 31. Recurses into nested objects and array elements (string scalars stay quoted).
+SELECT is(
+  public.jsonb_canonical_text('{"z":[{"y":1,"x":2}],"a":"v"}'::jsonb),
+  '{"a":"v","z":[{"x":2,"y":1}]}',
+  '31/Req11/INV-15: canonical form recurses into arrays + nested objects');
 
 SELECT * FROM finish();
 ROLLBACK;
