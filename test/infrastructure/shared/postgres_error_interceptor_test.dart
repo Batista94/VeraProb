@@ -38,6 +38,28 @@ void main() {
       },
     );
 
+    test(
+      'maps nested JSON 22P02 in message with HTTP code 400 to ResourceNotFoundException',
+      () {
+        const exception = PostgrestException(
+          message:
+              '{"code":"22P02","details":null,"hint":null,"message":"invalid input syntax for type uuid: \\"non-existent-ledger-id\\""}',
+          code: '400',
+        );
+
+        final result = testClass.mapPostgrestToDomainException(
+          exception,
+          resourceType: 'forensic_evidence_snapshot',
+          resourceId: 'non-existent-ledger-id',
+        );
+
+        expect(result, isA<ResourceNotFoundException>());
+        final rnf = result as ResourceNotFoundException;
+        expect(rnf.resourceType, 'forensic_evidence_snapshot');
+        expect(rnf.resourceId, 'non-existent-ledger-id');
+      },
+    );
+
     test('maps PGRST116 (not_found) to ResourceNotFoundException', () {
       const exception = PostgrestException(
         message: 'The result contains 0 rows',

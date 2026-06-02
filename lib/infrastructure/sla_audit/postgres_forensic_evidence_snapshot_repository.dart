@@ -54,21 +54,25 @@ class PostgresForensicEvidenceSnapshotRepository extends BasePostgresRepository
   Future<ForensicEvidenceSnapshot?> findByLedgerEntry({
     required String organizationId,
     required String ledgerEntryId,
-  }) {
-    return withErrorHandler(
-      'forensic_evidence_snapshot',
-      ledgerEntryId,
-      () async {
-        final row = await client
-            .from('forensic_evidence_snapshots')
-            .select(_columns)
-            .eq('organization_id', organizationId)
-            .eq('ledger_entry_id', ledgerEntryId)
-            .maybeSingle();
-        if (row == null) return null;
-        return ForensicEvidenceSnapshot.fromJson(row);
-      },
-    );
+  }) async {
+    try {
+      return await withErrorHandler(
+        'forensic_evidence_snapshot',
+        ledgerEntryId,
+        () async {
+          final row = await client
+              .from('forensic_evidence_snapshots')
+              .select(_columns)
+              .eq('organization_id', organizationId)
+              .eq('ledger_entry_id', ledgerEntryId)
+              .maybeSingle();
+          if (row == null) return null;
+          return ForensicEvidenceSnapshot.fromJson(row);
+        },
+      );
+    } on ResourceNotFoundException {
+      return null;
+    }
   }
 
   @override

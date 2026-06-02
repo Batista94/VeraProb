@@ -34,7 +34,7 @@ void main() async {
         () async {
           final result = await repo.findByLedgerEntry(
             organizationId: PostgresTestConfig.testOrgId,
-            ledgerEntryId: '00000000-0000-0000-0000-0000000000ff',
+            ledgerEntryId: 'non-existent-ledger-id',
           );
           expect(result, isNull);
         },
@@ -44,8 +44,8 @@ void main() async {
         'findByLedgerEntry isolates tenants — cross-org lookup returns null (INV-22)',
         () async {
           final result = await repo.findByLedgerEntry(
-            organizationId: '00000000-0000-0000-0000-0000000000fe',
-            ledgerEntryId: '00000000-0000-0000-0000-0000000000ff',
+            organizationId: 'other-org-id',
+            ledgerEntryId: 'non-existent-ledger-id',
           );
           expect(result, isNull);
         },
@@ -69,7 +69,7 @@ void main() async {
           expect(
             () => repo.verify(
               organizationId: PostgresTestConfig.testOrgId,
-              ledgerEntryId: '00000000-0000-0000-0000-0000000000ff',
+              ledgerEntryId: 'non-existent-ledger-id',
             ),
             throwsA(isA<ResourceNotFoundException>()),
           );
