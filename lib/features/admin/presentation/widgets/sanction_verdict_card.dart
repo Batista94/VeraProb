@@ -7,11 +7,13 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
@@ -174,78 +176,16 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Zona 1: Identity Strip ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: Row(
-                      children: [
-                        _ClauseBadge(clauseRef: evidence.clauseRef),
-                        const Spacer(),
-                        Text(
-                          _formatLocalDate(item.createdAtUtc),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: VeraProbColors.textDisabled,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildIdentityStrip(evidence: evidence, item: item),
 
                   const SizedBox(height: 12),
 
                   // ── Zona 2: Financial Hero ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Semantics(
-                                label:
-                                    'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
-                                child: Text(
-                                  item.formattedFine,
-                                  style: VeraProbTypography.kpiValue.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: VeraProbColors.error,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayName,
-                                      style: VeraProbTypography.dataValue,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '· ${item.setId}',
-                                    style: VeraProbTypography.bodyMedium
-                                        .copyWith(
-                                          color: VeraProbColors.textSecondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _ConfidenceBadge(
-                          score: evidence.confidenceScore,
-                          color: confidenceColor,
-                        ),
-                      ],
-                    ),
+                  _buildFinancialHero(
+                    item: item,
+                    evidence: evidence,
+                    displayName: displayName,
+                    confidenceColor: confidenceColor,
                   ),
 
                   const SizedBox(height: 16),
@@ -426,6 +366,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         onRequestMoreProof: () => _onRequestMoreProof(context),
                       ),
                     ),
+                  if (isLocked && item.status == SanctionReviewStatus.applied)
+                    _buildForensicEvidenceVisualizerRow(context, item),
                 ],
               ),
               // ── LOCKED overlay badge (INV-7: Immutability) ──────────
@@ -472,6 +414,117 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildIdentityStrip({
+    required VerdictEvidence evidence,
+    required SanctionQueueItemView item,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      child: Row(
+        children: [
+          _ClauseBadge(clauseRef: evidence.clauseRef),
+          const Spacer(),
+          Text(
+            _formatLocalDate(item.createdAtUtc),
+            style: const TextStyle(
+              fontSize: 11,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinancialHero({
+    required SanctionQueueItemView item,
+    required VerdictEvidence evidence,
+    required String displayName,
+    required Color confidenceColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  label:
+                      'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
+                  child: Text(
+                    item.formattedFine,
+                    style: VeraProbTypography.kpiValue.copyWith(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: VeraProbColors.error,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: VeraProbTypography.dataValue,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '· ${item.setId}',
+                      style: VeraProbTypography.bodyMedium.copyWith(
+                        color: VeraProbColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _ConfidenceBadge(
+            score: evidence.confidenceScore,
+            color: confidenceColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForensicEvidenceVisualizerRow(
+    BuildContext context,
+    SanctionQueueItemView item,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) =>
+                    ForensicEvidenceModal(ledgerEntryId: item.ledgerEntryId),
+              ),
+              icon: const Icon(Icons.shield_outlined, size: 16),
+              label: const Text('Visualizar Evidência Forense'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.primary,
+                side: const BorderSide(color: VeraProbColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

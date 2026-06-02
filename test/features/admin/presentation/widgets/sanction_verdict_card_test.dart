@@ -10,7 +10,10 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
+import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -18,6 +21,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
+import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 import 'package:veraprob/domain/shared/date_time_provider.dart';
@@ -679,4 +683,61 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
   });
+
+  group('SanctionVerdictCard — Sealed Evidence Action Button', () {
+    testWidgets(
+      'renders Visualizar Evidência Forense when status is applied and opens modal',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.applied);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._baseOverrides(
+                item: item,
+                notifier: _MockSanctionActionNotifier(),
+              ),
+              forensicEvidenceSnapshotRepositoryProvider.overrideWithValue(
+                _MockSnapshotRepo(),
+              ),
+              securityIncidentLoggerProvider.overrideWithValue(
+                _MockSecurityIncidentLogger(),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final btn = find.text('Visualizar Evidência Forense');
+        expect(btn, findsOneWidget);
+
+        await tester.tap(btn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ForensicEvidenceModal), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+  });
+}
+
+// ── Test Mock Definitions for Forensic Evidence Modal ─────────────────────────
+
+class _MockSnapshotRepo implements ForensicEvidenceSnapshotRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MockSecurityIncidentLogger extends SecurityIncidentLogger {
+  _MockSecurityIncidentLogger() : super(null);
 }

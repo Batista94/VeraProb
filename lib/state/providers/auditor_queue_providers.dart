@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
@@ -199,3 +199,131 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     );
   }
 }
+
+// ── Filter and Sealed Sanctions Pagination (Enterprise Hardening) ───────────
+
+enum AuditorQueueFilter { pending, sealed }
+
+class AuditorQueueFilterNotifier extends Notifier<AuditorQueueFilter> {
+  @override
+  AuditorQueueFilter build() => AuditorQueueFilter.pending;
+
+  void setFilter(AuditorQueueFilter value) => state = value;
+}
+
+/// Provider managing the active filter state for the Auditor Queue.
+final auditorQueueFilterProvider =
+    NotifierProvider.autoDispose<
+      AuditorQueueFilterNotifier,
+      AuditorQueueFilter
+    >(AuditorQueueFilterNotifier.new);
+
+class SealedSanctionsState {
+  final List<SanctionQueueItemView> items;
+  final bool isLoading;
+  final bool hasMore;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const SealedSanctionsState({
+    required this.items,
+    required this.isLoading,
+    required this.hasMore,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  SealedSanctionsState copyWith({
+    List<SanctionQueueItemView>? items,
+    bool? isLoading,
+    bool? hasMore,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return SealedSanctionsState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      hasMore: hasMore ?? this.hasMore,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+    );
+  }
+}
+
+class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
+  static const int _pageSize = 20;
+
+  @override
+  SealedSanctionsState build() {
+    final now = DateTime.now().toUtc();
+    final start = now.subtract(const Duration(days: 7));
+    // Initial fetch scheduled for post-build to avoid ref.read during build
+    Future.microtask(() => fetchNextPage(clear: true));
+
+    return SealedSanctionsState(
+      items: const [],
+      isLoading: false,
+      hasMore: true,
+      startDate: start,
+      endDate: now,
+    );
+  }
+
+  Future<void> updateDateFilter(DateTime start, DateTime end) async {
+    state = state.copyWith(
+      startDate: start,
+      endDate: end,
+      items: const [],
+      hasMore: true,
+    );
+    await fetchNextPage(clear: true);
+  }
+
+  Future<void> fetchNextPage({bool clear = false}) async {
+    if (state.isLoading || (!clear && !state.hasMore)) return;
+
+    state = state.copyWith(isLoading: true);
+
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final orgId = ref.read(currentOrganizationIdProvider);
+      if (orgId == null) {
+        state = state.copyWith(isLoading: false, hasMore: false);
+        return;
+      }
+
+      final offset = clear ? 0 : state.items.length;
+
+      final rows = await client
+          .from('sanction_review_queue')
+          .select()
+          .eq('organization_id', orgId)
+          .eq('status', 'applied')
+          .gte('created_at', state.startDate.toIso8601String())
+          .lte('created_at', state.endDate.toIso8601String())
+          .order('created_at', ascending: false)
+          .range(offset, offset + _pageSize - 1);
+
+      final newItems = (rows as List)
+          .map(
+            (row) => SanctionQueueItemView.fromRow(row as Map<String, dynamic>),
+          )
+          .toList();
+
+      state = state.copyWith(
+        items: clear ? newItems : [...state.items, ...newItems],
+        isLoading: false,
+        hasMore: newItems.length == _pageSize,
+      );
+    } catch (e, stack) {
+      state = state.copyWith(isLoading: false);
+      // INV-26: do not expose internal error details directly
+      debugPrint('[SealedSanctionsNotifier] Error: $e\n$stack');
+    }
+  }
+}
+
+final sealedSanctionsNotifierProvider =
+    NotifierProvider.autoDispose<SealedSanctionsNotifier, SealedSanctionsState>(
+      SealedSanctionsNotifier.new,
+    );

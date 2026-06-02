@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-06-01
-**Current Status:** Phase 10.4.C (Completed) · [NEXT: Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)]
+**Current Status:** Phase 10.4.C (In Progress) · [NEXT: Phase 10.4.C — Forensic Evidence UI Integration]
 
 ---
 
@@ -36,14 +36,11 @@
 
 ## Phase 10 — CI/CD & Launch Preparation
 
-### [x] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
-- Implementar a persistência de um snapshot JSON imutável da regra de SLA exata no momento em que um veredito é selado. O objetivo é garantir proteção jurídica temporal, provando que alterações futuras no cadastro do contrato não afetam infrações passadas.
+### [/] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
+- [x] **[BACKEND] Snapshot Persistence:** Persistência de um snapshot JSON imutável da regra de SLA exata e assinatura digital no momento em que um veredito é selado.
+- [ ] **[UX/UI] Evidence Audit Modal:** Exibição do snapshot em modo Read-Only na Fila Auditora para vereditos com status [🔒 Selado] e verificação visual do selo de integridade (Hash Match).
 
-### [ ] Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)
-
-- Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
-
-### [ ] Phase 10.5.B — Bulk SLA & Contractor Consent Flow
+### [ ] Phase 10.5 — Bulk SLA & Contractor Consent Flow
 
 - [ ] **[BIZ] Bulk SLA Rule Importer (CSV):** Implementar funcionalidade de importação em massa para parâmetros de regras de SLA vinculadas a contratos (multas, limites de tolerância), evitando a necessidade de cadastro manual individual pós-importação de contratos.
 - [ ] **[BIZ] Rule Update Consent Flow (Contractor Sign-off):** Implementar fluxo de consentimento/aceite digital por parte da transportadora quando regras ou penalidades de SLA forem alteradas ou renegociadas no Rule Studio, mitigando riscos de alegações de alteração unilateral de regras em auditorias futuras.
@@ -108,6 +105,10 @@
 - [ ] **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
 - [ ] **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
 - [ ] **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
+
+### [ ] Phase 10.12 — Automated Enterprise Showcase (Seed & Provisioning)
+
+- Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
 
 ---
 
