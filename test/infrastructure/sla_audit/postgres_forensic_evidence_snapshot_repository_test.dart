@@ -23,47 +23,62 @@ void main() async {
         }
       });
 
-      test('findByLedgerEntry returns null for unknown verdict (INV-26)', () async {
-        final result = await repo.findByLedgerEntry(
-          organizationId: PostgresTestConfig.testOrgId,
-          ledgerEntryId: 'non-existent-ledger-id',
-        );
-        expect(result, isNull);
-      });
-
-      test('findByLedgerEntry isolates tenants — cross-org lookup returns null (INV-22)', () async {
-        final result = await repo.findByLedgerEntry(
-          organizationId: 'other-org-id',
-          ledgerEntryId: 'non-existent-ledger-id',
-        );
-        expect(result, isNull);
-      });
-
-      test('findByOrganization returns empty list when no snapshots in range', () async {
-        final results = await repo.findByOrganization(
-          organizationId: PostgresTestConfig.testOrgId,
-          fromUtc: DateTime.utc(2020, 1, 1),
-          toUtc: DateTime.utc(2020, 1, 2),
-        );
-        expect(results, isEmpty);
-      });
-
-      test('verify throws ResourceNotFound for unknown verdict (INV-26)', () async {
-        expect(
-          () => repo.verify(
+      test(
+        'findByLedgerEntry returns null for unknown verdict (INV-26)',
+        () async {
+          final result = await repo.findByLedgerEntry(
             organizationId: PostgresTestConfig.testOrgId,
             ledgerEntryId: 'non-existent-ledger-id',
-          ),
-          throwsA(isA<ResourceNotFoundException>()),
-        );
-      });
+          );
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        'findByLedgerEntry isolates tenants — cross-org lookup returns null (INV-22)',
+        () async {
+          final result = await repo.findByLedgerEntry(
+            organizationId: 'other-org-id',
+            ledgerEntryId: 'non-existent-ledger-id',
+          );
+          expect(result, isNull);
+        },
+      );
+
+      test(
+        'findByOrganization returns empty list when no snapshots in range',
+        () async {
+          final results = await repo.findByOrganization(
+            organizationId: PostgresTestConfig.testOrgId,
+            fromUtc: DateTime.utc(2020, 1, 1),
+            toUtc: DateTime.utc(2020, 1, 2),
+          );
+          expect(results, isEmpty);
+        },
+      );
+
+      test(
+        'verify throws ResourceNotFound for unknown verdict (INV-26)',
+        () async {
+          expect(
+            () => repo.verify(
+              organizationId: PostgresTestConfig.testOrgId,
+              ledgerEntryId: 'non-existent-ledger-id',
+            ),
+            throwsA(isA<ResourceNotFoundException>()),
+          );
+        },
+      );
 
       test('EvidenceVerificationStatus values are exhaustive', () {
         const values = EvidenceVerificationStatus.values;
-        expect(values, containsAll([
-          EvidenceVerificationStatus.authentic,
-          EvidenceVerificationStatus.tampered,
-        ]));
+        expect(
+          values,
+          containsAll([
+            EvidenceVerificationStatus.authentic,
+            EvidenceVerificationStatus.tampered,
+          ]),
+        );
       });
     },
     skip: !isRunning ? 'Skipped: Local Supabase environment is offline.' : null,

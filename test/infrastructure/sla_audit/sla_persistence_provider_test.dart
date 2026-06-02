@@ -9,10 +9,16 @@ void main() {
       expect(container, isNotNull);
     });
 
-    test('forensicEvidenceSnapshotRepositoryProvider not eagerly instantiated', () {
-      final container = ProviderContainer.test();
-      expect(container.exists(forensicEvidenceSnapshotRepositoryProvider), isFalse);
-    });
+    test(
+      'forensicEvidenceSnapshotRepositoryProvider not eagerly instantiated',
+      () {
+        final container = ProviderContainer.test();
+        expect(
+          container.exists(forensicEvidenceSnapshotRepositoryProvider),
+          isFalse,
+        );
+      },
+    );
 
     test('planDeclarationRepositoryProvider not eagerly instantiated', () {
       final container = ProviderContainer.test();
