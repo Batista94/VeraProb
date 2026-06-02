@@ -13,7 +13,7 @@
 -- =============================================================================
 
 BEGIN;
-SELECT plan(31);
+SELECT plan(34);
 
 -- ── Seed tenants ──────────────────────────────────────────────────────────────
 INSERT INTO public.organizations (
@@ -290,6 +290,36 @@ SELECT is(
   public.jsonb_canonical_text('{"z":[{"y":1,"x":2}],"a":"v"}'::jsonb),
   '{"a":"v","z":[{"x":2,"y":1}]}',
   '31/Req11/INV-15: canonical form recurses into arrays + nested objects');
+
+-- ── 32-34. SQL injection red-team (defense-in-depth) ─────────────────────────
+-- The free-text params (p_set_id, p_verdict_type) are BOUND parameters, never
+-- concatenated into a SQL string and never run through EXECUTE. A classic
+-- injection payload must therefore land as INERT literal data, not execute. Were
+-- the RPC building SQL by string interpolation, the embedded DROP would fire and
+-- the vault table would vanish. This pins the structural defense with an
+-- adversarial input rather than trusting it by inspection.
+
+CREATE TEMP TABLE seal_inj AS
+SELECT public.seal_forensic_evidence(
+  '00000000-0000-0000-0000-0000000000a1',
+  '00000000-0000-0000-0000-0000000000aa',
+  'set-x''; DROP TABLE public.forensic_evidence_snapshots; --',
+  'NO_SHOW_PENALTY', 1, '2026-08-01T12:00:00Z',
+  '00000000-0000-0000-0000-0000000000f1', 'idem-sqli'
+) AS j;
+
+SELECT ok(
+  (SELECT j IS NOT NULL FROM seal_inj),
+  '32/SQLi: injection payload in p_set_id seals normally (bound param, not SQL)');
+
+SELECT has_table(
+  'public', 'forensic_evidence_snapshots',
+  '33/SQLi: embedded DROP did NOT execute — vault table survives');
+
+SELECT is(
+  (SELECT j -> 'snapshot' ->> 'set_id' FROM seal_inj),
+  'set-x''; DROP TABLE public.forensic_evidence_snapshots; --',
+  '34/SQLi: payload stored verbatim as inert data (no interpretation)');
 
 SELECT * FROM finish();
 ROLLBACK;

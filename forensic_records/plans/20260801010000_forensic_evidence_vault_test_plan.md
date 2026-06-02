@@ -60,6 +60,13 @@ transaction. The vault is append-only and immutable even to privileged roles.
    over the stored snapshot and reports `tampered` on mismatch. Proven against a
    trigger-bypass forgery in pgTAP (test 11): even when the immutability trigger is
    administratively disabled and the snapshot mutated, verification exposes it.
+8. **SQL injection via free-text params (`p_set_id`, `p_verdict_type`):** the RPC is
+   pure parameterized plpgsql — no `EXECUTE format(...)`, no string concatenation
+   into SQL, and `search_path` pinned to `public, extensions` (defeats the classic
+   SECURITY DEFINER search-path hijack). A red-team payload (`'; DROP TABLE …; --`)
+   must land as inert literal data. Proven in pgTAP (tests 32-34): the seal commits
+   normally, the vault table survives the embedded DROP, and the payload is stored
+   verbatim in the snapshot — confirming it was bound, never interpreted.
 
 > **Hard-block logging limitation (Req 3.5 / 9.3):** a BEFORE trigger that RAISEs
 > aborts the transaction and therefore cannot persist a rejection row in an
@@ -120,6 +127,13 @@ File: `supabase/tests/20260801010000_forensic_evidence_vault_test.sql`:
     canonicalized recursively (`{"z":[{"y":1,"x":2}],"a":"v"}` →
     `{"a":"v","z":[{"x":2,"y":1}]}`), so the frozen `rules` array + each `rule_config`
     hash deterministically regardless of source key order.
+15. **SQL injection red-team (tests 32-34):** seal with a quote-breakout payload
+    (`set-x'; DROP TABLE public.forensic_evidence_snapshots; --`) in the free-text
+    `p_set_id`. (32) the seal commits normally, (33) `has_table` confirms the vault
+    survives — the embedded DROP never executed, and (34) the payload is stored
+    verbatim in `snapshot.set_id`. Proves the parameterized RPC binds the value as
+    inert data; combined with the pinned `search_path`, the SECURITY DEFINER path is
+    not injectable.
 
 Trusted write paths run as `postgres` (RLS bypass; `auth.jwt()` NULL → guard
 permits). Cross-tenant cases run under `authenticated` with crafted
