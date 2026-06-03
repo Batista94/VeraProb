@@ -324,7 +324,13 @@ class _Header extends ConsumerWidget {
       children: [
         const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
         const SizedBox(width: 12),
-        Text('Tribunal de Auditoria', style: VeraProbTypography.sectionTitle),
+        Flexible(
+          child: Text(
+            'Tribunal de Auditoria',
+            style: VeraProbTypography.sectionTitle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         const SizedBox(width: 24),
 
         // Segmented filter toggle

@@ -332,10 +332,12 @@ final sealedSanctionsNotifierProvider =
 // ── Simulation wrapper (state layer — features must not import domain) ────────
 
 /// Calls [SanctionSimulationService.simulateSpeedViolation] and converts
-/// [DomainException] to a human-readable message so features never import
+/// any exception to a human-readable message so features never import
 /// from the domain layer directly (INV-13).
 ///
-/// Returns null on success; returns the error message string on failure.
+/// Returns null on success. Returns an error message string on any failure
+/// (both [DomainException] and unexpected infra/DB errors). Callers must
+/// treat null as the ONLY success signal.
 Future<String?> runSanctionSimulation(
   WidgetRef ref, {
   required String organizationId,
@@ -352,6 +354,6 @@ Future<String?> runSanctionSimulation(
   } on DomainException catch (e) {
     return e.message;
   } catch (_) {
-    return null;
+    return 'Erro inesperado na simulação. Verifique os logs do servidor.';
   }
 }

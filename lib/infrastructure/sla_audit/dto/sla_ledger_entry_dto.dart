@@ -54,19 +54,29 @@ class SlaLedgerEntryDto {
   }
 
   static void _preventDoubleCents(Map<String, dynamic> map) {
+    final corrections = <String, int>{};
     for (final entry in map.entries) {
       if (entry.key.contains('cents') || entry.key == 'centavos') {
-        if (entry.value is double) {
-          throw IntegrityException(
-            'Financial field "${entry.key}" must be an int, found double: ${entry.value}',
-            field: entry.key,
-          );
+        // dart2js: every JS Number satisfies `is double`, including integers.
+        // Only treat as a real double when it is NOT simultaneously an int
+        // (i.e., it has a fractional part — genuine financial precision loss).
+        if (entry.value is double && entry.value is! int) {
+          final d = entry.value as double;
+          if (!d.isFinite || d != d.truncateToDouble()) {
+            throw IntegrityException(
+              'Financial field "${entry.key}" must be an int, found double: ${entry.value}',
+              field: entry.key,
+            );
+          }
+          // Whole-number double (web platform representation) — coerce to int.
+          corrections[entry.key] = d.toInt();
         }
       }
       if (entry.value is Map<String, dynamic>) {
         _preventDoubleCents(entry.value as Map<String, dynamic>);
       }
     }
+    map.addAll(corrections);
   }
 
   /// Extracts the validated JSON for database persistence.
