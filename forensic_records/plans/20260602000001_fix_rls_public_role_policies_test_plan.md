@@ -86,9 +86,22 @@ Use o cliente SQL do Supabase Studio (`http://localhost:54323` por padrão) ou a
 #### 🧪 Teste 3.1: Revogação de privilégios na tabela `spatial_ref_sys`
 **Objetivo:** Garantir que usuários comuns não possam listar dados de referência espacial (PostGIS) diretamente por motivos de segurança.
 
+> [!WARNING]
+> **Instrução Crítica:** No Supabase Studio, TODO o bloco SQL (desde `BEGIN` até `ROLLBACK`) deve ser executado **como uma única query** (selecionar todo o texto e clicar "Run"). Executar statements individualmente causa o reset do role na sessão entre execuções.
+> Como alternativa, recomendo a execução via **`psql` CLI** para total controle da transação:
+> ```bash
+> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
+> BEGIN;
+> SET LOCAL ROLE authenticated;
+> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"00000000-0000-0000-0000-000000000002\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
+> SELECT * FROM public.spatial_ref_sys LIMIT 5;
+> ROLLBACK;
+> "
+> ```
+
 **Instruções de execução:**
 ```sql
--- Simula um usuário autenticado da aplicação
+-- Simula um usuário autenticado da aplicação (Selecione todo o bloco e clique em "Run")
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"00000000-0000-0000-0000-000000000002","organization_id":"00000000-0000-0000-0000-000000000001"}';
@@ -105,6 +118,19 @@ ROLLBACK;
 
 #### 🧪 Teste 3.2: Tentativa de Ataque Cross-Tenant via Injeção de Escrita (INV-22)
 **Objetivo:** Confirmar que a nova regra `WITH CHECK` impede o Inquilino A de injetar dados na conta do Inquilino B.
+
+> [!WARNING]
+> **Instrução Crítica:** Execute todo o bloco SQL a seguir de uma única vez no Supabase Studio para evitar reset de sessão e role.
+> Ou via **`psql` CLI**:
+> ```bash
+> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
+> BEGIN;
+> SET LOCAL ROLE authenticated;
+> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"11111111-1111-1111-1111-111111111111\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
+> INSERT INTO public.sanction_review_queue (organization_id, ledger_entry_id, set_id, contract_id, verdict_evidence) VALUES ('00000000-0000-0000-0000-000000000002', gen_random_uuid(), 'set_attack_01', 'contract_attack_01', '{\"status\": \"tampered\"}'::jsonb);
+> ROLLBACK;
+> "
+> ```
 
 **Instruções de execução:**
 ```sql
@@ -133,20 +159,39 @@ ROLLBACK;
 #### 🧪 Teste 3.3: Bloqueio de Escrita em Tabelas Exclusivas do Bot (Restrições Deny-All)
 **Objetivo:** Garantir que usuários comuns não possam criar ou alterar dados do fluxo interno do Telegram, como consentimentos de usuários e links pendentes de ativação.
 
+> [!WARNING]
+> **Instrução Crítica:** Execute todo o bloco SQL de uma vez só ou via `psql` CLI:
+> ```bash
+> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
+> BEGIN;
+> SET LOCAL ROLE authenticated;
+> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"11111111-1111-1111-1111-111111111111\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
+> INSERT INTO public.telegram_pending_links (short_id, organization_id, evidence_upload_id, execution_set_id, driver_id, expires_at_utc) VALUES ('ABCD1234', '00000000-0000-0000-0000-000000000001', gen_random_uuid(), 'set_attack_01', gen_random_uuid(), NOW() + INTERVAL '1 hour');
+> ROLLBACK;
+> "
+> ```
+
 **Instruções de execução:**
 ```sql
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"11111111-1111-1111-1111-111111111111","organization_id":"00000000-0000-0000-0000-000000000001"}';
 
--- Tenta inserir um link pendente
+-- Tenta inserir um link pendente com as colunas reais da tabela
 INSERT INTO public.telegram_pending_links (
-  short_id, organization_id, driver_id, token_hash
+  short_id,
+  organization_id,
+  evidence_upload_id,
+  execution_set_id,
+  driver_id,
+  expires_at_utc
 ) VALUES (
-  'link123',
+  'ABCD1234', -- short_id deve ter exatamente 8 caracteres
   '00000000-0000-0000-0000-000000000001',
-  'driver_01',
-  'hash_placeholder'
+  gen_random_uuid(),  -- gera UUID temporário para simular upload id (RLS rejeita antes de verificar a FK)
+  'set_attack_01',
+  gen_random_uuid(),
+  NOW() + INTERVAL '1 hour'
 );
 ROLLBACK;
 ```
@@ -160,12 +205,12 @@ ROLLBACK;
 
 **Instruções de execução:**
 ```sql
--- Busca por políticas que permitam acesso irrestrito para roles comuns
+-- Busca por políticas que permitam acesso irrestrito para roles comuns (cast explicitos para tipos compatíveis)
 SELECT tablename, policyname, roles, cmd, qual, with_check
 FROM pg_policies
 WHERE schemaname = 'public'
   AND (qual = 'true' OR with_check = 'true')
-  AND (roles && ARRAY['public','authenticated']::text[] OR roles = '{}')
+  AND (roles::text[] && ARRAY['public','authenticated']::text[] OR roles::text = '{}')
   AND tablename IN (
     'idempotency_keys', 
     'telegram_chat_bindings', 

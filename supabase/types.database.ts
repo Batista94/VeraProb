@@ -2317,6 +2317,7 @@ export type Database = {
           id: string;
           notified_user_id: string | null;
           organization_id: string;
+          organization_name: string | null;
           queue_entry_id: string;
           sent_at: string;
         };
@@ -2326,6 +2327,7 @@ export type Database = {
           id?: string;
           notified_user_id?: string | null;
           organization_id: string;
+          organization_name?: string | null;
           queue_entry_id: string;
           sent_at?: string;
         };
@@ -2335,6 +2337,7 @@ export type Database = {
           id?: string;
           notified_user_id?: string | null;
           organization_id?: string;
+          organization_name?: string | null;
           queue_entry_id?: string;
           sent_at?: string;
         };
@@ -2355,6 +2358,7 @@ export type Database = {
           id: string;
           ledger_entry_id: string;
           organization_id: string;
+          organization_name: string | null;
           rejection_reason: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -2369,6 +2373,7 @@ export type Database = {
           id?: string;
           ledger_entry_id: string;
           organization_id: string;
+          organization_name?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -2383,6 +2388,7 @@ export type Database = {
           id?: string;
           ledger_entry_id?: string;
           organization_id?: string;
+          organization_name?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;

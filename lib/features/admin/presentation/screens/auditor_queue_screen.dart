@@ -248,7 +248,8 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
 /// [SanctionSimulationService] so testers can exercise the review flow without
 /// needing Stress Mode or manual Studio inserts.
 class _SimulateButton extends ConsumerStatefulWidget {
-  const _SimulateButton();
+  final bool isNarrow;
+  const _SimulateButton({this.isNarrow = false});
 
   @override
   ConsumerState<_SimulateButton> createState() => _SimulateButtonState();
@@ -306,6 +307,27 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isNarrow) {
+      return Tooltip(
+        message: 'Gerar Sanção de Teste',
+        child: OutlinedButton(
+          onPressed: _loading ? null : _simulate,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: VeraProbColors.textSecondary,
+            side: const BorderSide(color: VeraProbColors.textDisabled),
+            padding: const EdgeInsets.all(8),
+            minimumSize: const Size(36, 36),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.science_outlined, size: 16),
+        ),
+      );
+    }
     return OutlinedButton.icon(
       onPressed: _loading ? null : _simulate,
       icon: _loading
@@ -351,78 +373,117 @@ class _Header extends ConsumerWidget {
       _ => 0,
     };
 
-    return Row(
-      children: [
-        const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            'Tribunal de Auditoria',
-            style: VeraProbTypography.sectionTitle,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 24),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Lesson #3: narrow panel — short labels + tooltip on segments
+        final isNarrow = constraints.maxWidth < 900;
+        return Row(
+          children: [
+            const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                'Tribunal de Auditoria',
+                style: VeraProbTypography.sectionTitle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 12),
 
-        // Segmented filter toggle
-        SegmentedButton<AuditorQueueFilter>(
-          segments: [
-            ButtonSegment<AuditorQueueFilter>(
-              value: AuditorQueueFilter.pending,
-              label: Text('Pendentes ($count)'),
-              icon: const Icon(Icons.pending_actions_outlined, size: 14),
-            ),
-            ButtonSegment<AuditorQueueFilter>(
-              value: AuditorQueueFilter.disputed,
-              label: Text('Aguardando Evidência ($disputedCount)'),
-              icon: const Icon(Icons.hourglass_empty_outlined, size: 14),
-            ),
-            const ButtonSegment<AuditorQueueFilter>(
-              value: AuditorQueueFilter.sealed,
-              label: Text('Selados'),
-              icon: Icon(Icons.verified_user_outlined, size: 14),
-            ),
-          ],
-          selected: {filter},
-          onSelectionChanged: (newSelection) {
-            ref
-                .read(auditorQueueFilterProvider.notifier)
-                .setFilter(newSelection.first);
-          },
-          style: SegmentedButton.styleFrom(
-            selectedBackgroundColor: VeraProbColors.primary.withValues(
-              alpha: 0.15,
-            ),
-            selectedForegroundColor: VeraProbColors.primary,
-            foregroundColor: VeraProbColors.textSecondary,
-            side: const BorderSide(color: VeraProbColors.border),
-          ),
-        ),
-
-        const Spacer(),
-        // WS-5: Map toggle for narrow screens
-        if (showMapToggle)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: OutlinedButton.icon(
-              onPressed: onMapToggle,
-              icon: const Icon(Icons.map_outlined, size: 16),
-              label: const Text('Mapa Forense'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: VeraProbColors.primary,
-                side: BorderSide(
-                  color: VeraProbColors.primary.withValues(alpha: 0.5),
-                ),
-                textStyle: const TextStyle(fontSize: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+            // Segmented filter toggle — Flexible prevents right overflow
+            Flexible(
+              flex: 3,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<AuditorQueueFilter>(
+                  segments: [
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.pending,
+                      // Lesson #3: short label on narrow, full label on wide
+                      label: isNarrow
+                          ? Tooltip(
+                              message: 'Pendentes ($count)',
+                              child: Text('($count)'),
+                            )
+                          : Text('Pendentes ($count)'),
+                      icon: const Icon(
+                        Icons.pending_actions_outlined,
+                        size: 14,
+                      ),
+                    ),
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.disputed,
+                      label: isNarrow
+                          ? Tooltip(
+                              message: 'Aguardando Evidência ($disputedCount)',
+                              child: Text('($disputedCount)'),
+                            )
+                          : Text('Aguardando Evidência ($disputedCount)'),
+                      icon: const Icon(
+                        Icons.hourglass_empty_outlined,
+                        size: 14,
+                      ),
+                    ),
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.sealed,
+                      label: isNarrow
+                          ? const Tooltip(
+                              message: 'Selados',
+                              child: SizedBox.shrink(),
+                            )
+                          : const Text('Selados'),
+                      icon: const Icon(Icons.verified_user_outlined, size: 14),
+                    ),
+                  ],
+                  selected: {filter},
+                  onSelectionChanged: (newSelection) {
+                    ref
+                        .read(auditorQueueFilterProvider.notifier)
+                        .setFilter(newSelection.first);
+                  },
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: VeraProbColors.primary.withValues(
+                      alpha: 0.15,
+                    ),
+                    selectedForegroundColor: VeraProbColors.primary,
+                    foregroundColor: VeraProbColors.textSecondary,
+                    side: const BorderSide(color: VeraProbColors.border),
+                  ),
                 ),
               ),
             ),
-          ),
-        const _SimulateButton(),
-      ],
+
+            const Spacer(),
+            // WS-5: Map toggle for narrow screens
+            if (showMapToggle)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Tooltip(
+                  message: 'Mapa Forense',
+                  child: OutlinedButton.icon(
+                    onPressed: onMapToggle,
+                    icon: const Icon(Icons.map_outlined, size: 16),
+                    label: isNarrow
+                        ? const SizedBox.shrink()
+                        : const Text('Mapa Forense'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: VeraProbColors.primary,
+                      side: BorderSide(
+                        color: VeraProbColors.primary.withValues(alpha: 0.5),
+                      ),
+                      textStyle: const TextStyle(fontSize: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            _SimulateButton(isNarrow: isNarrow),
+          ],
+        );
+      },
     );
   }
 }

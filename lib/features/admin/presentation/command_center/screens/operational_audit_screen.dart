@@ -11,15 +11,86 @@ import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart'
 import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
 
-class OperationalAuditScreen extends ConsumerWidget {
+/// Breakpoint below which the side panel becomes an end-drawer (QA/Security:
+/// prevents forensic text overlap on narrow screens / split-screen monitors).
+const _kOccSidePanelBreakpoint = 900.0;
+
+class OperationalAuditScreen extends ConsumerStatefulWidget {
   const OperationalAuditScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OperationalAuditScreen> createState() =>
+      _OperationalAuditScreenState();
+}
+
+class _OperationalAuditScreenState
+    extends ConsumerState<OperationalAuditScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final isWide = screenWidth >= _kOccSidePanelBreakpoint;
+
     return DefaultTabController(
       length: 2,
       child: Scaffold(
+        key: _scaffoldKey,
         backgroundColor: VeraProbColors.background,
+        // QA/Security: drawer for narrow screens — mirrors AuditorQueueScreen pattern
+        endDrawer: isWide
+            ? null
+            : Drawer(
+                width: screenWidth * 0.55,
+                backgroundColor: VeraProbColors.surface,
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      // Drawer header
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: const BoxDecoration(
+                          border: Border(
+                            bottom: BorderSide(color: VeraProbColors.border),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: VeraProbColors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Detalhes do Registro',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: VeraProbColors.textPrimary,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () => Navigator.pop(context),
+                              color: VeraProbColors.textSecondary,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Expanded(child: _AuditSidePanel()),
+                    ],
+                  ),
+                ),
+              ),
         appBar: AppBar(
           title: const Text(
             'OCC - Centro de Auditoria Integrada',
@@ -28,6 +99,12 @@ class OperationalAuditScreen extends ConsumerWidget {
           backgroundColor: VeraProbColors.surface,
           centerTitle: false,
           actions: [
+            if (!isWide)
+              IconButton(
+                icon: const Icon(Icons.info_outline),
+                tooltip: 'Detalhes do Registro',
+                onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+              ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
@@ -83,8 +160,14 @@ class OperationalAuditScreen extends ConsumerWidget {
                       ],
                     ),
                   ),
-                  const VerticalDivider(width: 1, color: VeraProbColors.border),
-                  const Expanded(flex: 3, child: _AuditSidePanel()),
+                  // Wide: side panel always visible
+                  if (isWide) ...[
+                    const VerticalDivider(
+                      width: 1,
+                      color: VeraProbColors.border,
+                    ),
+                    const Expanded(flex: 3, child: _AuditSidePanel()),
+                  ],
                 ],
               ),
             ),
@@ -103,9 +186,22 @@ class _AuditTab extends ConsumerWidget {
       children: [
         _buildFilterBar(context, ref),
         const Divider(height: 1, color: VeraProbColors.border),
-        _buildTableHeader(),
-        const Divider(height: 1, color: VeraProbColors.border),
-        Expanded(child: _buildLogTable(ref)),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minWidth: 820),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTableHeader(),
+                  const Divider(height: 1, color: VeraProbColors.border),
+                  Expanded(child: _buildLogTable(ref)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -113,70 +209,80 @@ class _AuditTab extends ConsumerWidget {
   Widget _buildFilterBar(BuildContext context, WidgetRef ref) {
     final filters = ref.watch(auditFilterProvider);
 
+    // Horizontal scroll prevents filter chips from overflowing on narrow screens
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       color: VeraProbColors.surface,
-      child: Row(
-        children: [
-          _FilterChip(
-            label: filters.silentMode ? '🔇 Modo Silencioso' : '📢 Ver Tudo',
-            isActive: filters.silentMode,
-            onTap: () =>
-                ref.read(auditFilterProvider.notifier).toggleSilentMode(),
-            onClear: null,
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: filters.category ?? 'Todas Categorias',
-            isActive: filters.category != null,
-            onTap: () {
-              ref
-                  .read(auditFilterProvider.notifier)
-                  .setCategory(
-                    filters.category == 'SYSTEM' ? 'OPERATOR' : 'SYSTEM',
-                  );
-            },
-            onClear: () =>
-                ref.read(auditFilterProvider.notifier).clearCategory(),
-          ),
-          const SizedBox(width: 8),
-          _FilterChip(
-            label: 'Hoje',
-            isActive: true,
-            onTap: () {},
-            onClear: null,
-          ),
-          const Spacer(),
-          TextButton.icon(
-            onPressed: () => ref.read(auditFilterProvider.notifier).clearAll(),
-            icon: const Icon(Icons.clear_all, size: 16),
-            label: const Text('Limpar Filtros', style: TextStyle(fontSize: 12)),
-            style: TextButton.styleFrom(
-              foregroundColor: VeraProbColors.textSecondary,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            _FilterChip(
+              label: filters.silentMode ? '🔇 Modo Silencioso' : '📢 Ver Tudo',
+              isActive: filters.silentMode,
+              onTap: () =>
+                  ref.read(auditFilterProvider.notifier).toggleSilentMode(),
+              onClear: null,
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: filters.category ?? 'Todas Categorias',
+              isActive: filters.category != null,
+              onTap: () {
+                ref
+                    .read(auditFilterProvider.notifier)
+                    .setCategory(
+                      filters.category == 'SYSTEM' ? 'OPERATOR' : 'SYSTEM',
+                    );
+              },
+              onClear: () =>
+                  ref.read(auditFilterProvider.notifier).clearCategory(),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Hoje',
+              isActive: true,
+              onTap: () {},
+              onClear: null,
+            ),
+            const SizedBox(width: 16),
+            TextButton.icon(
+              onPressed: () =>
+                  ref.read(auditFilterProvider.notifier).clearAll(),
+              icon: const Icon(Icons.clear_all, size: 16),
+              label: const Text(
+                'Limpar Filtros',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: VeraProbColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildTableHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: VeraProbColors.surfaceElevated,
-      child: const Row(
-        children: [
-          SizedBox(width: 80, child: Text('HORA', style: _headerStyle)),
-          SizedBox(
-            width: 110,
-            child: Text('CICLO DE VIDA', style: _headerStyle),
-          ),
-          SizedBox(width: 90, child: Text('CATEGORIA', style: _headerStyle)),
-          Expanded(flex: 3, child: Text('AÇÃO', style: _headerStyle)),
-          Expanded(flex: 2, child: Text('VEÍCULO', style: _headerStyle)),
-          Expanded(flex: 2, child: Text('ROTA', style: _headerStyle)),
-          SizedBox(width: 120, child: Text('AUTOR', style: _headerStyle)),
-        ],
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            SizedBox(width: 80, child: Text('HORA', style: _headerStyle)),
+            SizedBox(
+              width: 110,
+              child: Text('CICLO DE VIDA', style: _headerStyle),
+            ),
+            SizedBox(width: 90, child: Text('CATEGORIA', style: _headerStyle)),
+            SizedBox(width: 200, child: Text('AÇÃO', style: _headerStyle)),
+            SizedBox(width: 110, child: Text('VEÍCULO', style: _headerStyle)),
+            SizedBox(width: 110, child: Text('ROTA', style: _headerStyle)),
+            SizedBox(width: 120, child: Text('AUTOR', style: _headerStyle)),
+          ],
+        ),
       ),
     );
   }
@@ -330,23 +436,29 @@ class _AuditTab extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    Expanded(
-                      flex: 3,
+                    SizedBox(
+                      width: 200,
                       child: Text(
                         log.action,
                         style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
+                    SizedBox(
+                      width: 110,
                       child: Text(
                         log.vehiclePlate ?? '-',
                         style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(log.routeName ?? '-', style: _cellStyle),
+                    SizedBox(
+                      width: 110,
+                      child: Text(
+                        log.routeName ?? '-',
+                        style: _cellStyle,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     SizedBox(
                       width: 120,
@@ -355,6 +467,7 @@ class _AuditTab extends ConsumerWidget {
                         style: _cellStyle.copyWith(
                           color: VeraProbColors.textSecondary,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -570,13 +683,14 @@ class _DetailRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               label,
               style: const TextStyle(
                 fontSize: 13,
                 color: VeraProbColors.textSecondary,
               ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
           Expanded(
