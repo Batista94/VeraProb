@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/dispute_sanction_command.dart';
+import 'package:veraprob/application/sla_audit/dispute_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
@@ -50,6 +52,31 @@ final pendingSanctionsStreamProvider =
 /// Derived count of pending sanctions for the navigation badge.
 final pendingSanctionsCountProvider = Provider.autoDispose<int>((ref) {
   final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+  return switch (sanctionsAsync) {
+    AsyncData(:final value) => value.length,
+    AsyncError() => 0,
+    AsyncLoading() => 0,
+  };
+});
+
+/// Stream of disputed/waiting evidence sanction items for the current session's organization.
+final disputedSanctionsStreamProvider =
+    StreamProvider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      return ref
+          .watch(supabaseClientProvider)
+          .from('sanction_review_queue')
+          .stream(primaryKey: ['id'])
+          .eq('status', 'disputed')
+          .map(
+            (rows) =>
+                rows.map((row) => SanctionQueueItemView.fromRow(row)).toList(),
+          )
+          .distinct(listEquals);
+    });
+
+/// Derived count of disputed sanctions.
+final disputedSanctionsCountProvider = Provider.autoDispose<int>((ref) {
+  final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
   return switch (sanctionsAsync) {
     AsyncData(:final value) => value.length,
     AsyncError() => 0,
@@ -154,6 +181,35 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     clock: ref.watch(dateTimeProviderProvider),
   );
 
+  DisputeSanctionHandler get _disputeHandler => DisputeSanctionHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+  );
+
+  Future<void> dispute({
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _disputeHandler.handle(
+        DisputeSanctionCommand(
+          queueEntryId: queueEntryId,
+          disputedByUserId: disputedByUserId,
+          actorEmail: actorEmail,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
   Future<void> approve({
     required String queueEntryId,
     required String approvedByUserId,
@@ -203,7 +259,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
 
 // ── Filter and Sealed Sanctions Pagination (Enterprise Hardening) ───────────
 
-enum AuditorQueueFilter { pending, sealed }
+enum AuditorQueueFilter { pending, disputed, sealed }
 
 class AuditorQueueFilterNotifier extends Notifier<AuditorQueueFilter> {
   @override

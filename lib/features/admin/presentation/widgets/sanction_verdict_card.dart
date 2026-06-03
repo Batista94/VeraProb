@@ -7,6 +7,7 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart'; // pr_scanner: ignore
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
@@ -111,6 +112,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     if (isFocused) {
       leftBorderColor = VeraProbColors.primary;
       leftBorderWidth = 4;
+    } else if (item.status == SanctionReviewStatus.disputed) {
+      leftBorderColor = VeraProbColors.warning;
+      leftBorderWidth = 3;
     } else if (isLocked) {
       leftBorderColor = VeraProbColors.textDisabled;
       leftBorderWidth = 3;
@@ -147,7 +151,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         }
       },
       child: Opacity(
-        opacity: isLocked ? 0.6 : 1.0,
+        opacity: item.status == SanctionReviewStatus.disputed
+            ? 0.8
+            : (isLocked ? 0.6 : 1.0),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -189,15 +195,19 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   const SizedBox(height: 16),
                   const Divider(color: VeraProbColors.border, height: 1),
 
-                  // ── Zona 3: Infraction Summary — Ghost Bars (WS-6) ────────────
+                  // ── Zona 3: Infraction Summary — Ghost Bars (WS-6) / VEL Details ────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: GhostBarWidget(
-                      deltaValue: evidence.deltaValue,
-                      thresholdValue: evidence.thresholdValue,
-                      unit: unit,
-                      clauseRef: evidence.clauseRef,
-                    ),
+                    child:
+                        evidence.clauseRef.split('-').first.toUpperCase() ==
+                            'VEL'
+                        ? _buildVelSpeedDetails(evidence, unit)
+                        : GhostBarWidget(
+                            deltaValue: evidence.deltaValue,
+                            thresholdValue: evidence.thresholdValue,
+                            unit: unit,
+                            clauseRef: evidence.clauseRef,
+                          ),
                   ),
 
                   const SizedBox(height: 12),
@@ -369,7 +379,45 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 ],
               ),
               // ── LOCKED overlay badge (INV-7: Immutability) ──────────
-              if (isLocked)
+              if (item.status == SanctionReviewStatus.disputed)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'Aguardando envio de prova forense',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.warning.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.hourglass_empty_outlined,
+                            size: 12,
+                            color: VeraProbColors.warning,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'AGUARDANDO EVIDÊNCIA',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.warning,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (isLocked)
                 Positioned(
                   top: 8,
                   right: 8,
@@ -606,14 +654,33 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     }
   }
 
-  void _onRequestMoreProof(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Solicitação enviada. Motorista será notificado para enviar prova forense.',
-        ),
-      ),
-    );
+  Future<void> _onRequestMoreProof(BuildContext context) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .dispute(
+          queueEntryId: widget.item.id,
+          disputedByUserId: userId,
+          actorEmail: email,
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      ref.invalidate(pendingSanctionsStreamProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Solicitação enviada. Motorista será notificado para enviar prova forense.',
+            ),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _onDownloadDossier() async {
@@ -672,6 +739,124 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     } finally {
       if (mounted) setState(() => _isDossierLoading = false);
     }
+  }
+
+  Widget _buildVelSpeedDetails(VerdictEvidence evidence, String unit) {
+    final recordedSpeed = evidence.thresholdValue + evidence.deltaValue;
+    final limit = evidence.thresholdValue;
+    final excess = evidence.deltaValue;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Row(
+        children: [
+          // 1. Velocidade Registrada (Dado de maior destaque)
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'VELOCIDADE REGISTRADA',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 9,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      recordedSpeed.toStringAsFixed(1),
+                      style: VeraProbTypography.kpiValue.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: VeraProbColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      unit,
+                      style: VeraProbTypography.bodyMedium.copyWith(
+                        color: VeraProbColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Vertical divider
+          Container(
+            height: 40,
+            width: 1,
+            color: VeraProbColors.border,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          // 2. Limite Contratual
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'LIMITE CONTRATUAL',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 8.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${limit.toStringAsFixed(1)} $unit',
+                  style: VeraProbTypography.dataValue.copyWith(
+                    color: VeraProbColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 3. Excesso
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'EXCESSO',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 8.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '+${excess.toStringAsFixed(1)} $unit',
+                  style: VeraProbTypography.dataValue.copyWith(
+                    color: VeraProbColors.warning,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

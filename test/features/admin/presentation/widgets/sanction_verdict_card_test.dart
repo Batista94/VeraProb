@@ -128,16 +128,19 @@ SanctionQueueItemView _makeItem({
   double? geofenceRadiusMeters,
   String id = 'test-id-001',
   String contractId = 'contract-001',
+  String clauseRef = 'ATR-01',
+  double deltaValue = 5.0,
+  double thresholdValue = 0.0,
 }) {
   final evidence = VerdictEvidence.create(
-    clauseRef: 'ATR-01',
+    clauseRef: clauseRef,
     ruleId: 'rule-001',
     ruleVersion: 1,
     primaryEvidenceLat: -23.5,
     primaryEvidenceLng: -46.6,
     primaryEvidenceTimestampUtc: DateTime.utc(2026, 1, 15, 10, 0),
-    deltaValue: 5.0,
-    thresholdValue: 0.0,
+    deltaValue: deltaValue,
+    thresholdValue: thresholdValue,
     fineCents: Money(fineCents),
     confidenceScore: confidenceScore,
     geofenceCenterLat: geofenceCenterLat,
@@ -618,12 +621,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELADO'), findsOneWidget);
+      expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
       expect(find.text('SELAR VEREDITO'), findsNothing);
       expect(find.text('RECUSAR VEREDITO'), findsNothing);
 
       final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(opacity.opacity, closeTo(0.6, 0.001));
+      expect(opacity.opacity, closeTo(0.8, 0.001));
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -728,6 +731,35 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       },
     );
+  });
+
+  group('SanctionVerdictCard — VEL layout', () {
+    testWidgets('renders speed raw details for VEL clauses', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+
+      final velItem = _makeItem(
+        id: 'test-vel-01',
+        clauseRef: 'VEL-01',
+        thresholdValue: 80.0,
+        deltaValue: 5.0,
+      );
+
+      await tester.pumpWidget(_buildCard(velItem));
+      await tester.pump();
+
+      expect(find.text('VELOCIDADE REGISTRADA'), findsOneWidget);
+      expect(find.text('LIMITE CONTRATUAL'), findsOneWidget);
+      expect(find.text('EXCESSO'), findsOneWidget);
+      expect(
+        find.text('85.0'),
+        findsOneWidget,
+      ); // limit + delta = 80.0 + 5.0 = 85.0 (rendered separately from unit)
+      expect(find.text('80.0 km/h'), findsOneWidget); // limit
+      expect(find.text('+5.0 km/h'), findsOneWidget); // excess
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
   });
 }
 

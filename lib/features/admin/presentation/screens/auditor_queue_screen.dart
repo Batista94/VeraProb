@@ -163,6 +163,33 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
                   itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
                 ),
       };
+    } else if (filter == AuditorQueueFilter.disputed) {
+      final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
+      return switch (sanctionsAsync) {
+        AsyncLoading() => const Center(child: CircularProgressIndicator()),
+        AsyncError(:final error) => Center(
+          child: Text(
+            'Erro ao carregar fila: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+        ),
+        AsyncData(:final value) =>
+          value.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text(
+                      'Nenhuma sanção aguardando evidência.',
+                      style: TextStyle(color: VeraProbColors.textSecondary),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: value.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
+                ),
+      };
     } else {
       final sealedState = ref.watch(sealedSanctionsNotifierProvider);
       return Column(
@@ -319,6 +346,10 @@ class _Header extends ConsumerWidget {
       AsyncData(:final value) => value.length,
       _ => 0,
     };
+    final disputedCount = switch (ref.watch(disputedSanctionsStreamProvider)) {
+      AsyncData(:final value) => value.length,
+      _ => 0,
+    };
 
     return Row(
       children: [
@@ -340,6 +371,11 @@ class _Header extends ConsumerWidget {
               value: AuditorQueueFilter.pending,
               label: Text('Pendentes ($count)'),
               icon: const Icon(Icons.pending_actions_outlined, size: 14),
+            ),
+            ButtonSegment<AuditorQueueFilter>(
+              value: AuditorQueueFilter.disputed,
+              label: Text('Aguardando Evidência ($disputedCount)'),
+              icon: const Icon(Icons.hourglass_empty_outlined, size: 14),
             ),
             const ButtonSegment<AuditorQueueFilter>(
               value: AuditorQueueFilter.sealed,
