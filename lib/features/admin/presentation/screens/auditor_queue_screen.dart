@@ -390,8 +390,8 @@ class _Header extends ConsumerWidget {
             ),
             const SizedBox(width: 12),
 
-            // Segmented filter toggle — Flexible prevents right overflow
-            Flexible(
+            // Segmented filter toggle — Expanded prevents right overflow
+            Expanded(
               flex: 3,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
