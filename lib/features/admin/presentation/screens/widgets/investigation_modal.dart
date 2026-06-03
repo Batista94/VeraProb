@@ -28,109 +28,144 @@ class InvestigationModal extends ConsumerWidget {
     final tracesAsync = ref.watch(evaluationTracesProvider(setId));
     final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
 
-    return Dialog.fullscreen(
-      child: Scaffold(
-        backgroundColor: VeraProbColors.background,
-        appBar: AppBar(
-          backgroundColor: VeraProbColors.surface,
-          leading: IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.search, size: 18, color: VeraProbColors.primary),
-              const SizedBox(width: 8),
-              Text(
-                'Análise Forense de Decisões',
-                style: VeraProbTypography.sectionTitle,
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: VeraProbColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: VeraProbColors.border),
-                ),
-                child: Text(
-                  'MODO AUDITORIA',
-                  style: VeraProbTypography.caption.copyWith(
-                    color: VeraProbColors.warning,
-                    letterSpacing: 1.0,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+    return Dialog(
+      backgroundColor: VeraProbColors.background,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        width: 1100,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.85,
         ),
-        body: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── Context Header ────────────────────────────
-              _ContextHeader(setId: setId, contractId: contractId),
-              const SizedBox(height: 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Custom AppBar ─────────────────────────────
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: const BoxDecoration(
+                color: VeraProbColors.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                border: Border(
+                  bottom: BorderSide(color: VeraProbColors.border),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.search,
+                    size: 18,
+                    color: VeraProbColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Análise Forense de Decisões',
+                    style: VeraProbTypography.sectionTitle,
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.surfaceElevated,
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: VeraProbColors.border),
+                    ),
+                    child: Text(
+                      'MODO AUDITORIA',
+                      style: VeraProbTypography.caption.copyWith(
+                        color: VeraProbColors.warning,
+                        letterSpacing: 1.0,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    color: VeraProbColors.textSecondary,
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+            ),
 
-              // ── Main Content ──────────────────────────────
-              Expanded(
-                child: Row(
+            // ── Fixed Body (Internal Scrolling) ─────────────────────────
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: Map Panel & Ledger Timeline
+                    // ── Context Header ────────────────────────────
+                    _ContextHeader(setId: setId, contractId: contractId),
+                    const SizedBox(height: 24),
+
+                    // ── Main Content ──────────────────────────────
                     Expanded(
-                      flex: 1,
-                      child: Column(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Consumer(
-                            builder: (context, ref, child) {
-                              final stateAsync = ref.watch(
-                                executionStateProvider(setId),
-                              );
-                              return switch (stateAsync) {
-                                AsyncData(:final value) => () {
-                                  if (value == null) return const SizedBox();
-                                  return InvestigationMapPanel(
-                                    execution: value,
-                                  );
-                                }(),
-                                AsyncLoading() => const Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                                AsyncError() => const SizedBox(),
-                              };
-                            },
-                          ),
-                          const SizedBox(height: 16),
+                          // Left: Map Panel & Ledger Timeline
                           Expanded(
-                            child: _LedgerTimelinePanel(
-                              ledgerAsync: ledgerAsync,
-                              triggeringEventId: switch (tracesAsync) {
-                                AsyncData(:final value) =>
-                                  value.isNotEmpty
-                                      ? value.first.triggeringEventId
-                                      : null,
-                                _ => null,
-                              },
+                            flex: 1,
+                            child: Column(
+                              children: [
+                                Consumer(
+                                  builder: (context, ref, child) {
+                                    final stateAsync = ref.watch(
+                                      executionStateProvider(setId),
+                                    );
+                                    return switch (stateAsync) {
+                                      AsyncData(:final value) => () {
+                                        if (value == null) {
+                                          return const SizedBox();
+                                        }
+                                        return InvestigationMapPanel(
+                                          execution: value,
+                                        );
+                                      }(),
+                                      AsyncLoading() => const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                      AsyncError() => const SizedBox(),
+                                    };
+                                  },
+                                ),
+                                const SizedBox(height: 16),
+                                Expanded(
+                                  child: _LedgerTimelinePanel(
+                                    ledgerAsync: ledgerAsync,
+                                    triggeringEventId: switch (tracesAsync) {
+                                      AsyncData(:final value) =>
+                                        value.isNotEmpty
+                                            ? value.first.triggeringEventId
+                                            : null,
+                                      _ => null,
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 24),
+
+                          // Right: Evaluation Trace
+                          Expanded(
+                            flex: 2,
+                            child: _EvaluationTracePanel(
+                              tracesAsync: tracesAsync,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 24),
-
-                    // Right: Evaluation Trace
-                    Expanded(
-                      flex: 2,
-                      child: _EvaluationTracePanel(tracesAsync: tracesAsync),
-                    ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

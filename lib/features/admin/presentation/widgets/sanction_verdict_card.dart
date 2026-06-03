@@ -283,6 +283,31 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     child: ReverseGeocodedAddress(
                       lat: evidence.primaryEvidenceLat,
                       lng: evidence.primaryEvidenceLng,
+                      onTap: () {
+                        final current = ref.read(selectedSanctionFocusProvider);
+                        if (current?.sanctionId != item.id) {
+                          ref
+                              .read(selectedSanctionFocusProvider.notifier)
+                              .set(
+                                SanctionMapFocus(
+                                  sanctionId: item.id,
+                                  infractionPoint: LatLng(
+                                    evidence.primaryEvidenceLat,
+                                    evidence.primaryEvidenceLng,
+                                  ),
+                                  geofenceCenter:
+                                      evidence.geofenceCenterLat != null
+                                      ? LatLng(
+                                          evidence.geofenceCenterLat!,
+                                          evidence.geofenceCenterLng!,
+                                        )
+                                      : null,
+                                  geofenceRadiusMeters:
+                                      evidence.geofenceRadiusMeters ?? 50.0,
+                                ),
+                              );
+                        }
+                      },
                     ),
                   ),
 
@@ -1028,6 +1053,8 @@ class _ForensicSealRow extends StatelessWidget {
                       ),
                       Text(
                         'SHA-256: ${item.shortEvidenceHash}...',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         style: VeraProbTypography.caption.copyWith(
                           fontFamily: 'monospace',
                           fontSize: 10,

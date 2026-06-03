@@ -7,10 +7,14 @@ import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart';
-import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
+import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 /// Scaffold handle for imperative drawer control (incident-responsive
 /// command center: auto-open on escalation, auto-close when the queue clears).
@@ -126,6 +130,13 @@ class AdminLayout extends ConsumerWidget {
                   const _FeedHealthBadge(),
                 ],
                 const SizedBox(width: 8),
+                _OnboardingBadge(
+                  onNavigate: () {
+                    ref.read(adminIndexProvider.notifier).set(0);
+                    ref.read(selectedContractIdProvider.notifier).set(null);
+                  },
+                ),
+                const SizedBox(width: 8),
                 const _AlertsButton(),
                 const SizedBox(width: 8),
                 const _LogoutButton(),
@@ -199,16 +210,6 @@ class AdminLayout extends ConsumerWidget {
                       color: VeraProbColors.background,
                       child: Column(
                         children: [
-                          OnboardingProgressBanner(
-                            onNavigate: (destIdx) {
-                              ref
-                                  .read(adminIndexProvider.notifier)
-                                  .set(destIdx);
-                              ref
-                                  .read(selectedContractIdProvider.notifier)
-                                  .set(null);
-                            },
-                          ),
                           // Deep hub screen → offer a path back to the launcher.
                           if (selectedIndex > AdminNav.adminHub.index)
                             _HubBackButton(
@@ -406,6 +407,61 @@ class _FeedHealthBadge extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Discrete AppBar badge showing pending configuration prerequisites.
+/// Renders [SizedBox.shrink] when all 4/4 are met. Taps navigate to Dashboard.
+class _OnboardingBadge extends ConsumerWidget {
+  final VoidCallback onNavigate;
+
+  const _OnboardingBadge({required this.onNavigate});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final zonesAsync = ref.watch(operationalZonesProvider);
+    final contractorsAsync = ref.watch(contractorListProvider);
+    final vehiclesAsync = ref.watch(vehiclesListProvider);
+    final rulesAsync = ref.watch(slaTemplatesProvider);
+
+    final hasZones = (zonesAsync.value ?? []).isNotEmpty;
+    final hasContractors = (contractorsAsync.value ?? []).isNotEmpty;
+    final hasVehicles = (vehiclesAsync.value ?? []).any(
+      (v) =>
+          v.status == VehicleStatus.available ||
+          v.status == VehicleStatus.inService,
+    );
+    final hasRules = (rulesAsync.value ?? []).isNotEmpty;
+
+    final completed = [
+      hasZones,
+      hasContractors,
+      hasVehicles,
+      hasRules,
+    ].where((v) => v).length;
+    final remaining = 4 - completed;
+
+    if (remaining == 0) return const SizedBox.shrink();
+
+    return Tooltip(
+      message: 'Configuração pendente ($completed/4) — clique para completar',
+      child: IconButton(
+        icon: Badge(
+          backgroundColor: VeraProbColors.warning,
+          label: Text(
+            '$remaining',
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          child: const Icon(Icons.checklist_rounded),
+        ),
+        color: VeraProbColors.warning,
+        onPressed: onNavigate,
       ),
     );
   }

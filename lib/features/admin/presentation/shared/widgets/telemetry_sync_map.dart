@@ -200,9 +200,16 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: VeraProbColors.surface.withValues(alpha: 0.9),
+                  color: VeraProbColors.surface.withValues(alpha: 0.95),
                   borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: VeraProbColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -216,7 +223,14 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text('Infração', style: VeraProbTypography.caption),
+                    Text(
+                      'Infração',
+                      style: VeraProbTypography.caption.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 11,
+                        color: VeraProbColors.critical,
+                      ),
+                    ),
                     if (_currentFocus!.geofenceCenter != null) ...[
                       const SizedBox(width: 10),
                       Container(

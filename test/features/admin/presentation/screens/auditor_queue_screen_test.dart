@@ -73,6 +73,7 @@ Widget _buildScreen({List<Override> extraOverrides = const []}) {
       sealedSanctionsNotifierProvider.overrideWith(
         () => _MockSealedNotifier(mockSealedState),
       ),
+      disputedSanctionsStreamProvider.overrideWith((ref) => Stream.value([])),
       ...extraOverrides,
     ],
     child: const MaterialApp(home: AuditorQueueScreen()),
@@ -203,7 +204,7 @@ void main() {
         );
         expect(
           find.text(
-            'Erro inesperado na simulação. Verifique os logs do servidor.',
+            'Não foi possível simular a sanção. Verifique se há contratos ativos.',
           ),
           findsOneWidget,
         );

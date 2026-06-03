@@ -93,6 +93,17 @@ class IngestionHealthWidget extends StatelessWidget {
                 letterSpacing: 0.8,
               ),
             ),
+            const SizedBox(width: 6),
+            const Tooltip(
+              message:
+                  'Percentual de cobertura temporal do sinal de telemetria.\n'
+                  'Abaixo de 70% indica gaps críticos de dados.',
+              child: Icon(
+                Icons.info_outline_rounded,
+                size: 12,
+                color: VeraProbColors.textDisabled,
+              ),
+            ),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
