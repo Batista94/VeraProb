@@ -121,6 +121,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
+      operatorName: row['operator_name'] as String?,
     );
   }
 }

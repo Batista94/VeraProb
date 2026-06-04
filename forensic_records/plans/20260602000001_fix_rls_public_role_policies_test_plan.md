@@ -2,32 +2,38 @@
 
 **Migração:** `supabase/migrations/20260602000001_fix_rls_public_role_policies.sql`
 **Invariantes de Segurança:** INV-1, INV-2, INV-3, INV-22, INV-26
-**Risco:** Alto — Altera as políticas de RLS e regras de validação de INSERT em tabelas críticas voltadas a inquilinos (tenants).
+**Risco:** Alto — Altera políticas de RLS e regras de validação de INSERT em tabelas críticas voltadas a inquilinos (tenants).
+
+> [!NOTE]
+> **Revisão pós-execução (estado atual validado).** Este plano foi reconciliado com o comportamento real do banco. Duas premissas do plano original estavam incorretas e foram corrigidas aqui:
+>
+> 1. **`spatial_ref_sys` não é revogável por migração.** A tabela pertence a `supabase_admin`; a role de migração (`postgres`) não é superuser nem membro de `supabase_admin`, então o `REVOKE` é um **no-op** (emite `WARNING 01006`). A leitura por `anon`/`authenticated` **permanece** — o resultado esperado é **sucesso**, não `permission denied`. A tabela contém apenas dados geodésicos públicos (`srid`, `srtext`, `proj4text`), **sem `organization_id`**, logo não há vazamento de tenant (INV-22 intacto).
+> 2. **Regressões posteriores foram fechadas em `20260804000001`.** As migrações `20260614000001` e `20260616000001` reintroduziram políticas always-true (`tpl_service_all`, `tsq_insert_service`) e um grant `anon`, reabrindo um vetor cross-tenant **anon** (CRÍTICO) em `telegram_pending_links`. A migração de re-endurecimento `20260804000001_reharden_rls_always_true_regressions.sql` corrige isso, com guard permanente `supabase/tests/inv22_always_true_policy_invariant_test.sql`. Os resultados esperados abaixo já refletem o estado pós-`20260804000001`.
 
 ---
 
 ## 📋 Visão Geral do Endurecimento
 
-Este plano de testes de aceitação de usuário (UAT) valida o fechamento de brechas críticas de segurança relacionadas a políticas de Row-Level Security (RLS) associadas erroneamente ao escopo da role pública (`public`) ou com condições permissivas sempre verdadeiras (`USING(true)` ou `WITH CHECK(true)`). 
+Este plano de aceitação (UAT) valida o fechamento de brechas de RLS associadas erroneamente ao escopo da role pública (`public`) ou com condições permissivas sempre verdadeiras (`USING(true)` / `WITH CHECK(true)`).
 
-As correções implementadas visam garantir que:
-1. **spatial_ref_sys (PostGIS):** Acesso de leitura revogado para as roles cliente (`anon` e `authenticated`) para mitigar enumeração de esquemas.
-2. **Fim de Políticas "Always-True":** Remoção de políticas públicas permissivas sobre `idempotency_keys`, `telegram_chat_bindings`, `telegram_binding_tokens`, `justification_recomputation_signals` e `justification_submission_tokens`.
-3. **Políticas Deny-All Restritivas:** Adição de barreiras `RESTRICTIVE` para impedir interações diretas de sessões autenticadas com as tabelas de uso exclusivo da API interna/bot (`telegram_pending_links` e `telegram_user_consents`).
-4. **Isolamento de Escrita por Tenant (INV-1 & INV-22):** Substituição de permissões genéricas de inserção por regras restritas baseadas estritamente nas claims de organização do JWT de chamada.
-5. **Sanidade dos Snapshots Financeiros:** Remoção de políticas obsoletas sempre verdadeiras em `contractual_financial_snapshot`.
+Garantias após `20260602000001` **+** `20260804000001`:
+
+1. **`spatial_ref_sys` (PostGIS):** leitura **não** revogável via migração (no-op). Risco residual = enumeração de SRID público, sem dados de tenant. Mitigação efetiva é de plataforma (`supabase_admin`), rastreada à parte.
+2. **Fim de políticas "always-true":** remoção das políticas públicas permissivas sobre `idempotency_keys`, `telegram_chat_bindings`, `telegram_binding_tokens`, `justification_recomputation_signals`, `justification_submission_tokens` e — via `20260804000001` — `tpl_service_all` (`telegram_pending_links`) e `tsq_insert_service` (`telegram_status_queries`).
+3. **Políticas deny-all restritivas:** barreiras `RESTRICTIVE` impedem interações diretas de sessões `authenticated` **e** `anon` com tabelas de uso exclusivo da API interna/bot (`telegram_pending_links`, `telegram_user_consents`).
+4. **Isolamento de escrita por tenant (INV-1 & INV-22):** permissões genéricas de inserção substituídas por regras restritas às claims de organização do JWT.
+5. **Sanidade dos snapshots financeiros:** remoção de políticas obsoletas always-true em `contractual_financial_snapshot`.
 
 ---
 
 ## 🛠️ Pré-requisitos & Configuração de Ambiente
 
-Antes de iniciar os testes manuais e de banco de dados, garanta a inicialização correta do ecossistema:
-
 | Item | Comando / Ação | Estado Esperado |
 |------|----------------|-----------------|
-| Inicializar Supabase | `make setup` ou `supabase start` | Containers ativos e banco resetado com a migração aplicada |
+| Inicializar Supabase | `make setup` ou `supabase start` | Containers ativos, banco resetado com migrações aplicadas |
+| Aplicar migrações | `supabase migration up` | Inclui `20260804000001` (re-endurecimento) |
 | Aplicação Flutter | `make run` | Frontend rodando localmente no navegador |
-| Massa de Dados Base | `supabase db reset` | Tabelas populadas através do `supabase/seed.sql` |
+| Massa de Dados Base | `supabase db reset` | Tabelas populadas via `supabase/seed.sql` |
 
 ### 🔐 Credenciais de Teste (Inquilinos Isolados)
 
@@ -35,7 +41,7 @@ Antes de iniciar os testes manuais e de banco de dados, garanta a inicializaçã
   * **E-mail:** `admin-a@veraprob.dev`
   * **Senha:** `veraprob123!`
   * **Org ID:** `00000000-0000-0000-0000-000000000001`
-  * **JWT Claim Path:** `auth.jwt() ->> 'organization_id'` (ou via app_metadata)
+  * **JWT Claim Path:** `auth.jwt() ->> 'organization_id'` (ou via `app_metadata`)
 
 * **Inquilino B (Org Beta):**
   * **E-mail:** `admin-b@veraprob.dev`
@@ -53,93 +59,68 @@ Antes de iniciar os testes manuais e de banco de dados, garanta a inicializaçã
    * E-mail: `admin-a@veraprob.dev`
    * Senha: `veraprob123!`
 3. Clique em **Entrar**.
-4. **Checkpoint Visual:** Certifique-se de ser redirecionado com sucesso para o painel administrativo da **Org Alpha**. Nenhum erro visual ou de rede deve ser apresentado no console.
+4. **Checkpoint Visual:** redirecionamento ao painel da **Org Alpha**. Nenhum erro visual ou de rede no console.
 
 ---
 
-### Passo 2: Happy Path - Inserção de Dados Autenticados (UAT Funcional)
+### Passo 2: Happy Path — Inserção de Dados Autenticados (UAT Funcional)
 
-Para verificar que a nova política restrita de inserção não bloqueou as ações legítimas da aplicação Flutter:
+Verifica que a política restrita de inserção não bloqueou ações legítimas da aplicação Flutter:
 
-1. No painel lateral, navegue até **"Fila Auditora"** (ou crie um evento que gere inserção em `sanction_review_queue` ou `shadow_verdicts`).
-2. Execute a ação de selamento de veredito ou injeção de teste para gerar uma sanção:
-   * Clique em **"Gerar Sanção de Teste"**.
-3. Confirme que um card correspondente ao veredito foi gerado com sucesso.
-4. **Validação no Banco de Dados:**
-   Abra uma sessão no banco de dados e execute a consulta a seguir para garantir que o registro foi criado com o `organization_id` correto da Org Alpha:
+1. No painel lateral, navegue até **"Fila Auditora"**.
+2. Clique em **"Gerar Sanção de Teste"** para gerar uma sanção.
+3. Confirme que um card correspondente ao veredito foi gerado.
+4. **Validação no Banco:**
+
    ```sql
-   SELECT id, organization_id, contract_id, set_id 
-   FROM public.sanction_review_queue 
+   SELECT id, organization_id, contract_id, set_id
+   FROM public.sanction_review_queue
    WHERE organization_id = '00000000-0000-0000-0000-000000000001'
    ORDER BY created_at DESC LIMIT 1;
    ```
-   * **Resultado Esperado:** O registro inserido deve constar na tabela sob a propriedade da Org Alpha.
+
+   * **Resultado Esperado:** o registro inserido consta sob a propriedade da Org Alpha.
 
 ---
 
-### Passo 3: Verificação de Banco de Dados e Ataques Adversários (UAT de Segurança)
+### Passo 3: Verificação de Banco e Ataques Adversários (UAT de Segurança)
 
-Para simular e verificar as restrições e o isolamento a nível de banco de dados, execute as consultas manuais estruturadas como se fossem requisições vindo da API externa ou de um agente hostil.
+Use o cliente SQL do Supabase Studio (`http://localhost:54323`) ou `psql`. Execute cada bloco **inteiro** (de `BEGIN` a `ROLLBACK`) de uma só vez — executar statements isolados reseta o role da sessão.
 
-Use o cliente SQL do Supabase Studio (`http://localhost:54323` por padrão) ou a ferramenta de sua escolha conectando com a role `authenticated`.
+#### 🧪 Teste 3.1: `spatial_ref_sys` — leitura permanece (no-op de REVOKE)
 
-#### 🧪 Teste 3.1: Revogação de privilégios na tabela `spatial_ref_sys`
-**Objetivo:** Garantir que usuários comuns não possam listar dados de referência espacial (PostGIS) diretamente por motivos de segurança.
+**Objetivo:** documentar o comportamento real — a leitura **não** é bloqueada por esta migração.
 
-> [!WARNING]
-> **Instrução Crítica:** No Supabase Studio, TODO o bloco SQL (desde `BEGIN` até `ROLLBACK`) deve ser executado **como uma única query** (selecionar todo o texto e clicar "Run"). Executar statements individualmente causa o reset do role na sessão entre execuções.
-> Como alternativa, recomendo a execução via **`psql` CLI** para total controle da transação:
-> ```bash
-> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
-> BEGIN;
-> SET LOCAL ROLE authenticated;
-> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"00000000-0000-0000-0000-000000000002\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
-> SELECT * FROM public.spatial_ref_sys LIMIT 5;
-> ROLLBACK;
-> "
-> ```
-
-**Instruções de execução:**
 ```sql
--- Simula um usuário autenticado da aplicação (Selecione todo o bloco e clique em "Run")
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"00000000-0000-0000-0000-000000000002","organization_id":"00000000-0000-0000-0000-000000000001"}';
 
--- Tenta selecionar da tabela espacial
 SELECT * FROM public.spatial_ref_sys LIMIT 5;
 ROLLBACK;
 ```
-* **Resultado Esperado:** O Postgres deve lançar um erro explícito de violação de privilégio:
-  `ERROR:  permission denied for table spatial_ref_sys`
-* **Validação Inversa:** Repita o teste definindo a role para `service_role`. A consulta deve funcionar normalmente para processos internos e de sistema.
+
+* **Resultado Esperado:** a consulta **retorna linhas** (sucesso). O `REVOKE` da migração é um no-op porque `spatial_ref_sys` pertence a `supabase_admin` e a role `postgres` não pode revogar grants de outro concedente.
+* **Por que é aceitável (INV-22):** a tabela só contém referência geodésica pública (`srid`, `auth_name`, `srtext`, `proj4text`) — **sem `organization_id`, sem dado de tenant**. Não há vazamento entre inquilinos.
+* **Validação adicional (sem coluna de tenant):**
+
+  ```sql
+  SELECT count(*) FROM information_schema.columns
+  WHERE table_schema='public' AND table_name='spatial_ref_sys' AND column_name='organization_id';
+  -- Esperado: 0
+  ```
 
 ---
 
-#### 🧪 Teste 3.2: Tentativa de Ataque Cross-Tenant via Injeção de Escrita (INV-22)
-**Objetivo:** Confirmar que a nova regra `WITH CHECK` impede o Inquilino A de injetar dados na conta do Inquilino B.
+#### 🧪 Teste 3.2: Ataque Cross-Tenant via Injeção de Escrita (INV-22)
 
-> [!WARNING]
-> **Instrução Crítica:** Execute todo o bloco SQL a seguir de uma única vez no Supabase Studio para evitar reset de sessão e role.
-> Ou via **`psql` CLI**:
-> ```bash
-> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
-> BEGIN;
-> SET LOCAL ROLE authenticated;
-> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"11111111-1111-1111-1111-111111111111\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
-> INSERT INTO public.sanction_review_queue (organization_id, ledger_entry_id, set_id, contract_id, verdict_evidence) VALUES ('00000000-0000-0000-0000-000000000002', gen_random_uuid(), 'set_attack_01', 'contract_attack_01', '{\"status\": \"tampered\"}'::jsonb);
-> ROLLBACK;
-> "
-> ```
+**Objetivo:** confirmar que `WITH CHECK` impede o Inquilino A de injetar dados na conta do Inquilino B.
 
-**Instruções de execução:**
 ```sql
 BEGIN;
--- Define a sessão simulada do Inquilino A
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"11111111-1111-1111-1111-111111111111","organization_id":"00000000-0000-0000-0000-000000000001"}';
 
--- Tenta inserir dados pertencentes ao Inquilino B (Org Beta: 00000000-0000-0000-0000-000000000002)
 INSERT INTO public.sanction_review_queue (
   organization_id, ledger_entry_id, set_id, contract_id, verdict_evidence
 ) VALUES (
@@ -151,121 +132,133 @@ INSERT INTO public.sanction_review_queue (
 );
 ROLLBACK;
 ```
-* **Resultado Esperado:** A tentativa de inserção cruzada deve ser sumariamente bloqueada com o erro:
+
+* **Resultado Esperado:** bloqueado —
   `ERROR:  new row violates row-level security policy for table "sanction_review_queue"`
 
 ---
 
-#### 🧪 Teste 3.3: Bloqueio de Escrita em Tabelas Exclusivas do Bot (Restrições Deny-All)
-**Objetivo:** Garantir que usuários comuns não possam criar ou alterar dados do fluxo interno do Telegram, como consentimentos de usuários e links pendentes de ativação.
+#### 🧪 Teste 3.3: Bloqueio de Escrita em Tabela Exclusiva do Bot (Deny-All)
 
-> [!WARNING]
-> **Instrução Crítica:** Execute todo o bloco SQL de uma vez só ou via `psql` CLI:
-> ```bash
-> psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" -c "
-> BEGIN;
-> SET LOCAL ROLE authenticated;
-> SET LOCAL request.jwt.claims = '{\"role\":\"authenticated\",\"sub\":\"11111111-1111-1111-1111-111111111111\",\"organization_id\":\"00000000-0000-0000-0000-000000000001\"}';
-> INSERT INTO public.telegram_pending_links (short_id, organization_id, evidence_upload_id, execution_set_id, driver_id, expires_at_utc) VALUES ('ABCD1234', '00000000-0000-0000-0000-000000000001', gen_random_uuid(), 'set_attack_01', gen_random_uuid(), NOW() + INTERVAL '1 hour');
-> ROLLBACK;
-> "
-> ```
+**Objetivo:** garantir que `authenticated` **e** `anon` não escrevem em `telegram_pending_links`.
 
-**Instruções de execução:**
+**3.3a — sessão `authenticated` (bloqueada por deny-all RESTRICTIVE):**
+
 ```sql
 BEGIN;
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"11111111-1111-1111-1111-111111111111","organization_id":"00000000-0000-0000-0000-000000000001"}';
 
--- Tenta inserir um link pendente com as colunas reais da tabela
 INSERT INTO public.telegram_pending_links (
-  short_id,
-  organization_id,
-  evidence_upload_id,
-  execution_set_id,
-  driver_id,
-  expires_at_utc
+  short_id, organization_id, evidence_upload_id, execution_set_id, driver_id, expires_at_utc
 ) VALUES (
-  'ABCD1234', -- short_id deve ter exatamente 8 caracteres
-  '00000000-0000-0000-0000-000000000001',
-  gen_random_uuid(),  -- gera UUID temporário para simular upload id (RLS rejeita antes de verificar a FK)
-  'set_attack_01',
-  gen_random_uuid(),
-  NOW() + INTERVAL '1 hour'
+  'ABCD1234', '00000000-0000-0000-0000-000000000001',
+  gen_random_uuid(), 'set_attack_01', gen_random_uuid(), NOW() + INTERVAL '1 hour'
 );
 ROLLBACK;
 ```
-* **Resultado Esperado:** Bloqueado pela política `RESTRICTIVE` da tabela:
+
+* **Resultado Esperado:**
   `ERROR:  new row violates row-level security policy for table "telegram_pending_links"`
+
+**3.3b — sessão `anon` (vetor CRÍTICO fechado em `20260804000001`):**
+
+```sql
+BEGIN;
+SET LOCAL ROLE anon;
+SELECT * FROM public.telegram_pending_links LIMIT 1;
+ROLLBACK;
+```
+
+* **Resultado Esperado:**
+  `ERROR:  permission denied for table telegram_pending_links`
+  (grant `anon` revogado + deny-all RESTRICTIVE para `anon`). Antes de `20260804000001`, esta consulta retornava linhas cross-tenant.
 
 ---
 
-#### 🧪 Teste 3.4: Remoção de Políticas Antigas e "Always-True"
-**Objetivo:** Auditar os metadados do Postgres para certificar que nenhuma política permissiva indesejada restou ativa nas tabelas auditadas.
+#### 🧪 Teste 3.4: Ausência de Políticas Always-True (Auditoria de Metadados)
 
-**Instruções de execução:**
+**Objetivo:** certificar que nenhuma política permissiva always-true restou ativa nas tabelas auditadas.
+
 ```sql
--- Busca por políticas que permitam acesso irrestrito para roles comuns (cast explicitos para tipos compatíveis)
 SELECT tablename, policyname, roles, cmd, qual, with_check
 FROM pg_policies
 WHERE schemaname = 'public'
+  AND permissive = 'PERMISSIVE'
   AND (qual = 'true' OR with_check = 'true')
-  AND (roles::text[] && ARRAY['public','authenticated']::text[] OR roles::text = '{}')
+  AND (roles::text[] && ARRAY['public','authenticated','anon']::text[] OR roles::text = '{}')
   AND tablename IN (
-    'idempotency_keys', 
-    'telegram_chat_bindings', 
-    'telegram_pending_links', 
-    'telegram_user_consents', 
+    'idempotency_keys',
+    'telegram_chat_bindings',
+    'telegram_pending_links',
+    'telegram_user_consents',
     'telegram_binding_tokens',
+    'telegram_status_queries',
     'justification_recomputation_signals',
     'justification_submission_tokens',
     'contractual_financial_snapshot'
   );
 ```
-* **Resultado Esperado:** A consulta deve retornar **EXATAMENTE 0 linhas**. Caso alguma linha seja retornada, significa que ainda existe uma política permissiva ativa que anula a segurança do RLS.
+
+* **Resultado Esperado:** **EXATAMENTE 0 linhas.** Qualquer linha indica política permissiva ativa anulando o RLS.
+* **Nota:** na execução original retornava 1 linha (`tpl_service_all`, reintroduzida por `20260614000001`). Corrigido por `20260804000001`; o guard permanente `inv22_always_true_policy_invariant_test.sql` impede recorrência em CI.
+
+---
+
+#### 🧪 Teste 3.5: `tsq_insert_service` reescopado a `service_role`
+
+**Objetivo:** confirmar que a política de INSERT de `telegram_status_queries` não está mais exposta a `public`.
+
+```sql
+SELECT roles::text
+FROM pg_policies
+WHERE schemaname='public' AND tablename='telegram_status_queries' AND policyname='tsq_insert_service';
+```
+
+* **Resultado Esperado:** `{service_role}`.
 
 ---
 
 ## 🤖 Automação de Testes pgTAP
 
-Para execução determinística e validação contínua da cobertura desse endurecimento (em CI/CD e ambientes de desenvolvimento local):
+Para validação determinística e contínua (CI/CD e local):
 
-Execute o script de automação:
 ```bash
 make test-db
 ```
 
-Os testes mapeados em [20260602000001_fix_rls_public_role_policies_test.sql](file:///C:/Users/wes_b/Projects/VeraProb/supabase/tests/20260602000001_fix_rls_public_role_policies_test.sql) verificam programmaticamente:
-- A remoção de todas as 15 antigas políticas especificadas.
-- Presença das 2 políticas restritivas do Telegram.
-- Comando e restrições de papéis (`roles`) para as novas políticas de inserção.
-- O isolamento comportamental de Tenants nas tabelas `sanction_review_queue` e `shadow_verdicts`.
+Cobertura relevante:
+
+* `20260602000001_fix_rls_public_role_policies_test.sql` — políticas removidas + deny-all + isolamento de INSERT por tenant (`sanction_review_queue`, `shadow_verdicts`).
+* `20260804000001_reharden_rls_always_true_regressions_test.sql` — fechamento das regressões (`tpl_service_all` removida, `anon` revogado, `tsq_insert_service` em `service_role`).
+* `inv22_always_true_policy_invariant_test.sql` — **guard permanente** (scan de `pg_policies` independente de timestamp) + ausência de coluna de tenant em `spatial_ref_sys`.
+
+**Estado atual:** `Result: PASS` (410 testes).
 
 ---
 
 ## 📊 Matriz de Aceitação UAT
 
-Use esta matriz para auditar e assinar o plano UAT:
-
 | Cód | Validação UAT | Comportamento Esperado | Status |
-|:---|:---|:---|:---:|
-| **UAT-01** | Login com credenciais válidas do Inquilino A | Redirecionamento correto para o dashboard com sessão autenticada estabelecida | `[ ]` |
-| **UAT-02** | Happy Path: Inserção de dados legítimos da Org Alpha | Dados salvos com `organization_id` da Org Alpha sem disparar RLS errors | `[ ]` |
-| **UAT-03** | Blindagem: Consulta à tabela `spatial_ref_sys` por usuário comum | Acesso negado com erro de privilégio no Postgres | `[ ]` |
-| **UAT-04** | Injeção Adversária: Escrita de dados cross-tenant (Org A -> Org B) | Bloqueio imediato pelo banco de dados com erro de RLS (INV-22) | `[ ]` |
-| **UAT-05** | Acesso ao Bot: Tentativa de inserção em tabelas privadas do Telegram | Bloqueado preventivamente por políticas RESTRICTIVE | `[ ]` |
-| **UAT-06** | Auditoria Interna: Consulta a políticas públicas sempre verdadeiras | Nenhuma regra vulnerável encontrada na lista de `pg_policies` | `[ ]` |
-| **UAT-07** | Execução de Testes Automatizados da Camada de Dados | Sucesso em todos os testes contidos na suíte do pgTAP | `[ ]` |
+|:----|:--------------|:-----------------------|:------:|
+| **UAT-01** | Login com credenciais válidas do Inquilino A | Redirecionamento ao dashboard com sessão autenticada | `[ ]` |
+| **UAT-02** | Happy Path: inserção legítima da Org Alpha | Dados salvos com `organization_id` da Org Alpha, sem erro de RLS | `[ ]` |
+| **UAT-03** | `spatial_ref_sys` por usuário comum | **Sucesso** (leitura não revogável; tabela sem dado de tenant) | `[ ]` |
+| **UAT-04** | Injeção cross-tenant (Org A → Org B) | Bloqueio imediato por RLS (INV-22) | `[ ]` |
+| **UAT-05** | Escrita do bot por `authenticated` em `telegram_pending_links` | Bloqueado por política RESTRICTIVE | `[ ]` |
+| **UAT-06** | Leitura por `anon` em `telegram_pending_links` | `permission denied` (grant revogado em `20260804000001`) | `[ ]` |
+| **UAT-07** | Auditoria de políticas always-true | 0 linhas | `[ ]` |
+| **UAT-08** | `tsq_insert_service` reescopado | `{service_role}` | `[ ]` |
+| **UAT-09** | Suíte pgTAP completa | `make test-db` → PASS (410) | `[ ]` |
 
 ---
 
 ## 🔄 Plano de Rollback
 
-Caso o endurecimento de segurança cause efeitos colaterais severos em produção ou bloqueie fluxos legítimos do aplicativo Flutter:
+Caso o endurecimento bloqueie fluxos legítimos do aplicativo:
 
-1. **Ação Rápida:** Reverta temporariamente as políticas restaurando a migração anterior ou ajustando as regras sob council.
-2. **Inspeção de Claims:** Se os erros de RLS persistirem para usuários legítimos, verifique se a claim do JWT correspondente ao inquilino está utilizando o caminho correto:
-   * Mapeamento de claim em `sanction_review_queue`: `(auth.jwt() ->> 'organization_id')::uuid`
-   * Mapeamento de claim em outras tabelas: `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`
-3. **Log de Diagnóstico:** Consulte os logs de auditoria do Postgres para correlacionar o `sub` e a claim do token JWT enviado na requisição com o `organization_id` do registro problemático.
-
+1. **Ação rápida:** criar nova migração forward restaurando a política específica (append-only; **nunca** editar migração merged) — porém isso reabre o vetor `anon` crítico e seria bloqueado pelo guard `inv22_always_true_policy_invariant_test.sql` + regra de scanner `ALWAYS-TRUE-RLS-POLICY`.
+2. **Inspeção de claims:** se erros de RLS persistirem para usuários legítimos, verifique o caminho da claim do JWT:
+   * `sanction_review_queue`: `(auth.jwt() ->> 'organization_id')::uuid`
+   * Demais tabelas: `(auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid`
+3. **Log de diagnóstico:** correlacione `sub` e claim do token com o `organization_id` do registro problemático.

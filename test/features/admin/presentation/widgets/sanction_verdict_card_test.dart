@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
@@ -132,6 +133,8 @@ SanctionQueueItemView _makeItem({
   String clauseRef = 'ATR-01',
   double deltaValue = 5.0,
   double thresholdValue = 0.0,
+  String? vehiclePlate = 'TST-0001',
+  String? operatorName = 'João Silva',
 }) {
   final evidence = VerdictEvidence.create(
     clauseRef: clauseRef,
@@ -157,6 +160,8 @@ SanctionQueueItemView _makeItem({
     verdictEvidence: evidence,
     status: status,
     createdAtUtc: DateTime.utc(2026, 1, 15, 10, 0),
+    vehiclePlate: vehiclePlate,
+    operatorName: operatorName,
   );
 }
 
@@ -780,6 +785,136 @@ void main() {
         addTearDown(tester.view.resetPhysicalSize);
       },
     );
+  });
+
+  group('SanctionVerdictCard — Severity accent (status-driven)', () {
+    Color accentColor(WidgetTester tester) {
+      final box = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey('verdict-severity-accent')),
+      );
+      return (box.decoration as BoxDecoration).color!;
+    }
+
+    testWidgets('pending keeps red accent even when focused', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(_buildCard(_makeItem()));
+      await tester.pump();
+
+      // Unfocused pending → red.
+      expect(accentColor(tester), VeraProbColors.error);
+
+      // Focus the card by tapping its clause badge.
+      await tester.tap(find.text('ATR-01'));
+      await tester.pump();
+
+      // Still red — focus must not override severity.
+      expect(accentColor(tester), VeraProbColors.error);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('disputed → amber accent; applied → grey accent', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.disputed)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.warning);
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.applied)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.textDisabled);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+
+  group('SanctionVerdictCard — Asset/Operator identity (INV-14)', () {
+    testWidgets('renders vehicle plate and operator name prominently', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(vehiclePlate: 'TST-0001', operatorName: 'Ana Reis'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('TST-0001'), findsOneWidget);
+      expect(find.text('Ana Reis'), findsOneWidget);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('null operator degrades to "Não Identificado"', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: 'TST-0001', operatorName: null)),
+      );
+      await tester.pump();
+
+      expect(find.text('Não Identificado'), findsOneWidget);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('SELAR disabled when vehicle plate is missing', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: null), notifier: notifier),
+      );
+      await tester.pump();
+
+      final btnFinder = find.ancestor(
+        of: find.text('SELAR VEREDITO'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final btn = tester.widget<FilledButton>(btnFinder.first);
+      expect(btn.onPressed, isNull);
+
+      // Tapping must not invoke approve.
+      await tester.tap(find.text('SELAR VEREDITO'), warnIfMissed: false);
+      await tester.pump();
+      expect(notifier.approveCalls, 0);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('SELAR enabled when vehicle plate is present', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: 'TST-0001'), notifier: notifier),
+      );
+      await tester.pump();
+
+      final btnFinder = find.ancestor(
+        of: find.text('SELAR VEREDITO'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final btn = tester.widget<FilledButton>(btnFinder.first);
+      expect(btn.onPressed, isNotNull);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
   });
 
   group('SanctionVerdictCard — VEL layout', () {

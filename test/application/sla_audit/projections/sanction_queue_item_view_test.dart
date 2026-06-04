@@ -114,6 +114,33 @@ void main() {
       expect(view.organizationId, 'org-1');
       expect(view.status, SanctionReviewStatus.pending);
       expect(view.reviewedAtUtc, isNull);
+      // Absent asset/operator columns degrade gracefully to null (INV-14).
+      expect(view.vehiclePlate, isNull);
+      expect(view.operatorName, isNull);
+      expect(view.assetIdentifier, isNull);
+    });
+
+    test('fromRow parses asset (plate) and operator name (INV-14)', () {
+      final evidence = makeEvidence(150000);
+      final row = {
+        'id': 'sq-row-asset',
+        'organization_id': 'org-1',
+        'ledger_entry_id': 'ledger-asset',
+        'set_id': 'set-asset',
+        'contract_id': 'contract-asset',
+        'verdict_evidence': evidence.toJson(),
+        'status': 'pending',
+        'created_at': now.toIso8601String(),
+        'reviewed_at': null,
+        'reviewed_by': null,
+        'rejection_reason': null,
+        'vehicle_plate': 'TST-0001',
+        'operator_name': 'João Silva',
+      };
+      final view = SanctionQueueItemView.fromRow(row);
+      expect(view.vehiclePlate, 'TST-0001');
+      expect(view.assetIdentifier, 'TST-0001');
+      expect(view.operatorName, 'João Silva');
     });
 
     test('fromRow with reviewed fields', () {

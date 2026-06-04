@@ -30,6 +30,7 @@ class _FakeSimulationService extends SanctionSimulationService {
   Future<void> simulateSpeedViolation({
     required String organizationId,
     required String vehiclePlate,
+    String operatorName = 'Motorista Teste',
     double speed = 88.5,
     double limit = 80.0,
   }) async {

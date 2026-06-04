@@ -534,6 +534,7 @@ export type Database = {
           close_reason: string | null;
           closed_at_utc: string | null;
           closed_by_user_id: string | null;
+          contractor_id: string | null;
           contractor_name: string;
           created_at_utc: string;
           current_hash: string | null;
@@ -560,6 +561,7 @@ export type Database = {
           close_reason?: string | null;
           closed_at_utc?: string | null;
           closed_by_user_id?: string | null;
+          contractor_id?: string | null;
           contractor_name: string;
           created_at_utc?: string;
           current_hash?: string | null;
@@ -586,6 +588,7 @@ export type Database = {
           close_reason?: string | null;
           closed_at_utc?: string | null;
           closed_by_user_id?: string | null;
+          contractor_id?: string | null;
           contractor_name?: string;
           created_at_utc?: string;
           current_hash?: string | null;
@@ -607,6 +610,20 @@ export type Database = {
           version?: number;
         };
         Relationships: [
+          {
+            foreignKeyName: "contracts_contractor_id_fkey";
+            columns: ["contractor_id"];
+            isOneToOne: false;
+            referencedRelation: "contractors";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contracts_contractor_id_fkey";
+            columns: ["contractor_id"];
+            isOneToOne: false;
+            referencedRelation: "contractors_view";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "contracts_organization_id_fkey";
             columns: ["organization_id"];
@@ -1133,6 +1150,7 @@ export type Database = {
           binding_latitude: number | null;
           binding_longitude: number | null;
           binding_timestamp_utc: string | null;
+          bound_operator_id: string | null;
           bound_vehicle_id: string | null;
           contract_id: string;
           contractual_value_cents: number;
@@ -1158,6 +1176,7 @@ export type Database = {
           binding_latitude?: number | null;
           binding_longitude?: number | null;
           binding_timestamp_utc?: string | null;
+          bound_operator_id?: string | null;
           bound_vehicle_id?: string | null;
           contract_id: string;
           contractual_value_cents: number;
@@ -1183,6 +1202,7 @@ export type Database = {
           binding_latitude?: number | null;
           binding_longitude?: number | null;
           binding_timestamp_utc?: string | null;
+          bound_operator_id?: string | null;
           bound_vehicle_id?: string | null;
           contract_id?: string;
           contractual_value_cents?: number;
@@ -1205,6 +1225,13 @@ export type Database = {
           window_start_utc?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "execution_states_bound_operator_id_fkey";
+            columns: ["bound_operator_id"];
+            isOneToOne: false;
+            referencedRelation: "drivers";
+            referencedColumns: ["id"];
+          },
           {
             foreignKeyName: "execution_states_set_id_fkey";
             columns: ["set_id"];
@@ -2357,6 +2384,7 @@ export type Database = {
           created_at: string;
           id: string;
           ledger_entry_id: string;
+          operator_name: string | null;
           organization_id: string;
           organization_name: string | null;
           rejection_reason: string | null;
@@ -2372,6 +2400,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           ledger_entry_id: string;
+          operator_name?: string | null;
           organization_id: string;
           organization_name?: string | null;
           rejection_reason?: string | null;
@@ -2387,6 +2416,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           ledger_entry_id?: string;
+          operator_name?: string | null;
           organization_id?: string;
           organization_name?: string | null;
           rejection_reason?: string | null;

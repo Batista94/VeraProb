@@ -440,4 +440,57 @@ void main() {
       },
     );
   });
+
+  group('SlaLedgerMapper - SanctionRecommended identity fallback (INV-18)', () {
+    final DateTime now = DateTime.now().toUtc();
+
+    VerdictEvidence evidence() => VerdictEvidence.create(
+      clauseRef: 'VEL-01',
+      ruleId: 'rule-speed-v1',
+      ruleVersion: 1,
+      primaryEvidenceLat: -23.5,
+      primaryEvidenceLng: -46.6,
+      primaryEvidenceTimestampUtc: now,
+      deltaValue: 8.5,
+      thresholdValue: 80.0,
+      fineCents: const Money(150000),
+      confidenceScore: 99,
+    );
+
+    test('omits asset/operator keys when null (real engine flow)', () {
+      final entry = SlaLedgerMapper.mapToEntry(
+        SanctionRecommendedEvent(
+          organizationId: 'org-1',
+          occurredAtUtc: now,
+          setId: 'set-1',
+          contractId: 'contract-1',
+          planVersion: 1,
+          verdictEvidence: evidence(),
+        ),
+      );
+
+      expect(entry.type, 'SANCTION_RECOMMENDED');
+      expect(entry.payload.containsKey('vehicle_plate'), isFalse);
+      expect(entry.payload.containsKey('operator_name'), isFalse);
+      expect(entry.payload['verdict_evidence'], isNotNull);
+    });
+
+    test('carries asset/operator into payload when provided (simulation)', () {
+      final entry = SlaLedgerMapper.mapToEntry(
+        SanctionRecommendedEvent(
+          organizationId: 'org-1',
+          occurredAtUtc: now,
+          setId: 'set-1',
+          contractId: 'contract-1',
+          planVersion: 1,
+          verdictEvidence: evidence(),
+          vehiclePlate: 'TST-0001',
+          operatorName: 'João Silva',
+        ),
+      );
+
+      expect(entry.payload['vehicle_plate'], 'TST-0001');
+      expect(entry.payload['operator_name'], 'João Silva');
+    });
+  });
 }

@@ -217,7 +217,12 @@ class SlaLedgerMapper {
         contractId: event.contractId,
         planVersion: event.planVersion,
         occurredAtUtc: event.occurredAtUtc,
-        payload: {'verdict_evidence': event.verdictEvidence.toJson()},
+        payload: {
+          'verdict_evidence': event.verdictEvidence.toJson(),
+          // INV-18 Zero-Trust fallback: only present for the dev simulation.
+          if (event.vehiclePlate != null) 'vehicle_plate': event.vehiclePlate,
+          if (event.operatorName != null) 'operator_name': event.operatorName,
+        },
       );
     }
 

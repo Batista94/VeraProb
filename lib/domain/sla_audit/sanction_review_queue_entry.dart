@@ -36,6 +36,11 @@ class SanctionReviewQueueEntry extends Equatable {
   /// Excluded from [props]: identity is [id]-based, not plate-based.
   final String? vehiclePlate;
 
+  /// Denormalized operator (driver) name, resolved at INSERT time by the DB
+  /// trigger (migration 20260805000002_srq_operator_name.sql). Nullable —
+  /// telemetry may arrive without an authenticated operator (INV-14).
+  final String? operatorName;
+
   const SanctionReviewQueueEntry({
     required this.id,
     required this.organizationId,
@@ -49,6 +54,7 @@ class SanctionReviewQueueEntry extends Equatable {
     this.reviewedByUserId,
     this.rejectionReason,
     this.vehiclePlate,
+    this.operatorName,
   });
 
   SanctionReviewQueueEntry copyWith({
@@ -70,6 +76,7 @@ class SanctionReviewQueueEntry extends Equatable {
       reviewedByUserId: reviewedByUserId ?? this.reviewedByUserId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       vehiclePlate: vehiclePlate,
+      operatorName: operatorName,
     );
   }
 

@@ -137,6 +137,13 @@ class SanctionRecommendedEvent extends DomainEvent {
   final int planVersion;
   final VerdictEvidence verdictEvidence;
 
+  /// Optional denormalized identity carried into the ledger payload as a
+  /// Zero-Trust fallback (INV-18). Left null by the real engine flow — the
+  /// enqueue trigger resolves asset/operator from the authoritative registry.
+  /// Populated only by the dev simulation, where no execution binding exists.
+  final String? vehiclePlate;
+  final String? operatorName;
+
   const SanctionRecommendedEvent({
     required super.organizationId,
     required super.occurredAtUtc,
@@ -144,6 +151,8 @@ class SanctionRecommendedEvent extends DomainEvent {
     required this.contractId,
     required this.planVersion,
     required this.verdictEvidence,
+    this.vehiclePlate,
+    this.operatorName,
   });
 }
 

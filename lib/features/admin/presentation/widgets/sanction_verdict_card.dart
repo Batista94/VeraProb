@@ -90,6 +90,10 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final isLoading = actionState is AsyncLoading;
     final isLocked = item.status != SanctionReviewStatus.pending;
 
+    // INV-14/INV-23: the bound asset (vehicle) is mandatory to seal the evidence.
+    // An unidentified asset cannot anchor a forensic verdict.
+    final canSeal = (item.vehiclePlate?.trim().isNotEmpty ?? false);
+
     // WS-5: Map-Sync selection state
     final focusedId = ref.watch(
       selectedSanctionFocusProvider.select((f) => f?.sanctionId),
@@ -106,21 +110,17 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final unit = _unitForClause(evidence.clauseRef);
     final confidenceColor = _confidenceColor(evidence.confidenceScore);
 
-    // WS-5: Determine left border color based on focus/lock state
+    // WS-5: Left accent ALWAYS reflects verdict severity (status) — never focus.
+    // Focus is signalled by the outer border tint + background + "NO MAPA" badge,
+    // so a pending verdict keeps its red severity cue even while selected.
     final Color leftBorderColor;
-    final double leftBorderWidth;
-    if (isFocused) {
-      leftBorderColor = VeraProbColors.primary;
-      leftBorderWidth = 4;
-    } else if (item.status == SanctionReviewStatus.disputed) {
+    const double leftBorderWidth = 3;
+    if (item.status == SanctionReviewStatus.disputed) {
       leftBorderColor = VeraProbColors.warning;
-      leftBorderWidth = 3;
     } else if (isLocked) {
       leftBorderColor = VeraProbColors.textDisabled;
-      leftBorderWidth = 3;
     } else {
       leftBorderColor = VeraProbColors.error;
-      leftBorderWidth = 3;
     }
 
     return GestureDetector(
@@ -161,7 +161,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 ? VeraProbColors.primary.withValues(alpha: 0.05)
                 : VeraProbColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: VeraProbColors.border),
+            border: Border.all(
+              color: isFocused ? VeraProbColors.primary : VeraProbColors.border,
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
@@ -378,6 +380,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
                       child: _VerdictActionRow(
                         isLoading: isLoading,
+                        canSeal: canSeal,
                         showRejectField: _showRejectField,
                         rejectController: _rejectController,
                         formattedFine: item.formattedFine,
@@ -401,6 +404,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 bottom: 0,
                 width: leftBorderWidth,
                 child: DecoratedBox(
+                  key: const ValueKey('verdict-severity-accent'),
                   decoration: BoxDecoration(color: leftBorderColor),
                 ),
               ),
@@ -496,7 +500,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       child: Row(
         children: [
           _ClauseBadge(clauseRef: item.verdictEvidence.clauseRef),
-          const Spacer(),
+          const SizedBox(width: 8),
+          Flexible(
+            child: _AssetOperatorStrip(
+              assetIdentifier: item.assetIdentifier,
+              operatorName: item.operatorName,
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
             _formatLocalDate(item.createdAtUtc),
             style: const TextStyle(
@@ -949,6 +960,88 @@ class _RecurrenceZone extends ConsumerWidget {
   }
 }
 
+/// Identity strip segment: bound Asset (vehicle plate) + Operator (driver name).
+///
+/// The auditor must know WHICH vehicle and WHO produced the evidence before
+/// sealing or contesting (INV-14, INV-23). The asset identifier carries the
+/// same visual weight as the clause badge; a missing plate is flagged in the
+/// error color because it blocks sealing. A missing operator degrades
+/// gracefully to "Não Identificado" — telemetry can arrive without an
+/// authenticated driver.
+class _AssetOperatorStrip extends StatelessWidget {
+  final String? assetIdentifier;
+  final String? operatorName;
+  const _AssetOperatorStrip({
+    required this.assetIdentifier,
+    required this.operatorName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAsset = (assetIdentifier?.trim().isNotEmpty ?? false);
+    final hasOperator = (operatorName?.trim().isNotEmpty ?? false);
+    final assetLabel = hasAsset ? assetIdentifier!.trim() : 'Sem veículo';
+    final operatorLabel = hasOperator
+        ? operatorName!.trim()
+        : 'Não Identificado';
+
+    return Semantics(
+      label: 'Veículo: $assetLabel. Motorista: $operatorLabel.',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.local_shipping_outlined,
+            size: 14,
+            color: hasAsset ? VeraProbColors.textPrimary : VeraProbColors.error,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              assetLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VeraProbTypography.dataValue.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: hasAsset
+                    ? VeraProbColors.textPrimary
+                    : VeraProbColors.error,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            '·',
+            style: TextStyle(color: VeraProbColors.textDisabled, fontSize: 13),
+          ),
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.person_outline,
+            size: 14,
+            color: VeraProbColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              operatorLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                fontStyle: hasOperator ? FontStyle.normal : FontStyle.italic,
+                color: hasOperator
+                    ? VeraProbColors.textSecondary
+                    : VeraProbColors.textDisabled,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ClauseBadge extends StatelessWidget {
   final String clauseRef;
   const _ClauseBadge({required this.clauseRef});
@@ -1106,6 +1199,7 @@ class _RejectReasonField extends StatelessWidget {
 
 class _VerdictActionRow extends StatelessWidget {
   final bool isLoading;
+  final bool canSeal;
   final bool showRejectField;
   final TextEditingController rejectController;
   final String formattedFine;
@@ -1116,6 +1210,7 @@ class _VerdictActionRow extends StatelessWidget {
 
   const _VerdictActionRow({
     required this.isLoading,
+    required this.canSeal,
     required this.showRejectField,
     required this.rejectController,
     required this.formattedFine,
@@ -1127,26 +1222,38 @@ class _VerdictActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sealBlockedReason = canSeal
+        ? 'Selar veredito — confirmar multa de $formattedFine'
+        : 'Veículo não identificado — não é possível selar a evidência';
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         Semantics(
-          label: 'Selar veredito — confirmar multa de $formattedFine',
-          child: FilledButton.icon(
-            onPressed: isLoading ? null : onApprove,
-            icon: isLoading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.gavel_rounded, size: 16),
-            label: const Text('SELAR VEREDITO'),
-            style: FilledButton.styleFrom(
-              backgroundColor: VeraProbColors.success,
-              foregroundColor: VeraProbColors.background,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          label: sealBlockedReason,
+          child: Tooltip(
+            message: sealBlockedReason,
+            child: FilledButton.icon(
+              onPressed: (isLoading || !canSeal) ? null : onApprove,
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.gavel_rounded, size: 16),
+              label: const Text('SELAR VEREDITO'),
+              style: FilledButton.styleFrom(
+                backgroundColor: VeraProbColors.success,
+                foregroundColor: VeraProbColors.background,
+                disabledBackgroundColor: VeraProbColors.textDisabled.withValues(
+                  alpha: 0.3,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+              ),
             ),
           ),
         ),

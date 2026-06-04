@@ -27,6 +27,7 @@ class SanctionSimulationService {
   Future<void> simulateSpeedViolation({
     required String organizationId,
     required String vehiclePlate,
+    String operatorName = 'Motorista Teste',
     double speed = 88.5, // Physical Metric - Double Required
     double limit = 80.0, // Physical Metric - Double Required
   }) async {
@@ -63,6 +64,11 @@ class SanctionSimulationService {
         contractId: contractId,
         planVersion: 1,
         verdictEvidence: evidence,
+        // Dev simulation has no execution binding, so carry the asset/operator
+        // identity via the Zero-Trust payload fallback (INV-18) so the card
+        // renders a realistic vehicle + operator.
+        vehiclePlate: vehiclePlate,
+        operatorName: operatorName,
       );
 
       // 1. Append to ledger (audit trail)

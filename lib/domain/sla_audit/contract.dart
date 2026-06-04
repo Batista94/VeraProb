@@ -46,6 +46,13 @@ class Contract extends Equatable {
   final String organizationId;
   final String name;
   final String contractorName;
+
+  /// FK → public.contractors(id). Formal link to the organization's client
+  /// (contractor). Nullable during the normalization rollout — legacy rows and
+  /// new drafts may still rely on the denormalized [contractorName] until the
+  /// contractor is formally selected (migration 20260806000001).
+  final String? contractorId;
+
   final String? description;
   final DateTime validFromUtc;
   final DateTime validUntilUtc;
@@ -109,6 +116,7 @@ class Contract extends Equatable {
     required this.organizationId,
     required this.name,
     required this.contractorName,
+    this.contractorId,
     this.description,
     required this.validFromUtc,
     required this.validUntilUtc,
@@ -282,6 +290,7 @@ class Contract extends Equatable {
     required String organizationId,
     required String name,
     required String contractorName,
+    String? contractorId,
     String? description,
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
@@ -306,6 +315,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -334,6 +344,7 @@ class Contract extends Equatable {
     String? organizationId,
     String? name,
     String? contractorName,
+    String? contractorId,
     String? description,
     DateTime? validFromUtc,
     DateTime? validUntilUtc,
@@ -358,6 +369,7 @@ class Contract extends Equatable {
       organizationId: organizationId ?? this.organizationId,
       name: name ?? this.name,
       contractorName: contractorName ?? this.contractorName,
+      contractorId: contractorId ?? this.contractorId,
       description: description ?? this.description,
       validFromUtc: validFromUtc ?? this.validFromUtc,
       validUntilUtc: validUntilUtc ?? this.validUntilUtc,
@@ -415,6 +427,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -465,6 +478,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -512,6 +526,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -575,6 +590,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -638,6 +654,7 @@ class Contract extends Equatable {
     organizationId,
     name,
     contractorName,
+    contractorId,
     description,
     validFromUtc,
     validUntilUtc,
