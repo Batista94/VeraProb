@@ -410,6 +410,6 @@ Future<String?> runSanctionSimulation(
   } on DomainException catch (e) {
     return e.message;
   } catch (_) {
-    return 'Erro inesperado na simulação. Verifique os logs do servidor.';
+    return 'Não foi possível simular a sanção. Verifique se há contratos ativos.';
   }
 }

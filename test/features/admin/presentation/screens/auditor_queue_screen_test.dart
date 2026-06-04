@@ -123,7 +123,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap on the "Selados" tab segment
-        await tester.tap(find.text('Selados'));
+        final seladosTab = find.text('Selados');
+        await tester.ensureVisible(seladosTab);
+        await tester.tap(seladosTab);
         await tester.pumpAndSettle();
 
         // Date range filter bar must render

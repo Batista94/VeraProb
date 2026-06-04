@@ -27,12 +27,16 @@
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @modelcontextprotocol/server-postgres",
+        "npx -y @henkey/postgres-mcp-server",
+        "--connection-string",
         "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
       ],
       "env": {},
       "autoApprove": [
-        "query"
+        "pg_execute_query",
+        "pg_execute_mutation",
+        "pg_execute_sql",
+        "pg_manage_schema"
       ],
       "disabled": false
     },

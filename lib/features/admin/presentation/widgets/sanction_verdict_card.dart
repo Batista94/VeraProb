@@ -166,16 +166,6 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // WS-5: Left accent line indicator (fixed Border + BorderRadius conflict in Flutter)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: leftBorderWidth,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: leftBorderColor),
-                ),
-              ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -283,30 +273,30 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     child: ReverseGeocodedAddress(
                       lat: evidence.primaryEvidenceLat,
                       lng: evidence.primaryEvidenceLng,
+                      // Always re-frame the map to the forensic point — even when
+                      // this sanction is already selected and the auditor panned
+                      // away. recenter() emits a distinct event every tap.
                       onTap: () {
-                        final current = ref.read(selectedSanctionFocusProvider);
-                        if (current?.sanctionId != item.id) {
-                          ref
-                              .read(selectedSanctionFocusProvider.notifier)
-                              .set(
-                                SanctionMapFocus(
-                                  sanctionId: item.id,
-                                  infractionPoint: LatLng(
-                                    evidence.primaryEvidenceLat,
-                                    evidence.primaryEvidenceLng,
-                                  ),
-                                  geofenceCenter:
-                                      evidence.geofenceCenterLat != null
-                                      ? LatLng(
-                                          evidence.geofenceCenterLat!,
-                                          evidence.geofenceCenterLng!,
-                                        )
-                                      : null,
-                                  geofenceRadiusMeters:
-                                      evidence.geofenceRadiusMeters ?? 50.0,
+                        ref
+                            .read(selectedSanctionFocusProvider.notifier)
+                            .recenter(
+                              SanctionMapFocus(
+                                sanctionId: item.id,
+                                infractionPoint: LatLng(
+                                  evidence.primaryEvidenceLat,
+                                  evidence.primaryEvidenceLng,
                                 ),
-                              );
-                        }
+                                geofenceCenter:
+                                    evidence.geofenceCenterLat != null
+                                    ? LatLng(
+                                        evidence.geofenceCenterLat!,
+                                        evidence.geofenceCenterLng!,
+                                      )
+                                    : null,
+                                geofenceRadiusMeters:
+                                    evidence.geofenceRadiusMeters ?? 50.0,
+                              ),
+                            );
                       },
                     ),
                   ),
@@ -402,6 +392,17 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   if (isLocked && item.status == SanctionReviewStatus.applied)
                     _buildForensicEvidenceVisualizerRow(context, item),
                 ],
+              ),
+              // WS-5: Severity accent — painted AFTER content so full-bleed rows
+              // (e.g. the forensic seal) never cover it; clipped to card radius.
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: leftBorderWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(color: leftBorderColor),
+                ),
               ),
               // ── LOCKED overlay badge (INV-7: Immutability) ──────────
               if (item.status == SanctionReviewStatus.disputed)
@@ -1030,9 +1031,15 @@ class _ForensicSealRow extends StatelessWidget {
               contractId: item.contractId,
             ),
           ),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: VeraProbColors.surfaceElevated,
+            margin: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: VeraProbColors.border, width: 0.5),
+            ),
             child: Row(
               children: [
                 const Icon(

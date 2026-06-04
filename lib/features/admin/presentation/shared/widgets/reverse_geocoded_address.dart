@@ -73,8 +73,8 @@ class _ReverseGeocodedAddressState
           if (isInteractive) ...[
             const SizedBox(width: 4),
             Icon(
-              Icons.open_in_new_rounded,
-              size: 10,
+              Icons.center_focus_strong,
+              size: 12,
               color: _isHovered
                   ? VeraProbColors.primary
                   : VeraProbColors.textDisabled,
@@ -90,7 +90,10 @@ class _ReverseGeocodedAddressState
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(onTap: widget.onTap, child: content),
+      child: Tooltip(
+        message: 'Recentrar mapa no ponto de infração',
+        child: GestureDetector(onTap: widget.onTap, child: content),
+      ),
     );
   }
 

@@ -12,6 +12,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
@@ -490,6 +491,54 @@ void main() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'tapping address re-centers every time (selectionEpoch increments)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final container = tester.container();
+        final address = find.byType(ReverseGeocodedAddress);
+        expect(address, findsOneWidget);
+
+        // First tap: focus set, epoch = 1.
+        await tester.tap(address);
+        await tester.pump();
+        final first = container.read(selectedSanctionFocusProvider);
+        expect(first, isNotNull);
+        expect(first!.sanctionId, item.id);
+        expect(first.selectionEpoch, 1);
+
+        // Re-tap the SAME (already-focused) address: must re-emit a distinct
+        // event so the map re-frames — epoch increments, sanction unchanged.
+        await tester.tap(address);
+        await tester.pump();
+        final second = container.read(selectedSanctionFocusProvider);
+        expect(second!.sanctionId, item.id);
+        expect(second.selectionEpoch, 2);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — Audit: Reject Justification', () {
