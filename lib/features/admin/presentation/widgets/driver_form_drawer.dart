@@ -206,61 +206,127 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
                         ),
                         const SizedBox(height: 28),
 
-                        // Name field
-                        Text(
-                          'Nome completo',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontWeight: FontWeight.w600,
+                        Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(
+                              color: VeraProbColors.border,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex: João Carlos da Silva',
+                          color: VeraProbColors.surfaceElevated,
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.badge_outlined,
+                                      size: 18,
+                                      color: VeraProbColors.textSecondary,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Dados Pessoais',
+                                      style: VeraProbTypography.bodyMedium
+                                          .copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: VeraProbColors.textPrimary,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      flex: 3,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Nome completo',
+                                            style: VeraProbTypography.caption
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _nameController,
+                                            decoration: const InputDecoration(
+                                              hintText:
+                                                  'Ex: João Carlos da Silva',
+                                            ),
+                                            textCapitalization:
+                                                TextCapitalization.words,
+                                            validator: (v) {
+                                              if (v == null ||
+                                                  v.trim().isEmpty) {
+                                                return 'O nome é obrigatório';
+                                              }
+                                              if (v.trim().length < 3) {
+                                                return 'Informe o nome completo';
+                                              }
+                                              return null;
+                                            },
+                                            enabled: !_isSaving,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      flex: 2,
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Número da CNH',
+                                            style: VeraProbTypography.caption
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          TextFormField(
+                                            controller: _cnhController,
+                                            decoration: const InputDecoration(
+                                              hintText: 'Ex: 12345678900',
+                                            ),
+                                            keyboardType: TextInputType.number,
+                                            inputFormatters: [
+                                              FilteringTextInputFormatter
+                                                  .digitsOnly,
+                                              LengthLimitingTextInputFormatter(
+                                                11,
+                                              ),
+                                            ],
+                                            validator: (v) {
+                                              if (v == null ||
+                                                  v.trim().isEmpty) {
+                                                return 'A CNH é obrigatória';
+                                              }
+                                              if (v.trim().length < 9) {
+                                                return 'Mínimo 9 dígitos';
+                                              }
+                                              return null;
+                                            },
+                                            enabled: !_isSaving,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'O nome é obrigatório';
-                            }
-                            if (v.trim().length < 3) {
-                              return 'Informe o nome completo';
-                            }
-                            return null;
-                          },
-                          enabled: !_isSaving,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // CNH field
-                        Text(
-                          'Número da CNH',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _cnhController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex: 12345678900',
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(11),
-                          ],
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'O número da CNH é obrigatório';
-                            }
-                            if (v.trim().length < 9) {
-                              return 'CNH deve ter no mínimo 9 dígitos';
-                            }
-                            return null;
-                          },
-                          enabled: !_isSaving,
                         ),
 
                         // Error message

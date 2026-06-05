@@ -313,15 +313,20 @@ void main() {
 
   // ── Group 4: INV-33 Geofence Gate — QA-Security ──────────────────────────
   group('INV-33 Geofence Gate — QA-Security', () {
-    test('zone missing geofence → missingNames non-empty → BLOQUEIO message', () {
-      final zone = _zoneNoGeo;
-      final missing = [if (zone.geofence == null) zone.name];
-      expect(missing, isNotEmpty);
-      final msg =
-          'BLOQUEIO DE AUDITORIA: ${missing.join(' e ')} não possui geofence configurado';
-      expect(msg, contains('BLOQUEIO DE AUDITORIA'));
-      expect(msg, contains('Zona Sem Geofence'));
-    });
+    test(
+      'zone missing geofence → missingNames non-empty → warning message',
+      () {
+        final zone = _zoneNoGeo;
+        final missing = [if (zone.geofence == null) zone.name];
+        expect(missing, isNotEmpty);
+        final verb = missing.length > 1 ? 'têm' : 'tem';
+        final msg =
+            '${missing.join(' e ')} ainda não $verb localização definida '
+            'no mapa. Clique em "Definir Localização" abaixo do campo da zona.';
+        expect(msg, contains('localização definida no mapa'));
+        expect(msg, contains('Zona Sem Geofence'));
+      },
+    );
 
     test('zone WITH geofence → missingNames empty → no block', () {
       final missing = [if (_zoneOrigin.geofence == null) _zoneOrigin.name];
@@ -613,46 +618,48 @@ void main() {
 
   // ── Group 11: Audit Gate — geofence blocker (INV-33) ─────────────────────
   group('Audit Gate — geofence blocker (INV-33)', () {
-    testWidgets(
-      'BLOQUEIO DE AUDITORIA shown when destination zone lacks geofence',
-      (tester) async {
-        tester.view.physicalSize = const Size(600, 900);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
+    testWidgets('warning message shown when destination zone lacks geofence', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(_buildForm(zones: _allZones));
-        await tester.pumpAndSettle();
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
 
-        // Select origin zone (has geofence) — key starts as 'origin_null'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('origin_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Garagem',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Garagem Central'));
-        await tester.pumpAndSettle();
+      // Select origin zone (has geofence) — key starts as 'origin_null'
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('origin_null')),
+          matching: find.byType(TextFormField),
+        ),
+        'Garagem',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Garagem Central'));
+      await tester.pumpAndSettle();
 
-        // Select destination zone WITHOUT geofence — key still 'destination_null'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('destination_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Sem',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Zona Sem Geofence'));
-        await tester.pumpAndSettle();
+      // Select destination zone WITHOUT geofence — key still 'destination_null'
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('destination_null')),
+          matching: find.byType(TextFormField),
+        ),
+        'Sem',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Zona Sem Geofence'));
+      await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Continuar').first);
-        await tester.pump();
+      await tester.tap(find.text('Continuar').first);
+      await tester.pump();
 
-        expect(find.textContaining('BLOQUEIO DE AUDITORIA'), findsOneWidget);
-      },
-    );
+      expect(
+        find.textContaining('ainda não tem localização definida no mapa'),
+        findsOneWidget,
+      );
+    });
   });
 
   // ── Group 12: Idempotency — onFormChanged on zone selection (INV-33) ──────

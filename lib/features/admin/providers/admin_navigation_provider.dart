@@ -54,3 +54,15 @@ class _AdminIndexNotifier extends Notifier<int> {
 final adminIndexProvider = NotifierProvider<_AdminIndexNotifier, int>(
   _AdminIndexNotifier.new,
 );
+
+class _OnboardingBannerVisibleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void toggle() => state = !state;
+}
+
+final onboardingBannerVisibleProvider =
+    NotifierProvider<_OnboardingBannerVisibleNotifier, bool>(
+      _OnboardingBannerVisibleNotifier.new,
+    );

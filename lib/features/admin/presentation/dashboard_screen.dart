@@ -35,11 +35,22 @@ class DashboardScreen extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           children: [
-            OnboardingProgressBanner(
-              onNavigate: (destIdx) {
-                ref.read(adminIndexProvider.notifier).set(destIdx);
-                ref.read(selectedContractIdProvider.notifier).set(null);
-              },
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              child: ref.watch(onboardingBannerVisibleProvider)
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: OnboardingProgressBanner(
+                        onNavigate: (destIdx) {
+                          ref.read(adminIndexProvider.notifier).set(destIdx);
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(null);
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
             ),
             const _DashboardHeader(),
             const SizedBox(height: 32),

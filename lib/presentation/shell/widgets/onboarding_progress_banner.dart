@@ -101,11 +101,18 @@ class _SlimBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      margin: const EdgeInsets.only(bottom: 1),
-      decoration: const BoxDecoration(
+      height: 60,
+      decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: VeraProbColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),

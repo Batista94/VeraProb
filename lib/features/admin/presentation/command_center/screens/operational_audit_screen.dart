@@ -131,6 +131,8 @@ class _OperationalAuditScreenState
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
+                            isScrollable: true,
+                            tabAlignment: TabAlignment.start,
                             tabs: [
                               Tab(text: '📋 Fila de Exceções'),
                               Tab(text: '🔗 Triagem de Órfãos'),
@@ -173,19 +175,26 @@ class _AuditTab extends ConsumerWidget {
         _buildFilterBar(context, ref),
         const Divider(height: 1, color: VeraProbColors.border),
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 820),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildTableHeader(),
-                  const Divider(height: 1, color: VeraProbColors.border),
-                  Expanded(child: _buildLogTable(ref)),
-                ],
-              ),
-            ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: 1000,
+                    maxWidth: math.max(constraints.maxWidth, 1000),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _buildTableHeader(),
+                      const Divider(height: 1, color: VeraProbColors.border),
+                      Expanded(child: _buildLogTable(ref)),
+                    ],
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ],
@@ -257,17 +266,17 @@ class _AuditTab extends ConsumerWidget {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            SizedBox(width: 80, child: Text('HORA', style: _headerStyle)),
-            SizedBox(
-              width: 110,
+            Expanded(flex: 2, child: Text('HORA', style: _headerStyle)),
+            Expanded(
+              flex: 3,
               child: Text('CICLO DE VIDA', style: _headerStyle),
             ),
-            SizedBox(width: 90, child: Text('CATEGORIA', style: _headerStyle)),
-            SizedBox(width: 200, child: Text('AÇÃO', style: _headerStyle)),
-            SizedBox(width: 110, child: Text('VEÍCULO', style: _headerStyle)),
-            SizedBox(width: 110, child: Text('ROTA', style: _headerStyle)),
-            SizedBox(
-              width: 120,
+            Expanded(flex: 2, child: Text('CATEGORIA', style: _headerStyle)),
+            Expanded(flex: 5, child: Text('AÇÃO', style: _headerStyle)),
+            Expanded(flex: 3, child: Text('VEÍCULO', style: _headerStyle)),
+            Expanded(flex: 3, child: Text('ROTA', style: _headerStyle)),
+            Expanded(
+              flex: 3,
               child: Text('AUTOR / SISTEMA', style: _headerStyle),
             ),
           ],
@@ -354,8 +363,8 @@ class _AuditTab extends ConsumerWidget {
                 ),
                 child: Row(
                   children: [
-                    SizedBox(
-                      width: 80,
+                    Expanded(
+                      flex: 2,
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -377,8 +386,8 @@ class _AuditTab extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    SizedBox(
-                      width: 110,
+                    Expanded(
+                      flex: 3,
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: log.lifecycleStatus != null
@@ -417,57 +426,60 @@ class _AuditTab extends ConsumerWidget {
                               ),
                       ),
                     ),
-                    SizedBox(
-                      width: 90,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: log.category == 'SYSTEM'
-                              ? VeraProbColors.info.withValues(alpha: 0.2)
-                              : VeraProbColors.warning.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          log.category,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
                             color: log.category == 'SYSTEM'
-                                ? VeraProbColors.info
-                                : VeraProbColors.warning,
+                                ? VeraProbColors.info.withValues(alpha: 0.2)
+                                : VeraProbColors.warning.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            log.category,
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: log.category == 'SYSTEM'
+                                  ? VeraProbColors.info
+                                  : VeraProbColors.warning,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(
-                      width: 200,
+                    Expanded(
+                      flex: 5,
                       child: Text(
                         log.action,
                         style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    SizedBox(
-                      width: 110,
+                    Expanded(
+                      flex: 3,
                       child: Text(
                         log.vehiclePlate ?? '-',
                         style: _cellStyle.copyWith(fontFamily: 'monospace'),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    SizedBox(
-                      width: 110,
+                    Expanded(
+                      flex: 3,
                       child: Text(
                         log.routeName ?? '-',
                         style: _cellStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    SizedBox(
-                      width: 120,
+                    Expanded(
+                      flex: 3,
                       child: Text(
                         log.actorName ?? '-',
                         style: _cellStyle.copyWith(

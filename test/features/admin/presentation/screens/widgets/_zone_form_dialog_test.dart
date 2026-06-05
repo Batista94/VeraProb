@@ -101,7 +101,12 @@ void _setScreenSize(WidgetTester tester) {
 
 /// Expands the geofence ExpansionTile and waits for animation.
 Future<void> _expandGeofenceTile(WidgetTester tester) async {
-  final tileTitle = find.text('Configuração de Geofence');
+  final isExpanded =
+      find.text('Limpar').evaluate().isNotEmpty ||
+      find.textContaining('Busque um endereço').evaluate().isNotEmpty;
+  if (isExpanded) return;
+
+  final tileTitle = find.text('Localização no Mapa *');
   await tester.ensureVisible(tileTitle);
   await tester.tap(tileTitle);
   await tester.pump(const Duration(milliseconds: 300));
@@ -124,7 +129,7 @@ void main() {
       expect(find.byType(FlutterMap), findsOneWidget);
     });
 
-    testWidgets('sem geofence → subtítulo "Zona Inativa para Auditoria"', (
+    testWidgets('sem geofence → subtítulo "Necessário para monitoramento"', (
       tester,
     ) async {
       _setScreenSize(tester);
@@ -134,7 +139,7 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      expect(find.text('Zona Inativa para Auditoria'), findsOneWidget);
+      expect(find.text('Necessário para monitoramento'), findsOneWidget);
     });
 
     testWidgets('com geofence pré-configurado → MarkerLayer visível', (
@@ -147,9 +152,9 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      // Zone has geofence → MarkerLayer rendered + subtitle = Configurado
+      // Zone has geofence → MarkerLayer rendered + subtitle = Localização definida
       expect(find.byType(MarkerLayer), findsOneWidget);
-      expect(find.text('Configurado'), findsOneWidget);
+      expect(find.text('Localização definida'), findsOneWidget);
     });
 
     testWidgets('limpar coordenadas esconde display lat/lng', (tester) async {
@@ -215,7 +220,10 @@ void main() {
       await tester.ensureVisible(radiusField());
       await tester.enterText(radiusField(), '');
       await submitForm(tester);
-      expect(find.text('Obrigatório com geofence'), findsOneWidget);
+      expect(
+        find.text('Obrigatório quando localização está definida'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('raio 100 é válido e não mostra erro', (tester) async {
@@ -238,7 +246,10 @@ void main() {
 
       // No radius error
       expect(find.text('1 a 50.000 m'), findsNothing);
-      expect(find.text('Obrigatório com geofence'), findsNothing);
+      expect(
+        find.text('Obrigatório quando localização está definida'),
+        findsNothing,
+      );
     });
 
     testWidgets('raio sem geofence ativo não dispara validação', (
@@ -252,7 +263,7 @@ void main() {
       await _openDialog(tester);
 
       // Geofence section exists but no lat/lng
-      expect(find.text('Zona Inativa para Auditoria'), findsOneWidget);
+      expect(find.text('Necessário para monitoramento'), findsOneWidget);
 
       // Try to save
       await tester.tap(find.text('Salvar Zona'));
@@ -321,34 +332,35 @@ void main() {
       expect(find.text('Avenida Paulista, 1000, São Paulo'), findsOneWidget);
     });
 
-    testWidgets('selecionar sugestão muda subtítulo para Configurado', (
-      tester,
-    ) async {
-      _setScreenSize(tester);
-      addTearDown(tester.view.resetPhysicalSize);
+    testWidgets(
+      'selecionar sugestão muda subtítulo para Localização definida',
+      (tester) async {
+        _setScreenSize(tester);
+        addTearDown(tester.view.resetPhysicalSize);
 
-      final repo = _FakeGeocodingRepository(results: fakeSuggestions);
-      await tester.pumpWidget(_buildHost(geocodingRepo: repo));
-      await tester.pumpAndSettle();
-      await _openDialog(tester);
+        final repo = _FakeGeocodingRepository(results: fakeSuggestions);
+        await tester.pumpWidget(_buildHost(geocodingRepo: repo));
+        await tester.pumpAndSettle();
+        await _openDialog(tester);
 
-      final addressField = find.byType(TextField).at(1);
-      await tester.ensureVisible(addressField);
-      await tester.enterText(addressField, 'Avenida Paulista');
-      await tester.pump(const Duration(milliseconds: 600));
-      await tester.pump(const Duration(milliseconds: 100));
+        final addressField = find.byType(TextField).at(1);
+        await tester.ensureVisible(addressField);
+        await tester.enterText(addressField, 'Avenida Paulista');
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 100));
 
-      await tester.tap(find.text('Avenida Paulista, São Paulo - SP'));
-      await tester.pump();
+        await tester.tap(find.text('Avenida Paulista, São Paulo - SP'));
+        await tester.pump();
 
-      // lat/lng set → subtitle changes
-      expect(find.text('Configurado'), findsOneWidget);
+        // lat/lng set → subtitle changes
+        expect(find.text('Localização definida'), findsOneWidget);
 
-      // Expand tile to verify coordinate display
-      await _expandGeofenceTile(tester);
-      expect(find.byIcon(Icons.my_location), findsOneWidget);
-      expect(find.text('Limpar'), findsOneWidget);
-    });
+        // Expand tile to verify coordinate display
+        await _expandGeofenceTile(tester);
+        expect(find.byIcon(Icons.my_location), findsOneWidget);
+        expect(find.text('Limpar'), findsOneWidget);
+      },
+    );
 
     testWidgets('botão X limpa sugestões', (tester) async {
       _setScreenSize(tester);
@@ -384,14 +396,13 @@ void main() {
       _setScreenSize(tester);
       addTearDown(tester.view.resetPhysicalSize);
 
-      await tester.pumpWidget(_buildHost(orgId: null));
+      await tester.pumpWidget(
+        _buildHost(orgId: null, existingZone: _zoneWithGeo),
+      );
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      await tester.enterText(find.byType(TextField).first, 'Zona Teste');
-      await tester.pump();
-
-      await tester.tap(find.text('Criar Zona'));
+      await tester.tap(find.text('Salvar Zona'));
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(
@@ -404,7 +415,7 @@ void main() {
   // ── 5. Golden Rule — Zona Inativa para Auditoria ──────────
 
   group('5. Golden Rule — salvar sem geofence', () {
-    testWidgets('sem geofence → subtítulo "Zona Inativa para Auditoria"', (
+    testWidgets('sem geofence → subtítulo "Necessário para monitoramento"', (
       tester,
     ) async {
       _setScreenSize(tester);
@@ -414,10 +425,12 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      expect(find.text('Zona Inativa para Auditoria'), findsOneWidget);
+      expect(find.text('Necessário para monitoramento'), findsOneWidget);
     });
 
-    testWidgets('com geofence → subtítulo "Configurado"', (tester) async {
+    testWidgets('com geofence → subtítulo "Localização definida"', (
+      tester,
+    ) async {
       _setScreenSize(tester);
       addTearDown(tester.view.resetPhysicalSize);
 
@@ -425,11 +438,11 @@ void main() {
       await tester.pumpAndSettle();
       await _openDialog(tester);
 
-      expect(find.text('Configurado'), findsOneWidget);
-      expect(find.text('Zona Inativa para Auditoria'), findsNothing);
+      expect(find.text('Localização definida'), findsOneWidget);
+      expect(find.text('Necessário para monitoramento'), findsNothing);
     });
 
-    testWidgets('salvar sem geofence → zona criada com geofence null', (
+    testWidgets('salvar sem geofence → mostra erro de localização obrigatória', (
       tester,
     ) async {
       _setScreenSize(tester);
@@ -446,10 +459,15 @@ void main() {
       await tester.tap(find.text('Criar Zona'));
       await tester.pump(const Duration(milliseconds: 200));
 
+      expect(
+        find.text(
+          'Toque no mapa ou busque um endereço para definir a localização da zona antes de salvar.',
+        ),
+        findsOneWidget,
+      );
+
       final zones = await repo.findByOrganization(_kOrgId);
-      expect(zones.length, 1);
-      expect(zones.first.name, 'Zona Sem Geo');
-      expect(zones.first.geofence, isNull);
+      expect(zones, isEmpty);
     });
 
     testWidgets('salvar com geofence → zona criada com geofence não null', (

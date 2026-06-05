@@ -66,6 +66,7 @@ class AdminLayout extends ConsumerWidget {
           },
           appBar: AppBar(
             automaticallyImplyLeading: false,
+            actions: const [SizedBox.shrink()],
             title: Row(
               children: [
                 // ── Logo Home-Anchor ──────────────────────────
@@ -461,7 +462,10 @@ class _OnboardingBadge extends ConsumerWidget {
           child: const Icon(Icons.checklist_rounded),
         ),
         color: VeraProbColors.warning,
-        onPressed: onNavigate,
+        onPressed: () {
+          ref.read(onboardingBannerVisibleProvider.notifier).toggle();
+          onNavigate();
+        },
       ),
     );
   }
