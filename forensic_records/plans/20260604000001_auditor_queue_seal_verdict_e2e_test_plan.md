@@ -10,8 +10,8 @@ O objetivo deste plano é testar a reestruturação completa do ciclo de vida de
 
 ### 🔐 Credenciais de Acesso (Inquilinos Isolados)
 
-* **Inquilino A (Org Alpha):** `admin-a@veraprob.dev` / `veraprob123!` — Org ID `00000000-0000-0000-0000-000000000001`
-* **Inquilino B (Org Beta):** `admin-b@veraprob.dev` / `veraprob123!` — Org ID `00000000-0000-0000-0000-000000000002`
+* **Inquilino A (Org Alpha):** `admin-a@veraprob.dev` / `123456` — Org ID `00000000-0000-0000-0000-000000000001`
+* **Inquilino B (Org Beta):** `admin-b@veraprob.dev` / `123456` — Org ID `00000000-0000-0000-0000-000000000002`
 
 ### 🚀 Inicialização do Ambiente
 
@@ -364,7 +364,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
   1. Realizar logout clicando no botão no topo direito da tela.
   2. Preencher no login:
      - E-mail: `admin-b@veraprob.dev`
-     - Senha: `veraprob123!`
+     - Senha: `123456`
   3. Clicar em **"ACESSAR SISTEMA"**.
   4. Navegar até a **"Fila Auditora"**.
   5. Clicar na aba **"Concluídos"**.

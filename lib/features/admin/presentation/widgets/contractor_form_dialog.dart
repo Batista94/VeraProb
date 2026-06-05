@@ -174,6 +174,14 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
 
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Guard: prevent double-tap (Flutter Web ClickDebouncer race)
+    if (_isSaving) return;
+
+    // Capture navigator/messenger BEFORE first await — context is invalid
+    // after async gaps on Flutter Web Wasm (ClickDebouncer null-check crash).
+    // Lesson-4: barrierDismissible:false dialogs MUST close via captured nav.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
 
     setState(() => _isSaving = true);
     try {
@@ -198,10 +206,10 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
             ),
           );
 
-      if (mounted) Navigator.pop(context, newContractor);
+      if (mounted) navigator.pop(newContractor);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar: $e'),
             backgroundColor: VeraProbColors.error,

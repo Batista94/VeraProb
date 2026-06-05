@@ -242,10 +242,12 @@ class _SlaContractEventMapper {
     if (event is ContractCreatedEvent) return _created(event);
     if (event is ContractActivatedEvent) return _activated(event);
     if (event is ContractClosedEvent) return _closed(event);
-    if (event is ContractSubmittedForApprovalEvent)
+    if (event is ContractSubmittedForApprovalEvent) {
       return _submittedForApproval(event);
-    if (event is ContractAcceptedByContractorEvent)
+    }
+    if (event is ContractAcceptedByContractorEvent) {
       return _acceptedByContractor(event);
+    }
     return null;
   }
 
@@ -342,12 +344,15 @@ class _SlaSanctionEventMapper {
     if (event is SanctionAppliedEvent) return _applied(event);
     if (event is SanctionRejectedEvent) return _rejected(event);
     if (event is SanctionDisputedEvent) return _disputed(event);
-    if (event is DisputeAcceptedEvent)
+    if (event is DisputeAcceptedEvent) {
       return _resolution(event, 'DISPUTE_ACCEPTED');
-    if (event is DisputeOverturnedEvent)
+    }
+    if (event is DisputeOverturnedEvent) {
       return _resolution(event, 'DISPUTE_OVERTURNED');
-    if (event is DisputeRetractedEvent)
+    }
+    if (event is DisputeRetractedEvent) {
       return _resolution(event, 'DISPUTE_RETRACTED');
+    }
     return null;
   }
 

@@ -162,6 +162,13 @@ class _SlaTemplateEditorDialogState
   // ── Save ────────────────────────────────────────────────────────────────────
 
   Future<void> _save() async {
+    // Guard: prevent double-tap (Flutter Web ClickDebouncer race)
+    if (_isSaving) return;
+
+    // Capture navigator/messenger BEFORE first await — Lesson-8.
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
     setState(() => _isSaving = true);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
@@ -200,10 +207,10 @@ class _SlaTemplateEditorDialogState
           );
 
       ref.invalidate(slaTemplatesProvider);
-      if (mounted) Navigator.pop(context, SlaTemplateView.fromDomain(saved));
+      if (mounted) navigator.pop(SlaTemplateView.fromDomain(saved));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('Erro ao salvar: $e'),
             backgroundColor: VeraProbColors.error,

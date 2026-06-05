@@ -138,3 +138,42 @@ return (exists, lookup);
 **Why:** Auto-acking without Council review is a process violation. Domain mutations and migration drift are governance-critical.
 
 **How to apply:** Before adding the ignore comment, attach the Council decision record (architect + qa-security + senior sign-off) to the PR description.
+
+---
+
+## 8. FLUTTER WEB WASM — ASYNC CONTEXT IN DIALOGS (CT02 Regression)
+
+**Rule:** Inside any `async` method that calls `await`, NEVER access `BuildContext`-dependent APIs (`Navigator.of(context)`, `ScaffoldMessenger.of(context)`) **after** the first `await`. Capture them into local variables **before** the first `await`. Also add an early `if (_isSaving) return;` guard at the top of the method to block ClickDebouncer double-fire.
+
+**Why:** Flutter Web (Wasm/CanvasKit) uses a `ClickDebouncer` in the pointer pipeline. When `Navigator.pop(context)` is called after an `await`, the `BuildContext` may have become stale — `_debounce` receives a null pointer event → `nullCheck` throws `DartError: Unexpected null value` → errors accumulate in a loop (1 → 2 → 42) → gesture pipeline freezes until page reload. Reproduced in CT02: record persisted correctly in DB but modal never closed.
+
+**How to apply:**
+
+```dart
+// ❌ Wrong — context accessed after await gap
+Future<void> _save() async {
+  setState(() => _isSaving = true);
+  try {
+    final result = await someHandler.handle(command);
+    if (mounted) Navigator.pop(context, result);       // context may be stale!
+  } catch (e) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(...); // same issue
+  }
+}
+
+// ✅ Correct — capture before await, guard double-tap
+Future<void> _save() async {
+  if (_isSaving) return;                              // ClickDebouncer guard
+  final navigator = Navigator.of(context);           // capture BEFORE await
+  final messenger = ScaffoldMessenger.of(context);   // capture BEFORE await
+  setState(() => _isSaving = true);
+  try {
+    final result = await someHandler.handle(command);
+    if (mounted) navigator.pop(result);
+  } catch (e) {
+    if (mounted) messenger.showSnackBar(...);
+  }
+}
+```
+
+**Scope:** Any `ConsumerStatefulWidget` or `StatefulWidget` that opens a dialog with `barrierDismissible: false` and calls `Navigator.pop` inside an async method. Apply to ALL form dialogs (ContractorFormDialog, SlaTemplateEditorDialog, CreateExecutionDialog, etc.).
