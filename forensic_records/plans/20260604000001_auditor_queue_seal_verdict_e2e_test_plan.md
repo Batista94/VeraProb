@@ -1,430 +1,418 @@
-# Plano de Testes E2E/UAT — Tribunal de Auditoria (AuditorQueueScreen)
+# Plano de Testes E2E/UAT Completo e Detalhado: Tribunal de Auditoria & Ciclo de Sanções (AuditorQueueScreen)
 
-**Tela:** `lib/features/admin/presentation/screens/auditor_queue_screen.dart`
-**Card de Veredito:** `lib/features/admin/presentation/widgets/sanction_verdict_card.dart`
-**Invariantes:** INV-1 (org_id Fail-Fast), INV-2/INV-3 (ledger append-only), INV-6 (UTC), INV-22 (isolamento de tenant), INV-23 (provenance/explainability do veredito), INV-24 (idempotência).
-**Risco:** Alto — selamento de veredito gera entrada **imutável** no ledger (`VERDICT_SEALED`). Ações irreversíveis.
-
-> [!NOTE]
-> Plano cobre o ciclo **completo** desde o login: simular sanção → revisar provenance → SELAR / RECUSAR / SOLICITAR PROVA → conferir filtros (Pendentes / Aguardando Evidência / Selados) → dossiê → mapa forense. Cada passo de UI tem uma **verificação de banco** correspondente para confirmar persistência correta.
+Este documento apresenta o plano de testes consolidados, estruturado com instruções específicas, seletores CSS/Playwright e comandos SQL (psql) exaustivos. Ele foi desenhado para ser executado e validado de forma autônoma por agentes automatizados utilizando ferramentas do Playwright (Navegador) e Postgres (psql).
 
 ---
 
-## 🛠️ Pré-requisitos & Ambiente
+## 📋 Visão Geral & Configuração de Ambiente
 
-| Item | Comando / Ação | Estado Esperado |
-|------|----------------|-----------------|
-| Supabase local | `make setup` / `supabase start` | Containers ativos, migrações aplicadas |
-| Massa base | `supabase db reset` | Seeds aplicados (`supabase/seed.sql`), contratos ativos |
-| App Flutter | `make run` | Frontend no navegador |
-| Cliente SQL | Supabase Studio `http://localhost:54323` ou `psql` | Para verificações de banco |
+O objetivo deste plano é testar a reestruturação completa do ciclo de vida de sanções (incluindo o fluxo de resolução de disputas, fim das multas-fantasma na aba Concluídos e painel OCC read-only table-first com endDrawer).
 
-### 🔐 Credenciais (Inquilinos Isolados)
+### 🔐 Credenciais de Acesso (Inquilinos Isolados)
 
 * **Inquilino A (Org Alpha):** `admin-a@veraprob.dev` / `veraprob123!` — Org ID `00000000-0000-0000-0000-000000000001`
 * **Inquilino B (Org Beta):** `admin-b@veraprob.dev` / `veraprob123!` — Org ID `00000000-0000-0000-0000-000000000002`
 
-### 📌 Pré-condição obrigatória
+### 🚀 Inicialização do Ambiente
 
-A tela depende de **contratos ativos** para o botão **Gerar Sanção de Teste** funcionar (`runSanctionSimulation`). Confirme antes:
+O aplicativo Flutter e o Supabase local devem ser iniciados com as flags de desativação de MFA no ambiente de desenvolvimento:
 
-```sql
-SELECT id, organization_id, status
-FROM public.contracts
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-  AND status = 'active'
-LIMIT 5;
--- Esperado: ≥ 1 linha. Se 0, rode `supabase db reset` para repor seeds.
+```bash
+# Terminal 1 - Subir Supabase Local
+supabase start
+
+# Terminal 2 - Executar App Web na porta de testes
+flutter run -d chrome --web-port=50185 --dart-define=SKIP_MFA_DEV=true
 ```
 
----
-
-## 🚀 Fluxo E2E Completo
-
-### Passo 1 — Login (do zero)
-
-1. Abra `http://localhost:<porta>`. Tela **Autenticação Corporativa** (`AdminLockScreen`).
-2. Campo **"E-mail Corporativo"** → `admin-a@veraprob.dev`.
-3. Campo **"Senha de Acesso"** → `veraprob123!`.
-4. Clique no botão **"ACESSAR SISTEMA"**.
-5. **Checkpoint:** redirecionamento ao painel da Org Alpha. Sem erro `Credenciais Incorretas`. Sem stack trace no console (Lesson #5).
-
-**Verificação de banco — sessão e claim JWT:**
-
-```sql
-SELECT u.email,
-       u.raw_app_meta_data ->> 'org_id'      AS org_claim,
-       u.raw_app_meta_data ->> 'role'        AS role,
-       u.raw_app_meta_data ->> 'super_admin' AS super_admin
-FROM auth.users u
-WHERE u.email = 'admin-a@veraprob.dev';
--- Esperado: org_claim = 00000000-0000-0000-0000-000000000001 (UUID, NÃO o nome).
---           role = TENANT_ADMIN. super_admin = NULL (admin de org, não superadmin).
-```
-
-> ⚠️ **Chave correta é `org_id`, não `organization_id`.** O metadado armazenado em
-> `raw_app_meta_data` usa a chave `org_id` (ver `bootstrap_dev.mjs` / hook
-> `custom_access_token_hook`). Consultar `->> 'organization_id'` retorna NULL — não é bug.
-> O claim top-level `organization_id` só existe no **token** em runtime (injetado pelo hook
-> `20260410000001`), não na coluna armazenada. E o valor é o **UUID** da org, nunca o nome.
->
-> INV-1: a claim `org_id` precisa existir; sem ela todas as queries falham Fail-Fast.
-> O lado Dart lê `app_metadata.org_id` via `currentOrganizationIdProvider`.
+URL Base do App: `http://localhost:50185`
 
 ---
 
-### Passo 2 — Navegar à Fila Auditora
+## 🛡️ Regras de Negócio & Invariantes de Auditoria
 
-1. No painel lateral, abra **"Fila Auditora"** → `AuditorQueueScreen`.
-2. **Checkpoint:** cabeçalho **"Tribunal de Auditoria"** (ícone `gavel`). Filtro segmentado visível: **Pendentes (N)**, **Aguardando Evidência (N)**, **Selados**.
-3. Se a fila estiver vazia: estado **"Nenhum veredito pendente"** com botão **Gerar Sanção de Teste**.
-
----
-
-### Passo 3 — Gerar Sanção de Teste (semear o caso)
-
-1. Clique em **"Gerar Sanção de Teste"** (header ou empty-state). Injeta uma sanção sintética **VEL-01** (placa `TST-0001`, operador `Motorista Teste`) via `SanctionSimulationService`.
-2. **Checkpoint:** SnackBar *"Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila."*
-3. Aguarde até 5s (Supabase Realtime). Um **SanctionVerdictCard** aparece sob **Pendentes**, com borda esquerda **vermelha** (não selado) — **vermelha mesmo se o card estiver focado** (acento dirigido por status; foco indicado pelo tint + badge "NO MAPA").
-4. **Checkpoint identidade (INV-14):** a faixa de identidade mostra `[VEL-01] · 🚚 TST-0001 · 👤 Motorista Teste`. A placa tem destaque igual à cláusula.
-5. **Checkpoint VEL (Q5):** o card exibe os três rótulos obrigatórios: **VELOCIDADE REGISTRADA**, **LIMITE CONTRATUAL** e **EXCESSO** (com `88.5 km/h` / `80.0 km/h` / `+8.5 km/h`).
-
-**Verificação de banco — sanção enfileirada (Org Alpha):**
-
-```sql
-SELECT id, organization_id, contract_id, set_id, status,
-       verdict_evidence ->> 'clauseRef' AS clause,
-       vehicle_plate, operator_name,
-       created_at
-FROM public.sanction_review_queue
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-ORDER BY created_at DESC
-LIMIT 1;
--- Esperado: 1 linha. status = 'pending'. clause começa com 'VEL'.
---           vehicle_plate = 'TST-0001'. operator_name = 'Motorista Teste'
---           (resolvidos via fallback Zero-Trust do payload — INV-18, pois a
---            sanção simulada não tem execution_state vinculado).
---           organization_id = ...001 (NUNCA ...002).
-```
-
-Anote o `id` retornado — referenciado como **`<QUEUE_ID>`** nos passos seguintes.
+Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestadas via psql e logs:
+1. **INV-1 (FAIL-FAST):** Toda query do inquilino deve validar o claim `org_id` (JWT) no banco.
+2. **INV-3 (MUTABILIDADE DO LEDGER):** A tabela `public.sla_audit_ledger_v2` é estritamente append-only. Qualquer operação de `UPDATE` ou `DELETE` deve ser rejeitada pelo banco.
+3. **INV-6 (UTC MANDATORY):** Todos os timestamps salvos devem estar em UTC.
+4. **INV-22 (ISOLAMENTO DE TENANT):** O Inquilino B jamais pode acessar qualquer dado (contratos, contratantes, logs, sanções) do Inquilino A.
+5. **INV-26 (ANTI-ORACLE):** Tentativas de buscar um ID de outro tenant devem retornar `404 Not Found` puro, nunca `403 Access Denied`.
 
 ---
 
-### Passo 4 — Provenance em 1 clique (INV-23)
+## 🛠️ Cenários de Teste (Jornada Playwright + psql)
 
-Valida a regra "silenciar contestação em 10s": evidência rastreável em ≤1 clique.
+### Grupo 1: Login & Cadastro de Recursos Core
 
-1. No card, clique na faixa **"Cadeia de Custódia · Prova Forense"** (mostra `SHA-256: …`).
-2. **Checkpoint:** abre o **InvestigationModal** com a cadeia de custódia (setId + contractId). Hash visível.
-3. Feche o modal (X / barreira).
-
-**Verificação de banco — hash de evidência selado no ingest (INV-9):**
-
-```sql
-SELECT id,
-       verdict_evidence ->> 'evidenceHash'    AS evidence_hash,
-       verdict_evidence ->> 'confidenceScore' AS confidence
-FROM public.sanction_review_queue
-WHERE id = '<QUEUE_ID>'
-  AND organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: evidence_hash com 64 chars hex (SHA-256). confidence numérico 0–100.
-```
-
-> O `SHA-256` exibido no card deve **bater** com `evidence_hash`. Divergência = violação de selo (INV-9).
-
----
-
-### Passo 5 — SELAR VEREDITO (caminho crítico, append-only)
-
-1. No card, clique em **"SELAR VEREDITO"** (botão verde, ícone `gavel`).
-2. **Se** `confidenceScore` for baixo (`requiresDoubleConfirmation`): aparece diálogo **"⚠ Integridade Baixa"** → clique **"Confirmar Selamento"**. (Para testar este ramo, force um caso de baixa integridade; o VEL-01 padrão pode ter score alto e pular o diálogo.)
-3. **Checkpoint:** o card sai da aba **Pendentes** (stream re-consultado). Em **Selados**, reaparece com badge **"SELADO"** (cadeado) e borda cinza, opacidade reduzida — imutável (INV-7).
-
-**Verificação de banco — fila transicionou para `applied`:**
-
-```sql
-SELECT status, reviewed_at, reviewed_by
-FROM public.sanction_review_queue
-WHERE id = '<QUEUE_ID>'
-  AND organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: status = 'applied'. reviewed_at NOT NULL (UTC). reviewed_by = id do operador.
-```
-
-**Verificação de banco — entrada imutável no ledger (INV-3, Pillar C):**
-
-```sql
-SELECT type, organization_id, set_id, contract_id, occurred_at_utc
-FROM public.sla_audit_ledger_v2
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-  AND type = 'VERDICT_SEALED'
-ORDER BY occurred_at_utc DESC
-LIMIT 1;
--- Esperado: 1 linha type = 'VERDICT_SEALED', org = ...001, set_id/contract_id batem com o card.
-```
-
-**Verificação de imutabilidade (INV-3) — UPDATE/DELETE devem ser bloqueados:**
-
-```sql
-BEGIN;
-UPDATE public.sla_audit_ledger_v2
-SET type = 'TAMPERED'
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-  AND type = 'VERDICT_SEALED';
-ROLLBACK;
--- Esperado: ERROR (trigger/policy append-only bloqueia UPDATE no ledger).
-```
-
-> Idempotência (INV-24): clicar SELAR uma segunda vez no mesmo `<QUEUE_ID>` (se ainda visível) deve falhar com *"is already applied"* — nenhuma 2ª entrada `VERDICT_SEALED` é criada. Confirme contando: `SELECT count(*) FROM public.sla_audit_ledger_v2 WHERE set_id = '<SET_ID>' AND type='VERDICT_SEALED';` → deve ser **1**.
+#### CT01: Login e Validação de Sessão do Inquilino A
+* **Objetivo:** Acessar a plataforma como Administrador do Inquilino A.
+* **Passos Playwright:**
+  1. Acessar a página `http://localhost:50185`.
+  2. Aguardar o seletor `input[type="text"]` (com label "E-mail Corporativo") e preencher: `admin-a@veraprob.dev`.
+  3. Localizar o input de senha (com label "Senha de Acesso") e preencher: `veraprob123!`.
+  4. Clicar no botão `button:has-text("ACESSAR SISTEMA")`.
+  5. Aguardar redirecionamento (a URL deve carregar o painel da organização).
+* **O que validar (Playwright):**
+  * Verificar que a tela contém o texto "Dashboard" ou "Fila Auditora" no menu lateral.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT email,
+         raw_app_meta_data ->> 'org_id' AS org_claim
+  FROM auth.users
+  WHERE email = 'admin-a@veraprob.dev';
+  -- Esperado: org_claim = '00000000-0000-0000-0000-000000000001'
+  ```
 
 ---
 
-### Passo 6 — RECUSAR VEREDITO (rejeição com motivo)
-
-Gere uma **nova** sanção (Passo 3) para este teste. Anote o novo `<QUEUE_ID>`.
-
-1. No card, clique em **"RECUSAR VEREDITO"** (botão outline vermelho). Abre o campo **"Motivo da rejeição (mínimo 10 caracteres)"**.
-2. Digite < 10 chars → botão **"CONFIRMAR RECUSA"** permanece **desabilitado** (guard de UI).
-3. Digite ≥ 10 chars (ex.: `Telemetria inconsistente`) → **"CONFIRMAR RECUSA"** habilita. Clique.
-4. **Checkpoint:** card sai de **Pendentes**.
-
-**Verificação de banco — rejeição persistida:**
-
-```sql
-SELECT status, rejection_reason, reviewed_at, reviewed_by
-FROM public.sanction_review_queue
-WHERE id = '<QUEUE_ID>'
-  AND organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: status = 'rejected'. rejection_reason = texto digitado (≥10 chars). reviewed_at NOT NULL.
-```
-
-> Rejeição **não** gera `VERDICT_SEALED` no ledger. Confirme: nenhuma nova linha em `sla_audit_ledger_v2` com este `set_id` e `type='VERDICT_SEALED'`.
-
----
-
-### Passo 7 — SOLICITAR PROVA FORENSE (disputa)
-
-Gere uma **nova** sanção (Passo 3). Anote `<QUEUE_ID>`.
-
-1. Clique em **"SOLICITAR PROVA FORENSE"** (botão âmbar).
-2. **Checkpoint:** SnackBar *"Solicitação enviada. Motorista será notificado…"*. Card migra para a aba **"Aguardando Evidência"** com badge âmbar **"AGUARDANDO EVIDÊNCIA"** e borda âmbar.
-3. **Checkpoint trava de UI (Q7 — obrigatório):** com o badge âmbar presente, os botões **SELAR VEREDITO** e **RECUSAR VEREDITO** **deixam de existir** na árvore daquele card (imposto por `if (!isLocked)` — `disputed` é `locked`). Garante que não há concorrência acidental contra falha humana. Asserção automatizada:
-   ```dart
-   expect(find.widgetWithText(FilledButton, 'SELAR VEREDITO'), findsNothing);
-   expect(find.widgetWithText(OutlinedButton, 'RECUSAR VEREDITO'), findsNothing);
-   expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
-   ```
-
-**Verificação de banco — disputa registrada:**
-
-```sql
-SELECT status FROM public.sanction_review_queue
-WHERE id = '<QUEUE_ID>' AND organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: status = 'disputed'.
-
-SELECT type, occurred_at_utc
-FROM public.sla_audit_ledger_v2
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-  AND type = 'SANCTION_DISPUTED'
-ORDER BY occurred_at_utc DESC LIMIT 1;
--- Esperado: 1 linha type = 'SANCTION_DISPUTED'.
-```
+#### CT02: Cadastro de Novo Contratante (Sucesso)
+* **Objetivo:** Adicionar um contratante válido na base do Inquilino A.
+* **Passos Playwright:**
+  1. No menu lateral, clicar no botão que possui a classe ou label contendo `"Administração"`.
+  2. Localizar o grid de Administração e clicar no card **"Contratantes"**.
+  3. Clicar no botão **"Novo Contratante"** (seletor: `button:has-text("Novo Contratante")`).
+  4. No modal aberto, preencher:
+     - **Razão Social / Nome:** `Viação Oeste Alfa S.A.`
+     - **CNPJ (Documento):** `91.101.494/0001-56` (CNPJ válido).
+     - **Nome de Contato:** `Carlos Mendes`
+     - **E-mail de Contato:** `contato@alfaengenharia.com.br`
+  5. Clicar no botão `button:has-text("Salvar")` ou `button:has-text("Cadastrar")`.
+* **O que validar (Playwright):**
+  * Verificar que o modal foi fechado.
+  * Verificar que o contratante `Viação Oeste Alfa S.A.` está listado na tabela.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT id, name, tax_id, organization_id
+  FROM public.contractors
+  WHERE tax_id = '91.101.494/0001-56';
+  -- Esperado: 1 linha retornada.
+  -- organization_id deve ser '00000000-0000-0000-0000-000000000001'.
+  ```
 
 ---
 
-### Passo 8 — Filtro "Selados" + intervalo de datas
-
-1. Clique no segmento **"Selados"**. Aparece a **barra de período** (`_DateFilterBar`) com "Período: dd/mm/aaaa até dd/mm/aaaa".
-2. O veredito do Passo 5 deve constar na lista (badge SELADO).
-3. Clique em **"ALTERAR"** → escolha um intervalo que **exclua** hoje → confirme.
-4. **Checkpoint:** lista vazia → *"Nenhum veredito selado encontrado neste período."* Reverta o intervalo para incluir hoje → veredito reaparece.
-5. Se houver > página: botão **"CARREGAR MAIS"** (paginação `fetchNextPage`).
-
-**Verificação de banco — selados no período (UTC, INV-6):**
-
-```sql
-SELECT count(*)
-FROM public.sla_audit_ledger_v2
-WHERE organization_id = '00000000-0000-0000-0000-000000000001'
-  AND type = 'VERDICT_SEALED'
-  AND occurred_at_utc >= date_trunc('day', now() AT TIME ZONE 'UTC');
--- Esperado: contagem coerente com o que a UI lista para "hoje".
-```
-
-> Atenção ao fuso: a UI converte UTC→local para exibir (`toLocal()`); a query usa UTC. Confirme que um veredito perto da meia-noite local não "some" por erro de conversão.
-
----
-
-### Passo 9 — BAIXAR DOSSIÊ (PDF forense)
-
-1. Em qualquer card, clique em **"BAIXAR DOSSIÊ"**.
-2. **Checkpoint:** spinner → SnackBar *"Dossiê forense baixado com sucesso."*. Arquivo `dossie_forense_<hash8>_<ts>.pdf` salvo. Em falha: *"Falha ao gerar o dossiê. Tente novamente."* (mensagem domínio-limpa, Lesson #5).
-3. Abra o PDF: confere `formattedFine`, coordenadas, hash de evidência.
+#### CT03: Cadastro de Contrato Operacional
+* **Objetivo:** Criar e ativar um contrato operacional.
+* **Passos Playwright:**
+  1. No Hub de Administração, clicar no card **"Contratos"**.
+  2. Clicar no botão **"Novo Contrato"** (`button:has-text("Novo Contrato")`).
+  3. Preencher o formulário:
+     - **Nome do Contrato:** `Contrato de Concessão Leste - Lote 1`
+     - **Entidade Contratante:** Clicar no TypeAhead/Campo e digitar `Viação Oeste Alfa S.A.`, depois selecionar a opção correspondente do dropdown.
+     - **Início (Vigência):** Clicar no calendário e selecionar a data atual (ou hoje).
+     - **Término (Vigência):** Clicar no calendário e selecionar uma data no ano seguinte.
+     - **Teto Financeiro:** Preencher com `150.000,00`.
+  4. Clicar no botão `button:has-text("ATIVAR CONTRATO")`.
+* **O que validar (Playwright):**
+  * A URL ou tela deve mudar para a visualização detalhada do contrato (`ContractDetailScreen`).
+* **Validação SQL (psql):**
+  ```sql
+  SELECT id, name, organization_id, status, financial_ceiling_cents
+  FROM public.contracts
+  WHERE name = 'Contrato de Concessão Leste - Lote 1';
+  -- Esperado: status = 'active' (ou 'awaiting_contractor_acceptance' dependendo da política de workflow).
+  -- financial_ceiling_cents = 15000000.
+  ```
 
 ---
 
-### Passo 10 — Visualizar Evidência Forense (veredito aplicado)
-
-1. Na aba **Selados**, num card com status `applied`, clique em **"Visualizar Evidência Forense"**.
-2. **Checkpoint (caminho feliz):** abre `ForensicEvidenceModal` carregado por `ledgerEntryId`. Mostra a regra congelada + selo **verde** "Cópia Autenticada" (hash recomputado bate). Feche o modal.
-
----
-
-### Passo 10.1 — Adulteração de Snapshot (Anti-Fraude — INV-9, INV-21)
-
-Auditoria crítica: o sistema precisa **provar** que reage a uma adulteração da regra congelada. A detecção já é nativa (`verify_forensic_evidence` recomputa o SHA-256 sobre o snapshot canônico a cada leitura).
-
-1. **Pré:** use um veredito **selado** (Passo 5). Obtenha o `ledger_entry_id`:
-   ```sql
-   SELECT ledger_entry_id FROM public.sanction_review_queue
-   WHERE id = '<QUEUE_ID>' AND organization_id = '00000000-0000-0000-0000-000000000001';
-   ```
-2. **Ação (via SQL):** altere **um único caractere** do JSON da regra congelada, **sem** tocar o `integrity_hash` (deixe-o obsoleto):
-   ```sql
-   UPDATE public.forensic_evidence_snapshots
-   SET snapshot = jsonb_set(snapshot, '{rules,0,rule_config,threshold_minutes}', '999')
-   WHERE ledger_entry_id = '<LEDGER_ENTRY_ID>'
-     AND organization_id = '00000000-0000-0000-0000-000000000001';
-   -- NÃO atualizar integrity_hash. (A tabela é imutável por trigger; rode como
-   --  superuser/migração para simular fraude de DBA — INV-3.)
-   ```
-3. **Checkpoint UI (obrigatório):** clique novamente em **"Visualizar Evidência Forense"**. O modal **NÃO** pode exibir os parâmetros da regra. Ele DEVE:
-   - travar a leitura ("…bloqueada de forma preventiva por motivos de segurança.");
-   - exibir o banner vermelho **"Divergência Crítica de Integridade"** ("Suspeita de Fraude no Banco de Dados…");
-   - exibir o botão **"ESCALAR INCIDENTE"**.
-4. **Checkpoint escalonamento:** clique em **"ESCALAR INCIDENTE"** → SnackBar *"Incidente de segurança escalado com sucesso."*; registro `SECURITY_INCIDENT_ESCALATION_REQUESTED` via `log-security-incident`.
-
-**Verificação de banco — divergência confirmada:**
-
-```sql
-SELECT (public.verify_forensic_evidence(
-          '00000000-0000-0000-0000-000000000001', '<LEDGER_ENTRY_ID>'
-        ) ->> 'status') AS status;
--- Esperado: 'tampered' (stored_hash ≠ computed_hash).
-```
+#### CT04: Declaração de Plano Operacional
+* **Objetivo:** Vincular regras de SLA e a cláusula VEL-01 ao contrato.
+* **Passos Playwright:**
+  1. Na tela de detalhes do contrato, clicar na aba **"Plano Operacional"**.
+  2. Clicar no botão **"DECLARAR PLANO"**.
+  3. Preencher a cláusula **VEL-01**:
+     - **Regra de Velocidade:** `80.0` no limite de velocidade.
+     - **Multa por violação:** `1.500,00`.
+  4. Clicar em **"Confirmar"** ou **"Declarar Plano"**.
+* **O que validar (Playwright):**
+  * Tela mostra a mensagem de sucesso e a lista exibe o Plano Operacional Versão 1 como ativo.
 
 ---
 
-### Passo 11 — Mapa Forense (Map-Sync WS-5)
+### Grupo 2: Simulação e Fila Auditora
 
-**Tela larga (≥1200px):** split-pane — lista (esq) + `TelemetrySyncMap` (dir).
-**Tela estreita (<1200px):** botão **"Mapa Forense"** no header abre um **end-drawer** com o mapa.
-
-1. Clique num card → ele ganha borda azul + badge **"NO MAPA"**; o mapa centraliza no ponto da infração (geofence visível se houver).
-2. Em tela estreita: ao focar uma sanção, o drawer abre automaticamente.
-3. Clique no endereço (`ReverseGeocodedAddress`) → mapa re-centraliza (`recenter`) mesmo se já selecionado.
-4. Clique no card de novo → desfoca (toggle), badge some.
-
-**Verificação de banco — coordenadas da evidência:**
-
-```sql
-SELECT verdict_evidence ->> 'primaryEvidenceLat' AS lat,
-       verdict_evidence ->> 'primaryEvidenceLng' AS lng,
-       verdict_evidence ->> 'geofenceCenterLat'  AS geo_lat,
-       verdict_evidence ->> 'geofenceRadiusMeters' AS geo_radius
-FROM public.sanction_review_queue
-WHERE id = '<QUEUE_ID>' AND organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: lat/lng batem com o badge de coordenadas exibido no card.
-```
-
----
-
-### Passo 12 — Isolamento de Tenant (INV-22) — Red Team
-
-1. Faça **logout** e login como **Inquilino B** (`admin-b@veraprob.dev`).
-2. Abra **Fila Auditora** → **Selados** e **Pendentes**.
-3. **Checkpoint:** **NENHUMA** sanção da Org Alpha (`TST-0001`, `<QUEUE_ID>`, set/contract da Org A) aparece para a Org B.
-
-**Verificação de banco — RLS bloqueia leitura cross-tenant:**
-
-```sql
-BEGIN;
-SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"11111111-1111-1111-1111-111111111111","organization_id":"00000000-0000-0000-0000-000000000002"}';
-
-SELECT count(*) FROM public.sanction_review_queue
-WHERE organization_id = '00000000-0000-0000-0000-000000000001';
--- Esperado: 0 (RLS filtra; Org B não enxerga linhas da Org A).
-ROLLBACK;
-```
-
-> INV-26 (Anti-Oracle): tentar `findById` do `<QUEUE_ID>` da Org A enquanto autenticado como Org B deve retornar **vazio/Not Found** — idêntico a um id inexistente. Nunca "acesso negado" distinguível.
+#### CT05: Simulação de Viagem e Ingestão de Telemetria
+* **Objetivo:** Simular telemetria em excesso de velocidade e gerar infração (card pendente).
+* **Passos Playwright:**
+  1. No menu lateral, clicar em **"Fila Auditora"**.
+  2. Clicar no botão **"Gerar Sanção de Teste"** (`button:has-text("Gerar Sanção de Teste")`).
+  3. Aguardar 5 segundos (para permitir o processamento assíncrono via trigger de banco).
+* **O que validar (Playwright):**
+  * Na aba **"Pendentes"**, deve aparecer o card da infração **VEL-01**.
+  * O card deve ter uma borda vermelha e exibir:
+    - Rótulo **"VELOCIDADE REGISTRADA"** com o valor `88.5 km/h`.
+    - Rótulo **"LIMITE CONTRATUAL"** com o valor `80.0 km/h`.
+    - Rótulo **"EXCESSO"** com o valor `+8.5 km/h`.
+    - Faixa de identidade com a placa `TST-0001` (ou similar) e o operador `Motorista Teste`.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT id, status, vehicle_plate, operator_name
+  FROM public.sanction_review_queue
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+    AND status = 'pending'
+  ORDER BY created_at DESC
+  LIMIT 1;
+  -- Esperado: status = 'pending'. Anotar o ID retornado como <QUEUE_ID>.
+  ```
 
 ---
 
-## 📊 Matriz de Aceitação
-
-| Cód | Validação | Esperado | Status |
-|:----|:----------|:---------|:------:|
-| AQ-01 | Login Inquilino A → Fila Auditora | Sessão + redirect, sem erro | `[ ]` |
-| AQ-02 | Gerar Sanção de Teste | Card VEL-01 em Pendentes; row `status='pending'` | `[ ]` |
-| AQ-03 | Provenance 1-clique (InvestigationModal) | Hash do card = `evidenceHash` no banco | `[ ]` |
-| AQ-04 | SELAR VEREDITO | `status='applied'` + `VERDICT_SEALED` no ledger | `[ ]` |
-| AQ-05 | Ledger append-only | UPDATE/DELETE bloqueado (INV-3) | `[ ]` |
-| AQ-06 | Idempotência selar 2x | Erro "already applied"; 1 só entrada | `[ ]` |
-| AQ-07 | RECUSAR (<10 chars desabilita) | `status='rejected'`, motivo salvo | `[ ]` |
-| AQ-08 | SOLICITAR PROVA FORENSE | `status='disputed'` + `SANCTION_DISPUTED` | `[ ]` |
-| AQ-09 | Filtro Selados + intervalo de datas | Lista filtra por período (UTC↔local) | `[ ]` |
-| AQ-10 | CARREGAR MAIS | Paginação carrega próxima página | `[ ]` |
-| AQ-11 | Baixar Dossiê | PDF gerado, dados conferem | `[ ]` |
-| AQ-12 | Visualizar Evidência Forense | Modal abre por `ledgerEntryId` | `[ ]` |
-| AQ-13 | Mapa Forense (foco/drawer/split) | Centraliza no ponto; coords batem | `[ ]` |
-| AQ-14 | Isolamento de Tenant (Org B) | 0 sanções da Org A; RLS=0 linhas | `[ ]` |
-| AQ-15 | Identidade Ativo/Operador (INV-14) | Card mostra placa + operador; `vehicle_plate`/`operator_name` na row | `[ ]` |
-| AQ-16 | Rótulos VEL (Q5) | "VELOCIDADE REGISTRADA" + "LIMITE CONTRATUAL" + "EXCESSO" presentes | `[ ]` |
-| AQ-17 | SELAR travado sem placa | SELAR desabilitado quando `vehicle_plate` ausente | `[ ]` |
-| AQ-18 | Acento de severidade (Q3) | Borda vermelha em pendente mesmo focado | `[ ]` |
-| AQ-19 | Trava em disputa (Q7) | SELAR/RECUSAR ausentes após badge âmbar | `[ ]` |
-| AQ-20 | Adulteração de snapshot (10.1) | Modal trava + banner Divergência + Escalar; `verify_*`='tampered' | `[ ]` |
+#### CT06: Veto de Recusa Curta (Validação de UI)
+* **Objetivo:** Garantir que o auditor não consiga recusar uma sanção sem uma justificativa plausível (mínimo de 10 caracteres).
+* **Passos Playwright:**
+  1. No card do veredito pendente (**VEL-01**), clicar no botão **"RECUSAR VEREDITO"**.
+  2. Localizar o campo de texto expandido `"Motivo da rejeição (mínimo 10 caracteres)"`.
+  3. Digitar `Incorreto` (9 caracteres).
+* **O que validar (Playwright):**
+  * Verificar que o botão **"CONFIRMAR RECUSA"** (`button:has-text("CONFIRMAR RECUSA")`) permanece desabilitado (atributo `disabled`).
 
 ---
 
-## 🤖 Automação E2E (Flutter integration_test)
-
-> **Protocolo obrigatório (CLAUDE.md / CI Block #8, #10):**
-> - Rodar **sempre** via `make test-e2e` ou `make test-e2e-file FILE=...` (injeta `--dart-define=SKIP_MFA_DEV=true`; sem isso `pumpAndSettle` trava).
-> - Antes de navegação externa, fechar modais com `cancelModal(tester)` (barreira não-dismissível — Lesson #4).
-> - Sem imports/locais não usados (gate de lint estrito).
-
-**Seletores literais (conferidos contra os arquivos da tela):**
-
-| Elemento | Seletor |
-|----------|---------|
-| Campo e-mail | `find.byType(TextField)` (label `'E-mail Corporativo'`) |
-| Campo senha | `find.byType(TextField)` (label `'Senha de Acesso'`) |
-| Botão login | `find.widgetWithText(ElevatedButton, 'ACESSAR SISTEMA')` |
-| Gerar sanção | `find.widgetWithText(OutlinedButton, 'Gerar Sanção de Teste')` |
-| Selar | `find.widgetWithText(FilledButton, 'SELAR VEREDITO')` |
-| Recusar | `find.widgetWithText(OutlinedButton, 'RECUSAR VEREDITO')` |
-| Confirmar recusa | `find.widgetWithText(FilledButton, 'CONFIRMAR RECUSA')` |
-| Motivo rejeição | `find.byType(TextField)` (label `'Motivo da rejeição (mínimo 10 caracteres)'`) |
-| Solicitar prova | `find.widgetWithText(TextButton, 'SOLICITAR PROVA FORENSE')` |
-| Baixar dossiê | `find.widgetWithText(OutlinedButton, 'BAIXAR DOSSIÊ')` |
-| Confirmar selamento (low integrity) | `find.widgetWithText(FilledButton, 'Confirmar Selamento')` |
-| Filtro Selados | `find.text('Selados')` (segmento) |
-| Placa (ativo) | `find.text('TST-0001')` |
-| Operador | `find.text('Motorista Teste')` (ou `find.text('Não Identificado')` no fallback) |
-| Rótulos VEL (Q5) | `find.text('VELOCIDADE REGISTRADA')`, `find.text('LIMITE CONTRATUAL')`, `find.text('EXCESSO')` |
-| Acento severidade (Q3) | `find.byKey(const ValueKey('verdict-severity-accent'))` → cor `VeraProbColors.error` em pendente |
-| Banner divergência (10.1) | `find.text('Divergência Crítica de Integridade')` + `find.widgetWithText(*, 'ESCALAR INCIDENTE')` |
-
-> **Asserções VEL obrigatórias (Q5):** o teste do cenário VEL DEVE encontrar os três
-> rótulos na árvore — KPI primário "VELOCIDADE REGISTRADA", mais "LIMITE CONTRATUAL" e
-> "EXCESSO" — antes de prosseguir. Vide grupo "VEL layout" em
-> `test/features/admin/presentation/widgets/sanction_verdict_card_test.dart`.
-
-> **Realtime em E2E:** a sanção simulada chega via stream Supabase (até ~5s). Em teste automatizado, prefira semear a `sanction_review_queue` direto via helper de banco (padrão de `test/integration/e2e/helpers/`) em vez de depender do timing do Realtime — determinismo (INV-15). Use `pumpAndSettle` com timeout só após o seed estar visível.
-
-**Cobertura pgTAP/integração existente relacionada:**
-- `test/application/sla_audit/approve_sanction_handler_test.dart` — RBAC + idempotência + append ledger.
-- `test/application/sla_audit/reject_sanction_handler_test.dart` / `dispute_sanction_handler_test.dart`.
-- `test/integration/sanction_review_queue_test.dart` — RLS + transições de status.
+#### CT07: Solicitar Prova Forense (Disputa)
+* **Objetivo:** Mudar o status de uma infração para disputado/aguardando evidência.
+* **Passos Playwright:**
+  1. No mesmo card de veredito pendente, clicar em **"SOLICITAR PROVA FORENSE"**.
+* **O que validar (Playwright):**
+  * O card deve desaparecer da aba **"Pendentes"**.
+  * Clicar na aba **"Aguardando Evidência"** (`text=Aguardando Evidência`).
+  * Verificar que o card aparece na lista com badge de cor âmbar escrito **"AGUARDANDO EVIDÊNCIA"**.
+  * **Trava de Segurança (Q7):** Validar que os botões **"SELAR VEREDITO"** e **"RECUSAR VEREDITO"** não estão mais na árvore DOM deste card.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT status FROM public.sanction_review_queue WHERE id = '<QUEUE_ID>';
+  -- Esperado: status = 'disputed'
+  ```
 
 ---
 
-## 🔄 Rollback / Diagnóstico
+### Grupo 3: Fluxo de Resolução de Disputas (Ajuste do FSM)
 
-1. Erro de RLS em ação legítima → verifique a claim do JWT:
-   * `sanction_review_queue`: `(auth.jwt() ->> 'organization_id')::uuid`.
-2. Card não some após selar → confirme `ref.invalidate(pendingSanctionsStreamProvider)` e que o status no banco virou `applied`.
-3. Sanção não aparece após "Gerar" → confirme contratos ativos (pré-condição) e aguarde a janela de Realtime (5s).
+#### CT08: Resolução de Disputa - Cancelar Solicitação (Retract)
+* **Objetivo:** Retrair uma disputa e fazê-la retornar para pendente de análise.
+* **Passos Playwright:**
+  1. Na aba **"Aguardando Evidência"**, localizar o card.
+  2. Clicar no botão **"CANCELAR SOLICITAÇÃO"** (seletor: `button:has-text("CANCELAR SOLICITAÇÃO")`).
+* **O que validar (Playwright):**
+  * O card some da aba "Aguardando Evidência".
+  * Clicar na aba **"Pendentes"**. O card VEL-01 deve constar na lista novamente com status de análise normal.
+* **Validação SQL (psql):**
+  ```sql
+  -- 1. Verificar Fila de Revisão
+  SELECT status, reviewed_at, rejection_reason
+  FROM public.sanction_review_queue
+  WHERE id = '<QUEUE_ID>';
+  -- Esperado: status = 'pending', reviewed_at = NULL, rejection_reason = NULL.
+
+  -- 2. Verificar Evento no Ledger
+  SELECT type
+  FROM public.sla_audit_ledger_v2
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+  ORDER BY occurred_at_utc DESC
+  LIMIT 1;
+  -- Esperado: type = 'DISPUTE_RETRACTED'
+  ```
+
+---
+
+#### CT09: Resolução de Disputa - Aceitar Justificativa (Accept)
+* **Objetivo:** Resolver a disputa aceitando a evidência apresentada (inibindo a multa).
+* **Passos Playwright:**
+  1. Envie a infração do CT08 novamente para disputa clicando em **"SOLICITAR PROVA FORENSE"**.
+  2. Vá para a aba **"Aguardando Evidência"**.
+  3. Clicar no botão **"ACEITAR JUSTIFICATIVA"** (`button:has-text("ACEITAR JUSTIFICATIVA")`).
+  4. No campo de texto expandido, digitar: `Evidência de trânsito em via alternativa aceita.`
+  5. Clicar no botão **"CONFIRMAR ACEITE"** (`button:has-text("CONFIRMAR ACEITE")`).
+* **O que validar (Playwright):**
+  * O card some da aba "Aguardando Evidência".
+* **Validação SQL (psql):**
+  ```sql
+  -- 1. Verificar Status na Fila
+  SELECT status, rejection_reason, reviewed_at
+  FROM public.sanction_review_queue
+  WHERE id = '<QUEUE_ID>';
+  -- Esperado: status = 'rejected', reviewed_at NOT NULL, rejection_reason = 'Evidência de trânsito em via alternativa aceita.'
+
+  -- 2. Verificar Registro no Ledger
+  SELECT type, payload
+  FROM public.sla_audit_ledger_v2
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+  ORDER BY occurred_at_utc DESC
+  LIMIT 1;
+  -- Esperado: type = 'DISPUTE_ACCEPTED'
+  -- payload deve conter a justificativa de resolução.
+  ```
+
+---
+
+#### CT10: Resolução de Disputa - Recusar Justificativa (Overturn)
+* **Objetivo:** Recusar a justificativa do motorista/contratante e aplicar a multa definitivamente (Gerando snapshot forense).
+* **Passos Playwright:**
+  1. *(Preparação)*: Na aba **"Pendentes"**, clique em **"Gerar Sanção de Teste"** para criar um novo card. Aguarde 3s.
+  2. No novo card gerado, clique em **"SOLICITAR PROVA FORENSE"**.
+  3. Vá para a aba **"Aguardando Evidência"**.
+  4. Localize o novo card e anote o ID do banco correspondente (será o `<QUEUE_ID_2>`).
+  5. Clicar no botão **"RECUSAR JUSTIFICATIVA"** (`button:has-text("RECUSAR JUSTIFICATIVA")`).
+  6. No campo expandido, preencher: `Justificativa sem embasamento técnico forense.`
+  7. Clicar no botão **"CONFIRMAR RECUSA"** (`button:has-text("CONFIRMAR RECUSA")`).
+* **O que validar (Playwright):**
+  * O card some da aba "Aguardando Evidência".
+* **Validação SQL (psql):**
+  ```sql
+  -- 1. Verificar Fila
+  SELECT status, rejection_reason, reviewed_at
+  FROM public.sanction_review_queue
+  WHERE id = '<QUEUE_ID_2>';
+  -- Esperado: status = 'applied', reviewed_at NOT NULL.
+
+  -- 2. Verificar Evento de Overturn no Ledger
+  SELECT type, payload
+  FROM public.sla_audit_ledger_v2
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+  ORDER BY occurred_at_utc DESC
+  LIMIT 1;
+  -- Esperado: type = 'DISPUTE_OVERTURNED'
+  -- payload deve conter a chave "snapshot_id" correspondente ao snapshot forense.
+  ```
+
+---
+
+### Grupo 4: Visibilidade e Logs ( OCC e Concluídos)
+
+#### CT11: Aba "Concluídos" (Fim das Multas-Fantasma)
+* **Objetivo:** Validar se as decisões tomadas no CT09 e CT10 são visíveis na lista de concluídos.
+* **Passos Playwright:**
+  1. Na Fila Auditora, clicar na aba **"Concluídos"** (anteriormente "Selados").
+  2. Verificar a presença de ambos os cards de vereditos resolvidos.
+* **O que validar (Playwright):**
+  * No card resolvido via **Ramo 2 (CT09)**:
+    - Deve exibir o badge vermelho **"VEREDITO RECUSADO"** (ícone de block).
+    - Deve exibir a borda lateral vermelha atenuada.
+    - Deve exibir o painel com o texto: `"MOTIVO DA RECUSA: Evidência de trânsito em via alternativa aceita."`.
+  * No card resolvido via **Ramo 3 (CT10)**:
+    - Deve exibir o badge cinza **"SELADO"** (ícone de cadeado).
+    - Deve possuir a borda cinza.
+
+---
+
+#### CT12: Auditoria OCC - Layout Read-Only Table-First
+* **Objetivo:** Validar se a tela de log de auditoria operacional respeita o novo layout.
+* **Passos Playwright:**
+  1. No menu principal, clicar na aba **"Auditoria de SLA"** ou navegar para `/operational-audit`.
+* **O que validar (Playwright):**
+  * Validar que a tabela de log de auditoria ocupa 100% da largura visível da tela.
+  * Validar que o botão flutuante verde (FAB) **"Nova Viagem"** foi removido.
+  * Validar que a coluna do cabeçalho da tabela exibe `"AUTOR / SISTEMA"`.
+  * Validar que a coluna `"HORA"` exibe valores formatados como `HH:mm:ss LOCAL`.
+
+---
+
+#### CT13: Auditoria OCC - endDrawer e Desseleção
+* **Objetivo:** Validar a abertura e fechamento do painel lateral de logs.
+* **Passos Playwright:**
+  1. Na tabela de logs de auditoria, clicar em qualquer linha da tabela.
+* **O que validar (Playwright):**
+  * O painel lateral (endDrawer) se abre à direita da tela.
+  * A linha da tabela correspondente ao item clicado deve estar destacada.
+  * O painel lateral deve apresentar a dupla referência de hora: o horário local da operação e a linha contendo o label **"Timestamp UTC"**.
+  * Clicar no botão **"X"** (ou fechar) no cabeçalho do drawer.
+  * O painel lateral deve se fechar e a linha selecionada da tabela deve perder o destaque (deselect).
+
+---
+
+### Grupo 5: Segurança, RLS e Anti-Fraude
+
+#### CT14: Detecção de Adulteração de Evidência (INV-9 / INV-21)
+* **Objetivo:** Garantir o travamento preventivo do dossiê caso ocorra fraude na base de dados.
+* **Passos Playwright:**
+  1. Na aba **"Concluídos"** da Fila Auditora, localizar o card com o veredito aplicado (Ramo 3 - CT10).
+  2. Clicar no botão **"Visualizar Evidência Forense"** do card.
+  3. Confirmar que o modal se abre exibindo o selo verde **"Cópia Autenticada"**. Fechar o modal.
+* **Ação SQL (psql - Simulação de Fraude de DBA):**
+  ```sql
+  -- 1. Buscar o ID do ledger correspondente ao veredito
+  SELECT ledger_entry_id FROM public.sanction_review_queue
+  WHERE id = '<COLOQUE_O_ID_DO_CARD_AQUI>';
+
+  -- 2. Alterar o snapshot simulando invasão
+  UPDATE public.forensic_evidence_snapshots
+  SET snapshot = jsonb_set(snapshot, '{rules,0,rule_config,threshold_minutes}', '999')
+  WHERE ledger_entry_id = '<COLOQUE_O_LEDGER_ENTRY_ID_BUSCADO>';
+  ```
+* **Passos Playwright (Validação de Bloqueio):**
+  4. Na UI, clicar novamente no botão **"Visualizar Evidência Forense"** do mesmo card.
+* **O que validar (Playwright):**
+  * O modal não exibe mais as regras e parâmetros da evidência.
+  * Um banner vermelho contendo o texto **"Divergência Crítica de Integridade"** deve estar visível.
+  * O botão **"ESCALAR INCIDENTE"** deve aparecer.
+  * Clicar em **"ESCALAR INCIDENTE"**.
+  * Verificar a exibição do SnackBar informando sobre o escalonamento.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT status, details
+  FROM public.sanction_escalation_logs
+  ORDER BY created_at DESC
+  LIMIT 1;
+  -- Esperado: status = 'escalated'. details contendo o ID do ledger adulterado.
+  ```
+
+---
+
+#### CT15: Isolamento de Tenant (Red Team - INV-22)
+* **Objetivo:** Garantir que o Inquilino B não enxergue dados do Inquilino A.
+* **Passos Playwright:**
+  1. Realizar logout clicando no botão no topo direito da tela.
+  2. Preencher no login:
+     - E-mail: `admin-b@veraprob.dev`
+     - Senha: `veraprob123!`
+  3. Clicar em **"ACESSAR SISTEMA"**.
+  4. Navegar até a **"Fila Auditora"**.
+  5. Clicar na aba **"Concluídos"**.
+* **O que validar (Playwright):**
+  * A tabela/lista deve estar vazia (ou não conter as sanções geradas para o Inquilino A nos passos anteriores).
+* **Validação SQL (psql - Simular RLS de API):**
+  ```sql
+  -- Tentar acessar dados da Org A usando credenciais/contexto da Org B
+  BEGIN;
+  SET LOCAL ROLE authenticated;
+  SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"11111111-1111-1111-1111-111111111111","organization_id":"00000000-0000-0000-0000-000000000002"}';
+
+  SELECT count(*) FROM public.sanction_review_queue
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001';
+  -- Esperado: 0 linhas.
+  COMMIT;
+  ```
+
+---
+
+#### CT16: Anti-Oracle URL Direct Routing (INV-26)
+* **Objetivo:** Garantir que buscas por IDs de outros tenants retornem 404 neutro.
+* **Passos Playwright:**
+  1. Mantendo-se logado como **Inquilino B**, acessar a URL de detalhes de um contratante do Inquilino A:
+     `http://localhost:50185/#/admin/contractors/<CONTRATANTE_ID_ORG_A>`
+* **O que validar (Playwright):**
+  * O sistema deve redirecionar ou exibir uma mensagem neutra "Recurso não encontrado" ou redirecionar para a listagem local, sem apresentar tela de erro de permissão que exponha a existência do ID.
+
+---
+
+## 📊 Matriz de Aceitação UAT (Checklist para Agente Playwright)
+
+| Cód | Ação Playwright / psql | Seletor HTML / Comando SQL | Esperado | Status |
+|:----|:----------------------|:---------------------------|:---------|:------:|
+| **UAT-01** | Login Inquilino A | `button:has-text("ACESSAR SISTEMA")` | Redirecionamento completo. | `[ ]` |
+| **UAT-02** | Criar Contratante | CNPJ `91.101.494/0001-56` | Contratante exibido na tabela. | `[ ]` |
+| **UAT-03** | Criar Contrato | `button:has-text("ATIVAR CONTRATO")` | Redirecionamento para detalhes do contrato. | `[ ]` |
+| **UAT-04** | Injetar Sanção | `button:has-text("Gerar Sanção de Teste")` | Card VEL-01 surge na aba Pendentes. | `[ ]` |
+| **UAT-05** | Veto de justificativa curta | Input < 10 caracteres | Botão `CONFIRMAR RECUSA` fica desabilitado. | `[ ]` |
+| **UAT-06** | Envio de Disputa | `button:has-text("SOLICITAR PROVA FORENSE")` | Card move para a aba "Aguardando Evidência". | `[ ]` |
+| **UAT-07** | Cancelamento Disputa | `button:has-text("CANCELAR SOLICITAÇÃO")` | Card volta a Pendentes (status `pending`). | `[ ]` |
+| **UAT-08** | Aceite de Disputa | `button:has-text("CONFIRMAR ACEITE")` | Card arquiva em Concluídos como `rejected`. | `[ ]` |
+| **UAT-09** | Recusa de Disputa | `button:has-text("CONFIRMAR RECUSA")` | Card arquiva em Concluídos como `applied`. | `[ ]` |
+| **UAT-10** | Visibilidade Concluídos | Aba `"Concluídos"` | Mostra cartões recusados (vermelho) e aplicados (cinza). | `[ ]` |
+| **UAT-11** | Auditoria OCC | `/operational-audit` | Layout 100% width, sem FAB "Nova Viagem". | `[ ]` |
+| **UAT-12** | endDrawer de logs | Clicar na linha da tabela | Drawer abre com duplo fuso de hora (Local/UTC). | `[ ]` |
+| **UAT-13** | Anti-Fraude (INV-9) | SQL update snapshot | Modal bloqueia dados, mostra banner e Escalar. | `[ ]` |
+| **UAT-14** | Isolamento RLS | Login Inquilino B | 0 dados do Inquilino A visíveis na UI. | `[ ]` |
+| **UAT-15** | Anti-Oracle (INV-26) | Acesso direto a URL de outro tenant | Retorna 404 neutro. | `[ ]` |
+| **UAT-16** | Índice Concluídos | `idx_srq_org_status_concluded_at` | Índice ativo no banco de dados. | `[ ]` |
+| **UAT-17** | Constraint de Tipos | `chk_ledger_type` | Bloqueia inserts de tipos inválidos no ledger. | `[ ]` |

@@ -37,8 +37,9 @@ class SlaLedgerMapper {
   static SlaLedgerEntry? _mapExecutionEvent(DomainEvent event) {
     if (event is ExecutionBoundEvent) return _mapExecutionBound(event);
     if (event is NoShowDeclaredEvent) return _mapNoShowDeclared(event);
-    if (event is EvidenceGapDeclaredEvent)
+    if (event is EvidenceGapDeclaredEvent) {
       return _mapEvidenceGapDeclared(event);
+    }
     if (event is ContractualPlanDeclaredEvent) return _mapPlanDeclared(event);
     if (event is TransitStartedEvent) return _mapTransitStarted(event);
     if (event is CompletedWithGapsEvent) return _mapCompletedWithGaps(event);
@@ -155,8 +156,9 @@ class SlaLedgerMapper {
   // ── Occurrence Event Mappers ───────────────────────────────────────────────
 
   static SlaLedgerEntry? _mapOccurrenceEvent(DomainEvent event) {
-    if (event is OccurrenceRegisteredEvidence)
+    if (event is OccurrenceRegisteredEvidence) {
       return _mapOccurrenceRegistered(event);
+    }
     if (event is TripInterruptedEvidence) return _mapTripInterrupted(event);
     if (event is TripCancelledEvidence) return _mapTripCancelled(event);
     return null;
@@ -319,8 +321,9 @@ class SlaLedgerMapper {
   // ── Sanction Event Mappers ──────────────────────────────────────────────────
 
   static SlaLedgerEntry? _mapSanctionEvent(DomainEvent event) {
-    if (event is SanctionRecommendedEvent)
+    if (event is SanctionRecommendedEvent) {
       return _mapSanctionRecommended(event);
+    }
     if (event is SanctionAppliedEvent) return _mapSanctionApplied(event);
     if (event is SanctionRejectedEvent) return _mapSanctionRejected(event);
     if (event is SanctionDisputedEvent) return _mapSanctionDisputed(event);
