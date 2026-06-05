@@ -6,7 +6,8 @@ import 'package:veraprob/application/projections/providers/audit_filter_provider
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/orphan_triage_tab.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/roi_guardian_strip.dart';
-import 'package:veraprob/features/admin/presentation/screens/create_execution_dialog.dart';
+import 'dart:math' as math;
+
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
 import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
@@ -30,67 +31,67 @@ class _OperationalAuditScreenState
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isWide = screenWidth >= _kOccSidePanelBreakpoint;
 
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         key: _scaffoldKey,
         backgroundColor: VeraProbColors.background,
-        // QA/Security: drawer for narrow screens — mirrors AuditorQueueScreen pattern
-        endDrawer: isWide
-            ? null
-            : Drawer(
-                width: screenWidth * 0.55,
-                backgroundColor: VeraProbColors.surface,
-                child: SafeArea(
-                  child: Column(
+        // QA/Security: drawer sob demanda para todos os tamanhos de tela
+        endDrawer: Drawer(
+          width: math.min(480.0, screenWidth * 0.45),
+          backgroundColor: VeraProbColors.surface,
+          child: SafeArea(
+            child: Column(
+              children: [
+                // Drawer header
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: VeraProbColors.border),
+                    ),
+                  ),
+                  child: Row(
                     children: [
-                      // Drawer header
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: const BoxDecoration(
-                          border: Border(
-                            bottom: BorderSide(color: VeraProbColors.border),
+                      const Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: VeraProbColors.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          'Detalhes do Registro',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: VeraProbColors.textPrimary,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.info_outline,
-                              size: 16,
-                              color: VeraProbColors.primary,
-                            ),
-                            const SizedBox(width: 8),
-                            const Expanded(
-                              child: Text(
-                                'Detalhes do Registro',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: VeraProbColors.textPrimary,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.close, size: 18),
-                              onPressed: () => Navigator.pop(context),
-                              color: VeraProbColors.textSecondary,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                            ),
-                          ],
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const Expanded(child: _AuditSidePanel()),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18),
+                        onPressed: () {
+                          Navigator.pop(context);
+                          ref.read(selectedAuditLogProvider.notifier).set(null);
+                        },
+                        color: VeraProbColors.textSecondary,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
                     ],
                   ),
                 ),
-              ),
+                const Expanded(child: _AuditSidePanel()),
+              ],
+            ),
+          ),
+        ),
         appBar: AppBar(
           title: const Text(
             'OCC - Centro de Auditoria Integrada',
@@ -99,12 +100,11 @@ class _OperationalAuditScreenState
           backgroundColor: VeraProbColors.surface,
           centerTitle: false,
           actions: [
-            if (!isWide)
-              IconButton(
-                icon: const Icon(Icons.info_outline),
-                tooltip: 'Detalhes do Registro',
-                onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-              ),
+            IconButton(
+              icon: const Icon(Icons.info_outline),
+              tooltip: 'Detalhes do Registro',
+              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+            ),
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: () {
@@ -114,16 +114,6 @@ class _OperationalAuditScreenState
             ),
           ],
         ),
-        floatingActionButton: FloatingActionButton.extended(
-          icon: const Icon(Icons.add_road_outlined),
-          label: const Text('Nova Viagem'),
-          backgroundColor: VeraProbColors.primary,
-          onPressed: () => showDialog<void>(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => const CreateExecutionDialog(),
-          ),
-        ),
         body: Column(
           children: [
             const RoiGuardianStrip(),
@@ -131,9 +121,8 @@ class _OperationalAuditScreenState
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Left: tabbed content (audit + orphan triage)
+                  // Tabbed content (audit + orphan triage) full width
                   Expanded(
-                    flex: 7,
                     child: Column(
                       children: [
                         Container(
@@ -154,20 +143,18 @@ class _OperationalAuditScreenState
                         ),
                         Expanded(
                           child: TabBarView(
-                            children: [_AuditTab(), const OrphanTriageTab()],
+                            children: [
+                              _AuditTab(
+                                onOpenDrawer: () =>
+                                    _scaffoldKey.currentState?.openEndDrawer(),
+                              ),
+                              const OrphanTriageTab(),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Wide: side panel always visible
-                  if (isWide) ...[
-                    const VerticalDivider(
-                      width: 1,
-                      color: VeraProbColors.border,
-                    ),
-                    const Expanded(flex: 3, child: _AuditSidePanel()),
-                  ],
                 ],
               ),
             ),
@@ -178,8 +165,11 @@ class _OperationalAuditScreenState
   }
 }
 
-/// The original audit log tab — extracted for TabBarView.
 class _AuditTab extends ConsumerWidget {
+  final VoidCallback onOpenDrawer;
+
+  const _AuditTab({required this.onOpenDrawer});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
@@ -280,7 +270,10 @@ class _AuditTab extends ConsumerWidget {
             SizedBox(width: 200, child: Text('AÇÃO', style: _headerStyle)),
             SizedBox(width: 110, child: Text('VEÍCULO', style: _headerStyle)),
             SizedBox(width: 110, child: Text('ROTA', style: _headerStyle)),
-            SizedBox(width: 120, child: Text('AUTOR', style: _headerStyle)),
+            SizedBox(
+              width: 120,
+              child: Text('AUTOR / SISTEMA', style: _headerStyle),
+            ),
           ],
         ),
       ),
@@ -351,6 +344,7 @@ class _AuditTab extends ConsumerWidget {
             return InkWell(
               onTap: () {
                 ref.read(selectedAuditLogProvider.notifier).set(log);
+                onOpenDrawer();
               },
               child: Container(
                 color: isSelected
@@ -366,9 +360,25 @@ class _AuditTab extends ConsumerWidget {
                   children: [
                     SizedBox(
                       width: 80,
-                      child: Text(
-                        DateFormat('HH:mm:ss').format(log.timestamp),
-                        style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat(
+                              'HH:mm:ss',
+                            ).format(log.timestamp.toLocal()),
+                            style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                          ),
+                          const Text(
+                            'LOCAL',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: VeraProbColors.textSecondary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(
@@ -597,8 +607,14 @@ class _AuditSidePanel extends ConsumerWidget {
           const SizedBox(height: 24),
           _DetailRow(label: 'ID', value: log.id, isMonospace: true),
           _DetailRow(
-            label: 'Carimbo de Tempo',
+            label: 'Timestamp UTC',
             value: DateFormat('dd/MM/yyyy HH:mm:ss').format(log.timestamp),
+          ),
+          _DetailRow(
+            label: 'Tempo Local',
+            value: DateFormat(
+              'dd/MM/yyyy HH:mm:ss',
+            ).format(log.timestamp.toLocal()),
           ),
           _DetailRow(label: 'Ação', value: log.action),
           _DetailRow(
