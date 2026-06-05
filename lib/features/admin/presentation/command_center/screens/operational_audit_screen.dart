@@ -12,10 +12,6 @@ import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart'
 import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
 
-/// Breakpoint below which the side panel becomes an end-drawer (QA/Security:
-/// prevents forensic text overlap on narrow screens / split-screen monitors).
-const _kOccSidePanelBreakpoint = 900.0;
-
 class OperationalAuditScreen extends ConsumerStatefulWidget {
   const OperationalAuditScreen({super.key});
 
