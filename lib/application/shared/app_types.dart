@@ -32,6 +32,7 @@ export 'package:veraprob/domain/assets/i_transit_route_repository.dart';
 export 'package:veraprob/domain/assets/i_vehicle_asset_repository.dart';
 export 'package:veraprob/domain/shared/i_trip_repository.dart';
 export 'package:veraprob/domain/sla_audit/operational_alert.dart';
+export 'package:veraprob/domain/shared/integrity_exception.dart';
 export 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 export 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
 export 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
