@@ -65,7 +65,7 @@ Critical subset:
 - Clean Imports: no unused imports.
 - Unused Locals: never leave unused locals in tests or production code (enforced as error).
 - Files `kebab-case`, types `PascalCase`, members `camelCase`.
-- Encoding UTF-8 LF mandatory (CRLF blocked — Linux/Docker parity).
+- Encoding UTF-8 LF mandatory (CRLF blocked — Linux/Docker parity). AI agents MUST ensure all generated or edited files use LF (`\n`) exclusively, even on Windows.
 - `const` whenever possible.
 - Unused params: single `_` (avoid `unnecessary_underscores` error).
 - `DateTime.now()` MUST be followed by `.toUtc()` (INV-6).
