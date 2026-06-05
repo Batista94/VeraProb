@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/presentation/shared/formatters/cnpj_input_formatter.dart';
 import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
@@ -173,17 +174,22 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    // Guard: prevent double-tap (Flutter Web ClickDebouncer race)
+    // Synchronous field write — visible to any concurrent CanvasKit event
+    // before setState schedules a rebuild. This closes the double-fire window
+    // where PointerUp + synthetic click both pass the _isSaving check.
     if (_isSaving) return;
+    _isSaving = true;
 
-    // Capture navigator/messenger BEFORE first await — context is invalid
-    // after async gaps on Flutter Web Wasm (ClickDebouncer null-check crash).
-    // Lesson-4: barrierDismissible:false dialogs MUST close via captured nav.
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _isSaving = false;
+      return;
+    }
+
+    // Capture context-dependent refs before first await (Lesson #8).
     final navigator = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
-    setState(() => _isSaving = true);
+    setState(() {});
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
@@ -209,15 +215,16 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
       if (mounted) navigator.pop(newContractor);
     } catch (e) {
       if (mounted) {
+        final msg = e is IntegrityException
+            ? e.message
+            : 'Erro ao salvar. Tente novamente.';
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      _isSaving = false;
+      if (mounted) setState(() {});
     }
   }
 }

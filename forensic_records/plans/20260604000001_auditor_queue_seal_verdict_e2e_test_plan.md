@@ -65,28 +65,55 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 
 ---
 
-#### CT02: Cadastro de Novo Contratante (Sucesso)
-* **Objetivo:** Adicionar um contratante válido na base do Inquilino A.
+#### CT02: Cadastro de Novo Contratante (Sucesso + Validação de Nome Duplicado)
+* **Objetivo:** Adicionar um contratante válido e verificar que nomes duplicados na mesma organização são rejeitados com mensagem clara — sem dados fantasma no banco.
+
+##### CT02-A: Cadastro bem-sucedido
+* **Pré-condição:** Nenhum contratante com o nome `Viação Oeste Alfa S.A.` existe na Org A.
 * **Passos Playwright:**
   1. No menu lateral, clicar no botão que possui a classe ou label contendo `"Administração"`.
   2. Localizar o grid de Administração e clicar no card **"Contratantes"**.
   3. Clicar no botão **"Novo Contratante"** (seletor: `button:has-text("Novo Contratante")`).
   4. No modal aberto, preencher:
-     - **Razão Social / Nome:** `Viação Oeste Alfa S.A.`
-     - **CNPJ (Documento):** `91.101.494/0001-56` (CNPJ válido).
-     - **Nome de Contato:** `Carlos Mendes`
-     - **E-mail de Contato:** `contato@alfaengenharia.com.br`
-  5. Clicar no botão `button:has-text("Salvar")` ou `button:has-text("Cadastrar")`.
+     - **Nome da Empresa:** `Viação Oeste Alfa S.A.`
+     - **CNPJ / Tax ID:** `91.101.494/0001-56` (CNPJ válido).
+     - **Pessoa de Contato:** `Carlos Mendes`
+     - **Email Primário:** `contato@alfaengenharia.com.br`
+  5. Clicar no botão `button:has-text("Salvar")`.
 * **O que validar (Playwright):**
-  * Verificar que o modal foi fechado.
-  * Verificar que o contratante `Viação Oeste Alfa S.A.` está listado na tabela.
+  * Modal fecha imediatamente após o clique.
+  * Contratante `Viação Oeste Alfa S.A.` aparece na tabela **sem necessidade de reload**.
 * **Validação SQL (psql):**
   ```sql
   SELECT id, name, tax_id, organization_id
   FROM public.contractors
-  WHERE tax_id = '91.101.494/0001-56';
-  -- Esperado: 1 linha retornada.
-  -- organization_id deve ser '00000000-0000-0000-0000-000000000001'.
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+    AND name = 'Viação Oeste Alfa S.A.';
+  -- Esperado: EXATAMENTE 1 linha (sem duplicatas por double-fire).
+  -- organization_id = '00000000-0000-0000-0000-000000000001'.
+  -- tax_id = '91.101.494/0001-56'.
+  ```
+
+##### CT02-B: Rejeição de nome duplicado na mesma organização
+* **Pré-condição:** CT02-A concluído — `Viação Oeste Alfa S.A.` já existe na Org A.
+* **Passos Playwright:**
+  1. Clicar novamente em **"Novo Contratante"**.
+  2. No modal, preencher o mesmo nome `Viação Oeste Alfa S.A.` com dados diferentes:
+     - **CNPJ / Tax ID:** `07.526.557/0001-00` (CNPJ válido diferente).
+     - **Pessoa de Contato:** `Ana Costa`
+     - **Email Primário:** `ana@beta.com.br`
+  3. Clicar em `button:has-text("Salvar")`.
+* **O que validar (Playwright):**
+  * Modal **permanece aberto** (não fecha).
+  * Snackbar vermelho exibe a mensagem: `Já existe um contratante com este nome nesta organização.`
+  * O botão **"Cancelar"** fecha o modal ao ser clicado.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT COUNT(*)
+  FROM public.contractors
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+    AND name = 'Viação Oeste Alfa S.A.';
+  -- Esperado: COUNT = 1 (o duplicado foi rejeitado, sem phantom rows).
   ```
 
 ---
