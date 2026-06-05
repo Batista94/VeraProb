@@ -186,7 +186,10 @@ void main() {
 
       await expectLater(
         handler.handle(
-          command(resolution: DisputeResolution.retract, resolutionReason: null),
+          command(
+            resolution: DisputeResolution.retract,
+            resolutionReason: null,
+          ),
         ),
         completes,
       );
@@ -205,7 +208,10 @@ void main() {
       expect(resolution.payload['queue_entry_id'], 'entry-001');
       expect(resolution.payload['resolution_reason'], isNotNull);
 
-      final entry = await queueRepo.findById('entry-001', organizationId: 'org-1');
+      final entry = await queueRepo.findById(
+        'entry-001',
+        organizationId: 'org-1',
+      );
       expect(entry!.status, SanctionReviewStatus.rejected);
       // Reason persisted to queue for the Concluídos tab.
       expect(entry.rejectionReason, 'Contractor proved force majeure.');
@@ -222,60 +228,68 @@ void main() {
       final resolution = ledger.entries.last;
       expect(resolution.type, 'DISPUTE_OVERTURNED');
 
-      final entry = await queueRepo.findById('entry-001', organizationId: 'org-1');
+      final entry = await queueRepo.findById(
+        'entry-001',
+        organizationId: 'org-1',
+      );
       expect(entry!.status, SanctionReviewStatus.applied);
     });
   });
 
   group('ResolveDisputeHandler - retract (disputed -> pending)', () {
-    test('appends DISPUTE_RETRACTED, clears review fields, keeps reviewedBy',
-        () async {
-      await queueRepo.enqueue(makeDisputedEntry());
-      await seedOpenDispute();
-
-      await handler.handle(
-        command(resolution: DisputeResolution.retract, resolutionReason: null),
-      );
-
-      final resolution = ledger.entries.last;
-      expect(resolution.type, 'DISPUTE_RETRACTED');
-
-      final entry = await queueRepo.findById('entry-001', organizationId: 'org-1');
-      expect(entry!.status, SanctionReviewStatus.pending);
-      expect(entry.reviewedAtUtc, isNull);
-      expect(entry.rejectionReason, isNull);
-      // Forensic honesty: the original disputer is preserved.
-      expect(entry.reviewedByUserId, 'auditor-disputer');
-    });
-  });
-
-  group('ResolveDisputeHandler - Idempotent concurrency guard', () {
     test(
-      'throws IdempotencyProcessingException when current dispute already '
-      'resolved in the ledger',
+      'appends DISPUTE_RETRACTED, clears review fields, keeps reviewedBy',
       () async {
         await queueRepo.enqueue(makeDisputedEntry());
         await seedOpenDispute();
-        // A concurrent auditor already appended the resolution.
-        await ledger.append(
-          SlaLedgerEntry(
-            organizationId: 'org-1',
-            type: 'DISPUTE_ACCEPTED',
-            operatorId: 'auditor-other',
-            setId: 'set-1',
-            contractId: 'contract-1',
-            planVersion: 0,
-            occurredAtUtc: DateTime.utc(2026, 4, 6, 10, 7),
-            payload: {'queue_entry_id': 'entry-001'},
+
+        await handler.handle(
+          command(
+            resolution: DisputeResolution.retract,
+            resolutionReason: null,
           ),
         );
 
-        await expectLater(
-          handler.handle(command()),
-          throwsA(isA<IdempotencyProcessingException>()),
+        final resolution = ledger.entries.last;
+        expect(resolution.type, 'DISPUTE_RETRACTED');
+
+        final entry = await queueRepo.findById(
+          'entry-001',
+          organizationId: 'org-1',
         );
+        expect(entry!.status, SanctionReviewStatus.pending);
+        expect(entry.reviewedAtUtc, isNull);
+        expect(entry.rejectionReason, isNull);
+        // Forensic honesty: the original disputer is preserved.
+        expect(entry.reviewedByUserId, 'auditor-disputer');
       },
     );
+  });
+
+  group('ResolveDisputeHandler - Idempotent concurrency guard', () {
+    test('throws IdempotencyProcessingException when current dispute already '
+        'resolved in the ledger', () async {
+      await queueRepo.enqueue(makeDisputedEntry());
+      await seedOpenDispute();
+      // A concurrent auditor already appended the resolution.
+      await ledger.append(
+        SlaLedgerEntry(
+          organizationId: 'org-1',
+          type: 'DISPUTE_ACCEPTED',
+          operatorId: 'auditor-other',
+          setId: 'set-1',
+          contractId: 'contract-1',
+          planVersion: 0,
+          occurredAtUtc: DateTime.utc(2026, 4, 6, 10, 7),
+          payload: {'queue_entry_id': 'entry-001'},
+        ),
+      );
+
+      await expectLater(
+        handler.handle(command()),
+        throwsA(isA<IdempotencyProcessingException>()),
+      );
+    });
 
     test('does not append a second ledger entry when blocked', () async {
       await queueRepo.enqueue(makeDisputedEntry());
@@ -294,9 +308,7 @@ void main() {
       );
       final before = ledger.entries.length;
 
-      await handler
-          .handle(command())
-          .catchError((_) {});
+      await handler.handle(command()).catchError((_) {});
 
       expect(ledger.entries.length, before);
     });

@@ -102,7 +102,9 @@ class ResolveDisputeHandler {
     await _ledger.append(SlaLedgerMapper.mapToEntry(event));
 
     // 9. Apply the queue transition.
-    await _queueRepo.updateStatus(_applyTransition(entry, command, now, reason));
+    await _queueRepo.updateStatus(
+      _applyTransition(entry, command, now, reason),
+    );
   }
 
   void _assertReason(ResolveDisputeCommand command) {
@@ -134,8 +136,9 @@ class ResolveDisputeHandler {
       organizationId: organizationId,
     );
     final opens = related.where((e) => e.type == 'SANCTION_DISPUTED').length;
-    final resolutions =
-        related.where((e) => _resolutionTypes.contains(e.type)).length;
+    final resolutions = related
+        .where((e) => _resolutionTypes.contains(e.type))
+        .length;
     if (resolutions >= opens) {
       throw IdempotencyProcessingException(
         idempotencyKey: command.queueEntryId,

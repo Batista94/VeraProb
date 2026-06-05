@@ -428,10 +428,10 @@ class _Header extends ConsumerWidget {
                       value: AuditorQueueFilter.sealed,
                       label: isNarrow
                           ? const Tooltip(
-                              message: 'Selados',
+                              message: 'Concluídos',
                               child: SizedBox.shrink(),
                             )
-                          : const Text('Selados'),
+                          : const Text('Concluídos'),
                       icon: const Icon(Icons.verified_user_outlined, size: 14),
                     ),
                   ],

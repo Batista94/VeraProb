@@ -391,7 +391,7 @@ class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
           .from('sanction_review_queue')
           .select()
           .eq('organization_id', orgId)
-          .eq('status', 'applied')
+          .inFilter('status', const ['applied', 'rejected'])
           .gte('created_at', state.startDate.toIso8601String())
           .lte('created_at', state.endDate.toIso8601String())
           .order('created_at', ascending: false)

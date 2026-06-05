@@ -117,6 +117,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     const double leftBorderWidth = 3;
     if (item.status == SanctionReviewStatus.disputed) {
       leftBorderColor = VeraProbColors.warning;
+    } else if (item.status == SanctionReviewStatus.rejected) {
+      // Refused verdict: attenuated red — distinct from the live pending red.
+      leftBorderColor = VeraProbColors.error.withValues(alpha: 0.5);
     } else if (isLocked) {
       leftBorderColor = VeraProbColors.textDisabled;
     } else {
@@ -338,6 +341,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   // ── Zona 4: Forensic Seal ──────────────────────────────────────
                   _ForensicSealRow(item: item),
 
+                  // ── Zona 4.2: Refusal reason (rejected verdicts) ──────────────
+                  if (item.status == SanctionReviewStatus.rejected &&
+                      (item.rejectionReason?.trim().isNotEmpty ?? false))
+                    _RefusalReasonZone(reason: item.rejectionReason!.trim()),
+
                   // ── Zona 4.5: Dossier Download ─────────────────────────────────
                   _DossierDownloadRow(
                     isLoading: _isDossierLoading,
@@ -439,6 +447,47 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               color: VeraProbColors.warning,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (item.status == SanctionReviewStatus.rejected)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'Sanção recusada — multa não aplicada',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: VeraProbColors.error.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.block_rounded,
+                            size: 12,
+                            color: VeraProbColors.error,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'VEREDITO RECUSADO',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.error,
                               letterSpacing: 0.8,
                             ),
                           ),
@@ -1171,6 +1220,64 @@ class _ForensicSealRow extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Zona 4.2: Refusal reason banner for `rejected` verdicts.
+///
+/// Surfaces the auditor's rationale (from `rejection_reason`) on the Concluídos
+/// tab so a refused fine is never a silent ghost — INV-23 explainability.
+class _RefusalReasonZone extends StatelessWidget {
+  final String reason;
+  const _RefusalReasonZone({required this.reason});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: VeraProbColors.error.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.block_rounded,
+                  size: 13,
+                  color: VeraProbColors.error,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'MOTIVO DA RECUSA',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.error,
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              reason,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+          ],
         ),
       ),
     );

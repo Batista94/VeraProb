@@ -97,7 +97,7 @@ void main() {
 
       expect(find.text('Tribunal de Auditoria'), findsOneWidget);
       expect(find.textContaining('Pendentes'), findsOneWidget);
-      expect(find.text('Selados'), findsOneWidget);
+      expect(find.text('Concluídos'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -115,7 +115,7 @@ void main() {
     });
 
     testWidgets(
-      'toggling to Selados shows DateFilterBar and sealed empty state',
+      'toggling to Concluídos shows DateFilterBar and sealed empty state',
       (tester) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
@@ -123,8 +123,8 @@ void main() {
         await tester.pumpWidget(_buildScreen());
         await tester.pumpAndSettle();
 
-        // Tap on the "Selados" tab segment
-        final seladosTab = find.text('Selados');
+        // Tap on the "Concluídos" tab segment
+        final seladosTab = find.text('Concluídos');
         await tester.ensureVisible(seladosTab);
         await tester.tap(seladosTab);
         await tester.pumpAndSettle();

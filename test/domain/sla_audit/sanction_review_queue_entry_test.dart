@@ -137,7 +137,10 @@ void main() {
         final entry = makeResolvedDisputed();
         final unchanged = entry.copyWith(status: SanctionReviewStatus.applied);
         expect(unchanged.reviewedAtUtc, isNotNull);
-        expect(unchanged.rejectionReason, 'GPS data inconclusive for this route.');
+        expect(
+          unchanged.rejectionReason,
+          'GPS data inconclusive for this route.',
+        );
         expect(unchanged.reviewedByUserId, 'auditor-001');
       });
     });

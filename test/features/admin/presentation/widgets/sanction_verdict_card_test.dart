@@ -135,6 +135,7 @@ SanctionQueueItemView _makeItem({
   double thresholdValue = 0.0,
   String? vehiclePlate = 'TST-0001',
   String? operatorName = 'João Silva',
+  String? rejectionReason,
 }) {
   final evidence = VerdictEvidence.create(
     clauseRef: clauseRef,
@@ -162,6 +163,7 @@ SanctionQueueItemView _makeItem({
     createdAtUtc: DateTime.utc(2026, 1, 15, 10, 0),
     vehiclePlate: vehiclePlate,
     operatorName: operatorName,
+    rejectionReason: rejectionReason,
   );
 }
 
@@ -289,7 +291,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('shows SELADO badge when status is rejected', (tester) async {
+    testWidgets('shows VEREDITO RECUSADO badge when status is rejected', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
 
@@ -298,7 +302,34 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELADO'), findsOneWidget);
+      expect(find.text('VEREDITO RECUSADO'), findsOneWidget);
+      expect(find.text('SELADO'), findsNothing);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('rejected verdict surfaces MOTIVO DA RECUSA with reason', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.rejected,
+            rejectionReason:
+                'Justificativa do contratante aceita pelo auditor.',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('MOTIVO DA RECUSA'), findsOneWidget);
+      expect(
+        find.text('Justificativa do contratante aceita pelo auditor.'),
+        findsOneWidget,
+      );
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -832,6 +863,21 @@ void main() {
       );
       await tester.pump();
       expect(accentColor(tester), VeraProbColors.textDisabled);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('rejected → attenuated red accent (distinct from pending)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.error.withValues(alpha: 0.5));
 
       addTearDown(tester.view.resetPhysicalSize);
     });
