@@ -11,43 +11,62 @@ export '../../domain/sla_audit/sla_ledger_entry.dart';
 /// This mapping decouples the internal domain event structure from the
 /// external forensic record, fulfilling the requirement for application-level
 /// forensic mapping and explicit causal linkage.
+///
+/// Responsibilities are delegated to private sub-mappers grouped by domain:
+/// - [_SlaExecutionEventMapper]  — execution lifecycle
+/// - [_SlaOccurrenceEventMapper] — occurrence evidence
+/// - [_SlaContractEventMapper]   — contract lifecycle
+/// - [_SlaSanctionEventMapper]   — sanctions & disputes
+/// - [_SlaJustificationEventMapper] — justifications
 class SlaLedgerMapper {
   /// Maps a [DomainEvent] to its forensic [SlaLedgerEntry].
   static SlaLedgerEntry mapToEntry(DomainEvent event) {
-    final execution = _mapExecutionEvent(event);
+    final execution = _SlaExecutionEventMapper.map(event);
     if (execution != null) return execution;
 
-    final occurrence = _mapOccurrenceEvent(event);
+    final occurrence = _SlaOccurrenceEventMapper.map(event);
     if (occurrence != null) return occurrence;
 
-    final contract = _mapContractEvent(event);
+    final contract = _SlaContractEventMapper.map(event);
     if (contract != null) return contract;
 
-    final sanction = _mapSanctionEvent(event);
+    final sanction = _SlaSanctionEventMapper.map(event);
     if (sanction != null) return sanction;
 
-    final justification = _mapJustificationEvent(event);
+    final justification = _SlaJustificationEventMapper.map(event);
     if (justification != null) return justification;
 
     return _mapUnknownEvent(event);
   }
 
-  // ── Execution Event Mappers ───────────────────────────────────────────────
+  static SlaLedgerEntry _mapUnknownEvent(DomainEvent event) {
+    return SlaLedgerEntry(
+      organizationId: event.organizationId,
+      type: 'UNKNOWN_EVENT',
+      operatorId: 'SYSTEM',
+      contractId: 'unknown',
+      planVersion: 0,
+      occurredAtUtc: event.occurredAtUtc,
+      payload: {'raw_event_type': event.runtimeType.toString()},
+    );
+  }
+}
 
-  static SlaLedgerEntry? _mapExecutionEvent(DomainEvent event) {
-    if (event is ExecutionBoundEvent) return _mapExecutionBound(event);
-    if (event is NoShowDeclaredEvent) return _mapNoShowDeclared(event);
-    if (event is EvidenceGapDeclaredEvent) {
-      return _mapEvidenceGapDeclared(event);
-    }
-    if (event is ContractualPlanDeclaredEvent) return _mapPlanDeclared(event);
-    if (event is TransitStartedEvent) return _mapTransitStarted(event);
-    if (event is CompletedWithGapsEvent) return _mapCompletedWithGaps(event);
-    if (event is ExecutionInhibitedEvent) return _mapExecutionInhibited(event);
+// ── Execution Event Mapper ────────────────────────────────────────────────────
+
+class _SlaExecutionEventMapper {
+  static SlaLedgerEntry? map(DomainEvent event) {
+    if (event is ExecutionBoundEvent) return _bound(event);
+    if (event is NoShowDeclaredEvent) return _noShow(event);
+    if (event is EvidenceGapDeclaredEvent) return _evidenceGap(event);
+    if (event is ContractualPlanDeclaredEvent) return _planDeclared(event);
+    if (event is TransitStartedEvent) return _transitStarted(event);
+    if (event is CompletedWithGapsEvent) return _completedWithGaps(event);
+    if (event is ExecutionInhibitedEvent) return _executionInhibited(event);
     return null;
   }
 
-  static SlaLedgerEntry _mapExecutionBound(ExecutionBoundEvent event) {
+  static SlaLedgerEntry _bound(ExecutionBoundEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'EXECUTION_BOUND',
@@ -65,7 +84,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapNoShowDeclared(NoShowDeclaredEvent event) {
+  static SlaLedgerEntry _noShow(NoShowDeclaredEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'NO_SHOW_DECLARED',
@@ -78,9 +97,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapEvidenceGapDeclared(
-    EvidenceGapDeclaredEvent event,
-  ) {
+  static SlaLedgerEntry _evidenceGap(EvidenceGapDeclaredEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'EVIDENCE_GAP_DECLARED',
@@ -93,7 +110,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapPlanDeclared(ContractualPlanDeclaredEvent event) {
+  static SlaLedgerEntry _planDeclared(ContractualPlanDeclaredEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'PLAN_DECLARED',
@@ -111,7 +128,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapTransitStarted(TransitStartedEvent event) {
+  static SlaLedgerEntry _transitStarted(TransitStartedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'TRANSIT_STARTED',
@@ -127,7 +144,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapCompletedWithGaps(CompletedWithGapsEvent event) {
+  static SlaLedgerEntry _completedWithGaps(CompletedWithGapsEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'COMPLETED_WITH_GAPS',
@@ -140,7 +157,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapExecutionInhibited(ExecutionInhibitedEvent event) {
+  static SlaLedgerEntry _executionInhibited(ExecutionInhibitedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'EXECUTION_INHIBITED',
@@ -152,21 +169,19 @@ class SlaLedgerMapper {
       payload: {'reason': event.reason},
     );
   }
+}
 
-  // ── Occurrence Event Mappers ───────────────────────────────────────────────
+// ── Occurrence Event Mapper ───────────────────────────────────────────────────
 
-  static SlaLedgerEntry? _mapOccurrenceEvent(DomainEvent event) {
-    if (event is OccurrenceRegisteredEvidence) {
-      return _mapOccurrenceRegistered(event);
-    }
-    if (event is TripInterruptedEvidence) return _mapTripInterrupted(event);
-    if (event is TripCancelledEvidence) return _mapTripCancelled(event);
+class _SlaOccurrenceEventMapper {
+  static SlaLedgerEntry? map(DomainEvent event) {
+    if (event is OccurrenceRegisteredEvidence) return _registered(event);
+    if (event is TripInterruptedEvidence) return _interrupted(event);
+    if (event is TripCancelledEvidence) return _cancelled(event);
     return null;
   }
 
-  static SlaLedgerEntry _mapOccurrenceRegistered(
-    OccurrenceRegisteredEvidence event,
-  ) {
+  static SlaLedgerEntry _registered(OccurrenceRegisteredEvidence event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'OCCURRENCE_REGISTERED',
@@ -185,7 +200,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapTripInterrupted(TripInterruptedEvidence event) {
+  static SlaLedgerEntry _interrupted(TripInterruptedEvidence event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'TRIP_INTERRUPTED',
@@ -202,7 +217,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapTripCancelled(TripCancelledEvidence event) {
+  static SlaLedgerEntry _cancelled(TripCancelledEvidence event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'TRIP_CANCELLED',
@@ -218,23 +233,23 @@ class SlaLedgerMapper {
       },
     );
   }
+}
 
-  // ── Contract Event Mappers ──────────────────────────────────────────────────
+// ── Contract Event Mapper ─────────────────────────────────────────────────────
 
-  static SlaLedgerEntry? _mapContractEvent(DomainEvent event) {
-    if (event is ContractCreatedEvent) return _mapContractCreated(event);
-    if (event is ContractActivatedEvent) return _mapContractActivated(event);
-    if (event is ContractClosedEvent) return _mapContractClosed(event);
-    if (event is ContractSubmittedForApprovalEvent) {
-      return _mapContractSubmittedForApproval(event);
-    }
-    if (event is ContractAcceptedByContractorEvent) {
-      return _mapContractAcceptedByContractor(event);
-    }
+class _SlaContractEventMapper {
+  static SlaLedgerEntry? map(DomainEvent event) {
+    if (event is ContractCreatedEvent) return _created(event);
+    if (event is ContractActivatedEvent) return _activated(event);
+    if (event is ContractClosedEvent) return _closed(event);
+    if (event is ContractSubmittedForApprovalEvent)
+      return _submittedForApproval(event);
+    if (event is ContractAcceptedByContractorEvent)
+      return _acceptedByContractor(event);
     return null;
   }
 
-  static SlaLedgerEntry _mapContractCreated(ContractCreatedEvent event) {
+  static SlaLedgerEntry _created(ContractCreatedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'CONTRACT_CREATED',
@@ -252,7 +267,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapContractActivated(ContractActivatedEvent event) {
+  static SlaLedgerEntry _activated(ContractActivatedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'CONTRACT_ACTIVATED',
@@ -265,7 +280,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapContractClosed(ContractClosedEvent event) {
+  static SlaLedgerEntry _closed(ContractClosedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'CONTRACT_CLOSED',
@@ -282,7 +297,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapContractSubmittedForApproval(
+  static SlaLedgerEntry _submittedForApproval(
     ContractSubmittedForApprovalEvent event,
   ) {
     return SlaLedgerEntry(
@@ -300,7 +315,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapContractAcceptedByContractor(
+  static SlaLedgerEntry _acceptedByContractor(
     ContractAcceptedByContractorEvent event,
   ) {
     return SlaLedgerEntry(
@@ -317,25 +332,26 @@ class SlaLedgerMapper {
       },
     );
   }
+}
 
-  // ── Sanction Event Mappers ──────────────────────────────────────────────────
+// ── Sanction & Dispute Event Mapper ───────────────────────────────────────────
 
-  static SlaLedgerEntry? _mapSanctionEvent(DomainEvent event) {
-    if (event is SanctionRecommendedEvent) {
-      return _mapSanctionRecommended(event);
-    }
-    if (event is SanctionAppliedEvent) return _mapSanctionApplied(event);
-    if (event is SanctionRejectedEvent) return _mapSanctionRejected(event);
-    if (event is SanctionDisputedEvent) return _mapSanctionDisputed(event);
-    if (event is DisputeAcceptedEvent) return _mapDisputeAccepted(event);
-    if (event is DisputeOverturnedEvent) return _mapDisputeOverturned(event);
-    if (event is DisputeRetractedEvent) return _mapDisputeRetracted(event);
+class _SlaSanctionEventMapper {
+  static SlaLedgerEntry? map(DomainEvent event) {
+    if (event is SanctionRecommendedEvent) return _recommended(event);
+    if (event is SanctionAppliedEvent) return _applied(event);
+    if (event is SanctionRejectedEvent) return _rejected(event);
+    if (event is SanctionDisputedEvent) return _disputed(event);
+    if (event is DisputeAcceptedEvent)
+      return _resolution(event, 'DISPUTE_ACCEPTED');
+    if (event is DisputeOverturnedEvent)
+      return _resolution(event, 'DISPUTE_OVERTURNED');
+    if (event is DisputeRetractedEvent)
+      return _resolution(event, 'DISPUTE_RETRACTED');
     return null;
   }
 
-  static SlaLedgerEntry _mapSanctionRecommended(
-    SanctionRecommendedEvent event,
-  ) {
+  static SlaLedgerEntry _recommended(SanctionRecommendedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'SANCTION_RECOMMENDED',
@@ -352,7 +368,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapSanctionApplied(SanctionAppliedEvent event) {
+  static SlaLedgerEntry _applied(SanctionAppliedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'VERDICT_SEALED',
@@ -370,7 +386,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapSanctionRejected(SanctionRejectedEvent event) {
+  static SlaLedgerEntry _rejected(SanctionRejectedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'VERDICT_REFUSED',
@@ -389,7 +405,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapSanctionDisputed(SanctionDisputedEvent event) {
+  static SlaLedgerEntry _disputed(SanctionDisputedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'SANCTION_DISPUTED',
@@ -405,42 +421,39 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapDisputeAccepted(DisputeAcceptedEvent event) {
-    return _mapDisputeResolution(event, 'DISPUTE_ACCEPTED');
+  static SlaLedgerEntry _resolution(DisputeResolvedEvent event, String type) {
+    return SlaLedgerEntry(
+      organizationId: event.organizationId,
+      type: type,
+      operatorId: event.resolvedByUserId,
+      setId: event.setId,
+      contractId: event.contractId,
+      planVersion: event.planVersion,
+      occurredAtUtc: event.occurredAtUtc,
+      payload: {
+        'queue_entry_id': event.queueEntryId,
+        'resolved_by_user_id': event.resolvedByUserId,
+        'actor_email': event.actorEmail,
+        'resolution_reason': event.resolutionReason,
+        'verdict_evidence': event.verdictEvidence.toJson(),
+      },
+    );
   }
+}
 
-  static SlaLedgerEntry _mapDisputeOverturned(DisputeOverturnedEvent event) {
-    return _mapDisputeResolution(event, 'DISPUTE_OVERTURNED');
-  }
+// ── Justification Event Mapper ────────────────────────────────────────────────
 
-  static SlaLedgerEntry _mapDisputeRetracted(DisputeRetractedEvent event) {
-    return _mapDisputeResolution(event, 'DISPUTE_RETRACTED');
-  }
-
-  // ── Justification Event Mappers ─────────────────────────────────────────────
-
-  static SlaLedgerEntry? _mapJustificationEvent(DomainEvent event) {
-    if (event is JustificationSubmittedEvent) {
-      return _mapJustificationSubmitted(event);
-    }
-    if (event is JustificationApprovedEvent) {
-      return _mapJustificationApproved(event);
-    }
-    if (event is JustificationRejectedEvent) {
-      return _mapJustificationRejected(event);
-    }
-    if (event is SLAJustificationSubmittedEvent) {
-      return _mapSLAJustificationSubmitted(event);
-    }
-    if (event is SLAJustificationExpiredEvent) {
-      return _mapSLAJustificationExpired(event);
-    }
+class _SlaJustificationEventMapper {
+  static SlaLedgerEntry? map(DomainEvent event) {
+    if (event is JustificationSubmittedEvent) return _submitted(event);
+    if (event is JustificationApprovedEvent) return _approved(event);
+    if (event is JustificationRejectedEvent) return _rejected(event);
+    if (event is SLAJustificationSubmittedEvent) return _slaSubmitted(event);
+    if (event is SLAJustificationExpiredEvent) return _slaExpired(event);
     return null;
   }
 
-  static SlaLedgerEntry _mapJustificationSubmitted(
-    JustificationSubmittedEvent event,
-  ) {
+  static SlaLedgerEntry _submitted(JustificationSubmittedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'JUSTIFICATION_SUBMITTED',
@@ -459,9 +472,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapJustificationApproved(
-    JustificationApprovedEvent event,
-  ) {
+  static SlaLedgerEntry _approved(JustificationApprovedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'JUSTIFICATION_APPROVED',
@@ -478,9 +489,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapJustificationRejected(
-    JustificationRejectedEvent event,
-  ) {
+  static SlaLedgerEntry _rejected(JustificationRejectedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'JUSTIFICATION_REJECTED',
@@ -497,9 +506,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapSLAJustificationSubmitted(
-    SLAJustificationSubmittedEvent event,
-  ) {
+  static SlaLedgerEntry _slaSubmitted(SLAJustificationSubmittedEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'SLA_JUSTIFICATION_SUBMITTED',
@@ -518,9 +525,7 @@ class SlaLedgerMapper {
     );
   }
 
-  static SlaLedgerEntry _mapSLAJustificationExpired(
-    SLAJustificationExpiredEvent event,
-  ) {
+  static SlaLedgerEntry _slaExpired(SLAJustificationExpiredEvent event) {
     return SlaLedgerEntry(
       organizationId: event.organizationId,
       type: 'SLA_JUSTIFICATION_EXPIRED',
@@ -534,42 +539,6 @@ class SlaLedgerMapper {
         'vehicle_id': event.vehicleId,
         'occurrence_timestamp': event.occurrenceTimestamp.toIso8601String(),
       },
-    );
-  }
-
-  // ── Helper Utility Mappers ─────────────────────────────────────────────────
-
-  static SlaLedgerEntry _mapDisputeResolution(
-    DisputeResolvedEvent event,
-    String type,
-  ) {
-    return SlaLedgerEntry(
-      organizationId: event.organizationId,
-      type: type,
-      operatorId: event.resolvedByUserId,
-      setId: event.setId,
-      contractId: event.contractId,
-      planVersion: event.planVersion,
-      occurredAtUtc: event.occurredAtUtc,
-      payload: {
-        'queue_entry_id': event.queueEntryId,
-        'resolved_by_user_id': event.resolvedByUserId,
-        'actor_email': event.actorEmail,
-        'resolution_reason': event.resolutionReason,
-        'verdict_evidence': event.verdictEvidence.toJson(),
-      },
-    );
-  }
-
-  static SlaLedgerEntry _mapUnknownEvent(DomainEvent event) {
-    return SlaLedgerEntry(
-      organizationId: event.organizationId,
-      type: 'UNKNOWN_EVENT',
-      operatorId: 'SYSTEM',
-      contractId: 'unknown',
-      planVersion: 0,
-      occurredAtUtc: event.occurredAtUtc,
-      payload: {'raw_event_type': event.runtimeType.toString()},
     );
   }
 }

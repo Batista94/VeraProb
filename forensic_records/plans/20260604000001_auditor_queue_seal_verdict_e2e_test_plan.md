@@ -49,7 +49,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 * **Passos Playwright:**
   1. Acessar a página `http://localhost:50185`.
   2. Aguardar o seletor `input[type="text"]` (com label "E-mail Corporativo") e preencher: `admin-a@veraprob.dev`.
-  3. Localizar o input de senha (com label "Senha de Acesso") e preencher: `veraprob123!`.
+  3. Localizar o input de senha (com label "Senha de Acesso") e preencher: `123456`.
   4. Clicar no botão `button:has-text("ACESSAR SISTEMA")`.
   5. Aguardar redirecionamento (a URL deve carregar o painel da organização).
 * **O que validar (Playwright):**
