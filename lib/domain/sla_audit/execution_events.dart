@@ -227,6 +227,92 @@ class SanctionDisputedEvent extends DomainEvent {
   });
 }
 
+/// Base class for an auditor's resolution of a disputed sanction.
+///
+/// A `disputed` queue entry is no longer a dead-end: the auditor resolves it
+/// into one of three terminal/return arcs, each anchored by a distinct ledger
+/// fact for deterministic replay (INV-15) and forensic traceability ([actorEmail]).
+abstract class DisputeResolvedEvent extends DomainEvent {
+  final String setId;
+  final String contractId;
+  final int planVersion;
+  final String queueEntryId;
+  final String resolvedByUserId;
+  final String actorEmail;
+
+  /// Free-text rationale. Required for accept/overturn (>= 10 chars enforced
+  /// at the application layer); optional for retract.
+  final String? resolutionReason;
+  final VerdictEvidence verdictEvidence;
+
+  const DisputeResolvedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required this.setId,
+    required this.contractId,
+    required this.planVersion,
+    required this.queueEntryId,
+    required this.resolvedByUserId,
+    required this.actorEmail,
+    required this.resolutionReason,
+    required this.verdictEvidence,
+  });
+}
+
+/// Auditor ACCEPTS the contractor's justification: `disputed → rejected`.
+/// The penalty is inhibited; [resolutionReason] is persisted as the rejection
+/// reason for the Concluídos tab.
+class DisputeAcceptedEvent extends DisputeResolvedEvent {
+  const DisputeAcceptedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required super.setId,
+    required super.contractId,
+    required super.planVersion,
+    required super.queueEntryId,
+    required super.resolvedByUserId,
+    required super.actorEmail,
+    required super.resolutionReason,
+    required super.verdictEvidence,
+  });
+}
+
+/// Auditor OVERTURNS the dispute (refuses the justification): `disputed → applied`.
+/// The `DISPUTE_OVERTURNED` ledger fact is the forensic seal for this arc,
+/// mirroring how `VERDICT_SEALED` anchors the direct `pending → applied` path.
+class DisputeOverturnedEvent extends DisputeResolvedEvent {
+  const DisputeOverturnedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required super.setId,
+    required super.contractId,
+    required super.planVersion,
+    required super.queueEntryId,
+    required super.resolvedByUserId,
+    required super.actorEmail,
+    required super.resolutionReason,
+    required super.verdictEvidence,
+  });
+}
+
+/// Auditor RETRACTS the dispute request: `disputed → pending`.
+/// Returns the card to the queue; review fields are cleared (the original
+/// disputer is preserved on the entry for forensic honesty).
+class DisputeRetractedEvent extends DisputeResolvedEvent {
+  const DisputeRetractedEvent({
+    required super.organizationId,
+    required super.occurredAtUtc,
+    required super.setId,
+    required super.contractId,
+    required super.planVersion,
+    required super.queueEntryId,
+    required super.resolvedByUserId,
+    required super.actorEmail,
+    required super.resolutionReason,
+    required super.verdictEvidence,
+  });
+}
+
 // ── Justification Events (Phase 9.8.J) ──────────────────────────────────────
 
 /// Emitted when a contractor/driver submits a justification for a SLA factEvent.

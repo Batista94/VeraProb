@@ -33,4 +33,18 @@ abstract class SlaAuditLedgerRepository {
     String setId, {
     String? organizationId,
   });
+
+  /// Retrieves all forensic entries whose payload references [queueEntryId]
+  /// (i.e. `payload->>'queue_entry_id'`). Ordered chronologically.
+  ///
+  /// Powers the dispute-resolution idempotency guard: the application layer
+  /// balances `SANCTION_DISPUTED` opens against resolution facts to detect a
+  /// concurrent resolution of the same disputed entry.
+  ///
+  /// [organizationId] provides explicit tenant scoping as defense-in-depth
+  /// alongside RLS. Callers with an available org ID MUST pass it (INV-1).
+  Future<List<SlaLedgerEntry>> getEntriesByQueueEntryId(
+    String queueEntryId, {
+    String? organizationId,
+  });
 }

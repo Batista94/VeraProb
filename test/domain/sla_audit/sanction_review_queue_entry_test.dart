@@ -79,5 +79,67 @@ void main() {
       final e2 = makeEntry(status: SanctionReviewStatus.applied);
       expect(e1, e2); // same id
     });
+
+    group('copyWith clear flags (dispute retract)', () {
+      SanctionReviewQueueEntry makeResolvedDisputed() {
+        return makeEntry(status: SanctionReviewStatus.disputed).copyWith(
+          reviewedAtUtc: DateTime.utc(2026, 4, 6, 11, 0),
+          reviewedByUserId: 'auditor-001',
+          rejectionReason: 'GPS data inconclusive for this route.',
+        );
+      }
+
+      test('clearReviewedAtUtc nulls reviewedAtUtc', () {
+        final entry = makeResolvedDisputed();
+        final retracted = entry.copyWith(
+          status: SanctionReviewStatus.pending,
+          clearReviewedAtUtc: true,
+        );
+        expect(retracted.reviewedAtUtc, isNull);
+      });
+
+      test('clearRejectionReason nulls rejectionReason', () {
+        final entry = makeResolvedDisputed();
+        final retracted = entry.copyWith(
+          status: SanctionReviewStatus.pending,
+          clearRejectionReason: true,
+        );
+        expect(retracted.rejectionReason, isNull);
+      });
+
+      test(
+        'retract clears reviewedAt + rejectionReason but preserves reviewedBy '
+        '(forensic honesty)',
+        () {
+          final entry = makeResolvedDisputed();
+          final retracted = entry.copyWith(
+            status: SanctionReviewStatus.pending,
+            clearReviewedAtUtc: true,
+            clearRejectionReason: true,
+          );
+          expect(retracted.status, SanctionReviewStatus.pending);
+          expect(retracted.reviewedAtUtc, isNull);
+          expect(retracted.rejectionReason, isNull);
+          expect(retracted.reviewedByUserId, 'auditor-001');
+        },
+      );
+
+      test('clear flags override positional values when both supplied', () {
+        final entry = makeResolvedDisputed();
+        final cleared = entry.copyWith(
+          rejectionReason: 'ignored because cleared',
+          clearRejectionReason: true,
+        );
+        expect(cleared.rejectionReason, isNull);
+      });
+
+      test('without clear flags, nullable fields are preserved', () {
+        final entry = makeResolvedDisputed();
+        final unchanged = entry.copyWith(status: SanctionReviewStatus.applied);
+        expect(unchanged.reviewedAtUtc, isNotNull);
+        expect(unchanged.rejectionReason, 'GPS data inconclusive for this route.');
+        expect(unchanged.reviewedByUserId, 'auditor-001');
+      });
+    });
   });
 }

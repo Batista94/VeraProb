@@ -8,6 +8,8 @@ import 'package:veraprob/application/sla_audit/dispute_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
@@ -188,6 +190,14 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     rbac: RbacService(),
   );
 
+  ResolveDisputeHandler get _resolveDisputeHandler => ResolveDisputeHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
+  );
+
   Future<void> dispute({
     required String queueEntryId,
     required String disputedByUserId,
@@ -202,6 +212,32 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           queueEntryId: queueEntryId,
           disputedByUserId: disputedByUserId,
           actorEmail: actorEmail,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> resolveDispute({
+    required String queueEntryId,
+    required DisputeResolution resolution,
+    required String resolvedByUserId,
+    required String actorEmail,
+    String? resolutionReason,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _resolveDisputeHandler.handle(
+        ResolveDisputeCommand(
+          queueEntryId: queueEntryId,
+          resolution: resolution,
+          resolvedByUserId: resolvedByUserId,
+          actorEmail: actorEmail,
+          resolutionReason: resolutionReason,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,

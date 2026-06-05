@@ -59,4 +59,19 @@ class InMemorySlaAuditLedgerRepository implements SlaAuditLedgerRepository {
         .toList()
       ..sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
   }
+
+  @override
+  Future<List<SlaLedgerEntry>> getEntriesByQueueEntryId(
+    String queueEntryId, {
+    String? organizationId,
+  }) async {
+    return _entries
+        .where(
+          (e) =>
+              e.payload['queue_entry_id'] == queueEntryId &&
+              (organizationId == null || e.organizationId == organizationId),
+        )
+        .toList()
+      ..sort((a, b) => a.occurredAtUtc.compareTo(b.occurredAtUtc));
+  }
 }

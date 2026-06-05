@@ -279,6 +279,18 @@ class SlaLedgerMapper {
       );
     }
 
+    if (event is DisputeAcceptedEvent) {
+      return _mapDisputeResolution(event, 'DISPUTE_ACCEPTED');
+    }
+
+    if (event is DisputeOverturnedEvent) {
+      return _mapDisputeResolution(event, 'DISPUTE_OVERTURNED');
+    }
+
+    if (event is DisputeRetractedEvent) {
+      return _mapDisputeResolution(event, 'DISPUTE_RETRACTED');
+    }
+
     if (event is JustificationSubmittedEvent) {
       return SlaLedgerEntry(
         organizationId: event.organizationId,
@@ -419,6 +431,31 @@ class SlaLedgerMapper {
       planVersion: 0,
       occurredAtUtc: event.occurredAtUtc,
       payload: {'raw_event_type': event.runtimeType.toString()},
+    );
+  }
+
+  /// Maps the three dispute-resolution arcs (accept/overturn/retract) to their
+  /// forensic ledger entries. The [type] discriminates the arc; the payload is
+  /// identical so a single auditor narrative is replayable across all three.
+  static SlaLedgerEntry _mapDisputeResolution(
+    DisputeResolvedEvent event,
+    String type,
+  ) {
+    return SlaLedgerEntry(
+      organizationId: event.organizationId,
+      type: type,
+      operatorId: event.resolvedByUserId,
+      setId: event.setId,
+      contractId: event.contractId,
+      planVersion: event.planVersion,
+      occurredAtUtc: event.occurredAtUtc,
+      payload: {
+        'queue_entry_id': event.queueEntryId,
+        'resolved_by_user_id': event.resolvedByUserId,
+        'actor_email': event.actorEmail,
+        'resolution_reason': event.resolutionReason,
+        'verdict_evidence': event.verdictEvidence.toJson(),
+      },
     );
   }
 }
