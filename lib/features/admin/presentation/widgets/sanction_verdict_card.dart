@@ -7,6 +7,8 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
+    show DisputeResolution;
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart'; // pr_scanner: ignore
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
@@ -45,6 +47,10 @@ class SanctionVerdictCard extends ConsumerStatefulWidget {
 class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   bool _showRejectField = false;
   final _rejectController = TextEditingController();
+  // Dispute resolution (disputed → *) — mutually exclusive reason fields.
+  bool _showAcceptField = false;
+  bool _showRefuseField = false;
+  final _acceptReasonController = TextEditingController();
   bool _isDossierLoading = false;
   String? _dossierError;
 
@@ -60,6 +66,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   @override
   void dispose() {
     _rejectController.dispose();
+    _acceptReasonController.dispose();
     super.dispose();
   }
 
@@ -88,7 +95,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final evidence = item.verdictEvidence;
     final actionState = ref.watch(sanctionActionStateProvider(item.id));
     final isLoading = actionState is AsyncLoading;
-    final isLocked = item.status != SanctionReviewStatus.pending;
+    // Pacote 3: `disputed` is now interactive (auditor resolves the dispute),
+    // so only terminal verdicts (applied/rejected) are locked.
+    final isLocked =
+        item.status != SanctionReviewStatus.pending &&
+        item.status != SanctionReviewStatus.disputed;
 
     // INV-14/INV-23: the bound asset (vehicle) is mandatory to seal the evidence.
     // An unidentified asset cannot anchor a forensic verdict.
@@ -154,9 +165,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         }
       },
       child: Opacity(
-        opacity: item.status == SanctionReviewStatus.disputed
-            ? 0.8
-            : (isLocked ? 0.6 : 1.0),
+        // disputed demands attention → full opacity; only sealed/refused dim.
+        opacity: isLocked ? 0.6 : 1.0,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           decoration: BoxDecoration(
@@ -375,15 +385,31 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     ),
                   ],
 
-                  // ── Rejection reason field ─────────────────────────────────────
+                  // ── Reason fields ──────────────────────────────────────────────
                   if (_showRejectField)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: _RejectReasonField(controller: _rejectController),
                     ),
+                  if (_showAcceptField)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: _RejectReasonField(
+                        controller: _acceptReasonController,
+                        labelText: 'Motivo do aceite (mínimo 10 caracteres)',
+                      ),
+                    ),
+                  if (_showRefuseField)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: _RejectReasonField(
+                        controller: _rejectController,
+                        labelText: 'Motivo da recusa (mínimo 10 caracteres)',
+                      ),
+                    ),
 
                   // ── Zona 5: Action Row ─────────────────────────────────────
-                  if (!isLocked)
+                  if (item.status == SanctionReviewStatus.pending)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
                       child: _VerdictActionRow(
@@ -399,8 +425,30 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         onRejectConfirm: () => _onReject(context),
                         onRequestMoreProof: () => _onRequestMoreProof(context),
                       ),
+                    )
+                  else if (item.status == SanctionReviewStatus.disputed)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                      child: _DisputeResolutionRow(
+                        isLoading: isLoading,
+                        showAcceptField: _showAcceptField,
+                        showRefuseField: _showRefuseField,
+                        acceptController: _acceptReasonController,
+                        refuseController: _rejectController,
+                        onAcceptTap: () => setState(() {
+                          _showAcceptField = !_showAcceptField;
+                          _showRefuseField = false;
+                        }),
+                        onAcceptConfirm: _onAcceptDispute,
+                        onRefuseTap: () => setState(() {
+                          _showRefuseField = !_showRefuseField;
+                          _showAcceptField = false;
+                        }),
+                        onRefuseConfirm: _onRefuseDispute,
+                        onRetract: _onRetractDispute,
+                      ),
                     ),
-                  if (isLocked && item.status == SanctionReviewStatus.applied)
+                  if (item.status == SanctionReviewStatus.applied)
                     _buildForensicEvidenceVisualizerRow(context, item),
                 ],
               ),
@@ -422,7 +470,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   top: 8,
                   right: 8,
                   child: Tooltip(
-                    message: 'Aguardando envio de prova forense',
+                    message: 'Evidência submetida. Resolva abaixo.',
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -442,7 +490,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            'AGUARDANDO EVIDÊNCIA',
+                            'EM ANÁLISE — EVIDÊNCIA RECEBIDA',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
@@ -766,6 +814,56 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _onAcceptDispute() =>
+      _resolveDispute(DisputeResolution.accept, _acceptReasonController.text);
+
+  Future<void> _onRefuseDispute() =>
+      _resolveDispute(DisputeResolution.overturn, _rejectController.text);
+
+  Future<void> _onRetractDispute() =>
+      _resolveDispute(DisputeResolution.retract, null);
+
+  Future<void> _resolveDispute(
+    DisputeResolution resolution,
+    String? reason,
+  ) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    final trimmed = reason?.trim();
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .resolveDispute(
+          queueEntryId: widget.item.id,
+          resolution: resolution,
+          resolvedByUserId: userId,
+          actorEmail: email,
+          resolutionReason: (trimmed == null || trimmed.isEmpty)
+              ? null
+              : trimmed,
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      // Card leaves the disputed list regardless of the chosen arc.
+      ref.invalidate(disputedSanctionsStreamProvider);
+      // retract returns it to the pending queue.
+      if (resolution == DisputeResolution.retract) {
+        ref.invalidate(pendingSanctionsStreamProvider);
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _showAcceptField = false;
+        _showRefuseField = false;
+      });
+      _acceptReasonController.clear();
+      _rejectController.clear();
     }
   }
 
@@ -1286,7 +1384,11 @@ class _RefusalReasonZone extends StatelessWidget {
 
 class _RejectReasonField extends StatelessWidget {
   final TextEditingController controller;
-  const _RejectReasonField({required this.controller});
+  final String labelText;
+  const _RejectReasonField({
+    required this.controller,
+    this.labelText = 'Motivo da rejeição (mínimo 10 caracteres)',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1295,7 +1397,7 @@ class _RejectReasonField extends StatelessWidget {
       minLines: 2,
       maxLines: 4,
       decoration: InputDecoration(
-        labelText: 'Motivo da rejeição (mínimo 10 caracteres)',
+        labelText: labelText,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         isDense: true,
       ),
@@ -1402,6 +1504,127 @@ class _VerdictActionRow extends StatelessWidget {
             label: const Text('SOLICITAR PROVA FORENSE'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.warning,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Zona 5 (disputed): inline resolution controls for a contested verdict.
+///
+/// Mirrors [_VerdictActionRow] but closes the dispute loop (INV-23):
+/// - ACEITAR JUSTIFICATIVA → `disputed → rejected` (fine inhibited), reason ≥10.
+/// - RECUSAR JUSTIFICATIVA → `disputed → applied` (fine upheld, snapshot), reason ≥10.
+/// - CANCELAR SOLICITAÇÃO → `disputed → pending` (retract), no reason.
+///
+/// Inline (not modal) to avoid `barrierDismissible:false` stacking (Lesson 4)
+/// and preserve map focus.
+class _DisputeResolutionRow extends StatelessWidget {
+  final bool isLoading;
+  final bool showAcceptField;
+  final bool showRefuseField;
+  final TextEditingController acceptController;
+  final TextEditingController refuseController;
+  final VoidCallback onAcceptTap;
+  final VoidCallback onAcceptConfirm;
+  final VoidCallback onRefuseTap;
+  final VoidCallback onRefuseConfirm;
+  final VoidCallback onRetract;
+
+  const _DisputeResolutionRow({
+    required this.isLoading,
+    required this.showAcceptField,
+    required this.showRefuseField,
+    required this.acceptController,
+    required this.refuseController,
+    required this.onAcceptTap,
+    required this.onAcceptConfirm,
+    required this.onRefuseTap,
+    required this.onRefuseConfirm,
+    required this.onRetract,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        // ACEITAR — accepts the contractor's justification (fine inhibited).
+        if (showAcceptField)
+          ListenableBuilder(
+            listenable: acceptController,
+            builder: (_, _) {
+              final canConfirm = acceptController.text.trim().length >= 10;
+              return FilledButton.icon(
+                onPressed: isLoading || !canConfirm ? null : onAcceptConfirm,
+                icon: const Icon(Icons.check_circle_outline, size: 16),
+                label: const Text('CONFIRMAR ACEITE'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VeraProbColors.success,
+                  foregroundColor: VeraProbColors.background,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+              );
+            },
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onAcceptTap,
+            icon: const Icon(Icons.check_circle_outline, size: 16),
+            label: const Text('ACEITAR JUSTIFICATIVA'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VeraProbColors.success,
+              side: const BorderSide(color: VeraProbColors.success),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        // RECUSAR — refuses the justification (fine upheld → applied, snapshot).
+        if (showRefuseField)
+          ListenableBuilder(
+            listenable: refuseController,
+            builder: (_, _) {
+              final canConfirm = refuseController.text.trim().length >= 10;
+              return FilledButton.icon(
+                onPressed: isLoading || !canConfirm ? null : onRefuseConfirm,
+                icon: const Icon(Icons.gavel_rounded, size: 16),
+                label: const Text('CONFIRMAR RECUSA'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VeraProbColors.error,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+              );
+            },
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onRefuseTap,
+            icon: const Icon(Icons.gavel_rounded, size: 16),
+            label: const Text('RECUSAR JUSTIFICATIVA'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VeraProbColors.error,
+              side: const BorderSide(color: VeraProbColors.error),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        // CANCELAR — retracts the dispute request (back to pending), no reason.
+        Semantics(
+          label: 'Cancelar solicitação de prova — devolve à fila de pendentes',
+          child: TextButton.icon(
+            onPressed: isLoading ? null : onRetract,
+            icon: const Icon(Icons.undo, size: 16),
+            label: const Text('CANCELAR SOLICITAÇÃO'),
+            style: TextButton.styleFrom(
+              foregroundColor: VeraProbColors.textSecondary,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),

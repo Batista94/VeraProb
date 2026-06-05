@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
+    show DisputeResolution;
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
@@ -92,6 +94,26 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
 
   int approveCalls = 0;
   int rejectCalls = 0;
+  int resolveDisputeCalls = 0;
+  DisputeResolution? lastResolution;
+  String? lastResolutionReason;
+
+  @override
+  Future<void> resolveDispute({
+    required String queueEntryId,
+    required DisputeResolution resolution,
+    required String resolvedByUserId,
+    required String actorEmail,
+    String? resolutionReason,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    resolveDisputeCalls++;
+    lastResolution = resolution;
+    lastResolutionReason = resolutionReason;
+    state = const AsyncData(null);
+  }
 
   @override
   Future<void> approve({
@@ -694,11 +716,11 @@ void main() {
     });
   });
 
-  group('SanctionVerdictCard — INV-7 Parity (disputed)', () {
-    testWidgets('disputed status locks the card same as applied', (
+  group('SanctionVerdictCard — Dispute Resolution (Pacote 3)', () {
+    testWidgets('disputed is interactive: 3 resolution actions, full opacity', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
 
       await tester.pumpWidget(
@@ -706,12 +728,141 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
+      expect(find.text('EM ANÁLISE — EVIDÊNCIA RECEBIDA'), findsOneWidget);
+      expect(find.text('ACEITAR JUSTIFICATIVA'), findsOneWidget);
+      expect(find.text('RECUSAR JUSTIFICATIVA'), findsOneWidget);
+      expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
+      // Pending-only controls must NOT leak into a disputed card.
       expect(find.text('SELAR VEREDITO'), findsNothing);
       expect(find.text('RECUSAR VEREDITO'), findsNothing);
 
       final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(opacity.opacity, closeTo(0.8, 0.001));
+      expect(opacity.opacity, closeTo(1.0, 0.001));
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('ACEITAR reveals reason field; CONFIRMAR ACEITE gated at 10', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+
+      await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+
+      // < 10 chars → disabled.
+      await tester.enterText(find.byType(TextField), 'curto');
+      await tester.pump();
+      var btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR ACEITE'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
+      expect(btn.onPressed, isNull);
+
+      // >= 10 chars → enabled, fires accept.
+      await tester.enterText(
+        find.byType(TextField),
+        'Justificativa do contratante procede.',
+      );
+      await tester.pump();
+      btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR ACEITE'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
+      expect(btn.onPressed, isNotNull);
+
+      await tester.tap(find.text('CONFIRMAR ACEITE'));
+      await tester.pump();
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.accept);
+      expect(
+        notifier.lastResolutionReason,
+        'Justificativa do contratante procede.',
+      );
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('RECUSAR JUSTIFICATIVA fires overturn with reason', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('RECUSAR JUSTIFICATIVA'));
+      await tester.pump();
+
+      await tester.enterText(
+        find.byType(TextField),
+        'Evidência insuficiente; multa mantida.',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('CONFIRMAR RECUSA'));
+      await tester.pump();
+
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.overturn);
+      expect(
+        notifier.lastResolutionReason,
+        'Evidência insuficiente; multa mantida.',
+      );
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('CANCELAR SOLICITAÇÃO retracts with no reason, no field', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('CANCELAR SOLICITAÇÃO'));
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.retract);
+      expect(notifier.lastResolutionReason, isNull);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
