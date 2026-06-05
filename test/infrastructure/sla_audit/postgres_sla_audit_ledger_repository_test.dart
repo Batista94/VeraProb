@@ -98,7 +98,7 @@ void main() async {
 
           final entry2 = SlaLedgerEntry(
             organizationId: PostgresTestConfig.testOrgId,
-            type: 'EXECUTION_FINALIZED',
+            type: 'COMPLETED_WITH_GAPS',
             setId: setId,
             contractId: contractId,
             planVersion: 1,
@@ -117,7 +117,7 @@ void main() async {
             reason: 'Ledger entries must be ordered chronologically',
           );
           expect(entries.first.type, 'EXECUTION_BOUND');
-          expect(entries.last.type, 'EXECUTION_FINALIZED');
+          expect(entries.last.type, 'COMPLETED_WITH_GAPS');
         },
       );
 
@@ -305,7 +305,7 @@ void main() async {
           final contractId = uuid.v4();
           final entry = SlaLedgerEntry(
             organizationId: PostgresTestConfig.testOrgId,
-            type: 'SANCTION_APPLIED',
+            type: 'VERDICT_SEALED',
             setId: setId,
             contractId: contractId,
             planVersion: 1,
@@ -321,7 +321,7 @@ void main() async {
           );
           expect(entries.length, 1);
           expect(entries.first.organizationId, PostgresTestConfig.testOrgId);
-          expect(entries.first.type, 'SANCTION_APPLIED');
+          expect(entries.first.type, 'VERDICT_SEALED');
         },
       );
 
@@ -335,7 +335,7 @@ void main() async {
 
           final entry = SlaLedgerEntry(
             organizationId: PostgresTestConfig.testOrgId,
-            type: 'SANCTION_APPLIED',
+            type: 'VERDICT_SEALED',
             setId: setId,
             contractId: contractId,
             planVersion: 1,
@@ -444,7 +444,7 @@ void main() async {
           await repository.append(
             SlaLedgerEntry(
               organizationId: PostgresTestConfig.testOrgId,
-              type: 'SANCTION_APPLIED',
+              type: 'VERDICT_SEALED',
               setId: setId,
               contractId: contractId,
               planVersion: 1,
@@ -468,7 +468,7 @@ void main() async {
           await repository.append(
             SlaLedgerEntry(
               organizationId: PostgresTestConfig.testOrgId,
-              type: 'SANCTION_APPLIED',
+              type: 'VERDICT_SEALED',
               setId: setId,
               contractId: contractId,
               planVersion: 1,

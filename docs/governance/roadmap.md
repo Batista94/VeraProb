@@ -71,6 +71,14 @@
 - [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
 - [ ] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
 - [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
+- [ ] **[near-term] SLA-timer de disputa (aging):** Toda disputa tem prazo de resolução (ex.: 5 dias úteis). Dashboard de "disputas vencendo/vencidas" + auto-escalonamento. Hoje uma disputa pode ficar `disputed` indefinidamente.
+- [ ] **[near-term] Anexo de evidência do contratante:** "Aguardando Evidência" pressupõe que o contestante envia prova. Falta o canal de upload (foto/doc/telemetria externa) vinculado por `organization_id` (INV-1) e selado por SHA-256 (INV-9) — o auditor decide *sobre* algo.
+- [ ] **[near-term] Taxonomia de motivos (reason codes) vs texto livre:** `rejection_reason`/`resolutionReason` livres dificultam analytics e auditoria. Enum versionado de motivos (ex.: `FORCE_MAJEURE`, `SENSOR_FAULT`, `CONTRACT_EXCEPTION`) + campo livre opcional. Permite relatórios de "por que multas são inibidas".
+- [ ] **Dual-control (quatro-olhos) em vereditos de alto valor:** Acima de um threshold de `fineCents`, exigir segundo auditor para `overturn`/`apply` — controle anti-fraude padrão SOC2/Tier-1.
+- [ ] **Notificação/webhook na resolução:** Resend/PostHog/webhook ao contratante quando disputa é resolvida (transparência + reduz re-contestação). Já há stack Resend disponível.
+- [ ] **Resolução em lote + filtros:** Auditor com fila grande precisa de bulk-resolve e filtros (clausula/veículo/contrato/valor) na aba Concluídos — reduz custo operacional (margem do cliente final).
+- [ ] **Atomicidade total (RPC transacional):** A guarda idempotente fecha a janela; o passo definitivo é RPC `SECURITY DEFINER` append+update atômico, eliminando o par não-transacional também em approve/reject (dívida pré-existente apontada por QA-Security).
+- [ ] **Trilha de "quem cancelou":** No retract, preservamos `reviewed_by` do disputante; o ledger `DISPUTE_RETRACTED` registra o cancelador. Expor essa cadeia na UI (timeline de estados do card) eleva a explicabilidade (INV-23).
 
 ### [ ] Phase 10.9 — Operational Intelligence & Decision
 
