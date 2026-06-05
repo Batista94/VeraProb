@@ -42,6 +42,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
   late final TextEditingController _contactController;
 
   bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -95,6 +96,42 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                   style: VeraProbTypography.sectionTitle,
                 ),
                 const SizedBox(height: 24),
+                if (_errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: VeraProbColors.error.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: VeraProbColors.error,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _errorMessage!,
+                            style: VeraProbTypography.bodyMedium.copyWith(
+                              color: VeraProbColors.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -108,12 +145,12 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                 TextFormField(
                   controller: _taxIdController,
                   decoration: const InputDecoration(
-                    labelText: 'CNPJ / Tax ID',
+                    labelText: 'CNPJ / Tax ID *',
                     hintText: '00.000.000/0001-00',
                   ),
                   inputFormatters: [CnpjInputFormatter()],
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return null;
+                    if (v == null || v.trim().isEmpty) return 'Obrigatório';
                     final digits = v.replaceAll(RegExp(r'\D'), '');
                     if (digits.length != 14) return 'CNPJ incompleto';
                     if (!CnpjValidator.isValid(digits)) return 'CNPJ inválido';
@@ -179,6 +216,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
     // where PointerUp + synthetic click both pass the _isSaving check.
     if (_isSaving) return;
     _isSaving = true;
+    _errorMessage = null;
 
     if (!(_formKey.currentState?.validate() ?? false)) {
       _isSaving = false;
@@ -212,12 +250,13 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
             ),
           );
 
-      if (mounted) navigator.pop(newContractor);
+      if (mounted) navigator.pop(ContractorView.fromDomain(newContractor));
     } catch (e) {
       if (mounted) {
         final msg = e is IntegrityException
             ? e.message
             : 'Erro ao salvar. Tente novamente.';
+        _errorMessage = msg;
         messenger.showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
         );

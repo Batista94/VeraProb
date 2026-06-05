@@ -179,11 +179,22 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
   }
 
   Future<void> pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['csv', 'tsv'],
-      withData: true,
-    );
+    final FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['csv', 'tsv'],
+        withData: true,
+      );
+    } catch (e, stack) {
+      if (kDebugMode) {
+        print('[CSV Import Picker Error] $e\n$stack');
+      }
+      _setError(
+        'Não foi possível abrir o seletor de arquivos. Tente novamente.',
+      );
+      return;
+    }
     if (result == null || result.files.isEmpty) return;
 
     final file = result.files.first;
