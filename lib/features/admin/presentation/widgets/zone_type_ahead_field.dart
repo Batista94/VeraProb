@@ -250,22 +250,57 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
       return const SizedBox.shrink();
     }
 
-    return Align(
-      alignment: Alignment.centerRight,
-      child: TextButton.icon(
-        icon: const Icon(Icons.edit_location_alt, size: 14),
-        label: const Text('Configurar Geofence →'),
-        style: TextButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          visualDensity: VisualDensity.compact,
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.warning.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: VeraProbColors.warning.withValues(alpha: 0.35),
         ),
-        onPressed: () async {
-          final saved = await showZoneFormDialog(context, existingZone: zone);
-          if (!mounted || saved == null) return;
-          widget.onGeofenceConfigured?.call(saved);
-          await widget.onInvalidateZones();
-        },
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.location_off,
+            size: 16,
+            color: VeraProbColors.warning,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${zone.name} ainda não tem localização no mapa. '
+              'Defina agora para ativar o monitoramento.',
+              style: const TextStyle(
+                fontSize: 12,
+                color: VeraProbColors.warning,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () async {
+              final saved = await showZoneFormDialog(
+                context,
+                existingZone: zone,
+              );
+              if (!mounted || saved == null) return;
+              widget.onGeofenceConfigured?.call(saved);
+              await widget.onInvalidateZones();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: VeraProbColors.warning,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: const Text(
+              'Definir Localização',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
     );
   }

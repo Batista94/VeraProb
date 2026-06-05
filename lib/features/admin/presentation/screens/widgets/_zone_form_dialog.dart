@@ -154,6 +154,13 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (widget.existingZone == null && (_lat == null || _lng == null)) {
+      setState(
+        () => _errorMessage =
+            'Toque no mapa ou busque um endereço para definir a localização da zona antes de salvar.',
+      );
+      return;
+    }
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -398,25 +405,27 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
         const SizedBox(height: 16),
 
-        // G2 — Geofence ExpansionTile
+        // G2 — Localização no Mapa
         ExpansionTile(
           leading: Icon(
             Icons.radar,
             color: _lat != null
                 ? VeraProbColors.success
-                : VeraProbColors.textSecondary,
+                : VeraProbColors.warning,
           ),
-          title: const Text('Configuração de Geofence'),
+          title: const Text('Localização no Mapa *'),
           subtitle: Text(
-            _lat != null ? 'Configurado' : 'Zona Inativa para Auditoria',
+            _lat != null
+                ? 'Localização definida'
+                : 'Necessário para monitoramento',
             style: TextStyle(
               color: _lat != null
                   ? VeraProbColors.success
-                  : VeraProbColors.textSecondary,
+                  : VeraProbColors.warning,
               fontSize: 12,
             ),
           ),
-          initiallyExpanded: _lat != null,
+          initiallyExpanded: true,
           children: [
             Padding(
               padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -502,8 +511,8 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Busque um endereço ou clique no mapa para '
-                              'definir as coordenadas do geofence.',
+                              'Busque um endereço acima ou toque no mapa para '
+                              'marcar a localização da zona.',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: VeraProbColors.warning,
@@ -519,17 +528,17 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                     controller: _radiusController,
                     focusNode: _radiusFocus,
                     decoration: const InputDecoration(
-                      labelText: 'Raio de Detecção',
+                      labelText: 'Distância de Detecção',
                       suffixText: 'm',
                       helperText:
-                          'Distância usada pelo motor para detectar chegada/partida.',
+                          'Raio em metros para detectar chegada e saída da zona.',
                     ),
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) {
                       if (_lat == null) return null;
                       if (v == null || v.isEmpty) {
-                        return 'Obrigatório com geofence';
+                        return 'Obrigatório quando localização está definida';
                       }
                       final n = int.tryParse(v);
                       if (n == null || n <= 0 || n > 50000) {

@@ -40,7 +40,7 @@ class DeclarePlanZonesStep extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Selecione as zonas operacionais (geofences) que delineiam esta rota B2B.',
+            'Selecione as zonas de partida e chegada desta rota para ativar o monitoramento.',
             style: TextStyle(color: VeraProbColors.textSecondary),
           ),
           const SizedBox(height: VeraProbSpacing.md),
