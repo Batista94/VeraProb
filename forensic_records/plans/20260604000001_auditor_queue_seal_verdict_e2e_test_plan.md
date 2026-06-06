@@ -118,7 +118,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 
 ---
 
-#### CT03: Cadastro de Contrato Operacional
+#### CT03-A: Cadastro de Contrato Operacional
 * **Objetivo:** Criar e ativar um contrato operacional.
 * **Passos Playwright:**
   1. No Hub de Administração, clicar no card **"Contratos"**.
@@ -143,17 +143,65 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 
 ---
 
-#### CT04: Declaração de Plano Operacional
-* **Objetivo:** Vincular regras de SLA e a cláusula VEL-01 ao contrato.
+#### CT03-B: Cadastro de Zonas Operacionais (Pré-condição para Plano Operacional)
+* **Objetivo:** Cadastrar as zonas de Partida e Chegada necessárias para o plano.
 * **Passos Playwright:**
-  1. Na tela de detalhes do contrato, clicar na aba **"Plano Operacional"**.
-  2. Clicar no botão **"DECLARAR PLANO"**.
-  3. Preencher a cláusula **VEL-01**:
-     - **Regra de Velocidade:** `80.0` no limite de velocidade.
-     - **Multa por violação:** `1.500,00`.
-  4. Clicar em **"Confirmar"** ou **"Declarar Plano"**.
+  1. No Hub de Administração, clicar no card **"Zonas Operacionais"**.
+  2. Clicar no botão **"Nova Zona Operacional"** (`button:has-text("Nova Zona Operacional")`).
+  3. Preencher o formulário da primeira zona:
+     - **Nome da Zona:** `Garagem Central`
+     - **Endereço:** Digitar `Sao Paulo` e selecionar a primeira sugestão.
+     - **Distância de Detecção:** `200` metros.
+  4. Clicar no botão `button:has-text("Criar Zona")`.
+  5. Clicar no botão **"Nova Zona Operacional"** novamente.
+  6. Preencher o formulário da segunda zona:
+     - **Nome da Zona:** `Cliente Leste`
+     - **Endereço:** Digitar `Campinas` e selecionar a primeira sugestão.
+     - **Distância de Detecção:** `200` metros.
+  7. Clicar no botão `button:has-text("Criar Zona")`.
 * **O que validar (Playwright):**
-  * Tela mostra a mensagem de sucesso e a lista exibe o Plano Operacional Versão 1 como ativo.
+  * Ambas as zonas são listadas na tabela de Zonas Operacionais.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT COUNT(*)
+  FROM public.operational_zones
+  WHERE organization_id = '00000000-0000-0000-0000-000000000001'
+    AND name IN ('Garagem Central', 'Cliente Leste');
+  -- Esperado: COUNT = 2
+  ```
+
+---
+
+#### CT04: Declaração de Plano Operacional
+* **Objetivo:** Vincular regras de SLA e turnos operacionais ao contrato utilizando as zonas criadas.
+* **Passos Playwright:**
+  1. Na tela de detalhes do contrato (`ContractDetailScreen` de `Contrato de Concessão Leste - Lote 1`), clicar na aba **"Plano Operacional"**.
+  2. Clicar no botão **"DECLARAR PLANO"**.
+  3. No formulário do plano (passo 1: Zonas):
+     - Selecionar **Zona de Partida** como `Garagem Central`.
+     - Selecionar **Zona de Chegada** como `Cliente Leste`.
+     - Clicar em **"Continuar"**.
+  4. No passo 2 (Turno):
+     - Definir horário de partida como `08:00`.
+     - Definir horário de chegada como `09:00`.
+     - Clicar em **"Continuar"**.
+  5. No passo 3 (SLA & Penalidades):
+     - Definir **Valor Base** como `1.500,00`.
+     - Clicar em **"Continuar"**.
+  6. No passo 4 (Revisão):
+     - Clicar no botão **"Publicar SLA B2B"**.
+* **O que validar (Playwright):**
+  * O plano operacional versão 1 aparece como ativo na listagem do contrato.
+* **Validação SQL (psql):**
+  ```sql
+  SELECT contractual_value_cents, plan_version
+  FROM public.plan_declarations
+  WHERE contract_id = '8948020c-aff0-4bf3-a86e-cb1595df26b7'
+  ORDER BY plan_version DESC
+  LIMIT 1;
+  -- Esperado: plan_version = 1, contractual_value_cents = 150000.
+  ```
+
 
 ---
 
@@ -428,7 +476,9 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 |:----|:----------------------|:---------------------------|:---------|:------:|
 | **UAT-01** | Login Inquilino A | `button:has-text("ACESSAR SISTEMA")` | Redirecionamento completo. | `[ ]` |
 | **UAT-02** | Criar Contratante | CNPJ `91.101.494/0001-56` | Contratante exibido na tabela. | `[ ]` |
-| **UAT-03** | Criar Contrato | `button:has-text("ATIVAR CONTRATO")` | Redirecionamento para detalhes do contrato. | `[ ]` |
+| **UAT-03-A** | Criar Contrato | `button:has-text("ATIVAR CONTRATO")` | Redirecionamento para detalhes do contrato. | `[ ]` |
+| **UAT-03-B** | Criar Zonas Operacionais | `button:has-text("Criar Zona")` | Ambas as zonas são criadas com geofence no banco. | `[ ]` |
+| **UAT-03-C** | Declarar Plano Operacional | `button:has-text("Publicar SLA B2B")` | Plano operacional criado vinculado ao contrato. | `[ ]` |
 | **UAT-04** | Injetar Sanção | `button:has-text("Gerar Sanção de Teste")` | Card VEL-01 surge na aba Pendentes. | `[ ]` |
 | **UAT-05** | Veto de justificativa curta | Input < 10 caracteres | Botão `CONFIRMAR RECUSA` fica desabilitado. | `[ ]` |
 | **UAT-06** | Envio de Disputa | `button:has-text("SOLICITAR PROVA FORENSE")` | Card move para a aba "Aguardando Evidência". | `[ ]` |
