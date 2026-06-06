@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/features/admin/providers/onboarding_provider.dart';
 
 /// Stable destination identity for the admin shell.
 ///
@@ -56,10 +57,25 @@ final adminIndexProvider = NotifierProvider<_AdminIndexNotifier, int>(
 );
 
 class _OnboardingBannerVisibleNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
+  bool _isDismissed = false;
 
-  void toggle() => state = !state;
+  @override
+  bool build() {
+    final progress = ref.watch(onboardingProgressProvider);
+    if (progress.isComplete) {
+      return false;
+    }
+    return !_isDismissed;
+  }
+
+  void toggle() {
+    state = !state;
+    if (!state) {
+      _isDismissed = true;
+    } else {
+      _isDismissed = false;
+    }
+  }
 }
 
 final onboardingBannerVisibleProvider =
