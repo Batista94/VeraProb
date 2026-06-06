@@ -25,7 +25,7 @@ class PostgresActiveVehicleRepository
           .from('vehicles')
           .count()
           .eq('organization_id', organizationId)
-          .eq('status', 'active');
+          .eq('status', 'available');
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'active_vehicle');
     }

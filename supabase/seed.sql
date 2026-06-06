@@ -154,3 +154,39 @@ VALUES
     now() - interval '30 days'
   )
 ON CONFLICT (id) DO NOTHING;
+
+-- ── 5. Vehicles ───────────────────────────────────────────────────────────────
+-- Seed vehicles for CT04 (active vehicle gate) and CT05 (telemetry simulation).
+-- UUIDs fixos para referenciar em scripts de teste.
+INSERT INTO public.vehicles (
+  id,
+  organization_id,
+  plate,
+  model,
+  capacity,
+  status,
+  device_serial,
+  external_id
+)
+VALUES
+  (
+    '00000000-0000-0000-0000-a00000000001',
+    '00000000-0000-0000-0000-000000000001',
+    'TST-0001',
+    'Ônibus Teste Org A',
+    40,
+    'available',
+    'DEV-SERIAL-001',
+    'EXT-VEH-001'
+  ),
+  (
+    '00000000-0000-0000-0000-b00000000002',
+    '00000000-0000-0000-0000-000000000002',
+    'TST-0002',
+    'Ônibus Teste Org B',
+    40,
+    'available',
+    'DEV-SERIAL-002',
+    'EXT-VEH-002'
+  )
+ON CONFLICT (organization_id, plate) DO NOTHING;

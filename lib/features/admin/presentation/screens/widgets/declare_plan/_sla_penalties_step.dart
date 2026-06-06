@@ -295,8 +295,7 @@ class Step3SlaPenalties extends ConsumerWidget {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SizedBox(
-              width: 260,
+            Flexible(
               child: DropdownButtonFormField<TransportVertical>(
                 decoration: const InputDecoration(
                   labelText: 'Vertical de Transporte',

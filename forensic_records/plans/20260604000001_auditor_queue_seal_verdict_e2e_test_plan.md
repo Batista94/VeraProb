@@ -194,12 +194,12 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
   * O plano operacional versão 1 aparece como ativo na listagem do contrato.
 * **Validação SQL (psql):**
   ```sql
-  SELECT contractual_value_cents, plan_version
+  SELECT plan_version, rule_snapshot_jsonb
   FROM public.plan_declarations
-  WHERE contract_id = '8948020c-aff0-4bf3-a86e-cb1595df26b7'
+  WHERE contract_id = 'a04c5d92-ccda-49f8-be2d-5141428f04c9'
   ORDER BY plan_version DESC
   LIMIT 1;
-  -- Esperado: plan_version = 1, contractual_value_cents = 150000.
+  -- Esperado: plan_version = 1, rule_snapshot_jsonb não nulo.
   ```
 
 
