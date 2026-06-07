@@ -16,6 +16,7 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/notifiers/async_command_mixin.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
@@ -194,6 +195,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
     ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    vault: ref.watch(forensicEvidenceSnapshotRepositoryProvider),
     rbac: RbacService(),
     dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );

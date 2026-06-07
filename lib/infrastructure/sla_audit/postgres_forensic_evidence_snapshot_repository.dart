@@ -51,6 +51,39 @@ class PostgresForensicEvidenceSnapshotRepository extends BasePostgresRepository
   }
 
   @override
+  Future<ForensicEvidenceSnapshot> sealForDispute({
+    required String organizationId,
+    required String ledgerEntryId,
+    required String contractId,
+    required String setId,
+    required int planVersion,
+    required DateTime occurredAtUtc,
+    required String sealedBy,
+    required String idempotencyKey,
+  }) {
+    return withErrorHandler(
+      'forensic_evidence_snapshot',
+      ledgerEntryId,
+      () async {
+        final result = await client.rpc<Map<String, dynamic>>(
+          'seal_dispute_resolution_snapshot',
+          params: {
+            'p_organization_id': organizationId,
+            'p_ledger_entry_id': ledgerEntryId,
+            'p_contract_id': contractId,
+            'p_set_id': setId,
+            'p_plan_version': planVersion,
+            'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+            'p_sealed_by': sealedBy,
+            'p_idempotency_key': idempotencyKey,
+          },
+        );
+        return ForensicEvidenceSnapshot.fromJson(result);
+      },
+    );
+  }
+
+  @override
   Future<ForensicEvidenceSnapshot?> findByLedgerEntry({
     required String organizationId,
     required String ledgerEntryId,

@@ -14,6 +14,7 @@ import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
@@ -22,6 +23,7 @@ class MockAuthRepository extends Mock implements IAuthRepository {}
 void main() {
   late InMemorySanctionReviewQueueRepository queueRepo;
   late InMemorySlaAuditLedgerRepository ledger;
+  late InMemoryForensicEvidenceSnapshotRepository vault;
   late ResolveDisputeHandler handler;
   late MockAuthRepository mockAuthRepo;
   late TenantValidationService tenantValidator;
@@ -95,12 +97,30 @@ void main() {
   setUp(() {
     queueRepo = InMemorySanctionReviewQueueRepository();
     ledger = InMemorySlaAuditLedgerRepository();
+    vault = InMemoryForensicEvidenceSnapshotRepository()
+      ..seedRules(
+        organizationId: 'org-1',
+        contractId: 'contract-1',
+        ruleSetId: 'ruleset-001',
+        rules: [
+          {
+            'rule_id': 'rule-001',
+            'rule_type': 'speed_violation',
+            'rule_config': <String, dynamic>{},
+            'rule_version': 1,
+            'evaluation_order': 1,
+          },
+        ],
+        slaRuleVersion: 1,
+        effectiveFromUtc: DateTime.utc(2026, 1, 1),
+      );
     mockAuthRepo = MockAuthRepository();
     tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     handler = ResolveDisputeHandler(
       tenantValidator: tenantValidator,
       queueRepo: queueRepo,
       ledger: ledger,
+      vault: vault,
       rbac: RbacService(),
     );
     when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
@@ -219,21 +239,33 @@ void main() {
   });
 
   group('ResolveDisputeHandler - overturn (disputed -> applied)', () {
-    test('appends DISPUTE_OVERTURNED then sets status applied', () async {
-      await queueRepo.enqueue(makeDisputedEntry());
-      await seedOpenDispute();
+    test(
+      'appends DISPUTE_OVERTURNED then sets status applied and seals snapshot',
+      () async {
+        await queueRepo.enqueue(makeDisputedEntry());
+        await seedOpenDispute();
 
-      await handler.handle(command(resolution: DisputeResolution.overturn));
+        await handler.handle(command(resolution: DisputeResolution.overturn));
 
-      final resolution = ledger.entries.last;
-      expect(resolution.type, 'DISPUTE_OVERTURNED');
+        final resolution = ledger.entries.last;
+        expect(resolution.type, 'DISPUTE_OVERTURNED');
 
-      final entry = await queueRepo.findById(
-        'entry-001',
-        organizationId: 'org-1',
-      );
-      expect(entry!.status, SanctionReviewStatus.applied);
-    });
+        final entry = await queueRepo.findById(
+          'entry-001',
+          organizationId: 'org-1',
+        );
+        expect(entry!.status, SanctionReviewStatus.applied);
+
+        // Snapshot must be sealed and linked to the DISPUTE_OVERTURNED entry.
+        expect(vault.count, 1);
+        final snapshot = await vault.findByLedgerEntry(
+          organizationId: 'org-1',
+          ledgerEntryId: resolution.eventId!,
+        );
+        expect(snapshot, isNotNull);
+        expect(snapshot!.snapshot['verdict_type'], 'DISPUTE_OVERTURNED');
+      },
+    );
   });
 
   group('ResolveDisputeHandler - retract (disputed -> pending)', () {

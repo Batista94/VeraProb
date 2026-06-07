@@ -6,6 +6,7 @@ import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_event.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_transition_guard.dart';
@@ -28,6 +29,7 @@ class ResolveDisputeHandler {
   final TenantValidationService _tenantValidator;
   final SanctionReviewQueueRepository _queueRepo;
   final SlaAuditLedgerRepository _ledger;
+  final ForensicEvidenceSnapshotRepository _vault;
   final RbacService _rbac;
   final IDateTimeProvider _clock;
   final SanctionTransitionGuard _guard;
@@ -36,11 +38,13 @@ class ResolveDisputeHandler {
     required TenantValidationService tenantValidator,
     required SanctionReviewQueueRepository queueRepo,
     required SlaAuditLedgerRepository ledger,
+    required ForensicEvidenceSnapshotRepository vault,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
        _ledger = ledger,
+       _vault = vault,
        _rbac = rbac,
        _clock = dateTimeProvider ?? BrazilDateTimeProvider(),
        _guard = const SanctionTransitionGuard();
@@ -99,12 +103,30 @@ class ResolveDisputeHandler {
 
     // 8. Append the resolution fact FIRST (INV-3 append-only, Pillar C).
     final event = _buildEvent(command, entry, now, reason);
-    await _ledger.append(SlaLedgerMapper.mapToEntry(event));
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerMapper.mapToEntry(event),
+    );
 
     // 9. Apply the queue transition.
     await _queueRepo.updateStatus(
       _applyTransition(entry, command, now, reason),
     );
+
+    // 10. Seal forensic snapshot for overturn arc (INV-9, INV-21).
+    //     Linked to the DISPUTE_OVERTURNED ledger entry just appended.
+    //     No new ledger entry is created (INV-3).
+    if (command.resolution == DisputeResolution.overturn) {
+      await _vault.sealForDispute(
+        organizationId: command.organizationId,
+        ledgerEntryId: ledgerEntryId,
+        contractId: entry.contractId,
+        setId: entry.setId,
+        planVersion: 0,
+        occurredAtUtc: now,
+        sealedBy: command.resolvedByUserId,
+        idempotencyKey: '${command.queueEntryId}:DISPUTE_OVERTURNED:SNAPSHOT',
+      );
+    }
   }
 
   void _assertReason(ResolveDisputeCommand command) {

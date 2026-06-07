@@ -490,7 +490,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                           ),
                           SizedBox(width: 4),
                           Text(
-                            'EM ANÁLISE — EVIDÊNCIA RECEBIDA',
+                            'AGUARDANDO EVIDÊNCIA',
                             style: TextStyle(
                               fontSize: 9,
                               fontWeight: FontWeight.w700,

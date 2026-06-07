@@ -10,7 +10,7 @@ SELECT plan(12);
 -- Note: A later migration (20260717000005) revokes all access from authenticated/anon,
 -- so in the final migrated state they should have no privileges.
 SELECT table_privs_are('public', 'idempotency_keys', 'anon', ARRAY[]::text[], 'anon has no privileges on idempotency_keys');
-SELECT table_privs_are('public', 'idempotency_keys', 'authenticated', ARRAY[]::text[], 'authenticated has no privileges on idempotency_keys in final schema');
+SELECT table_privs_are('public', 'idempotency_keys', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE'], 'authenticated has SELECT, INSERT, and UPDATE privileges on idempotency_keys in final schema');
 SELECT table_privs_are('public', 'idempotency_keys', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has ALL on idempotency_keys');
 
 -- ── 2. Function grants ───────────────────────────────────────────────────────

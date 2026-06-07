@@ -4776,6 +4776,19 @@ export type Database = {
         Args: { p_invitation_id: string };
         Returns: undefined;
       };
+      seal_dispute_resolution_snapshot: {
+        Args: {
+          p_contract_id: string;
+          p_idempotency_key: string;
+          p_ledger_entry_id: string;
+          p_occurred_at_utc: string;
+          p_organization_id: string;
+          p_plan_version: number;
+          p_sealed_by: string;
+          p_set_id: string;
+        };
+        Returns: Json;
+      };
       seal_forensic_evidence: {
         Args: {
           p_contract_id: string;
