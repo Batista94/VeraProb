@@ -63,7 +63,11 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 16,
+            runSpacing: 16,
             children: [
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -86,34 +90,39 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                   ),
                 ],
               ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.upload_file_outlined),
-                tooltip: 'Importar CSV',
-                onPressed: () async {
-                  final imported = await showUniversalCsvImporter(
-                    context,
-                    targetEntity: 'contract',
-                  );
-                  if (imported) ref.invalidate(contractListProvider);
-                },
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add_rounded, size: 20),
-                label: const Text('Novo Contrato'),
-                onPressed: () async {
-                  final newContractId = await CreateContractForm.show(
-                    context,
-                    ref,
-                  );
-                  if (newContractId != null) {
-                    ref.invalidate(contractListProvider);
-                    ref
-                        .read(selectedContractIdProvider.notifier)
-                        .set(newContractId);
-                  }
-                },
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.upload_file_outlined),
+                    tooltip: 'Importar CSV',
+                    onPressed: () async {
+                      final imported = await showUniversalCsvImporter(
+                        context,
+                        targetEntity: 'contract',
+                      );
+                      if (imported) ref.invalidate(contractListProvider);
+                    },
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.add_rounded, size: 20),
+                    label: const Text('Novo Contrato'),
+                    onPressed: () async {
+                      final newContractId = await CreateContractForm.show(
+                        context,
+                        ref,
+                      );
+                      if (newContractId != null) {
+                        ref.invalidate(contractListProvider);
+                        ref
+                            .read(selectedContractIdProvider.notifier)
+                            .set(newContractId);
+                      }
+                    },
+                  ),
+                ],
               ),
             ],
           ),

@@ -1678,4 +1678,17 @@ void main() {
       },
     );
   });
+
+  group('DeclareContractPlanForm — responsive / overflow', () {
+    testWidgets('does not overflow on narrow screens', (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Zonas Operacionais'), findsOneWidget);
+    });
+  });
 }

@@ -137,7 +137,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
   SELECT id, name, organization_id, status, financial_ceiling_cents
   FROM public.contracts
   WHERE name = 'Contrato de Concessão Leste - Lote 1';
-  -- Esperado: status = 'active' (ou 'awaiting_contractor_acceptance' dependendo da política de workflow).
+  -- Esperado: status = 'draft' (ou 'awaiting_contractor_acceptance' dependendo da política de workflow).
   -- financial_ceiling_cents = 15000000.
   ```
 
