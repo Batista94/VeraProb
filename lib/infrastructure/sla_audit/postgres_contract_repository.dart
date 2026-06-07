@@ -88,14 +88,39 @@ class PostgresContractRepository extends BasePostgresRepository
 
   @override
   Future<Contract> save(Contract contract) async {
-    // Dispatch to create or update based on version:
-    // version == 1 means this is a new aggregate (never persisted).
-    // version > 1 means this aggregate was loaded from DB and mutated.
-    if (contract.version == 1) {
+    // Dispatch based on version sentinel:
+    // version == 0: new aggregate, never committed to DB → INSERT.
+    // version >= 1: loaded via reconstitute() → UPDATE (version bumped by DB trigger).
+    if (contract.version == 0) {
       await _create(contract);
-      return contract; // Insert: version stays at 1 until first update
+      // DB DEFAULT assigns version=1 on INSERT. Reconstitute so the caller's
+      // reference reflects the live DB state and subsequent save() calls route
+      // to _update(), not _create() again.
+      return Contract.reconstitute(
+        id: contract.id,
+        version: 1,
+        organizationId: contract.organizationId,
+        name: contract.name,
+        contractorName: contract.contractorName,
+        contractorId: contract.contractorId,
+        description: contract.description,
+        validFromUtc: contract.validFromUtc,
+        validUntilUtc: contract.validUntilUtc,
+        status: contract.status,
+        createdAtUtc: contract.createdAtUtc,
+        activatedAtUtc: contract.activatedAtUtc,
+        closedAtUtc: contract.closedAtUtc,
+        closedByUserId: contract.closedByUserId,
+        closeReason: contract.closeReason,
+        submittedForApprovalAtUtc: contract.submittedForApprovalAtUtc,
+        clonedFromContractId: contract.clonedFromContractId,
+        financialCeiling: contract.financialCeiling,
+        penaltyMultiplierBps: contract.penaltyMultiplierBps,
+        latitude: contract.latitude,
+        longitude: contract.longitude,
+      );
     } else {
-      return _update(contract); // Returns entity with bumped version
+      return _update(contract);
     }
   }
 

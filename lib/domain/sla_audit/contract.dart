@@ -39,7 +39,7 @@ class Contract extends Equatable {
 
   /// Optimistic locking version counter. Auto-incremented on each UPDATE.
   /// Used to detect concurrent modifications (Lost Update prevention).
-  /// New aggregates start at version 1.
+  /// New aggregates (not yet persisted) start at version 0. DB assigns 1 on INSERT.
   final int version;
 
   // ── Attributes ────────────────────────────────────────────
@@ -195,7 +195,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
-      version: 1, // New aggregate starts at version 1
+      version: 0, // Sentinel: not yet committed to DB. DB assigns 1 on INSERT.
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -263,7 +263,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
-      version: 1, // Cloned aggregate starts at version 1
+      version: 0, // Sentinel: not yet committed to DB. DB assigns 1 on INSERT.
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
