@@ -190,16 +190,26 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
      - Clicar em **"Continuar"**.
   6. No passo 4 (Revisão):
      - Clicar no botão **"Publicar SLA B2B"**.
+  7. Clicar na aba **"Viagens Programadas"** (caso a UI não faça a transição automática).
 * **O que validar (Playwright):**
   * O plano operacional versão 1 aparece como ativo na listagem do contrato.
+  * A aba **"Viagens Programadas"** deve exibir o indicador de processamento (ex: "Processando malha horária do plano...") e, logo após o processamento assíncrono, listar os turnos (SETs) recém-projetados. **(Nota QA: Exigir `waitFor` ou estender o timeout do `expect` para lidar com a janela de até 10s de polling, evitando falha prematura do teste automatizado).**
 * **Validação SQL (psql):**
   ```sql
+  -- 1. Verifica a declaração do plano
   SELECT plan_version, rule_snapshot_jsonb
   FROM public.plan_declarations
   WHERE contract_id = 'a04c5d92-ccda-49f8-be2d-5141428f04c9'
   ORDER BY plan_version DESC
   LIMIT 1;
   -- Esperado: plan_version = 1, rule_snapshot_jsonb não nulo.
+
+  -- 2. Verifica a geração assíncrona das viagens projetadas (SETs)
+  SELECT COUNT(*) as qtd_viagens
+  FROM public.contractual_service_executions cse
+  JOIN public.plan_declarations pd ON pd.id = cse.plan_declaration_id
+  WHERE pd.contract_id = 'a04c5d92-ccda-49f8-be2d-5141428f04c9';
+  -- Esperado: qtd_viagens > 0 (garante que o Future.microtask inseriu as viagens corretamente)
   ```
 
 

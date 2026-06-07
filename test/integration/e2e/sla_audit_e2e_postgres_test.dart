@@ -19,6 +19,7 @@ import 'package:veraprob/application/normalization/models/vehicle_operational_st
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_snapshot_generator.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
@@ -40,6 +41,35 @@ import 'package:veraprob/domain/sla_audit/operational_zone.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+
+class _FakeShiftProjectionService implements ShiftProjectionService {
+  @override
+  Future<List<ContractualServiceExecution>> projectDays(
+    PlanDeclaration plan, {
+    required DateTime from,
+    required Money contractualValue,
+    int days = 30,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<void> ensureProjected(
+    String organizationId, {
+    required Money contractualValue,
+    int days = 30,
+  }) async {}
+
+  @override
+  Future<void> detectAndAlertGaps(
+    PlanDeclaration plan, {
+    required DateTime asOf,
+  }) async {}
+}
+
+final _fakeProjection = _FakeShiftProjectionService();
 
 // ── Database Integrity Helpers ───────────────────────────
 
@@ -144,6 +174,7 @@ void main() {
       vehicleRepository: const InMemoryActiveVehicleRepository(
         countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
       ),
+      projectionService: _fakeProjection,
       clock: fakeClock,
       idempotencyStore: idempotencyStore,
     );
@@ -763,6 +794,7 @@ void main() {
           vehicleRepository: const InMemoryActiveVehicleRepository(
             countsByOrg: {'00000000-0000-0000-0000-000000000001': 1},
           ),
+          projectionService: _fakeProjection,
           clock: fakeClock,
           idempotencyStore: idempotencyStore,
         );

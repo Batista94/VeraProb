@@ -464,6 +464,8 @@ class _DeclareContractPlanFormState
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     final organizationId = ref.read(currentOrganizationIdProvider);
     final operatorId = ref.read(currentOperatorIdProvider);
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
@@ -471,6 +473,8 @@ class _DeclareContractPlanFormState
       setState(() => _errorMessage = 'Sessão inválida. Faça login novamente.');
       return;
     }
+
+    final navigator = Navigator.of(context);
 
     setState(() {
       _isSubmitting = true;
@@ -516,7 +520,7 @@ class _DeclareContractPlanFormState
       );
 
       if (planId != null && mounted) {
-        Navigator.of(context).pop(true);
+        navigator.pop(true);
       } else {
         // [Forensic Error Display] Read status from notifier
         final status = ref

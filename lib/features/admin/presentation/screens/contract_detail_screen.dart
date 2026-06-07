@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -356,6 +358,8 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                       children: [
                         _ExecutionsTab(
                           executions: widget.detail.recentExecutions,
+                          activePlanVersion: s.activePlanVersion,
+                          contractId: s.id,
                         ),
                         _FinancialTab(
                           financialSummary: widget.detail.financialSummary,
@@ -375,14 +379,100 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
 // ── Executions Tab ────────────────────────────────────────────────────────────
 
-class _ExecutionsTab extends StatelessWidget {
+class _ExecutionsTab extends ConsumerStatefulWidget {
   final List<SlaExecutionItemView> executions;
+  final int activePlanVersion;
+  final String contractId;
 
-  const _ExecutionsTab({required this.executions});
+  const _ExecutionsTab({
+    required this.executions,
+    required this.activePlanVersion,
+    required this.contractId,
+  });
+
+  @override
+  ConsumerState<_ExecutionsTab> createState() => _ExecutionsTabState();
+}
+
+class _ExecutionsTabState extends ConsumerState<_ExecutionsTab> {
+  Timer? _pollTimer;
+  int _pollCount = 0;
+  bool _giveUp = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _startPollingIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(_ExecutionsTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.executions.isNotEmpty) {
+      _stopPolling();
+      _pollCount = 0;
+      _giveUp = false;
+    } else {
+      _startPollingIfNeeded();
+    }
+  }
+
+  void _startPollingIfNeeded() {
+    if (widget.executions.isEmpty &&
+        widget.activePlanVersion > 0 &&
+        !_giveUp &&
+        _pollTimer == null) {
+      _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        if (_pollCount < 5) {
+          _pollCount++;
+          ref.invalidate(contractDetailProvider(widget.contractId));
+        } else {
+          _stopPolling();
+          setState(() {
+            _giveUp = true;
+          });
+        }
+      });
+    }
+  }
+
+  void _stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopPolling();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (executions.isEmpty) {
+    if (widget.executions.isEmpty) {
+      if (widget.activePlanVersion > 0 && !_giveUp) {
+        return const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text(
+                'Processando malha horária do plano...',
+                style: TextStyle(
+                  color: VeraProbColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -429,7 +519,7 @@ class _ExecutionsTab extends StatelessWidget {
                 DataColumn(label: Text('Veículo')),
                 DataColumn(label: Text('Valor'), numeric: true),
               ],
-              rows: executions.map(_buildRow).toList(),
+              rows: widget.executions.map(_buildRow).toList(),
             ),
           ),
         ),

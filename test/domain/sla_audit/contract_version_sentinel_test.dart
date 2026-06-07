@@ -21,7 +21,7 @@ void main() {
   final kFrom = DateTime.utc(2026, 1, 1);
   final kUntil = DateTime.utc(2026, 12, 31);
 
-  Contract _draft({String org = 'org-1'}) => Contract.create(
+  Contract draft({String org = 'org-1'}) => Contract.create(
     organizationId: org,
     name: 'Contrato de Teste',
     contractorName: 'Empresa LTDA',
@@ -30,7 +30,7 @@ void main() {
     nowUtc: kNow,
   );
 
-  Contract _persisted({
+  Contract persisted({
     int version = 1,
     ContractStatus status = ContractStatus.draft,
   }) => Contract.reconstitute(
@@ -61,7 +61,7 @@ void main() {
       'REG-DOM-1: create() returns version=0 — sentinel for "never persisted"',
       () {
         expect(
-          _draft().version,
+          draft().version,
           0,
           reason:
               'version=0 signals the repo to use INSERT. '
@@ -73,8 +73,8 @@ void main() {
     test(
       'REG-DOM-2: two create() calls produce distinct IDs both at version=0',
       () {
-        final c1 = _draft();
-        final c2 = _draft();
+        final c1 = draft();
+        final c2 = draft();
         expect(c1.version, 0);
         expect(c2.version, 0);
         expect(c1.id, isNot(equals(c2.id)));
@@ -115,20 +115,20 @@ void main() {
 
   group('REG-DOM-5/7: Contract.reconstitute() version preservation', () {
     test('REG-DOM-5: reconstitute() preserves version=1 (first DB write)', () {
-      expect(_persisted(version: 1).version, 1);
+      expect(persisted(version: 1).version, 1);
     });
 
     test(
       'REG-DOM-6: reconstitute() preserves arbitrary DB version (e.g. 42)',
       () {
-        expect(_persisted(version: 42).version, 42);
+        expect(persisted(version: 42).version, 42);
       },
     );
 
     test(
       'REG-DOM-7: reconstitute() emits no domain events (projection, not creation)',
       () {
-        expect(_persisted().domainEvents, isEmpty);
+        expect(persisted().domainEvents, isEmpty);
       },
     );
   });
@@ -140,7 +140,7 @@ void main() {
     test(
       'REG-DOM-8: activate() preserves version from DB-loaded aggregate',
       () {
-        final activated = _persisted(version: 3).activate(nowUtc: kNow);
+        final activated = persisted(version: 3).activate(nowUtc: kNow);
         expect(
           activated.version,
           3,
@@ -152,24 +152,23 @@ void main() {
     );
 
     test('REG-DOM-9: close() preserves version', () {
-      final closed = _persisted(version: 5, status: ContractStatus.active)
-          .close(
-            closedByUserId: 'user-1',
-            reason: 'Encerramento contratual',
-            nowUtc: kNow,
-          );
+      final closed = persisted(version: 5, status: ContractStatus.active).close(
+        closedByUserId: 'user-1',
+        reason: 'Encerramento contratual',
+        nowUtc: kNow,
+      );
       expect(closed.version, 5);
     });
 
     test('REG-DOM-10: submitForApproval() preserves version', () {
-      final submitted = _persisted(
+      final submitted = persisted(
         version: 2,
       ).submitForApproval(reviewToken: 'tok-abc', nowUtc: kNow);
       expect(submitted.version, 2);
     });
 
     test('REG-DOM-11: acceptByContractor() preserves version', () {
-      final accepted = _persisted(
+      final accepted = persisted(
         version: 4,
         status: ContractStatus.awaitingContractorAcceptance,
       ).acceptByContractor(reviewToken: 'tok-abc', nowUtc: kNow);
@@ -178,7 +177,7 @@ void main() {
 
     test('REG-DOM-12: create() then activate() keeps version=0 '
         '(pre-save transition must not change sentinel)', () {
-      final activated = _draft().activate(nowUtc: kNow);
+      final activated = draft().activate(nowUtc: kNow);
       expect(
         activated.version,
         0,
@@ -267,14 +266,14 @@ void main() {
   group('ADV-DOM: State transition guards', () {
     test('ADV-DOM-6: activate() on active contract throws DomainException', () {
       expect(
-        () => _persisted(status: ContractStatus.active).activate(nowUtc: kNow),
+        () => persisted(status: ContractStatus.active).activate(nowUtc: kNow),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('ADV-DOM-7: activate() on closed contract throws DomainException', () {
       expect(
-        () => _persisted(status: ContractStatus.closed).activate(nowUtc: kNow),
+        () => persisted(status: ContractStatus.closed).activate(nowUtc: kNow),
         throwsA(isA<DomainException>()),
       );
     });
@@ -283,7 +282,7 @@ void main() {
       'ADV-DOM-8: close() on already closed throws DomainException (terminal state)',
       () {
         expect(
-          () => _persisted(
+          () => persisted(
             status: ContractStatus.closed,
           ).close(closedByUserId: 'user-1', reason: 'Tentativa', nowUtc: kNow),
           throwsA(isA<DomainException>()),
@@ -293,7 +292,7 @@ void main() {
 
     test('ADV-DOM-9: close() with empty reason throws DomainException', () {
       expect(
-        () => _persisted(
+        () => persisted(
           status: ContractStatus.active,
         ).close(closedByUserId: 'user-1', reason: '', nowUtc: kNow),
         throwsA(isA<DomainException>()),
@@ -304,7 +303,7 @@ void main() {
       'ADV-DOM-10: close() with empty closedByUserId throws DomainException',
       () {
         expect(
-          () => _persisted(
+          () => persisted(
             status: ContractStatus.active,
           ).close(closedByUserId: '', reason: 'Encerramento', nowUtc: kNow),
           throwsA(isA<DomainException>()),
@@ -316,7 +315,7 @@ void main() {
       'ADV-DOM-11: submitForApproval() on active contract throws DomainException',
       () {
         expect(
-          () => _persisted(
+          () => persisted(
             status: ContractStatus.active,
           ).submitForApproval(reviewToken: 'tok', nowUtc: kNow),
           throwsA(isA<DomainException>()),
@@ -328,7 +327,7 @@ void main() {
       'ADV-DOM-12: acceptByContractor() on draft throws DomainException',
       () {
         expect(
-          () => _draft().acceptByContractor(reviewToken: 'tok', nowUtc: kNow),
+          () => draft().acceptByContractor(reviewToken: 'tok', nowUtc: kNow),
           throwsA(isA<DomainException>()),
         );
       },
@@ -338,14 +337,14 @@ void main() {
   group('ADV-DOM: assertCanReceivePlan() guard', () {
     test('ADV-DOM-13: closed contract rejects plan declaration', () {
       expect(
-        () => _persisted(status: ContractStatus.closed).assertCanReceivePlan(),
+        () => persisted(status: ContractStatus.closed).assertCanReceivePlan(),
         throwsA(isA<DomainException>()),
       );
     });
 
     test('ADV-DOM-14: awaiting acceptance rejects plan declaration', () {
       expect(
-        () => _persisted(
+        () => persisted(
           status: ContractStatus.awaitingContractorAcceptance,
         ).assertCanReceivePlan(),
         throwsA(isA<DomainException>()),
@@ -353,12 +352,12 @@ void main() {
     });
 
     test('ADV-DOM-15: draft accepts plan declaration (no throw)', () {
-      expect(() => _draft().assertCanReceivePlan(), returnsNormally);
+      expect(() => draft().assertCanReceivePlan(), returnsNormally);
     });
 
     test('ADV-DOM-16: active contract accepts plan declaration (no throw)', () {
       expect(
-        () => _persisted(status: ContractStatus.active).assertCanReceivePlan(),
+        () => persisted(status: ContractStatus.active).assertCanReceivePlan(),
         returnsNormally,
       );
     });
@@ -368,19 +367,19 @@ void main() {
 
   group('Domain events: emission and isolation', () {
     test('create() emits exactly one ContractCreatedEvent', () {
-      final c = _draft();
+      final c = draft();
       expect(c.domainEvents, hasLength(1));
       expect(c.domainEvents.first, isA<ContractCreatedEvent>());
     });
 
     test('activate() emits exactly one ContractActivatedEvent', () {
-      final activated = _persisted().activate(nowUtc: kNow);
+      final activated = persisted().activate(nowUtc: kNow);
       expect(activated.domainEvents, hasLength(1));
       expect(activated.domainEvents.first, isA<ContractActivatedEvent>());
     });
 
     test('close() emits exactly one ContractClosedEvent', () {
-      final closed = _persisted(
+      final closed = persisted(
         status: ContractStatus.active,
       ).close(closedByUserId: 'user-1', reason: 'Encerramento', nowUtc: kNow);
       expect(closed.domainEvents, hasLength(1));
@@ -390,7 +389,7 @@ void main() {
     test(
       'submitForApproval() emits exactly one ContractSubmittedForApprovalEvent',
       () {
-        final submitted = _persisted().submitForApproval(
+        final submitted = persisted().submitForApproval(
           reviewToken: 'tok-review-123',
           nowUtc: kNow,
         );
@@ -408,7 +407,7 @@ void main() {
         // Activate emits [ContractActivatedEvent].
         // Closing the activated instance should carry only [ContractClosedEvent],
         // not both events — transitions are isolated instances, not chains.
-        final activated = _persisted().activate(nowUtc: kNow);
+        final activated = persisted().activate(nowUtc: kNow);
         final closed = activated.close(
           closedByUserId: 'user-1',
           reason: 'Encerramento',

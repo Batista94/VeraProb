@@ -46,7 +46,40 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_rep
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
+
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+
+// ── Fakes ──────────────────────────────────────────────────────────────────
+
+class _FakeShiftProjectionService implements ShiftProjectionService {
+  @override
+  Future<List<ContractualServiceExecution>> projectDays(
+    PlanDeclaration plan, {
+    required DateTime from,
+    required Money contractualValue,
+    int days = 30,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<void> ensureProjected(
+    String organizationId, {
+    required Money contractualValue,
+    int days = 30,
+  }) async {}
+
+  @override
+  Future<void> detectAndAlertGaps(
+    PlanDeclaration plan, {
+    required DateTime asOf,
+  }) async {}
+}
+
+final _fakeProjection = _FakeShiftProjectionService();
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -139,6 +172,7 @@ void main() {
       contractRepository: contractRepo,
       zoneRepository: _StubZoneRepository(),
       vehicleRepository: _StubVehicleRepository(),
+      projectionService: _fakeProjection,
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
       idempotencyStore: InMemoryIdempotencyStore(),
     );
@@ -167,6 +201,7 @@ void main() {
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
+        projectionService: _fakeProjection,
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
         idempotencyStore: InMemoryIdempotencyStore(),
       );
@@ -248,6 +283,7 @@ void main() {
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
+          projectionService: _fakeProjection,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
@@ -311,6 +347,7 @@ void main() {
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
+          projectionService: _fakeProjection,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
@@ -383,6 +420,7 @@ void main() {
             contractRepository: contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
+            projectionService: _fakeProjection,
             clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
             idempotencyStore: InMemoryIdempotencyStore(),
           );
@@ -477,6 +515,7 @@ void main() {
             contractRepository: contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
+            projectionService: _fakeProjection,
             clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
             idempotencyStore: InMemoryIdempotencyStore(),
           );
@@ -697,6 +736,7 @@ void main() {
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
+        projectionService: _fakeProjection,
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
         idempotencyStore: InMemoryIdempotencyStore(),
       );
@@ -811,6 +851,7 @@ void main() {
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
+          projectionService: _fakeProjection,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
@@ -882,6 +923,7 @@ void main() {
           contractRepository: contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
+          projectionService: _fakeProjection,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
@@ -993,6 +1035,7 @@ void main() {
             contractRepository: b2bContractRepo,
             zoneRepository: zoneRepo,
             vehicleRepository: _StubVehicleRepository(),
+            projectionService: _fakeProjection,
             clock: clock,
             idempotencyStore: InMemoryIdempotencyStore(),
           );
