@@ -294,6 +294,43 @@ void main() {
       expect(state.value?.first.id, 'org-1');
     });
 
+    // Regression (CT09): a name query containing digits — e.g. "Empresa 01" —
+    // must NOT match other orgs whose CNPJ merely contains those digits as a
+    // substring. CNPJ matching applies only to letterless (numeric) queries.
+    test('name query with digits does not match by CNPJ substring', () async {
+      container = createContainer(
+        tenants: const [
+          TenantHealthView(
+            id: 'org-named',
+            name: 'Empresa 01',
+            planType: 'Basic',
+            status: OrgStatus.active,
+            maxVehicles: 10,
+            maxActiveContracts: 5,
+            activeContractCount: 0,
+            openCriticalAlertCount: 0,
+            cnpj: '99.888.777/0001-66',
+          ),
+          TenantHealthView(
+            id: 'org-cnpj',
+            name: 'Outra Companhia',
+            planType: 'Basic',
+            status: OrgStatus.active,
+            maxVehicles: 10,
+            maxActiveContracts: 5,
+            activeContractCount: 0,
+            openCriticalAlertCount: 0,
+            cnpj: '01.234.567/0001-88',
+          ),
+        ],
+      );
+      await container.read(tenantHealthSnapshotProvider.future);
+      container.read(tenantSearchProvider.notifier).setQuery('Empresa 01');
+      final state = container.read(tenantSearchProvider);
+      expect(state.value?.length, 1);
+      expect(state.value?.first.id, 'org-named');
+    });
+
     test('filters by legal name', () async {
       container = createContainer();
       await container.read(tenantHealthSnapshotProvider.future);

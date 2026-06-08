@@ -52,7 +52,8 @@ Contract _buildContract({
 }) {
   return Contract.reconstitute(
     id: id,
-    version: 1,
+    version:
+        0, // Sentinel: new aggregate, not yet committed → save() routes to INSERT.
     organizationId: organizationId,
     name: 'Contract $id',
     contractorName: 'Contractor LTDA',

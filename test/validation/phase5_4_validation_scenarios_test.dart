@@ -121,11 +121,9 @@ CreateContractHandler _makeCreateHandler({
   );
 }
 
-void main() {
-  setUpAll(() {
-    tz_data.initializeTimeZones();
-  });
+// ── Fixture ────────────────────────────────────────────────────────────────
 
+final class _Fixture {
   late InMemoryContractRepository contractRepo;
   late InMemoryPlanDeclarationRepository planRepo;
   late InMemorySlaAuditLedgerRepository ledger;
@@ -133,7 +131,7 @@ void main() {
   late CloseContractHandler closeHandler;
   late DeclareContractualPlanHandler planHandler;
 
-  setUp(() {
+  void reset() {
     contractRepo = InMemoryContractRepository();
     planRepo = InMemoryPlanDeclarationRepository();
     ledger = InMemorySlaAuditLedgerRepository();
@@ -176,15 +174,32 @@ void main() {
       clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
       idempotencyStore: InMemoryIdempotencyStore(),
     );
+  }
+}
+
+void main() {
+  setUpAll(() {
+    tz_data.initializeTimeZones();
   });
 
-  // ── Cenário 5.1 ───────────────────────────────────────────────────────────
+  final fix = _Fixture();
+  setUp(fix.reset);
 
+  _scenario51(fix);
+  _scenario52(fix);
+  _scenario53(fix);
+  _scenario54(fix);
+  _scenario51B2B();
+}
+
+// ── Cenário 5.1 ───────────────────────────────────────────────────────────
+
+void _scenario51(_Fixture f) {
   group('Cenário 5.1 — Plano criado via UI gera PLAN_DECLARED no ledger', () {
     setUp(() {
-      createHandler = _makeCreateHandler(
-        contractRepo: contractRepo,
-        ledger: ledger,
+      f.createHandler = _makeCreateHandler(
+        contractRepo: f.contractRepo,
+        ledger: f.ledger,
         tenantId: 'org-5-1',
       );
 
@@ -194,11 +209,11 @@ void main() {
       );
       final p51Tvs = TenantValidationService(authRepository: p51MockAuth);
 
-      planHandler = DeclareContractualPlanHandler(
+      f.planHandler = DeclareContractualPlanHandler(
         tenantValidator: p51Tvs,
-        repository: planRepo,
-        ledger: ledger,
-        contractRepository: contractRepo,
+        repository: f.planRepo,
+        ledger: f.ledger,
+        contractRepository: f.contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
         projectionService: _fakeProjection,
@@ -212,7 +227,7 @@ void main() {
       () async {
         // Simula exatamente o que o DeclareContractPlanForm faz:
         // (1) cria contrato, (2) monta command com hash SHA-256, (3) chama handler
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-1',
             name: 'Rota Leste',
@@ -227,7 +242,7 @@ void main() {
         const uiGeneratedHash =
             'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 
-        final plan = await planHandler.handle(
+        final plan = await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-1',
             contractId: contract.id,
@@ -245,7 +260,7 @@ void main() {
         expect(plan.originalFileHash, uiGeneratedHash);
 
         // Ledger contém PLAN_DECLARED (e CONTRACT_CREATED + CONTRACT_ACTIVATED)
-        final types = ledger.entries.map((e) => e.type).toList();
+        final types = f.ledger.entries.map((e) => e.type).toList();
         expect(
           types.contains('PLAN_DECLARED'),
           isTrue,
@@ -253,7 +268,7 @@ void main() {
         );
 
         // Entrada PLAN_DECLARED aponta para o plan correto
-        final planEntry = ledger.entries.firstWhere(
+        final planEntry = f.ledger.entries.firstWhere(
           (e) => e.type == 'PLAN_DECLARED',
         );
         expect(planEntry.organizationId, 'org-5-1');
@@ -263,9 +278,9 @@ void main() {
     test(
       '5.1.b: hash do plano é preservado sem alteração pelo handler',
       () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-1b',
         );
 
@@ -276,11 +291,11 @@ void main() {
         );
         final p51bTvs = TenantValidationService(authRepository: p51bMockAuth);
 
-        planHandler = DeclareContractualPlanHandler(
+        f.planHandler = DeclareContractualPlanHandler(
           tenantValidator: p51bTvs,
-          repository: planRepo,
-          ledger: ledger,
-          contractRepository: contractRepo,
+          repository: f.planRepo,
+          ledger: f.ledger,
+          contractRepository: f.contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           projectionService: _fakeProjection,
@@ -288,7 +303,7 @@ void main() {
           idempotencyStore: InMemoryIdempotencyStore(),
         );
 
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-1b',
             name: 'Rota Sul',
@@ -301,7 +316,7 @@ void main() {
 
         const expectedHash = 'abc123deadbeef';
 
-        final plan = await planHandler.handle(
+        final plan = await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-1b',
             contractId: contract.id,
@@ -316,21 +331,23 @@ void main() {
         );
 
         // Persisted plan preserves hash
-        final found = await planRepo.findById(plan.id);
+        final found = await f.planRepo.findById(plan.id);
         expect(found!.originalFileHash, expectedHash);
       },
     );
   });
+}
 
-  // ── Cenário 5.2 ───────────────────────────────────────────────────────────
+// ── Cenário 5.2 ───────────────────────────────────────────────────────────
 
+void _scenario52(_Fixture f) {
   group(
     'Cenário 5.2 — Plano publicado não pode ser editado; apenas nova versão',
     () {
       setUp(() {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-2',
         );
 
@@ -340,11 +357,11 @@ void main() {
         );
         final p52Tvs = TenantValidationService(authRepository: p52MockAuth);
 
-        planHandler = DeclareContractualPlanHandler(
+        f.planHandler = DeclareContractualPlanHandler(
           tenantValidator: p52Tvs,
-          repository: planRepo,
-          ledger: ledger,
-          contractRepository: contractRepo,
+          repository: f.planRepo,
+          ledger: f.ledger,
+          contractRepository: f.contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           projectionService: _fakeProjection,
@@ -354,12 +371,12 @@ void main() {
       });
 
       test('5.2.a: PlanDeclaration expõe services como lista imutável', () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-2',
         );
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-2',
             name: 'Contrato Imutável',
@@ -370,7 +387,7 @@ void main() {
           ),
         );
 
-        final plan = await planHandler.handle(
+        final plan = await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-2',
             contractId: contract.id,
@@ -400,9 +417,9 @@ void main() {
       test(
         '5.2.b: nova versão do plano cria aggregate distinto (não sobrescreve)',
         () async {
-          createHandler = _makeCreateHandler(
-            contractRepo: contractRepo,
-            ledger: ledger,
+          f.createHandler = _makeCreateHandler(
+            contractRepo: f.contractRepo,
+            ledger: f.ledger,
             tenantId: 'org-5-2b',
           );
 
@@ -413,11 +430,11 @@ void main() {
           );
           final p52bTvs = TenantValidationService(authRepository: p52bMockAuth);
 
-          planHandler = DeclareContractualPlanHandler(
+          f.planHandler = DeclareContractualPlanHandler(
             tenantValidator: p52bTvs,
-            repository: planRepo,
-            ledger: ledger,
-            contractRepository: contractRepo,
+            repository: f.planRepo,
+            ledger: f.ledger,
+            contractRepository: f.contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
             projectionService: _fakeProjection,
@@ -425,7 +442,7 @@ void main() {
             idempotencyStore: InMemoryIdempotencyStore(),
           );
 
-          final contract = await createHandler.handle(
+          final contract = await f.createHandler.handle(
             CreateContractCommand(
               organizationId: 'org-5-2b',
               name: 'Contrato Versões',
@@ -436,7 +453,7 @@ void main() {
             ),
           );
 
-          final plan1 = await planHandler.handle(
+          final plan1 = await f.planHandler.handle(
             DeclareContractualPlanCommand(
               organizationId: 'org-5-2b',
               contractId: contract.id,
@@ -450,7 +467,7 @@ void main() {
             ),
           );
 
-          final plan2 = await planHandler.handle(
+          final plan2 = await f.planHandler.handle(
             DeclareContractualPlanCommand(
               organizationId: 'org-5-2b',
               contractId: contract.id,
@@ -473,18 +490,18 @@ void main() {
           expect(plan2.planVersion, 2);
 
           // Versão 1 ainda existe — não foi sobrescrita
-          final found1 = await planRepo.findById(plan1.id);
+          final found1 = await f.planRepo.findById(plan1.id);
           expect(found1, isNotNull);
           expect(found1!.planVersion, 1);
           expect(found1.originalFileHash, 'hash-v1');
 
           // Versão 2 existe com dados distintos
-          final found2 = await planRepo.findById(plan2.id);
+          final found2 = await f.planRepo.findById(plan2.id);
           expect(found2!.planVersion, 2);
           expect(found2.services, hasLength(2));
 
           // Ambas as versões listadas para o mesmo contrato
-          final allPlans = await planRepo.findByContract(
+          final allPlans = await f.planRepo.findByContract(
             contract.id,
             organizationId: 'org-5-2b',
           );
@@ -495,9 +512,9 @@ void main() {
       test(
         '5.2.c: PlanDeclaration.domainEvents são imutáveis após criação',
         () async {
-          createHandler = _makeCreateHandler(
-            contractRepo: contractRepo,
-            ledger: ledger,
+          f.createHandler = _makeCreateHandler(
+            contractRepo: f.contractRepo,
+            ledger: f.ledger,
             tenantId: 'org-5-2c',
           );
 
@@ -508,11 +525,11 @@ void main() {
           );
           final p52cTvs = TenantValidationService(authRepository: p52cMockAuth);
 
-          planHandler = DeclareContractualPlanHandler(
+          f.planHandler = DeclareContractualPlanHandler(
             tenantValidator: p52cTvs,
-            repository: planRepo,
-            ledger: ledger,
-            contractRepository: contractRepo,
+            repository: f.planRepo,
+            ledger: f.ledger,
+            contractRepository: f.contractRepo,
             zoneRepository: _StubZoneRepository(),
             vehicleRepository: _StubVehicleRepository(),
             projectionService: _fakeProjection,
@@ -520,7 +537,7 @@ void main() {
             idempotencyStore: InMemoryIdempotencyStore(),
           );
 
-          final contract = await createHandler.handle(
+          final contract = await f.createHandler.handle(
             CreateContractCommand(
               organizationId: 'org-5-2c',
               name: 'Contrato Eventos',
@@ -531,7 +548,7 @@ void main() {
             ),
           );
 
-          final plan = await planHandler.handle(
+          final plan = await f.planHandler.handle(
             DeclareContractualPlanCommand(
               organizationId: 'org-5-2c',
               contractId: contract.id,
@@ -554,20 +571,22 @@ void main() {
       );
     },
   );
+}
 
-  // ── Cenário 5.3 ───────────────────────────────────────────────────────────
+// ── Cenário 5.3 ───────────────────────────────────────────────────────────
 
+void _scenario53(_Fixture f) {
   group('Cenário 5.3 — Operador de Org A não vê contratos de Org B', () {
     test(
       '5.3.a: ContractRepository.findByOrganization isola por tenant',
       () async {
         // Org A cria 2 contratos
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-A',
         );
-        await createHandler.handle(
+        await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
             name: 'Contrato A1',
@@ -577,7 +596,7 @@ void main() {
             sessionId: 'session-val',
           ),
         );
-        await createHandler.handle(
+        await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
             name: 'Contrato A2',
@@ -589,12 +608,12 @@ void main() {
         );
 
         // Org B cria 1 contrato
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-B',
         );
-        await createHandler.handle(
+        await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-B',
             name: 'Contrato B1',
@@ -606,12 +625,12 @@ void main() {
         );
 
         // Org A vê só seus contratos
-        final orgAContracts = await contractRepo.findByOrganization('org-A');
+        final orgAContracts = await f.contractRepo.findByOrganization('org-A');
         expect(orgAContracts, hasLength(2));
         expect(orgAContracts.every((c) => c.organizationId == 'org-A'), isTrue);
 
         // Org B vê só o seu
-        final orgBContracts = await contractRepo.findByOrganization('org-B');
+        final orgBContracts = await f.contractRepo.findByOrganization('org-B');
         expect(orgBContracts, hasLength(1));
         expect(orgBContracts.first.name, 'Contrato B1');
       },
@@ -627,19 +646,19 @@ void main() {
         );
 
         final queryService = ContractQueryServiceInMemory(
-          contractRepository: contractRepo,
-          planRepository: planRepo,
+          contractRepository: f.contractRepo,
+          planRepository: f.planRepo,
           executionStateRepository: execStateRepo,
           slaExecutionQueryService: slaQueryService,
         );
 
         // Org A cria contrato
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-A',
         );
-        final contractA = await createHandler.handle(
+        final contractA = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
             name: 'Rota A',
@@ -651,12 +670,12 @@ void main() {
         );
 
         // Org B cria contrato
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-B',
         );
-        await createHandler.handle(
+        await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-B',
             name: 'Rota B',
@@ -680,12 +699,12 @@ void main() {
     test(
       '5.3.c: findById com org errada retorna null (acesso cross-tenant negado)',
       () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-A',
         );
-        final contractA = await createHandler.handle(
+        final contractA = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-A',
             name: 'Contrato Privado A',
@@ -697,7 +716,7 @@ void main() {
         );
 
         // Org B tenta acessar o ID do contrato de Org A
-        final result = await contractRepo.findById(
+        final result = await f.contractRepo.findById(
           contractA.id,
           organizationId: 'org-B',
         );
@@ -709,9 +728,11 @@ void main() {
       },
     );
   });
+}
 
-  // ── Cenário 5.4 ───────────────────────────────────────────────────────────
+// ── Cenário 5.4 ───────────────────────────────────────────────────────────
 
+void _scenario54(_Fixture f) {
   group('Cenário 5.4 — Contrato encerrado não aceita novos planos', () {
     setUp(() {
       final p54MockAuth = _Phase5MockAuth();
@@ -720,20 +741,20 @@ void main() {
       );
       final p54Tvs = TenantValidationService(authRepository: p54MockAuth);
 
-      closeHandler = CloseContractHandler(
+      f.closeHandler = CloseContractHandler(
         tenantValidator: p54Tvs,
-        contractRepository: contractRepo,
-        ledger: ledger,
+        contractRepository: f.contractRepo,
+        ledger: f.ledger,
         rbac: RbacService(),
         clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
         idempotencyStore: InMemoryIdempotencyStore(),
       );
 
-      planHandler = DeclareContractualPlanHandler(
+      f.planHandler = DeclareContractualPlanHandler(
         tenantValidator: p54Tvs,
-        repository: planRepo,
-        ledger: ledger,
-        contractRepository: contractRepo,
+        repository: f.planRepo,
+        ledger: f.ledger,
+        contractRepository: f.contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
         projectionService: _fakeProjection,
@@ -745,12 +766,12 @@ void main() {
     test(
       '5.4.a: DeclareContractualPlanHandler lança DomainException para contrato closed',
       () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-4',
         );
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4',
             name: 'Contrato Encerrado',
@@ -762,7 +783,7 @@ void main() {
         );
 
         // Declara plano v1 (ativa o contrato)
-        await planHandler.handle(
+        await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-4',
             contractId: contract.id,
@@ -777,7 +798,7 @@ void main() {
         );
 
         // Fecha o contrato
-        await closeHandler.handle(
+        await f.closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-5-4',
             contractId: contract.id,
@@ -789,11 +810,11 @@ void main() {
           ),
         );
 
-        final ledgerCountBeforeRejection = ledger.entries.length;
+        final ledgerCountBeforeRejection = f.ledger.entries.length;
 
         // Tentativa de novo plano deve falhar
         expect(
-          () => planHandler.handle(
+          () => f.planHandler.handle(
             DeclareContractualPlanCommand(
               organizationId: 'org-5-4',
               contractId: contract.id,
@@ -812,7 +833,7 @@ void main() {
 
         // Ledger não deve ter entradas novas após a rejeição
         expect(
-          ledger.entries.length,
+          f.ledger.entries.length,
           ledgerCountBeforeRejection,
           reason: 'Rejeição não deve contaminar o ledger imutável',
         );
@@ -822,9 +843,9 @@ void main() {
     test(
       '5.4.b: assertCanReceivePlan impede plano mesmo em contrato draft encerrado diretamente',
       () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-4b',
         );
 
@@ -835,27 +856,27 @@ void main() {
         );
         final p54bTvs = TenantValidationService(authRepository: p54bMockAuth);
 
-        closeHandler = CloseContractHandler(
+        f.closeHandler = CloseContractHandler(
           tenantValidator: p54bTvs,
-          contractRepository: contractRepo,
-          ledger: ledger,
+          contractRepository: f.contractRepo,
+          ledger: f.ledger,
           rbac: RbacService(),
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
 
-        planHandler = DeclareContractualPlanHandler(
+        f.planHandler = DeclareContractualPlanHandler(
           tenantValidator: p54bTvs,
-          repository: planRepo,
-          ledger: ledger,
-          contractRepository: contractRepo,
+          repository: f.planRepo,
+          ledger: f.ledger,
+          contractRepository: f.contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           projectionService: _fakeProjection,
           clock: FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0)),
           idempotencyStore: InMemoryIdempotencyStore(),
         );
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4b',
             name: 'Contrato Draft Encerrado',
@@ -867,7 +888,7 @@ void main() {
         );
 
         // Fecha sem ter declarado nenhum plano (draft → closed diretamente)
-        await closeHandler.handle(
+        await f.closeHandler.handle(
           CloseContractCommand(
             organizationId: 'org-5-4b',
             contractId: contract.id,
@@ -880,7 +901,7 @@ void main() {
         );
 
         expect(
-          () => planHandler.handle(
+          () => f.planHandler.handle(
             DeclareContractualPlanCommand(
               organizationId: 'org-5-4b',
               contractId: contract.id,
@@ -903,9 +924,9 @@ void main() {
     test(
       '5.4.c: contrato active (não closed) aceita plano normalmente',
       () async {
-        createHandler = _makeCreateHandler(
-          contractRepo: contractRepo,
-          ledger: ledger,
+        f.createHandler = _makeCreateHandler(
+          contractRepo: f.contractRepo,
+          ledger: f.ledger,
           tenantId: 'org-5-4c',
         );
 
@@ -916,11 +937,11 @@ void main() {
         );
         final p54cTvs = TenantValidationService(authRepository: p54cMockAuth);
 
-        planHandler = DeclareContractualPlanHandler(
+        f.planHandler = DeclareContractualPlanHandler(
           tenantValidator: p54cTvs,
-          repository: planRepo,
-          ledger: ledger,
-          contractRepository: contractRepo,
+          repository: f.planRepo,
+          ledger: f.ledger,
+          contractRepository: f.contractRepo,
           zoneRepository: _StubZoneRepository(),
           vehicleRepository: _StubVehicleRepository(),
           projectionService: _fakeProjection,
@@ -928,7 +949,7 @@ void main() {
           idempotencyStore: InMemoryIdempotencyStore(),
         );
 
-        final contract = await createHandler.handle(
+        final contract = await f.createHandler.handle(
           CreateContractCommand(
             organizationId: 'org-5-4c',
             name: 'Contrato Ativo',
@@ -940,7 +961,7 @@ void main() {
         );
 
         // Plano v1 ativa o contrato
-        await planHandler.handle(
+        await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-4c',
             contractId: contract.id,
@@ -955,7 +976,7 @@ void main() {
         );
 
         // Plano v2 em contrato active deve ser aceito sem exceção
-        final plan2 = await planHandler.handle(
+        final plan2 = await f.planHandler.handle(
           DeclareContractualPlanCommand(
             organizationId: 'org-5-4c',
             contractId: contract.id,
@@ -973,9 +994,11 @@ void main() {
       },
     );
   });
+}
 
-  // ── Cenário 5.1-B2B ───────────────────────────────────────────────────────
+// ── Cenário 5.1-B2B ───────────────────────────────────────────────────────
 
+void _scenario51B2B() {
   group(
     'Cenário 5.1-B2B — Plano declarado com ShiftPattern gera PLAN_DECLARED',
     () {

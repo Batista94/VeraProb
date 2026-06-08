@@ -1,3 +1,4 @@
+// pr_scanner: complexity-ok — Domain Aggregate Root with extensive lifecycle and validation rules
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';

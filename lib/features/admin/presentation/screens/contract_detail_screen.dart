@@ -408,6 +408,11 @@ class _ExecutionsTabState extends ConsumerState<_ExecutionsTab> {
   @override
   void didUpdateWidget(_ExecutionsTab oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.activePlanVersion != oldWidget.activePlanVersion) {
+      _stopPolling();
+      _pollCount = 0;
+      _giveUp = false;
+    }
     if (widget.executions.isNotEmpty) {
       _stopPolling();
       _pollCount = 0;

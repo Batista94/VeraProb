@@ -624,6 +624,127 @@ class _DeclareContractPlanFormState
     return ReviewStep(allTurns: allTurns, contractId: widget.contractId);
   }
 
+  Widget _buildStepperControls(
+    BuildContext context,
+    ControlsDetails details,
+    bool isLoading,
+  ) {
+    final isLastStep = _currentStep == 3;
+    final isStep3 = _currentStep == 2;
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          FilledButton.icon(
+            onPressed: isLoading ? null : details.onStepContinue,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Icon(isLastStep ? Icons.publish : Icons.arrow_forward),
+            label: Text(isLastStep ? 'Publicar SLA B2B' : 'Continuar'),
+          ),
+          if (isStep3)
+            OutlinedButton.icon(
+              onPressed: isLoading ? null : _addReturnShift,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('+ Adicionar Turno de Retorno'),
+            ),
+          TextButton(
+            onPressed: isLoading ? null : details.onStepCancel,
+            child: Text(_currentStep == 0 ? 'Cancelar' : 'Voltar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Step> _buildStepperSteps() {
+    return [
+      Step(
+        title: const Text('Zonas Operacionais'),
+        content: DeclarePlanZonesStep(
+          selectedOriginZone: _selectedOriginZone,
+          selectedOriginZoneId: _selectedOriginZoneId,
+          selectedDestinationZone: _selectedDestinationZone,
+          selectedDestinationZoneId: _selectedDestinationZoneId,
+          onOriginChanged: (zone) => setState(() {
+            _selectedOriginZone = zone;
+            _selectedOriginZoneId = zone?.id;
+            _onDataChanged();
+          }),
+          onOriginConfigured: (zone) => setState(() {
+            _selectedOriginZone = zone;
+            _onDataChanged();
+          }),
+          onDestinationChanged: (zone) => setState(() {
+            _selectedDestinationZone = zone;
+            _selectedDestinationZoneId = zone?.id;
+            _onDataChanged();
+          }),
+          onDestinationConfigured: (zone) => setState(() {
+            _selectedDestinationZone = zone;
+            _onDataChanged();
+          }),
+          onSwap: () {
+            setState(() {
+              final tmpZone = _selectedOriginZone;
+              _selectedOriginZone = _selectedDestinationZone;
+              _selectedDestinationZone = tmpZone;
+              final tmpId = _selectedOriginZoneId;
+              _selectedOriginZoneId = _selectedDestinationZoneId;
+              _selectedDestinationZoneId = tmpId;
+              _onDataChanged();
+            });
+          },
+        ),
+        isActive: _currentStep >= 0,
+        state: _currentStep > 0 ? StepState.complete : StepState.editing,
+      ),
+      Step(
+        title: const Text('Turno'),
+        content: _buildStep2(),
+        isActive: _currentStep >= 1,
+        state: _currentStep > 1
+            ? StepState.complete
+            : _currentStep == 1
+            ? StepState.editing
+            : _highestStepReached >= 1
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+      Step(
+        title: const Text('Acordo de Penalidades'),
+        content: _buildStep3(),
+        isActive: _currentStep >= 2,
+        state: _currentStep > 2
+            ? StepState.complete
+            : _currentStep == 2
+            ? StepState.editing
+            : _highestStepReached >= 2
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+      Step(
+        title: const Text('Exposição de Risco'),
+        content: _buildStep4(),
+        isActive: _currentStep >= 3,
+        state: _currentStep == 3
+            ? StepState.editing
+            : _highestStepReached >= 3
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+    ];
+  }
+
   // ── Build ────────────────────────────────────────────────────
 
   @override
@@ -710,129 +831,9 @@ class _DeclareContractPlanFormState
                 onStepContinue: _onStepContinue,
                 onStepCancel: _onStepCancel,
                 onStepTapped: _onStepTapped,
-                controlsBuilder: (context, details) {
-                  final isLastStep = _currentStep == 3;
-                  final isStep3 = _currentStep == 2;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: isLoading ? null : details.onStepContinue,
-                          icon: isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  isLastStep
-                                      ? Icons.publish
-                                      : Icons.arrow_forward,
-                                ),
-                          label: Text(
-                            isLastStep ? 'Publicar SLA B2B' : 'Continuar',
-                          ),
-                        ),
-                        if (isStep3)
-                          OutlinedButton.icon(
-                            onPressed: isLoading ? null : _addReturnShift,
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('+ Adicionar Turno de Retorno'),
-                          ),
-                        TextButton(
-                          onPressed: isLoading ? null : details.onStepCancel,
-                          child: Text(
-                            _currentStep == 0 ? 'Cancelar' : 'Voltar',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                steps: [
-                  Step(
-                    title: const Text('Zonas Operacionais'),
-                    content: DeclarePlanZonesStep(
-                      selectedOriginZone: _selectedOriginZone,
-                      selectedOriginZoneId: _selectedOriginZoneId,
-                      selectedDestinationZone: _selectedDestinationZone,
-                      selectedDestinationZoneId: _selectedDestinationZoneId,
-                      onOriginChanged: (zone) => setState(() {
-                        _selectedOriginZone = zone;
-                        _selectedOriginZoneId = zone?.id;
-                        _onDataChanged();
-                      }),
-                      onOriginConfigured: (zone) => setState(() {
-                        _selectedOriginZone = zone;
-                        _onDataChanged();
-                      }),
-                      onDestinationChanged: (zone) => setState(() {
-                        _selectedDestinationZone = zone;
-                        _selectedDestinationZoneId = zone?.id;
-                        _onDataChanged();
-                      }),
-                      onDestinationConfigured: (zone) => setState(() {
-                        _selectedDestinationZone = zone;
-                        _onDataChanged();
-                      }),
-                      onSwap: () {
-                        setState(() {
-                          final tmpZone = _selectedOriginZone;
-                          _selectedOriginZone = _selectedDestinationZone;
-                          _selectedDestinationZone = tmpZone;
-                          final tmpId = _selectedOriginZoneId;
-                          _selectedOriginZoneId = _selectedDestinationZoneId;
-                          _selectedDestinationZoneId = tmpId;
-                          _onDataChanged();
-                        });
-                      },
-                    ),
-                    isActive: _currentStep >= 0,
-                    state: _currentStep > 0
-                        ? StepState.complete
-                        : StepState.editing,
-                  ),
-                  Step(
-                    title: const Text('Turno'),
-                    content: _buildStep2(),
-                    isActive: _currentStep >= 1,
-                    state: _currentStep > 1
-                        ? StepState.complete
-                        : _currentStep == 1
-                        ? StepState.editing
-                        : _highestStepReached >= 1
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                  Step(
-                    title: const Text('Acordo de Penalidades'),
-                    content: _buildStep3(),
-                    isActive: _currentStep >= 2,
-                    state: _currentStep > 2
-                        ? StepState.complete
-                        : _currentStep == 2
-                        ? StepState.editing
-                        : _highestStepReached >= 2
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                  Step(
-                    title: const Text('Exposição de Risco'),
-                    content: _buildStep4(),
-                    isActive: _currentStep >= 3,
-                    state: _currentStep == 3
-                        ? StepState.editing
-                        : _highestStepReached >= 3
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                ],
+                controlsBuilder: (context, details) =>
+                    _buildStepperControls(context, details, isLoading),
+                steps: _buildStepperSteps(),
               ),
             ),
           ],

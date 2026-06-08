@@ -88,12 +88,19 @@ class TenantSearchNotifier
     final normalizedQuery = normalizeText(trimmed);
     final digitsQuery = extractDigits(trimmed);
 
+    // CNPJ substring matching only applies to numeric queries (digits +
+    // formatting, no letters). Otherwise a name containing digits — e.g.
+    // "CT09 Org" → digits "09" — would match every CNPJ containing "09"
+    // as a substring, flooding results and breaking name search.
+    final isCnpjQuery = !RegExp(r'[a-z]').hasMatch(normalizedQuery);
+
     return filtered.where((t) {
       return normalizeText(t.name).contains(normalizedQuery) ||
           (t.legalName != null &&
               normalizeText(t.legalName!).contains(normalizedQuery)) ||
           normalizeText(t.id).contains(normalizedQuery) ||
-          (t.cnpj != null &&
+          (isCnpjQuery &&
+              t.cnpj != null &&
               digitsQuery.isNotEmpty &&
               extractDigits(t.cnpj!).contains(digitsQuery));
     }).toList();

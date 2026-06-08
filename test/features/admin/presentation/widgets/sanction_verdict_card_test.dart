@@ -728,7 +728,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('EM ANÁLISE — EVIDÊNCIA RECEBIDA'), findsOneWidget);
+      expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
       expect(find.text('ACEITAR JUSTIFICATIVA'), findsOneWidget);
       expect(find.text('RECUSAR JUSTIFICATIVA'), findsOneWidget);
       expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:veraprob/application/projections/models/audit_log_projection.dart';
 import 'package:veraprob/application/projections/providers/audit_filter_provider.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/orphan_triage_tab.dart';
@@ -285,6 +286,152 @@ class _AuditTab extends ConsumerWidget {
     );
   }
 
+  Widget _buildRowItem(
+    BuildContext context,
+    WidgetRef ref,
+    AuditLogEntry log,
+    int index,
+    bool isSelected,
+  ) {
+    return InkWell(
+      onTap: () {
+        ref.read(selectedAuditLogProvider.notifier).set(log);
+        onOpenDrawer();
+      },
+      child: Container(
+        color: isSelected
+            ? VeraProbColors.primary.withValues(alpha: 0.1)
+            : (index.isEven
+                  ? VeraProbColors.background
+                  : VeraProbColors.surface),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    DateFormat('HH:mm:ss').format(log.timestamp.toLocal()),
+                    style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                  ),
+                  const Text(
+                    'LOCAL',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: VeraProbColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: log.lifecycleStatus != null
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: IncidentStatusUiMapper.colorFor(
+                            log.lifecycleStatus!,
+                          ).withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: IncidentStatusUiMapper.colorFor(
+                              log.lifecycleStatus!,
+                            ).withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: Text(
+                          log.lifecycleStatus!.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: IncidentStatusUiMapper.colorFor(
+                              log.lifecycleStatus!,
+                            ),
+                          ),
+                        ),
+                      )
+                    : const Text(
+                        '-',
+                        style: TextStyle(color: VeraProbColors.textSecondary),
+                      ),
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: log.category == 'SYSTEM'
+                        ? VeraProbColors.info.withValues(alpha: 0.2)
+                        : VeraProbColors.warning.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    log.category,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: log.category == 'SYSTEM'
+                          ? VeraProbColors.info
+                          : VeraProbColors.warning,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              flex: 5,
+              child: Text(
+                log.action,
+                style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                log.vehiclePlate ?? '-',
+                style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                log.routeName ?? '-',
+                style: _cellStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Expanded(
+              flex: 3,
+              child: Text(
+                log.actorName ?? '-',
+                style: _cellStyle.copyWith(color: VeraProbColors.textSecondary),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLogTable(WidgetRef ref) {
     final projectionAsync = ref.watch(auditLogProjectionProvider);
     final selectedLog = ref.watch(selectedAuditLogProvider);
@@ -345,153 +492,7 @@ class _AuditTab extends ConsumerWidget {
           itemBuilder: (context, index) {
             final log = value.entries[index];
             final isSelected = selectedLog?.id == log.id;
-
-            return InkWell(
-              onTap: () {
-                ref.read(selectedAuditLogProvider.notifier).set(log);
-                onOpenDrawer();
-              },
-              child: Container(
-                color: isSelected
-                    ? VeraProbColors.primary.withValues(alpha: 0.1)
-                    : (index.isEven
-                          ? VeraProbColors.background
-                          : VeraProbColors.surface),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            DateFormat(
-                              'HH:mm:ss',
-                            ).format(log.timestamp.toLocal()),
-                            style: _cellStyle.copyWith(fontFamily: 'monospace'),
-                          ),
-                          const Text(
-                            'LOCAL',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold,
-                              color: VeraProbColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: log.lifecycleStatus != null
-                            ? Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: IncidentStatusUiMapper.colorFor(
-                                    log.lifecycleStatus!,
-                                  ).withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: IncidentStatusUiMapper.colorFor(
-                                      log.lifecycleStatus!,
-                                    ).withValues(alpha: 0.5),
-                                  ),
-                                ),
-                                child: Text(
-                                  log.lifecycleStatus!.label,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: IncidentStatusUiMapper.colorFor(
-                                      log.lifecycleStatus!,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            : const Text(
-                                '-',
-                                style: TextStyle(
-                                  color: VeraProbColors.textSecondary,
-                                ),
-                              ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: log.category == 'SYSTEM'
-                                ? VeraProbColors.info.withValues(alpha: 0.2)
-                                : VeraProbColors.warning.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            log.category,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: log.category == 'SYSTEM'
-                                  ? VeraProbColors.info
-                                  : VeraProbColors.warning,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 5,
-                      child: Text(
-                        log.action,
-                        style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        log.vehiclePlate ?? '-',
-                        style: _cellStyle.copyWith(fontFamily: 'monospace'),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        log.routeName ?? '-',
-                        style: _cellStyle,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        log.actorName ?? '-',
-                        style: _cellStyle.copyWith(
-                          color: VeraProbColors.textSecondary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return _buildRowItem(context, ref, log, index, isSelected);
           },
         );
       }(),
