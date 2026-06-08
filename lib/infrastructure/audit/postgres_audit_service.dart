@@ -58,17 +58,50 @@ class PostgresAuditService implements AuditService {
         .order('occurred_at_utc', ascending: false)
         .limit(limit);
 
-    return (response as List)
-        .map(
-          (data) => AuditLog(
-            id: data['id'],
-            organizationId: data['organization_id'],
-            operatorId: (data['operator_id'] as String?) ?? '',
-            actionType: (data['type'] as String?) ?? '',
-            entityId: (data['set_id'] as String?) ?? '',
-            timestamp: DateTime.parse(data['occurred_at_utc']).toUtc(),
-          ),
-        )
-        .toList();
+    return (response as List).map((data) {
+      final payload = data['payload'] != null
+          ? Map<String, dynamic>.from(data['payload'] as Map)
+          : <String, dynamic>{};
+
+      // Extract vehicle plate from payload
+      String? vehiclePlate = payload['vehicle_plate'] as String?;
+      if (vehiclePlate == null && payload['verdict_evidence'] != null) {
+        final evidence = Map<String, dynamic>.from(
+          payload['verdict_evidence'] as Map,
+        );
+        vehiclePlate = evidence['vehicle_plate'] as String?;
+      }
+
+      // Extract route name from payload
+      String? routeName =
+          payload['route_short_name'] as String? ??
+          payload['route_name'] as String?;
+      if (routeName == null && payload['verdict_evidence'] != null) {
+        final evidence = Map<String, dynamic>.from(
+          payload['verdict_evidence'] as Map,
+        );
+        routeName =
+            evidence['route_short_name'] as String? ??
+            evidence['route_name'] as String?;
+      }
+
+      // Extract reason/details from payload
+      final String? reason =
+          payload['reason'] as String? ??
+          payload['rejection_reason'] as String? ??
+          payload['resolution_reason'] as String?;
+
+      return AuditLog(
+        id: data['id'],
+        organizationId: data['organization_id'],
+        operatorId: (data['operator_id'] as String?) ?? '',
+        actionType: (data['type'] as String?) ?? '',
+        entityId: (data['set_id'] as String?) ?? '',
+        timestamp: DateTime.parse(data['occurred_at_utc']).toUtc(),
+        vehiclePlate: vehiclePlate,
+        routeName: routeName,
+        reason: reason,
+      );
+    }).toList();
   }
 }

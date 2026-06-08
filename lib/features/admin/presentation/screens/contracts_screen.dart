@@ -445,6 +445,8 @@ class _ContractTable extends ConsumerWidget {
                 onPressed: isSubmitting
                     ? null
                     : () async {
+                        if (isSubmitting) return;
+
                         if (nameController.text.trim().isEmpty) {
                           setDialogState(
                             () => errorMsg = 'Informe o nome do contrato.',
@@ -464,6 +466,8 @@ class _ContractTable extends ConsumerWidget {
                           );
                           return;
                         }
+
+                        final navigator = Navigator.of(ctx);
 
                         setDialogState(() => isSubmitting = true);
                         try {
@@ -492,7 +496,7 @@ class _ContractTable extends ConsumerWidget {
                             validUntilUtc: validUntil!.toUtc(),
                           );
                           ref.invalidate(contractListProvider);
-                          if (ctx.mounted) Navigator.of(ctx).pop();
+                          if (ctx.mounted) navigator.pop();
                           ref
                               .read(selectedContractIdProvider.notifier)
                               .set(newContract.id);

@@ -199,7 +199,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
   -- 1. Verifica a declaração do plano
   SELECT plan_version, rule_snapshot_jsonb
   FROM public.plan_declarations
-  WHERE contract_id = 'a04c5d92-ccda-49f8-be2d-5141428f04c9'
+  WHERE contract_id = (SELECT id::text FROM public.contracts WHERE name = 'Contrato de Concessão Leste - Lote 1' LIMIT 1)
   ORDER BY plan_version DESC
   LIMIT 1;
   -- Esperado: plan_version = 1, rule_snapshot_jsonb não nulo.
@@ -208,7 +208,7 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
   SELECT COUNT(*) as qtd_viagens
   FROM public.contractual_service_executions cse
   JOIN public.plan_declarations pd ON pd.id = cse.plan_declaration_id
-  WHERE pd.contract_id = 'a04c5d92-ccda-49f8-be2d-5141428f04c9';
+  WHERE pd.contract_id = (SELECT id::text FROM public.contracts WHERE name = 'Contrato de Concessão Leste - Lote 1' LIMIT 1);
   -- Esperado: qtd_viagens > 0 (garante que o Future.microtask inseriu as viagens corretamente)
   ```
 
@@ -383,11 +383,11 @@ Durante o teste, as seguintes invariantes do sistema VeraProb devem ser atestada
 #### CT12: Auditoria OCC - Layout Read-Only Table-First
 * **Objetivo:** Validar se a tela de log de auditoria operacional respeita o novo layout.
 * **Passos Playwright:**
-  1. No menu principal, clicar na aba **"Auditoria de SLA"** ou navegar para `/operational-audit`.
+  1. No menu, clicar em **"Auditoria OCCS"** ou navegar para `/operational-audit`.
 * **O que validar (Playwright):**
   * Validar que a tabela de log de auditoria ocupa 100% da largura visível da tela.
   * Validar que o botão flutuante verde (FAB) **"Nova Viagem"** foi removido.
-  * Validar que a coluna do cabeçalho da tabela exibe `"AUTOR / SISTEMA"`.
+  * Validar que a coluna do cabeçalho da tabela exibe `"Autor / Sistema"`.
   * Validar que a coluna `"HORA"` exibe valores formatados como `HH:mm:ss LOCAL`.
 
 ---

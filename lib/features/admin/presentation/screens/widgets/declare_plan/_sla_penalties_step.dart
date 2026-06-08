@@ -299,6 +299,7 @@ class Step3SlaPenalties extends ConsumerWidget {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 240),
               child: DropdownButtonFormField<TransportVertical>(
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Vertical de Transporte',
                   prefixIcon: Icon(Icons.category_outlined, size: 20),
@@ -306,7 +307,10 @@ class Step3SlaPenalties extends ConsumerWidget {
                 ),
                 items: TransportVertical.values
                     .map(
-                      (v) => DropdownMenuItem(value: v, child: Text(v.label)),
+                      (v) => DropdownMenuItem(
+                        value: v,
+                        child: Text(v.label, overflow: TextOverflow.ellipsis),
+                      ),
                     )
                     .toList(),
                 onChanged: (v) {

@@ -20,6 +20,8 @@ class AuditLog extends Equatable {
   final DateTime timestamp;
   final ActorType? actorType;
   final String? impersonatorId;
+  final String? vehiclePlate;
+  final String? routeName;
 
   AuditLog({
     required this.id,
@@ -33,6 +35,8 @@ class AuditLog extends Equatable {
     required this.timestamp,
     this.actorType,
     this.impersonatorId,
+    this.vehiclePlate,
+    this.routeName,
   }) {
     // INV-10: If actor is impersonator, impersonatorId is mandatory.
     if (actorType == ActorType.impersonator && impersonatorId == null) {
@@ -58,6 +62,8 @@ class AuditLog extends Equatable {
           ? ActorType.fromString(json['actor_type'] as String)
           : null,
       impersonatorId: json['impersonator_id'] as String?,
+      vehiclePlate: json['vehicle_plate'] as String?,
+      routeName: json['route_name'] as String?,
     );
   }
 
@@ -74,6 +80,8 @@ class AuditLog extends Equatable {
       'timestamp': timestamp.toIso8601String(),
       if (actorType != null) 'actor_type': actorType!.dbValue,
       if (impersonatorId != null) 'impersonator_id': impersonatorId,
+      if (vehiclePlate != null) 'vehicle_plate': vehiclePlate,
+      if (routeName != null) 'route_name': routeName,
     };
   }
 
@@ -90,5 +98,7 @@ class AuditLog extends Equatable {
     timestamp,
     actorType,
     impersonatorId,
+    vehiclePlate,
+    routeName,
   ];
 }

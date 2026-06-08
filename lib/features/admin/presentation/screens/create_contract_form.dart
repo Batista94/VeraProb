@@ -102,6 +102,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     if (_validFrom == null || _validUntil == null) {
@@ -127,6 +129,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       setState(() => _errorMessage = 'Sessão inválida. Faça login novamente.');
       return;
     }
+
+    final navigator = Navigator.of(context);
 
     setState(() {
       _isSubmitting = true;
@@ -159,7 +163,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
       );
 
       if (result.isSuccess) {
-        if (mounted) Navigator.of(context).pop(result.contractId);
+        if (mounted) navigator.pop(result.contractId);
       } else {
         setState(() => _errorMessage = result.errorMessage);
       }

@@ -34,10 +34,10 @@ void main() {
       expect(scaffold.endDrawer, isNotNull);
     });
 
-    testWidgets('Colunas devem exibir AUTOR / SISTEMA', (tester) async {
+    testWidgets('Colunas devem exibir Autor / Sistema', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.text('AUTOR / SISTEMA'), findsOneWidget);
+      expect(find.text('Autor / Sistema'), findsOneWidget);
     });
   });
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -214,7 +215,7 @@ class _AuditTab extends ConsumerWidget {
         child: Row(
           children: [
             _FilterChip(
-              label: filters.silentMode ? '🔇 Modo Silencioso' : '📢 Ver Tudo',
+              label: filters.silentMode ? '⚠️ Apenas Exceções' : '📢 Ver Tudo',
               isActive: filters.silentMode,
               onTap: () =>
                   ref.read(auditFilterProvider.notifier).toggleSilentMode(),
@@ -222,7 +223,11 @@ class _AuditTab extends ConsumerWidget {
             ),
             const SizedBox(width: 8),
             _FilterChip(
-              label: filters.category ?? 'Todas Categorias',
+              label: filters.category == 'SYSTEM'
+                  ? 'Sistema'
+                  : (filters.category == 'OPERATOR'
+                        ? 'Operador'
+                        : 'Todas Categorias'),
               isActive: filters.category != null,
               onTap: () {
                 ref
@@ -267,18 +272,18 @@ class _AuditTab extends ConsumerWidget {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Expanded(flex: 2, child: Text('HORA', style: _headerStyle)),
+            Expanded(flex: 2, child: Text('Hora', style: _headerStyle)),
             Expanded(
               flex: 3,
-              child: Text('CICLO DE VIDA', style: _headerStyle),
+              child: Text('Ciclo de Vida', style: _headerStyle),
             ),
-            Expanded(flex: 2, child: Text('CATEGORIA', style: _headerStyle)),
-            Expanded(flex: 5, child: Text('AÇÃO', style: _headerStyle)),
-            Expanded(flex: 3, child: Text('VEÍCULO', style: _headerStyle)),
-            Expanded(flex: 3, child: Text('ROTA', style: _headerStyle)),
+            Expanded(flex: 2, child: Text('Categoria', style: _headerStyle)),
+            Expanded(flex: 5, child: Text('Ação', style: _headerStyle)),
+            Expanded(flex: 3, child: Text('Veículo', style: _headerStyle)),
+            Expanded(flex: 3, child: Text('Rota', style: _headerStyle)),
             Expanded(
               flex: 3,
-              child: Text('AUTOR / SISTEMA', style: _headerStyle),
+              child: Text('Autor / Sistema', style: _headerStyle),
             ),
           ],
         ),
@@ -315,13 +320,16 @@ class _AuditTab extends ConsumerWidget {
                 children: [
                   Text(
                     DateFormat('HH:mm:ss').format(log.timestamp.toLocal()),
-                    style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                    style: _cellStyle.copyWith(
+                      fontFamily: 'monospace',
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                   const Text(
-                    'LOCAL',
+                    'Local',
                     style: TextStyle(
                       fontSize: 9,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       color: VeraProbColors.textSecondary,
                     ),
                   ),
@@ -377,12 +385,12 @@ class _AuditTab extends ConsumerWidget {
                   ),
                   decoration: BoxDecoration(
                     color: log.category == 'SYSTEM'
-                        ? VeraProbColors.info.withValues(alpha: 0.2)
-                        : VeraProbColors.warning.withValues(alpha: 0.2),
+                        ? VeraProbColors.info.withValues(alpha: 0.15)
+                        : VeraProbColors.warning.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    log.category,
+                    log.category == 'SYSTEM' ? 'Sistema' : 'Operador',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -397,7 +405,7 @@ class _AuditTab extends ConsumerWidget {
             Expanded(
               flex: 5,
               child: Text(
-                log.action,
+                _translateAction(log.action),
                 style: _cellStyle.copyWith(fontWeight: FontWeight.w500),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -590,100 +598,121 @@ class _AuditSidePanel extends ConsumerWidget {
 
     return Container(
       color: VeraProbColors.surface,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Detalhes do Registro',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: VeraProbColors.textPrimary,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 20),
-                onPressed: () =>
-                    ref.read(selectedAuditLogProvider.notifier).set(null),
-                color: VeraProbColors.textSecondary,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          _DetailRow(label: 'ID', value: log.id, isMonospace: true),
-          _DetailRow(
-            label: 'Timestamp UTC',
-            value: DateFormat('dd/MM/yyyy HH:mm:ss').format(log.timestamp),
-          ),
-          _DetailRow(
-            label: 'Tempo Local',
-            value: DateFormat(
-              'dd/MM/yyyy HH:mm:ss',
-            ).format(log.timestamp.toLocal()),
-          ),
-          _DetailRow(label: 'Ação', value: log.action),
-          _DetailRow(
-            label: 'Autor',
-            value: '${log.actorName ?? 'N/D'} (${log.actorId})',
-          ),
-          const Divider(height: 32, color: VeraProbColors.border),
-          const Text(
-            'Contexto da Entidade',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          _DetailRow(
-            label: 'Veículo/Placa',
-            value: log.vehiclePlate ?? 'Não aplicável',
-          ),
-          _DetailRow(label: 'Rota', value: log.routeName ?? 'Não aplicável'),
-          _DetailRow(
-            label: 'Status no Momento',
-            value: log.statusLabel ?? 'Desconhecido',
-          ),
-          if (log.lifecycleStatus != null)
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             _DetailRow(
-              label: 'Ciclo de Vida',
-              value: log.lifecycleStatus!.label,
+              label: 'ID',
+              value: log.id,
+              isMonospace: true,
+              isCopyable: true,
             ),
-          if (log.details != null) ...[
+            _DetailRow(
+              label: 'Timestamp UTC',
+              value: DateFormat('dd/MM/yyyy HH:mm:ss').format(log.timestamp),
+            ),
+            _DetailRow(
+              label: 'Tempo Local',
+              value: DateFormat(
+                'dd/MM/yyyy HH:mm:ss',
+              ).format(log.timestamp.toLocal()),
+            ),
+            _DetailRow(
+              label: 'Ação',
+              value: _translateAction(log.action),
+              isCopyable: true,
+            ),
+            _DetailRow(
+              label: 'Autor',
+              value: '${log.actorName ?? 'N/D'} (${log.actorId})',
+              isCopyable: true,
+            ),
             const Divider(height: 32, color: VeraProbColors.border),
             const Text(
-              'Carga Útil / Razão',
+              'Contexto da Entidade',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: VeraProbColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: VeraProbColors.background,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: VeraProbColors.border),
+            const SizedBox(height: 16),
+            _DetailRow(
+              label: 'Veículo/Placa',
+              value: log.vehiclePlate ?? 'Não aplicável',
+              isCopyable: log.vehiclePlate != null,
+            ),
+            _DetailRow(
+              label: 'Rota',
+              value: log.routeName ?? 'Não aplicável',
+              isCopyable: log.routeName != null,
+            ),
+            _DetailRow(
+              label: 'Status no Momento',
+              value: log.statusLabel ?? 'Desconhecido',
+            ),
+            if (log.lifecycleStatus != null)
+              _DetailRow(
+                label: 'Ciclo de Vida',
+                value: log.lifecycleStatus!.label,
               ),
-              child: Text(
-                log.details!,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 13,
-                  color: VeraProbColors.textPrimary,
+            if (log.details != null) ...[
+              const Divider(height: 32, color: VeraProbColors.border),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Carga Útil / Razão',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: VeraProbColors.textSecondary,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_all, size: 16),
+                    tooltip: 'Copiar Carga Útil',
+                    onPressed: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      await Clipboard.setData(
+                        ClipboardData(text: log.details!),
+                      );
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Carga útil copiada para a área de transferência',
+                          ),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    color: VeraProbColors.textSecondary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: VeraProbColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: VeraProbColors.border),
+                ),
+                child: SelectableText(
+                  log.details!,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    color: VeraProbColors.textPrimary,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -693,45 +722,134 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isMonospace;
+  final bool isCopyable;
 
   const _DetailRow({
     required this.label,
     required this.value,
     this.isMonospace = false,
+    this.isCopyable = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                color: VeraProbColors.textSecondary,
-              ),
-              overflow: TextOverflow.ellipsis,
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: VeraProbColors.textSecondary,
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                color: VeraProbColors.textPrimary,
-                fontFamily: isMonospace ? 'monospace' : null,
-                fontWeight: FontWeight.w500,
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: SelectableText(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: VeraProbColors.textPrimary,
+                    fontFamily: isMonospace ? 'monospace' : null,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
+              if (isCopyable &&
+                  value != 'Não aplicável' &&
+                  value.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 14),
+                  tooltip: 'Copiar para a área de transferência',
+                  color: VeraProbColors.textSecondary,
+                  padding: const EdgeInsets.all(8),
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await Clipboard.setData(ClipboardData(text: value));
+                    messenger.showSnackBar(
+                      const SnackBar(
+                        content: Text('Copiado para a área de transferência'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
           ),
         ],
       ),
     );
+  }
+}
+
+String _translateAction(String action) {
+  switch (action.toUpperCase()) {
+    case 'VERDICT_REFUSED':
+      return 'Veredito Recusado';
+    case 'VERDICT_SEALED':
+      return 'Veredito Selado';
+    case 'SANCTION_RECOMMENDED':
+      return 'Sanção Recomendada';
+    case 'SANCTION_DISPUTED':
+      return 'Sanção Contestada';
+    case 'DISPUTE_ACCEPTED':
+      return 'Contestação Aceita';
+    case 'DISPUTE_OVERTURNED':
+      return 'Contestação Anulada';
+    case 'DISPUTE_RETRACTED':
+      return 'Contestação Retirada';
+    case 'CONTRACT_CREATED':
+      return 'Contrato Criado';
+    case 'CONTRACT_ACTIVATED':
+      return 'Contrato Ativado';
+    case 'CONTRACT_CLOSED':
+      return 'Contrato Fechado';
+    case 'CONTRACT_SUBMITTED_FOR_APPROVAL':
+      return 'Contrato Submetido para Aprovação';
+    case 'CONTRACT_ACCEPTED_BY_CONTRACTOR':
+      return 'Contrato Aceito pela Contratada';
+    case 'EXECUTION_BOUND':
+      return 'Serviço Vinculado';
+    case 'NO_SHOW_DECLARED':
+      return 'No-Show Declarado';
+    case 'EVIDENCE_GAP_DECLARED':
+      return 'Lacuna de Evidência';
+    case 'TRANSIT_STARTED':
+      return 'Trânsito Iniciado';
+    case 'COMPLETED_WITH_GAPS':
+      return 'Concluído com Lacunas';
+    case 'EXECUTION_INHIBITED':
+      return 'Execução Inibida';
+    case 'OCCURRENCE_REGISTERED':
+      return 'Ocorrência Registrada';
+    case 'TRIP_INTERRUPTED':
+      return 'Viagem Interrompida';
+    case 'TRIP_CANCELLED':
+      return 'Viagem Cancelada';
+    case 'JUSTIFICATION_SUBMITTED':
+      return 'Justificativa Submetida';
+    case 'JUSTIFICATION_APPROVED':
+      return 'Justificativa Aprovada';
+    case 'JUSTIFICATION_REJECTED':
+      return 'Justificativa Rejeitada';
+    case 'SLA_JUSTIFICATION_SUBMITTED':
+      return 'Justificativa de SLA Submetida';
+    case 'SLA_JUSTIFICATION_EXPIRED':
+      return 'Justificativa de SLA Expirada';
+    default:
+      return action.replaceAll('_', ' ');
   }
 }
 

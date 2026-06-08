@@ -244,19 +244,31 @@ class Step1FiscalData extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: timezone,
             decoration: const InputDecoration(labelText: 'Fuso Horário *'),
             items: kBrTimezones
-                .map((tz) => DropdownMenuItem(value: tz, child: Text(tz)))
+                .map(
+                  (tz) => DropdownMenuItem(
+                    value: tz,
+                    child: Text(tz, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => onTimezoneChanged(v!),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
+            isExpanded: true,
             initialValue: currency,
             decoration: const InputDecoration(labelText: 'Moeda *'),
             items: kCurrencies
-                .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                .map(
+                  (c) => DropdownMenuItem(
+                    value: c,
+                    child: Text(c, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: (v) => onCurrencyChanged(v!),
           ),

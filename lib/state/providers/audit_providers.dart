@@ -86,8 +86,9 @@ final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
           : 'Operador [${log.operatorId.length >= 4 ? log.operatorId.substring(0, 4) : log.operatorId}]',
       details: details,
       category: category,
-      vehiclePlate: tripInfo?.vehiclePlate ?? tripInfo?.vehicleId,
-      routeName: tripInfo?.routeShortName ?? tripInfo?.routeId,
+      vehiclePlate:
+          tripInfo?.vehiclePlate ?? tripInfo?.vehicleId ?? log.vehiclePlate,
+      routeName: tripInfo?.routeShortName ?? tripInfo?.routeId ?? log.routeName,
       statusLabel: tripInfo?.status.label,
       lifecycleStatus: _determineLifecycleStatus(log.actionType),
     );

@@ -571,33 +571,56 @@ class _PlanLimitsSection extends StatelessWidget {
       const _SectionTitle('Plano & Limites'),
       const SizedBox(height: 16),
       DropdownButtonFormField<String>(
+        isExpanded: true,
         initialValue: planType,
         decoration: const InputDecoration(
           labelText: 'Plano',
           border: OutlineInputBorder(),
         ),
         items: const [
-          DropdownMenuItem(value: null, child: Text('Não Definido')),
-          DropdownMenuItem(value: 'starter', child: Text('Starter')),
-          DropdownMenuItem(value: 'professional', child: Text('Professional')),
-          DropdownMenuItem(value: 'enterprise', child: Text('Enterprise')),
+          DropdownMenuItem(
+            value: null,
+            child: Text('Não Definido', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'starter',
+            child: Text('Starter', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'professional',
+            child: Text('Professional', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'enterprise',
+            child: Text('Enterprise', overflow: TextOverflow.ellipsis),
+          ),
         ],
         onChanged: enabled ? onPlanTypeChanged : null,
       ),
       const SizedBox(height: 16),
       DropdownButtonFormField<String>(
+        isExpanded: true,
         initialValue: orgType,
         decoration: const InputDecoration(
           labelText: 'Tipo de Organização',
           border: OutlineInputBorder(),
         ),
         items: const [
-          DropdownMenuItem(value: null, child: Text('Não Definido')),
-          DropdownMenuItem(value: 'CARGO', child: Text('Cargas (Cargo)')),
-          DropdownMenuItem(value: 'PASSENGER', child: Text('Passageiros')),
+          DropdownMenuItem(
+            value: null,
+            child: Text('Não Definido', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'CARGO',
+            child: Text('Cargas (Cargo)', overflow: TextOverflow.ellipsis),
+          ),
+          DropdownMenuItem(
+            value: 'PASSENGER',
+            child: Text('Passageiros', overflow: TextOverflow.ellipsis),
+          ),
           DropdownMenuItem(
             value: 'URBAN_LOGISTICS',
-            child: Text('Logística Urbana'),
+            child: Text('Logística Urbana', overflow: TextOverflow.ellipsis),
           ),
         ],
         onChanged: enabled ? onOrgTypeChanged : null,

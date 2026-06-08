@@ -518,6 +518,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   suffixText: 'm',
                   helperText:
                       'Raio em metros para detectar chegada e saída da zona.',
+                  helperMaxLines: 2,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
