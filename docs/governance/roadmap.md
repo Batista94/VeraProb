@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-06-01
-**Current Status:** Phase 10.4.C (Completed) · [NEXT: Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)]
+**Current Status:** Phase 10.4.C (In Progress) · [NEXT: Phase 10.4.C — Forensic Evidence UI Integration]
 
 ---
 
@@ -36,14 +36,11 @@
 
 ## Phase 10 — CI/CD & Launch Preparation
 
-### [x] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
-- Implementar a persistência de um snapshot JSON imutável da regra de SLA exata no momento em que um veredito é selado. O objetivo é garantir proteção jurídica temporal, provando que alterações futuras no cadastro do contrato não afetam infrações passadas.
+### [/] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
+- [x] **[BACKEND] Snapshot Persistence:** Persistência de um snapshot JSON imutável da regra de SLA exata e assinatura digital no momento em que um veredito é selado.
+- [ ] **[UX/UI] Evidence Audit Modal:** Exibição do snapshot em modo Read-Only na Fila Auditora para vereditos com status [🔒 Selado] e verificação visual do selo de integridade (Hash Match).
 
-### [ ] Phase 10.5.A — Automated Enterprise Showcase (Seed & Provisioning)
-
-- Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
-
-### [ ] Phase 10.5.B — Bulk SLA & Contractor Consent Flow
+### [ ] Phase 10.5 — Bulk SLA & Contractor Consent Flow
 
 - [ ] **[BIZ] Bulk SLA Rule Importer (CSV):** Implementar funcionalidade de importação em massa para parâmetros de regras de SLA vinculadas a contratos (multas, limites de tolerância), evitando a necessidade de cadastro manual individual pós-importação de contratos.
 - [ ] **[BIZ] Rule Update Consent Flow (Contractor Sign-off):** Implementar fluxo de consentimento/aceite digital por parte da transportadora quando regras ou penalidades de SLA forem alteradas ou renegociadas no Rule Studio, mitigando riscos de alegações de alteração unilateral de regras em auditorias futuras.
@@ -74,6 +71,14 @@
 - [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
 - [ ] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
 - [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
+- [ ] **[near-term] SLA-timer de disputa (aging):** Toda disputa tem prazo de resolução (ex.: 5 dias úteis). Dashboard de "disputas vencendo/vencidas" + auto-escalonamento. Hoje uma disputa pode ficar `disputed` indefinidamente.
+- [ ] **[near-term] Anexo de evidência do contratante:** "Aguardando Evidência" pressupõe que o contestante envia prova. Falta o canal de upload (foto/doc/telemetria externa) vinculado por `organization_id` (INV-1) e selado por SHA-256 (INV-9) — o auditor decide *sobre* algo.
+- [ ] **[near-term] Taxonomia de motivos (reason codes) vs texto livre:** `rejection_reason`/`resolutionReason` livres dificultam analytics e auditoria. Enum versionado de motivos (ex.: `FORCE_MAJEURE`, `SENSOR_FAULT`, `CONTRACT_EXCEPTION`) + campo livre opcional. Permite relatórios de "por que multas são inibidas".
+- [ ] **Dual-control (quatro-olhos) em vereditos de alto valor:** Acima de um threshold de `fineCents`, exigir segundo auditor para `overturn`/`apply` — controle anti-fraude padrão SOC2/Tier-1.
+- [ ] **Notificação/webhook na resolução:** Resend/PostHog/webhook ao contratante quando disputa é resolvida (transparência + reduz re-contestação). Já há stack Resend disponível.
+- [ ] **Resolução em lote + filtros:** Auditor com fila grande precisa de bulk-resolve e filtros (clausula/veículo/contrato/valor) na aba Concluídos — reduz custo operacional (margem do cliente final).
+- [ ] **Atomicidade total (RPC transacional):** A guarda idempotente fecha a janela; o passo definitivo é RPC `SECURITY DEFINER` append+update atômico, eliminando o par não-transacional também em approve/reject (dívida pré-existente apontada por QA-Security).
+- [ ] **Trilha de "quem cancelou":** No retract, preservamos `reviewed_by` do disputante; o ledger `DISPUTE_RETRACTED` registra o cancelador. Expor essa cadeia na UI (timeline de estados do card) eleva a explicabilidade (INV-23).
 
 ### [ ] Phase 10.9 — Operational Intelligence & Decision
 
@@ -108,6 +113,10 @@
 - [ ] **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
 - [ ] **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
 - [ ] **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
+
+### [ ] Phase 10.12 — Automated Enterprise Showcase (Seed & Provisioning)
+
+- Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
 
 ---
 

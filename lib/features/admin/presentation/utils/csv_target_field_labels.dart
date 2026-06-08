@@ -21,9 +21,9 @@ const Map<CsvTargetField, String> _kFieldLabels = {
   CsvTargetField.endDate: 'Data de Término',
   CsvTargetField.zoneName: 'Nome da Zona',
   CsvTargetField.zoneCode: 'Código Externo da Zona',
-  CsvTargetField.latitude: 'Latitude (Geofence)',
-  CsvTargetField.longitude: 'Longitude (Geofence)',
-  CsvTargetField.radiusMeters: 'Raio em Metros',
+  CsvTargetField.latitude: 'Latitude da Zona',
+  CsvTargetField.longitude: 'Longitude da Zona',
+  CsvTargetField.radiusMeters: 'Distância de Detecção (metros)',
   CsvTargetField.externalId: 'ID Externo (Deduplicação)',
   CsvTargetField.notes: 'Observações',
 };

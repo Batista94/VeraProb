@@ -59,13 +59,22 @@ TEST_GATE_BLOCK="false"
 [[ "${GITHUB_BASE_REF:-}" == "main" ]] && TEST_GATE_BLOCK="true"
 [[ "${STRICT_TESTS:-0}" == "1" ]] && TEST_GATE_BLOCK="true"
 
-# ── Color codes ──────────────────────────────────────────────────────────────
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-BOLD='\033[1m'
-NC='\033[0m'
+# ── Color codes (TTY-gated — no escape codes in piped/VSCode contexts) ───────
+if [[ -t 1 ]]; then
+  RED='\033[0;31m'
+  YELLOW='\033[1;33m'
+  GREEN='\033[0;32m'
+  BLUE='\033[0;34m'
+  BOLD='\033[1m'
+  NC='\033[0m'
+else
+  RED=''
+  YELLOW=''
+  GREEN=''
+  BLUE=''
+  BOLD=''
+  NC=''
+fi
 
 # ── Command Detection (top-level, shared by all steps) ───────────────────────
 NODE_CMD="node"
@@ -219,12 +228,40 @@ else
     echo -e "  Migrations detected ($MIGRATIONS_COUNT files). Checking for type sync..."
     TYPE_FILE="supabase/types.database.ts"
 
+    # Detect schema-neutral migrations (RLS/policy/grant only — no structural DDL).
+    # These do not change TypeScript types, so a missing types.database.ts diff is
+    # expected and correct. Downgrade to [WARN] to avoid false-positive BLOCKs.
+    IS_SCHEMA_NEUTRAL="true"
+    while IFS= read -r mig_path; do
+      [[ -z "$mig_path" ]] && continue
+      mig_path="${mig_path//$'\r'/}"  # strip Windows CR from path
+      [[ -z "$mig_path" ]] && continue
+      # Read via git show (staged content — robust on Windows regardless of CWD)
+      MIG_CONTENT=$(git show ":$mig_path" 2>/dev/null || cat "$mig_path" 2>/dev/null || true)
+      if [[ -z "$MIG_CONTENT" ]]; then
+        IS_SCHEMA_NEUTRAL="false"
+        break
+      fi
+      STRUCTURAL_DDL=$(echo "$MIG_CONTENT" | grep -iE \
+        "^\s*(CREATE|ALTER|DROP)\s+(TABLE|INDEX|SEQUENCE|TYPE|VIEW|EXTENSION)\b" \
+        2>/dev/null || true)
+      if [[ -n "$STRUCTURAL_DDL" ]]; then
+        IS_SCHEMA_NEUTRAL="false"
+        break
+      fi
+    done <<< "$(echo "$CHANGED_FILES" | grep "supabase/migrations/.*\.sql")"
+
     # Check if type file is also changed
     if ! echo "$CHANGED_FILES" | grep -q "$TYPE_FILE"; then
-       echo -e "  ${RED}${BOLD}[BLOCK]${NC} Migrations updated but $TYPE_FILE is NOT in this PR."
-       TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+      if [[ "$IS_SCHEMA_NEUTRAL" == "true" ]]; then
+        echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Schema-neutral migration (policies/grants only) — $TYPE_FILE content unchanged. Verify manually."
+        TOTAL_WARNS=$((TOTAL_WARNS + 1))
+      else
+        echo -e "  ${RED}${BOLD}[BLOCK]${NC} Migrations updated but $TYPE_FILE is NOT in this PR."
+        TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+      fi
     else
-       echo -e "  ${GREEN}Infrastructure contract present in PR.${NC}"
+      echo -e "  ${GREEN}Infrastructure contract present in PR.${NC}"
     fi
   else
     echo -e "  ${GREEN}No migrations detected. Parity sync skipped.${NC}"

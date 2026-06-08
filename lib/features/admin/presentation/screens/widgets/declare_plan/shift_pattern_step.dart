@@ -219,6 +219,7 @@ class ShiftPatternStep extends StatelessWidget {
 
         // ── Fuso Horário ──────────────────────────────────────
         DropdownButtonFormField<String>(
+          isExpanded: true,
           initialValue: kBrTimezones.contains(timezone)
               ? timezone
               : kBrTimezones.first,
@@ -230,7 +231,12 @@ class ShiftPatternStep extends StatelessWidget {
                 'Os horários de chegada/partida serão interpretados neste fuso.',
           ),
           items: kBrTimezones
-              .map((tz) => DropdownMenuItem(value: tz, child: Text(tz)))
+              .map(
+                (tz) => DropdownMenuItem(
+                  value: tz,
+                  child: Text(tz, overflow: TextOverflow.ellipsis),
+                ),
+              )
               .toList(),
           onChanged: (v) => onTimezoneChanged(v ?? timezone),
         ),
@@ -238,6 +244,7 @@ class ShiftPatternStep extends StatelessWidget {
 
         // ── Categoria de Veículo Exigida ──────────────────────
         DropdownButtonFormField<VehicleCategory>(
+          isExpanded: true,
           initialValue: requiredVehicleCategory,
           decoration: const InputDecoration(
             labelText: 'Categoria de Veículo Exigida *',
@@ -247,7 +254,12 @@ class ShiftPatternStep extends StatelessWidget {
                 'Define a cláusula de downgrade — viagens realizadas com veículo inferior geram multa contratual.',
           ),
           items: VehicleCategory.values
-              .map((c) => DropdownMenuItem(value: c, child: Text(c.label)))
+              .map(
+                (c) => DropdownMenuItem(
+                  value: c,
+                  child: Text(c.label, overflow: TextOverflow.ellipsis),
+                ),
+              )
               .toList(),
           onChanged: (v) =>
               onVehicleCategoryChanged(v ?? requiredVehicleCategory),
@@ -256,6 +268,7 @@ class ShiftPatternStep extends StatelessWidget {
 
         // ── Ciclo de Recorrência (WeekCycle) ──────────────────
         DropdownButtonFormField<WeekCycle>(
+          isExpanded: true,
           initialValue: weekCycle,
           decoration: const InputDecoration(
             labelText: 'Ciclo de Recorrência *',
@@ -267,23 +280,23 @@ class ShiftPatternStep extends StatelessWidget {
           items: const [
             DropdownMenuItem(
               value: WeekCycle.everyWeek,
-              child: Text('Toda Semana'),
+              child: Text('Toda Semana', overflow: TextOverflow.ellipsis),
             ),
             DropdownMenuItem(
               value: WeekCycle.weekA,
-              child: Text('Semana A (1/4)'),
+              child: Text('Semana A (1/4)', overflow: TextOverflow.ellipsis),
             ),
             DropdownMenuItem(
               value: WeekCycle.weekB,
-              child: Text('Semana B (2/4)'),
+              child: Text('Semana B (2/4)', overflow: TextOverflow.ellipsis),
             ),
             DropdownMenuItem(
               value: WeekCycle.weekC,
-              child: Text('Semana C (3/4)'),
+              child: Text('Semana C (3/4)', overflow: TextOverflow.ellipsis),
             ),
             DropdownMenuItem(
               value: WeekCycle.weekD,
-              child: Text('Semana D (4/4)'),
+              child: Text('Semana D (4/4)', overflow: TextOverflow.ellipsis),
             ),
           ],
           onChanged: (v) => onWeekCycleChanged(v ?? weekCycle),

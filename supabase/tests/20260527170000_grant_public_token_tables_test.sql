@@ -18,7 +18,8 @@ SELECT table_privs_are('public', 'telegram_binding_tokens', 'authenticated', ARR
 SELECT table_privs_are('public', 'telegram_binding_tokens', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on telegram_binding_tokens');
 
 -- 3. telegram_pending_links
-SELECT table_privs_are('public', 'telegram_pending_links', 'anon', ARRAY['SELECT', 'INSERT', 'UPDATE'], 'anon should have SELECT, INSERT, UPDATE on telegram_pending_links');
+-- anon access revoked by 20260804000001 (cross-tenant R/W hole; service_role/RPCs only).
+SELECT table_privs_are('public', 'telegram_pending_links', 'anon', ARRAY[]::text[], 'anon should have NO privileges on telegram_pending_links (locked down 20260804000001)');
 SELECT table_privs_are('public', 'telegram_pending_links', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE'], 'authenticated should have SELECT, INSERT, UPDATE on telegram_pending_links');
 SELECT table_privs_are('public', 'telegram_pending_links', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on telegram_pending_links');
 

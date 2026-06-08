@@ -17,6 +17,9 @@ class CsvUploadStep extends ConsumerWidget {
         ? state.targetEntity
         : 'operator';
 
+    final isContract =
+        targetEntity == 'contract' || targetEntity == 'contracts';
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -30,6 +33,36 @@ class CsvUploadStep extends ConsumerWidget {
             'Formatos suportados: .csv, .tsv · Codificação UTF-8',
             style: CsvT.labelStyle(color: CsvT.textLo, size: 12),
           ),
+          if (isContract) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: CsvT.warning.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(CsvT.radiusChip),
+                border: Border.all(color: CsvT.warning.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: CsvT.warning,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Flexible(
+                    child: Text(
+                      'Contratos referenciam Contratantes pelo CNPJ. '
+                      'Certifique-se de que todos os Contratantes já estão '
+                      'cadastrados antes de importar.',
+                      style: CsvT.labelStyle(color: CsvT.warning, size: 12),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

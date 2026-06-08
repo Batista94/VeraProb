@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
 void main() {
@@ -13,6 +16,12 @@ void main() {
       overrides: [
         isSuperAdminProvider.overrideWithValue(isSuperAdmin),
         isSuperAdminAal2Provider.overrideWithValue(isAal2),
+        securityIncidentLoggerProvider.overrideWithValue(
+          SecurityIncidentLogger(null),
+        ),
+        authStateProvider.overrideWith(
+          (ref) => const Stream<AuthState>.empty(),
+        ),
       ],
       child: const MaterialApp(home: SuperAdminShell()),
     );

@@ -278,10 +278,11 @@ class Step3SlaPenalties extends ConsumerWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final allTemplatesAsync = ref.watch(allTemplatesProvider);
-
+  Widget _buildTemplateHeader(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<SlaTemplateView>> allTemplatesAsync,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -295,9 +296,10 @@ class Step3SlaPenalties extends ConsumerWidget {
           runSpacing: 8,
           crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            SizedBox(
-              width: 260,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 240),
               child: DropdownButtonFormField<TransportVertical>(
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Vertical de Transporte',
                   prefixIcon: Icon(Icons.category_outlined, size: 20),
@@ -305,7 +307,10 @@ class Step3SlaPenalties extends ConsumerWidget {
                 ),
                 items: TransportVertical.values
                     .map(
-                      (v) => DropdownMenuItem(value: v, child: Text(v.label)),
+                      (v) => DropdownMenuItem(
+                        value: v,
+                        child: Text(v.label, overflow: TextOverflow.ellipsis),
+                      ),
                     )
                     .toList(),
                 onChanged: (v) {
@@ -342,7 +347,14 @@ class Step3SlaPenalties extends ConsumerWidget {
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(delayToleranceFocus),
         ),
-        const SizedBox(height: VeraProbSpacing.lg),
+      ],
+    );
+  }
+
+  Widget _buildPunctualitySection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         const SectionHeader(
           icon: Icons.schedule,
           label: 'Pontualidade e Janelas Operacionais',
@@ -377,7 +389,14 @@ class Step3SlaPenalties extends ConsumerWidget {
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(noShowMultiplierFocus),
         ),
-        const SizedBox(height: VeraProbSpacing.lg),
+      ],
+    );
+  }
+
+  Widget _buildCriticalFailuresSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         const SectionHeader(
           icon: Icons.warning_amber_rounded,
           label: 'Falhas Críticas (Cláusulas de Penalidade)',
@@ -402,7 +421,14 @@ class Step3SlaPenalties extends ConsumerWidget {
           onSubmitted: (_) =>
               FocusScope.of(context).requestFocus(delayMinuteValueFocus),
         ),
-        const SizedBox(height: VeraProbSpacing.lg),
+      ],
+    );
+  }
+
+  Widget _buildFleetQualitySection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
         const SectionHeader(
           icon: Icons.directions_bus,
           label: 'Qualidade da Frota',
@@ -446,82 +472,103 @@ class Step3SlaPenalties extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: VeraProbSpacing.md),
-        ExpansionTile(
-          leading: const Icon(Icons.tune),
-          title: const Text('Opções Avançadas'),
-          initiallyExpanded: false,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(
-                left: VeraProbSpacing.md,
-                right: VeraProbSpacing.md,
-                bottom: VeraProbSpacing.md,
-              ),
-              child: Column(
+      ],
+    );
+  }
+
+  Widget _buildAdvancedOptionsSection(BuildContext context) {
+    return ExpansionTile(
+      leading: const Icon(Icons.tune),
+      title: const Text('Opções Avançadas'),
+      initiallyExpanded: false,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            left: VeraProbSpacing.md,
+            right: VeraProbSpacing.md,
+            bottom: VeraProbSpacing.md,
+          ),
+          child: Column(
+            children: [
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: earlyArrivalToleranceController,
-                          focusNode: earlyArrivalFocus,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Tolerância de Antecipação (min)',
-                            suffixText: ' min',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onSubmitted: (_) => FocusScope.of(
-                            context,
-                          ).requestFocus(dwellTimeFocus),
+                  Expanded(
+                    child: TextField(
+                      controller: earlyArrivalToleranceController,
+                      focusNode: earlyArrivalFocus,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Tolerância de Antecipação (min)',
+                        suffixText: ' min',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onSubmitted: (_) =>
+                          FocusScope.of(context).requestFocus(dwellTimeFocus),
+                    ),
+                  ),
+                  const SizedBox(width: VeraProbSpacing.sm),
+                  Expanded(
+                    child: TextField(
+                      controller: dwellTimeController,
+                      focusNode: dwellTimeFocus,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Tempo Mínimo de Permanência (min)',
+                        suffixText: ' min',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                      onSubmitted: (_) => FocusScope.of(
+                        context,
+                      ).requestFocus(noShowThresholdFocus),
+                    ),
+                  ),
+                  const SizedBox(width: VeraProbSpacing.sm),
+                  Expanded(
+                    child: TextField(
+                      controller: noShowThresholdController,
+                      focusNode: noShowThresholdFocus,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Teto para No-Show Automático (min)',
+                        suffixText: ' min',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        suffixIcon: InfoTooltip(
+                          message:
+                              'Atraso (em minutos) a partir do qual o sistema '
+                              'classifica automaticamente a execução como No-Show. '
+                              'Padrão de mercado: 60 min.',
                         ),
                       ),
-                      const SizedBox(width: VeraProbSpacing.sm),
-                      Expanded(
-                        child: TextField(
-                          controller: dwellTimeController,
-                          focusNode: dwellTimeFocus,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Tempo Mínimo de Permanência (min)',
-                            suffixText: ' min',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                          ),
-                          onSubmitted: (_) => FocusScope.of(
-                            context,
-                          ).requestFocus(noShowThresholdFocus),
-                        ),
-                      ),
-                      const SizedBox(width: VeraProbSpacing.sm),
-                      Expanded(
-                        child: TextField(
-                          controller: noShowThresholdController,
-                          focusNode: noShowThresholdFocus,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            labelText: 'Teto para No-Show Automático (min)',
-                            suffixText: ' min',
-                            border: OutlineInputBorder(),
-                            isDense: true,
-                            suffixIcon: InfoTooltip(
-                              message:
-                                  'Atraso (em minutos) a partir do qual o sistema '
-                                  'classifica automaticamente a execução como No-Show. '
-                                  'Padrão de mercado: 60 min.',
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final allTemplatesAsync = ref.watch(allTemplatesProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildTemplateHeader(context, ref, allTemplatesAsync),
+        const SizedBox(height: VeraProbSpacing.lg),
+        _buildPunctualitySection(context),
+        const SizedBox(height: VeraProbSpacing.lg),
+        _buildCriticalFailuresSection(context),
+        const SizedBox(height: VeraProbSpacing.lg),
+        _buildFleetQualitySection(context),
+        const SizedBox(height: VeraProbSpacing.md),
+        _buildAdvancedOptionsSection(context),
       ],
     );
   }

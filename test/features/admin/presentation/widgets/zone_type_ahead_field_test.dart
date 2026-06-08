@@ -148,29 +148,29 @@ void main() {
         await tester.pumpWidget(
           _buildTestWidget(zones: [zone], selectedZone: zone),
         );
-        expect(find.byIcon(Icons.location_off), findsOneWidget);
+        expect(find.byIcon(Icons.location_off), findsNWidgets(2));
       },
     );
 
     testWidgets(
-      'botão "Configurar Geofence" aparece quando zona selecionada não tem geofence',
+      'botão "Definir Localização" aparece quando zona selecionada não tem geofence',
       (tester) async {
         final zone = _makeZone('Garagem');
         await tester.pumpWidget(
           _buildTestWidget(zones: [zone], selectedZone: zone),
         );
-        expect(find.text('Configurar Geofence →'), findsOneWidget);
+        expect(find.text('Definir Localização'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'botão "Configurar Geofence" não aparece quando geofence configurado',
+      'botão "Definir Localização" não aparece quando geofence configurado',
       (tester) async {
         final zone = _makeZone('Garagem', geofence: _kGeo);
         await tester.pumpWidget(
           _buildTestWidget(zones: [zone], selectedZone: zone),
         );
-        expect(find.text('Configurar Geofence →'), findsNothing);
+        expect(find.text('Definir Localização'), findsNothing);
       },
     );
 

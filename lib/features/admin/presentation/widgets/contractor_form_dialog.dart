@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/presentation/shared/formatters/cnpj_input_formatter.dart';
 import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/application/sla_audit/projections/contractor_view.dart';
@@ -41,6 +42,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
   late final TextEditingController _contactController;
 
   bool _isSaving = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -94,6 +96,42 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                   style: VeraProbTypography.sectionTitle,
                 ),
                 const SizedBox(height: 24),
+                if (_errorMessage != null) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: VeraProbColors.error.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: VeraProbColors.error,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            _errorMessage!,
+                            style: VeraProbTypography.bodyMedium.copyWith(
+                              color: VeraProbColors.error,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -107,12 +145,12 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                 TextFormField(
                   controller: _taxIdController,
                   decoration: const InputDecoration(
-                    labelText: 'CNPJ / Tax ID',
+                    labelText: 'CNPJ / Tax ID *',
                     hintText: '00.000.000/0001-00',
                   ),
                   inputFormatters: [CnpjInputFormatter()],
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return null;
+                    if (v == null || v.trim().isEmpty) return 'Obrigatório';
                     final digits = v.replaceAll(RegExp(r'\D'), '');
                     if (digits.length != 14) return 'CNPJ incompleto';
                     if (!CnpjValidator.isValid(digits)) return 'CNPJ inválido';
@@ -173,9 +211,23 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
   }
 
   Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    // Synchronous field write — visible to any concurrent CanvasKit event
+    // before setState schedules a rebuild. This closes the double-fire window
+    // where PointerUp + synthetic click both pass the _isSaving check.
+    if (_isSaving) return;
+    _isSaving = true;
+    _errorMessage = null;
 
-    setState(() => _isSaving = true);
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _isSaving = false;
+      return;
+    }
+
+    // Capture context-dependent refs before first await (Lesson #8).
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    setState(() {});
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
@@ -198,18 +250,20 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
             ),
           );
 
-      if (mounted) Navigator.pop(context, newContractor);
+      if (mounted) navigator.pop(ContractorView.fromDomain(newContractor));
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
+        final msg = e is IntegrityException
+            ? e.message
+            : 'Erro ao salvar. Tente novamente.';
+        _errorMessage = msg;
+        messenger.showSnackBar(
+          SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
         );
       }
     } finally {
-      if (mounted) setState(() => _isSaving = false);
+      _isSaving = false;
+      if (mounted) setState(() {});
     }
   }
 }

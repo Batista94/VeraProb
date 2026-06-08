@@ -149,4 +149,39 @@ class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
       );
     }
   }
+
+  @override
+  Future<List<SlaLedgerEntry>> getEntriesByQueueEntryId(
+    String queueEntryId, {
+    String? organizationId,
+  }) async {
+    try {
+      var query = client
+          .from('sla_audit_ledger_v2')
+          .select()
+          .eq('payload->>queue_entry_id', queueEntryId);
+      if (organizationId != null) {
+        query = query.eq('organization_id', organizationId);
+      }
+      final response = await query.order('occurred_at_utc', ascending: true);
+
+      return (response as List).map((row) {
+        final typedRow = row as Map<String, dynamic>;
+        assertFields(typedRow);
+        final normalizedRow = Map<String, dynamic>.from(typedRow);
+        normalizedRow['occurred_at_utc'] = parseUtc(
+          typedRow['occurred_at_utc'],
+          'occurred_at_utc',
+        ).toIso8601String();
+        final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
+        return dto.toDomain(typedRow['id'] as String);
+      }).toList();
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(
+        e,
+        resourceType: 'sla_audit_ledger',
+        resourceId: queueEntryId,
+      );
+    }
+  }
 }

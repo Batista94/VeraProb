@@ -106,6 +106,69 @@ class InMemoryForensicEvidenceSnapshotRepository
   }
 
   @override
+  Future<ForensicEvidenceSnapshot> sealForDispute({
+    required String organizationId,
+    required String ledgerEntryId,
+    required String contractId,
+    required String setId,
+    required int planVersion,
+    required DateTime occurredAtUtc,
+    required String sealedBy,
+    required String idempotencyKey,
+  }) async {
+    final existing = _rows.firstWhere(
+      (r) =>
+          r['organization_id'] == organizationId &&
+          r['idempotency_key'] == idempotencyKey,
+      orElse: () => const {},
+    );
+    if (existing.isNotEmpty) return ForensicEvidenceSnapshot.fromJson(existing);
+
+    final seeded = _seeded['$organizationId::$contractId'];
+    if (seeded == null) {
+      throw IntegrityException(
+        'No active SLA rule for contract $contractId (Req 5.3)',
+        field: 'contract_id',
+      );
+    }
+
+    final snapshot = <String, dynamic>{
+      'schema_version': 1,
+      'organization_id': organizationId,
+      'contract_id': contractId,
+      'rule_set_id': seeded.ruleSetId,
+      'sla_rule_version': seeded.slaRuleVersion,
+      'effective_from_utc': seeded.effectiveFromUtc?.toUtc().toIso8601String(),
+      'effective_to_utc': seeded.effectiveToUtc?.toUtc().toIso8601String(),
+      'verdict_type': 'DISPUTE_OVERTURNED',
+      'set_id': setId,
+      'plan_version': planVersion,
+      'occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+      'ledger_entry_id': ledgerEntryId,
+      'rules': seeded.rules,
+    };
+
+    final row = <String, dynamic>{
+      'id': 'fes-${_counter++}',
+      'organization_id': organizationId,
+      'ledger_entry_id': ledgerEntryId,
+      'contract_id': contractId,
+      'rule_set_id': seeded.ruleSetId,
+      'sla_rule_version': seeded.slaRuleVersion,
+      'schema_version': 1,
+      'effective_from_utc': seeded.effectiveFromUtc?.toUtc().toIso8601String(),
+      'effective_to_utc': seeded.effectiveToUtc?.toUtc().toIso8601String(),
+      'snapshot': snapshot,
+      'integrity_hash': _hash(snapshot),
+      'idempotency_key': idempotencyKey,
+      'sealed_by': sealedBy,
+      'sealed_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+    };
+    _rows.add(row);
+    return ForensicEvidenceSnapshot.fromJson(row);
+  }
+
+  @override
   Future<ForensicEvidenceSnapshot?> findByLedgerEntry({
     required String organizationId,
     required String ledgerEntryId,

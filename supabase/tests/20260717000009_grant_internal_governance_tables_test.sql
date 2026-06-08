@@ -39,7 +39,9 @@ SELECT table_privs_are('public', 'ingestion_alerts', 'service_role', ARRAY['SELE
 
 -- 7. contractual_evaluation_traces
 SELECT table_privs_are('public', 'contractual_evaluation_traces', 'anon', ARRAY[]::text[], 'anon should have NO privileges on contractual_evaluation_traces');
-SELECT table_privs_are('public', 'contractual_evaluation_traces', 'authenticated', ARRAY[]::text[], 'authenticated should have NO privileges on contractual_evaluation_traces');
+-- authenticated SELECT granted intentionally by 20260803000001 (InvestigationModal read).
+-- RLS (org_id JWT path) enforces tenant isolation; no write privileges.
+SELECT table_privs_are('public', 'contractual_evaluation_traces', 'authenticated', ARRAY['SELECT'], 'authenticated should have SELECT only on contractual_evaluation_traces (read for InvestigationModal)');
 SELECT table_privs_are('public', 'contractual_evaluation_traces', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on contractual_evaluation_traces');
 
 -- 8. contractual_financial_snapshot_v2

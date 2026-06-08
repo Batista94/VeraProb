@@ -18,6 +18,7 @@ class CsvResultStep extends ConsumerWidget {
 
     final result = state.result;
     final hasErrors = result.hasErrors;
+    final isPartial = result.rowsImported > 0 && hasErrors;
     final success = result.rowsImported > 0 || !hasErrors;
 
     return SingleChildScrollView(
@@ -27,11 +28,14 @@ class CsvResultStep extends ConsumerWidget {
         children: [
           _ResultCard(
             success: success,
+            isPartial: isPartial,
             rowsImported: result.rowsImported,
             rowsSkipped: result.rowsSkipped,
             totalProcessed: result.totalProcessed,
           ),
           if (hasErrors) ...[
+            const SizedBox(height: 16),
+            _InlineErrorList(errors: result.errors),
             const SizedBox(height: 16),
             _DownloadErrorsButton(errors: result.errors),
           ],
@@ -88,23 +92,37 @@ class CsvResultStep extends ConsumerWidget {
 class _ResultCard extends StatelessWidget {
   const _ResultCard({
     required this.success,
+    required this.isPartial,
     required this.rowsImported,
     required this.rowsSkipped,
     required this.totalProcessed,
   });
 
   final bool success;
+  final bool isPartial;
   final int rowsImported;
   final int rowsSkipped;
   final int totalProcessed;
 
   @override
   Widget build(BuildContext context) {
-    final color = success ? CsvT.success : CsvT.error;
-    final icon = success ? Icons.check_circle_outline : Icons.error_outline;
-    final title = success
-        ? '$rowsImported registro(s) importado(s) com sucesso'
-        : 'Falha na importação';
+    final Color color;
+    final IconData icon;
+    final String title;
+
+    if (isPartial) {
+      color = CsvT.warning;
+      icon = Icons.warning_amber_rounded;
+      title = '$rowsImported importado(s), $rowsSkipped ignorado(s) por erro';
+    } else if (success) {
+      color = CsvT.success;
+      icon = Icons.check_circle_outline;
+      title = '$rowsImported registro(s) importado(s) com sucesso';
+    } else {
+      color = CsvT.error;
+      icon = Icons.error_outline;
+      title = 'Falha na importação';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -126,7 +144,7 @@ class _ResultCard extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          if (success && rowsSkipped > 0) ...[
+          if (success && !isPartial && rowsSkipped > 0) ...[
             const SizedBox(height: 8),
             Text(
               '$rowsSkipped linha(s) ignorada(s) por erros de validação.',
@@ -148,6 +166,61 @@ class _ResultCard extends StatelessWidget {
   }
 }
 
+// ── Inline Error List ─────────────────────────────────────────────────────────
+
+class _InlineErrorList extends StatelessWidget {
+  const _InlineErrorList({required this.errors});
+
+  final List<CsvRowError> errors;
+
+  static const _kMaxInline = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    final preview = errors.take(_kMaxInline).toList();
+    final overflow = errors.length - _kMaxInline;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...preview.map(
+          (e) => Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'L${e.rowIndex}',
+                  style: CsvT.labelStyle(color: CsvT.warning, size: 11),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  e.csvHeader,
+                  style: CsvT.labelStyle(color: CsvT.textLo, size: 11),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    e.message,
+                    style: CsvT.labelStyle(color: CsvT.textHi, size: 11),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (overflow > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            '... e mais $overflow erro(s)',
+            style: CsvT.labelStyle(color: CsvT.textLo, size: 11),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 // ── Download Errors Button ────────────────────────────────────────────────────
 
 class _DownloadErrorsButton extends StatelessWidget {
@@ -164,7 +237,7 @@ class _DownloadErrorsButton extends StatelessWidget {
       ),
       icon: const Icon(Icons.download_outlined, size: 16, color: CsvT.warning),
       label: Text(
-        'Baixar ${errors.length} erro(s) em CSV',
+        'Exportar todos os ${errors.length} erro(s) em CSV',
         style: CsvT.labelStyle(color: CsvT.warning),
       ),
       style: OutlinedButton.styleFrom(

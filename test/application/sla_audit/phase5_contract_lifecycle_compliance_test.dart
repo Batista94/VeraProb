@@ -19,6 +19,7 @@ import 'package:veraprob/application/sla_audit/create_contract_command.dart';
 import 'package:veraprob/application/sla_audit/create_contract_handler.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -35,10 +36,40 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.
 import 'package:veraprob/infrastructure/sla_audit/in_memory_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+import 'package:veraprob/domain/shared/money.dart';
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
 
 class _MockAuthRepo extends Mock implements IAuthRepository {}
+
+class _FakeShiftProjectionService implements ShiftProjectionService {
+  @override
+  Future<List<ContractualServiceExecution>> projectDays(
+    PlanDeclaration plan, {
+    required DateTime from,
+    required Money contractualValue,
+    int days = 30,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<void> ensureProjected(
+    String organizationId, {
+    required Money contractualValue,
+    int days = 30,
+  }) async {}
+
+  @override
+  Future<void> detectAndAlertGaps(
+    PlanDeclaration plan, {
+    required DateTime asOf,
+  }) async {}
+}
+
+final _fakeProjection = _FakeShiftProjectionService();
 
 void main() {
   group('Phase 5 Compliance — Contract & Plan Lifecycle', () {
@@ -102,6 +133,7 @@ void main() {
         contractRepository: contractRepo,
         zoneRepository: _StubZoneRepository(),
         vehicleRepository: _StubVehicleRepository(),
+        projectionService: _fakeProjection,
         clock: clock,
         idempotencyStore: idempotencyStore,
       );

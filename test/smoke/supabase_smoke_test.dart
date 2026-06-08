@@ -32,6 +32,10 @@ import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 
+import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
+
 // Domain
 import 'package:veraprob/application/normalization/models/connectivity_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
@@ -57,6 +61,7 @@ import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone_repository.dart';
 import 'package:veraprob/domain/sla_audit/operational_zone.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/infrastructure/admin/in_memory_active_vehicle_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 
@@ -67,7 +72,6 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_execution
 import 'package:veraprob/infrastructure/sla_audit/postgres_plan_declaration_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_template_repository.dart';
-import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ─── Stubs ────────────────────────────────────────────────────────────────────
@@ -182,6 +186,31 @@ ShiftPattern _buildSmokePattern() {
 
 class _SmokeMockAuth extends Mock implements IAuthRepository {}
 
+class _FakeShiftProjectionService implements ShiftProjectionService {
+  @override
+  Future<List<ContractualServiceExecution>> projectDays(
+    PlanDeclaration plan, {
+    required DateTime from,
+    required Money contractualValue,
+    int days = 30,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<void> ensureProjected(
+    String organizationId, {
+    required Money contractualValue,
+    int days = 30,
+  }) async {}
+
+  @override
+  Future<void> detectAndAlertGaps(
+    PlanDeclaration plan, {
+    required DateTime asOf,
+  }) async {}
+}
+
 void main() {
   const supabaseUrl = String.fromEnvironment('SUPABASE_URL', defaultValue: '');
   const supabaseKey = String.fromEnvironment('SUPABASE_KEY', defaultValue: '');
@@ -259,6 +288,7 @@ void main() {
         vehicleRepository: const InMemoryActiveVehicleRepository(
           countsByOrg: {orgId: 1},
         ),
+        projectionService: _FakeShiftProjectionService(),
         clock: clock,
         idempotencyStore: InMemoryIdempotencyStore(),
       );

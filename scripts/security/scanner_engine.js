@@ -292,6 +292,54 @@ changedFiles.forEach((file) => {
           }
         }
       }
+
+      // 4. ALWAYS-TRUE-RLS-POLICY-BLOCK: permissive USING(true)/WITH CHECK(true)
+      //    exposed to a client role. Operates on RAW content so it sees policies
+      //    wrapped in EXECUTE $q$...$q$ DO-blocks and the bypass comment.
+      if (name === "ALWAYS-TRUE-RLS-POLICY-BLOCK") {
+        const policyRegex = /CREATE\s+POLICY\s+(?:"([^"]+)"|([\w]+))/gi;
+        let polMatch;
+        while ((polMatch = policyRegex.exec(content)) !== null) {
+          const policyName = polMatch[1] || polMatch[2];
+          const start = polMatch.index;
+          // Block ends at the first $q$ (EXECUTE wrapper) or ; after the match.
+          const rest = content.slice(start);
+          const qIdx = rest.indexOf("$q$");
+          const semiIdx = rest.indexOf(";");
+          let end = rest.length;
+          if (qIdx !== -1) end = Math.min(end, qIdx);
+          if (semiIdx !== -1) end = Math.min(end, semiIdx);
+          const block = rest.slice(0, end);
+
+          if (/AS\s+RESTRICTIVE/i.test(block)) continue;
+          const alwaysTrue =
+            /USING\s*\(\s*true\s*\)/i.test(block) ||
+            /WITH\s+CHECK\s*\(\s*true\s*\)/i.test(block);
+          if (!alwaysTrue) continue;
+
+          // Role scope: a TO clause naming ONLY internal roles is safe; absent
+          // TO clause defaults to PUBLIC (unsafe); any client role is unsafe.
+          const toMatch = block.match(/\bTO\s+([a-z_,\s]+?)(?:\s+USING|\s+WITH|\s*$)/i);
+          if (toMatch) {
+            const roles = toMatch[1].split(",").map((r) => r.trim().toLowerCase()).filter(Boolean);
+            const internalOnly = roles.length > 0 && roles.every((r) =>
+              r === "service_role" || r === "postgres" || r === "supabase_admin");
+            if (internalOnly) continue;
+          }
+
+          // Bypass: Council-approved comment near the policy.
+          const preWindow = content.slice(Math.max(0, start - 300), start);
+          if (/pr_scanner:\s*allow-permissive-true-policy/i.test(preWindow + block)) continue;
+
+          violations.push({
+            file,
+            line: content.slice(0, start).split(/\r?\n/).length,
+            rule: name,
+            description: config.description.replace("${policyName}", policyName),
+            severity: "BLOCK",
+          });
+        }
+      }
       return;
     }
 

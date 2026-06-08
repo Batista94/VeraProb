@@ -6,6 +6,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/features/admin/providers/onboarding_provider.dart';
 
 /// Administração — the launcher that consolidates every registry, rule and
 /// governance screen behind a single sidebar pillar. Cards drive
@@ -116,7 +117,9 @@ class AdminHubScreen extends ConsumerWidget {
             color: VeraProbColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 12),
+        const _HubOnboardingBanner(),
+        const SizedBox(height: 20),
         for (final group in groups) ...[
           _GroupHeader(title: group.title),
           const SizedBox(height: 12),
@@ -261,4 +264,102 @@ class _HubItem {
     required this.icon,
     required this.destination,
   });
+}
+
+class _HubOnboardingBanner extends ConsumerWidget {
+  const _HubOnboardingBanner();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final progress = ref.watch(onboardingProgressProvider);
+    if (progress.isComplete) return const SizedBox.shrink();
+
+    final nextStep = progress.steps.firstWhere((s) => !s.isFulfilled);
+    final stepIndex = progress.completedCount + 1;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          decoration: BoxDecoration(
+            color: VeraProbColors.surface.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: VeraProbColors.primary.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: VeraProbColors.primary.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.checklist_rounded,
+                  size: 18,
+                  color: VeraProbColors.primary,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Passo $stepIndex de 5: Configurar ${nextStep.label}',
+                      style: VeraProbTypography.dataValue.copyWith(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      nextStep.description,
+                      style: VeraProbTypography.bodySmall.copyWith(
+                        color: VeraProbColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              TextButton.icon(
+                icon: const Icon(Icons.arrow_forward_rounded, size: 14),
+                label: Text(
+                  'CONFIGURAR AGORA',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  backgroundColor: VeraProbColors.primary.withValues(
+                    alpha: 0.1,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: () {
+                  ref
+                      .read(adminIndexProvider.notifier)
+                      .go(nextStep.destination);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

@@ -139,30 +139,37 @@ class _BillingCycleReportsScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 16,
+          runSpacing: 12,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             switch (contractsAsync) {
-              AsyncData(:final value) => DropdownButton<String?>(
-                value: _selectedContractId,
-                hint: const Text('Todos os contratos'),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Todos os contratos'),
-                  ),
-                  ...value.map(
-                    (c) => DropdownMenuItem<String?>(
-                      value: c.id,
-                      child: Text(
-                        '${c.name} — ${c.contractorName}',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
+              AsyncData(:final value) => SizedBox(
+                width: 260,
+                child: DropdownButton<String?>(
+                  isExpanded: true,
+                  value: _selectedContractId,
+                  hint: const Text('Todos os contratos'),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Todos os contratos'),
+                    ),
+                    ...value.map(
+                      (c) => DropdownMenuItem<String?>(
+                        value: c.id,
+                        child: Text(
+                          '${c.name} — ${c.contractorName}',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-                onChanged: (value) =>
-                    setState(() => _selectedContractId = value),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _selectedContractId = value),
+                ),
               ),
               AsyncLoading() => const SizedBox(
                 width: 220,
@@ -170,7 +177,6 @@ class _BillingCycleReportsScreenState
               ),
               AsyncError() => const Text('Erro ao carregar contratos'),
             },
-            const SizedBox(width: 16),
             OutlinedButton.icon(
               onPressed: () async {
                 final picked = await showDateRangePicker(
@@ -192,13 +198,11 @@ class _BillingCycleReportsScreenState
               icon: const Icon(Icons.date_range),
               label: Text('${df.format(_startDate)} - ${df.format(_endDate)}'),
             ),
-            const SizedBox(width: 16),
             ElevatedButton(
               onPressed: _generateReport,
               child: const Text('Gerar Relatório'),
             ),
             if (_report != null) ...[
-              const SizedBox(width: 16),
               IconButton(
                 onPressed: _exportCsv,
                 icon: const Icon(Icons.table_view_rounded),
@@ -225,9 +229,14 @@ class _BillingCycleReportsScreenState
                   color: VeraProbColors.warning,
                 ),
                 SizedBox(width: 4),
-                Text(
-                  'Nenhum contrato selecionado — relatório agrega todos os contratos.',
-                  style: TextStyle(fontSize: 12, color: VeraProbColors.warning),
+                Expanded(
+                  child: Text(
+                    'Nenhum contrato selecionado — relatório agrega todos os contratos.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: VeraProbColors.warning,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -267,42 +276,59 @@ class _BillingCycleReportsScreenState
   }
 
   Widget _buildSummaryCards(BillingCycleView report) {
-    return Row(
-      children: [
-        _buildCard('Faturamento', _formatCents(report.totalContractedRevenue)),
-        _buildCard('Protegido', _formatCents(report.protectedRevenue)),
-        _buildCard(
-          'Perda',
-          _formatCents(report.lostRevenue),
-          color: VeraProbColors.error,
-        ),
-        _buildCard(
-          'Risco',
-          _formatCents(report.revenueAtRisk),
-          color: VeraProbColors.warning,
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cards = [
+          _buildCard(
+            'Faturamento',
+            _formatCents(report.totalContractedRevenue),
+          ),
+          _buildCard('Protegido', _formatCents(report.protectedRevenue)),
+          _buildCard(
+            'Perda',
+            _formatCents(report.lostRevenue),
+            color: VeraProbColors.error,
+          ),
+          _buildCard(
+            'Risco',
+            _formatCents(report.revenueAtRisk),
+            color: VeraProbColors.warning,
+          ),
+        ];
+
+        if (constraints.maxWidth < 600) {
+          return GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.0,
+            children: cards,
+          );
+        } else {
+          return Row(children: cards.map((c) => Expanded(child: c)).toList());
+        }
+      },
     );
   }
 
   Widget _buildCard(String label, String value, {Color? color}) {
-    return Expanded(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              Text(label, style: const TextStyle(fontSize: 12)),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Text(label, style: const TextStyle(fontSize: 12)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

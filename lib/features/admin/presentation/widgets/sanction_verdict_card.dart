@@ -7,11 +7,15 @@ import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
+    show DisputeResolution;
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart'; // pr_scanner: ignore
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
@@ -43,6 +47,10 @@ class SanctionVerdictCard extends ConsumerStatefulWidget {
 class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   bool _showRejectField = false;
   final _rejectController = TextEditingController();
+  // Dispute resolution (disputed → *) — mutually exclusive reason fields.
+  bool _showAcceptField = false;
+  bool _showRefuseField = false;
+  final _acceptReasonController = TextEditingController();
   bool _isDossierLoading = false;
   String? _dossierError;
 
@@ -58,6 +66,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   @override
   void dispose() {
     _rejectController.dispose();
+    _acceptReasonController.dispose();
     super.dispose();
   }
 
@@ -86,7 +95,15 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final evidence = item.verdictEvidence;
     final actionState = ref.watch(sanctionActionStateProvider(item.id));
     final isLoading = actionState is AsyncLoading;
-    final isLocked = item.status != SanctionReviewStatus.pending;
+    // Pacote 3: `disputed` is now interactive (auditor resolves the dispute),
+    // so only terminal verdicts (applied/rejected) are locked.
+    final isLocked =
+        item.status != SanctionReviewStatus.pending &&
+        item.status != SanctionReviewStatus.disputed;
+
+    // INV-14/INV-23: the bound asset (vehicle) is mandatory to seal the evidence.
+    // An unidentified asset cannot anchor a forensic verdict.
+    final canSeal = (item.vehiclePlate?.trim().isNotEmpty ?? false);
 
     // WS-5: Map-Sync selection state
     final focusedId = ref.watch(
@@ -104,18 +121,20 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final unit = _unitForClause(evidence.clauseRef);
     final confidenceColor = _confidenceColor(evidence.confidenceScore);
 
-    // WS-5: Determine left border color based on focus/lock state
+    // WS-5: Left accent ALWAYS reflects verdict severity (status) — never focus.
+    // Focus is signalled by the outer border tint + background + "NO MAPA" badge,
+    // so a pending verdict keeps its red severity cue even while selected.
     final Color leftBorderColor;
-    final double leftBorderWidth;
-    if (isFocused) {
-      leftBorderColor = VeraProbColors.primary;
-      leftBorderWidth = 4;
+    const double leftBorderWidth = 3;
+    if (item.status == SanctionReviewStatus.disputed) {
+      leftBorderColor = VeraProbColors.warning;
+    } else if (item.status == SanctionReviewStatus.rejected) {
+      // Refused verdict: attenuated red — distinct from the live pending red.
+      leftBorderColor = VeraProbColors.error.withValues(alpha: 0.5);
     } else if (isLocked) {
       leftBorderColor = VeraProbColors.textDisabled;
-      leftBorderWidth = 3;
     } else {
       leftBorderColor = VeraProbColors.error;
-      leftBorderWidth = 3;
     }
 
     return GestureDetector(
@@ -146,6 +165,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         }
       },
       child: Opacity(
+        // disputed demands attention → full opacity; only sealed/refused dim.
         opacity: isLocked ? 0.6 : 1.0,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -154,112 +174,45 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 ? VeraProbColors.primary.withValues(alpha: 0.05)
                 : VeraProbColors.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: VeraProbColors.border),
+            border: Border.all(
+              color: isFocused ? VeraProbColors.primary : VeraProbColors.border,
+            ),
           ),
           clipBehavior: Clip.antiAlias,
           child: Stack(
             children: [
-              // WS-5: Left accent line indicator (fixed Border + BorderRadius conflict in Flutter)
-              Positioned(
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: leftBorderWidth,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(color: leftBorderColor),
-                ),
-              ),
               Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // ── Zona 1: Identity Strip ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: Row(
-                      children: [
-                        _ClauseBadge(clauseRef: evidence.clauseRef),
-                        const Spacer(),
-                        Text(
-                          _formatLocalDate(item.createdAtUtc),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: VeraProbColors.textDisabled,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildIdentityStrip(item: item),
 
                   const SizedBox(height: 12),
 
                   // ── Zona 2: Financial Hero ─────────────────────────────────────
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Semantics(
-                                label:
-                                    'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
-                                child: Text(
-                                  item.formattedFine,
-                                  style: VeraProbTypography.kpiValue.copyWith(
-                                    fontSize: 32,
-                                    fontWeight: FontWeight.w800,
-                                    color: VeraProbColors.error,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      displayName,
-                                      style: VeraProbTypography.dataValue,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    '· ${item.setId}',
-                                    style: VeraProbTypography.bodyMedium
-                                        .copyWith(
-                                          color: VeraProbColors.textSecondary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        _ConfidenceBadge(
-                          score: evidence.confidenceScore,
-                          color: confidenceColor,
-                        ),
-                      ],
-                    ),
+                  _buildFinancialHero(
+                    item: item,
+                    displayName: displayName,
+                    confidenceColor: confidenceColor,
                   ),
 
                   const SizedBox(height: 16),
                   const Divider(color: VeraProbColors.border, height: 1),
 
-                  // ── Zona 3: Infraction Summary — Ghost Bars (WS-6) ────────────
+                  // ── Zona 3: Infraction Summary — Ghost Bars (WS-6) / VEL Details ────
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
-                    child: GhostBarWidget(
-                      deltaValue: evidence.deltaValue,
-                      thresholdValue: evidence.thresholdValue,
-                      unit: unit,
-                      clauseRef: evidence.clauseRef,
-                    ),
+                    child:
+                        evidence.clauseRef.split('-').first.toUpperCase() ==
+                            'VEL'
+                        ? _buildVelSpeedDetails(evidence, unit)
+                        : GhostBarWidget(
+                            deltaValue: evidence.deltaValue,
+                            thresholdValue: evidence.thresholdValue,
+                            unit: unit,
+                            clauseRef: evidence.clauseRef,
+                          ),
                   ),
 
                   const SizedBox(height: 12),
@@ -335,6 +288,31 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     child: ReverseGeocodedAddress(
                       lat: evidence.primaryEvidenceLat,
                       lng: evidence.primaryEvidenceLng,
+                      // Always re-frame the map to the forensic point — even when
+                      // this sanction is already selected and the auditor panned
+                      // away. recenter() emits a distinct event every tap.
+                      onTap: () {
+                        ref
+                            .read(selectedSanctionFocusProvider.notifier)
+                            .recenter(
+                              SanctionMapFocus(
+                                sanctionId: item.id,
+                                infractionPoint: LatLng(
+                                  evidence.primaryEvidenceLat,
+                                  evidence.primaryEvidenceLng,
+                                ),
+                                geofenceCenter:
+                                    evidence.geofenceCenterLat != null
+                                    ? LatLng(
+                                        evidence.geofenceCenterLat!,
+                                        evidence.geofenceCenterLng!,
+                                      )
+                                    : null,
+                                geofenceRadiusMeters:
+                                    evidence.geofenceRadiusMeters ?? 50.0,
+                              ),
+                            );
+                      },
                     ),
                   ),
 
@@ -373,6 +351,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   // ── Zona 4: Forensic Seal ──────────────────────────────────────
                   _ForensicSealRow(item: item),
 
+                  // ── Zona 4.2: Refusal reason (rejected verdicts) ──────────────
+                  if (item.status == SanctionReviewStatus.rejected &&
+                      (item.rejectionReason?.trim().isNotEmpty ?? false))
+                    _RefusalReasonZone(reason: item.rejectionReason!.trim()),
+
                   // ── Zona 4.5: Dossier Download ─────────────────────────────────
                   _DossierDownloadRow(
                     isLoading: _isDossierLoading,
@@ -402,19 +385,36 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     ),
                   ],
 
-                  // ── Rejection reason field ─────────────────────────────────────
+                  // ── Reason fields ──────────────────────────────────────────────
                   if (_showRejectField)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: _RejectReasonField(controller: _rejectController),
                     ),
+                  if (_showAcceptField)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: _RejectReasonField(
+                        controller: _acceptReasonController,
+                        labelText: 'Motivo do aceite (mínimo 10 caracteres)',
+                      ),
+                    ),
+                  if (_showRefuseField)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: _RejectReasonField(
+                        controller: _rejectController,
+                        labelText: 'Motivo da recusa (mínimo 10 caracteres)',
+                      ),
+                    ),
 
                   // ── Zona 5: Action Row ─────────────────────────────────────
-                  if (!isLocked)
+                  if (item.status == SanctionReviewStatus.pending)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
                       child: _VerdictActionRow(
                         isLoading: isLoading,
+                        canSeal: canSeal,
                         showRejectField: _showRejectField,
                         rejectController: _rejectController,
                         formattedFine: item.formattedFine,
@@ -425,11 +425,126 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         onRejectConfirm: () => _onReject(context),
                         onRequestMoreProof: () => _onRequestMoreProof(context),
                       ),
+                    )
+                  else if (item.status == SanctionReviewStatus.disputed)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                      child: _DisputeResolutionRow(
+                        isLoading: isLoading,
+                        showAcceptField: _showAcceptField,
+                        showRefuseField: _showRefuseField,
+                        acceptController: _acceptReasonController,
+                        refuseController: _rejectController,
+                        onAcceptTap: () => setState(() {
+                          _showAcceptField = !_showAcceptField;
+                          _showRefuseField = false;
+                        }),
+                        onAcceptConfirm: _onAcceptDispute,
+                        onRefuseTap: () => setState(() {
+                          _showRefuseField = !_showRefuseField;
+                          _showAcceptField = false;
+                        }),
+                        onRefuseConfirm: _onRefuseDispute,
+                        onRetract: _onRetractDispute,
+                      ),
                     ),
+                  if (item.status == SanctionReviewStatus.applied)
+                    _buildForensicEvidenceVisualizerRow(context, item),
                 ],
               ),
+              // WS-5: Severity accent — painted AFTER content so full-bleed rows
+              // (e.g. the forensic seal) never cover it; clipped to card radius.
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: leftBorderWidth,
+                child: DecoratedBox(
+                  key: const ValueKey('verdict-severity-accent'),
+                  decoration: BoxDecoration(color: leftBorderColor),
+                ),
+              ),
               // ── LOCKED overlay badge (INV-7: Immutability) ──────────
-              if (isLocked)
+              if (item.status == SanctionReviewStatus.disputed)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'Evidência submetida. Resolva abaixo.',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.warning.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.hourglass_empty_outlined,
+                            size: 12,
+                            color: VeraProbColors.warning,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'AGUARDANDO EVIDÊNCIA',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.warning,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (item.status == SanctionReviewStatus.rejected)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message: 'Sanção recusada — multa não aplicada',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: VeraProbColors.error.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.block_rounded,
+                            size: 12,
+                            color: VeraProbColors.error,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'VEREDITO RECUSADO',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.error,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (isLocked)
                 Positioned(
                   top: 8,
                   right: 8,
@@ -472,6 +587,120 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildIdentityStrip({required SanctionQueueItemView item}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+      child: Row(
+        children: [
+          _ClauseBadge(clauseRef: item.verdictEvidence.clauseRef),
+          const SizedBox(width: 8),
+          Flexible(
+            child: _AssetOperatorStrip(
+              assetIdentifier: item.assetIdentifier,
+              operatorName: item.operatorName,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            _formatLocalDate(item.createdAtUtc),
+            style: const TextStyle(
+              fontSize: 11,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinancialHero({
+    required SanctionQueueItemView item,
+    required String displayName,
+    required Color confidenceColor,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Semantics(
+                  label:
+                      'Multa: ${item.formattedFine}. Validar ou rejeitar esta sanção.',
+                  child: Text(
+                    item.formattedFine,
+                    style: VeraProbTypography.kpiValue.copyWith(
+                      fontSize: 32,
+                      fontWeight: FontWeight.w800,
+                      color: VeraProbColors.error,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        displayName,
+                        style: VeraProbTypography.dataValue,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '· ${item.setId}',
+                      style: VeraProbTypography.bodyMedium.copyWith(
+                        color: VeraProbColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _ConfidenceBadge(
+            score: item.verdictEvidence.confidenceScore,
+            color: confidenceColor,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForensicEvidenceVisualizerRow(
+    BuildContext context,
+    SanctionQueueItemView item,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) =>
+                    ForensicEvidenceModal(ledgerEntryId: item.ledgerEntryId),
+              ),
+              icon: const Icon(Icons.shield_outlined, size: 16),
+              label: const Text('Visualizar Evidência Forense'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.primary,
+                side: const BorderSide(color: VeraProbColors.primary),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -559,14 +788,83 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     }
   }
 
-  void _onRequestMoreProof(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Solicitação enviada. Motorista será notificado para enviar prova forense.',
-        ),
-      ),
-    );
+  Future<void> _onRequestMoreProof(BuildContext context) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .dispute(
+          queueEntryId: widget.item.id,
+          disputedByUserId: userId,
+          actorEmail: email,
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      ref.invalidate(pendingSanctionsStreamProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Solicitação enviada. Motorista será notificado para enviar prova forense.',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onAcceptDispute() =>
+      _resolveDispute(DisputeResolution.accept, _acceptReasonController.text);
+
+  Future<void> _onRefuseDispute() =>
+      _resolveDispute(DisputeResolution.overturn, _rejectController.text);
+
+  Future<void> _onRetractDispute() =>
+      _resolveDispute(DisputeResolution.retract, null);
+
+  Future<void> _resolveDispute(
+    DisputeResolution resolution,
+    String? reason,
+  ) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    final trimmed = reason?.trim();
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .resolveDispute(
+          queueEntryId: widget.item.id,
+          resolution: resolution,
+          resolvedByUserId: userId,
+          actorEmail: email,
+          resolutionReason: (trimmed == null || trimmed.isEmpty)
+              ? null
+              : trimmed,
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      // Card leaves the disputed list regardless of the chosen arc.
+      ref.invalidate(disputedSanctionsStreamProvider);
+      // retract returns it to the pending queue.
+      if (resolution == DisputeResolution.retract) {
+        ref.invalidate(pendingSanctionsStreamProvider);
+      }
+    }
+    if (mounted) {
+      setState(() {
+        _showAcceptField = false;
+        _showRefuseField = false;
+      });
+      _acceptReasonController.clear();
+      _rejectController.clear();
+    }
   }
 
   Future<void> _onDownloadDossier() async {
@@ -625,6 +923,124 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     } finally {
       if (mounted) setState(() => _isDossierLoading = false);
     }
+  }
+
+  Widget _buildVelSpeedDetails(VerdictEvidence evidence, String unit) {
+    final recordedSpeed = evidence.thresholdValue + evidence.deltaValue;
+    final limit = evidence.thresholdValue;
+    final excess = evidence.deltaValue;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Row(
+        children: [
+          // 1. Velocidade Registrada (Dado de maior destaque)
+          Expanded(
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'VELOCIDADE REGISTRADA',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 9,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      recordedSpeed.toStringAsFixed(1),
+                      style: VeraProbTypography.kpiValue.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: VeraProbColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      unit,
+                      style: VeraProbTypography.bodyMedium.copyWith(
+                        color: VeraProbColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Vertical divider
+          Container(
+            height: 40,
+            width: 1,
+            color: VeraProbColors.border,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+          ),
+          // 2. Limite Contratual
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'LIMITE CONTRATUAL',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 8.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${limit.toStringAsFixed(1)} $unit',
+                  style: VeraProbTypography.dataValue.copyWith(
+                    color: VeraProbColors.textSecondary,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // 3. Excesso
+          Expanded(
+            flex: 4,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'EXCESSO',
+                  style: VeraProbTypography.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.0,
+                    fontSize: 8.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '+${excess.toStringAsFixed(1)} $unit',
+                  style: VeraProbTypography.dataValue.copyWith(
+                    color: VeraProbColors.warning,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -688,6 +1104,88 @@ class _RecurrenceZone extends ConsumerWidget {
         );
       }(),
     };
+  }
+}
+
+/// Identity strip segment: bound Asset (vehicle plate) + Operator (driver name).
+///
+/// The auditor must know WHICH vehicle and WHO produced the evidence before
+/// sealing or contesting (INV-14, INV-23). The asset identifier carries the
+/// same visual weight as the clause badge; a missing plate is flagged in the
+/// error color because it blocks sealing. A missing operator degrades
+/// gracefully to "Não Identificado" — telemetry can arrive without an
+/// authenticated driver.
+class _AssetOperatorStrip extends StatelessWidget {
+  final String? assetIdentifier;
+  final String? operatorName;
+  const _AssetOperatorStrip({
+    required this.assetIdentifier,
+    required this.operatorName,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAsset = (assetIdentifier?.trim().isNotEmpty ?? false);
+    final hasOperator = (operatorName?.trim().isNotEmpty ?? false);
+    final assetLabel = hasAsset ? assetIdentifier!.trim() : 'Sem veículo';
+    final operatorLabel = hasOperator
+        ? operatorName!.trim()
+        : 'Não Identificado';
+
+    return Semantics(
+      label: 'Veículo: $assetLabel. Motorista: $operatorLabel.',
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.local_shipping_outlined,
+            size: 14,
+            color: hasAsset ? VeraProbColors.textPrimary : VeraProbColors.error,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              assetLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VeraProbTypography.dataValue.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: hasAsset
+                    ? VeraProbColors.textPrimary
+                    : VeraProbColors.error,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text(
+            '·',
+            style: TextStyle(color: VeraProbColors.textDisabled, fontSize: 13),
+          ),
+          const SizedBox(width: 8),
+          const Icon(
+            Icons.person_outline,
+            size: 14,
+            color: VeraProbColors.textSecondary,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              operatorLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                fontStyle: hasOperator ? FontStyle.normal : FontStyle.italic,
+                color: hasOperator
+                    ? VeraProbColors.textSecondary
+                    : VeraProbColors.textDisabled,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -773,9 +1271,15 @@ class _ForensicSealRow extends StatelessWidget {
               contractId: item.contractId,
             ),
           ),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            color: VeraProbColors.surfaceElevated,
+            margin: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: VeraProbColors.border, width: 0.5),
+            ),
             child: Row(
               children: [
                 const Icon(
@@ -796,6 +1300,8 @@ class _ForensicSealRow extends StatelessWidget {
                       ),
                       Text(
                         'SHA-256: ${item.shortEvidenceHash}...',
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                         style: VeraProbTypography.caption.copyWith(
                           fontFamily: 'monospace',
                           fontSize: 10,
@@ -818,9 +1324,71 @@ class _ForensicSealRow extends StatelessWidget {
   }
 }
 
+/// Zona 4.2: Refusal reason banner for `rejected` verdicts.
+///
+/// Surfaces the auditor's rationale (from `rejection_reason`) on the Concluídos
+/// tab so a refused fine is never a silent ghost — INV-23 explainability.
+class _RefusalReasonZone extends StatelessWidget {
+  final String reason;
+  const _RefusalReasonZone({required this.reason});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.error.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: VeraProbColors.error.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.block_rounded,
+                  size: 13,
+                  color: VeraProbColors.error,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'MOTIVO DA RECUSA',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.error,
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              reason,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _RejectReasonField extends StatelessWidget {
   final TextEditingController controller;
-  const _RejectReasonField({required this.controller});
+  final String labelText;
+  const _RejectReasonField({
+    required this.controller,
+    this.labelText = 'Motivo da rejeição (mínimo 10 caracteres)',
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -829,7 +1397,7 @@ class _RejectReasonField extends StatelessWidget {
       minLines: 2,
       maxLines: 4,
       decoration: InputDecoration(
-        labelText: 'Motivo da rejeição (mínimo 10 caracteres)',
+        labelText: labelText,
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
         isDense: true,
       ),
@@ -840,6 +1408,7 @@ class _RejectReasonField extends StatelessWidget {
 
 class _VerdictActionRow extends StatelessWidget {
   final bool isLoading;
+  final bool canSeal;
   final bool showRejectField;
   final TextEditingController rejectController;
   final String formattedFine;
@@ -850,6 +1419,7 @@ class _VerdictActionRow extends StatelessWidget {
 
   const _VerdictActionRow({
     required this.isLoading,
+    required this.canSeal,
     required this.showRejectField,
     required this.rejectController,
     required this.formattedFine,
@@ -861,26 +1431,38 @@ class _VerdictActionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sealBlockedReason = canSeal
+        ? 'Selar veredito — confirmar multa de $formattedFine'
+        : 'Veículo não identificado — não é possível selar a evidência';
     return Wrap(
       spacing: 8,
       runSpacing: 8,
       children: [
         Semantics(
-          label: 'Selar veredito — confirmar multa de $formattedFine',
-          child: FilledButton.icon(
-            onPressed: isLoading ? null : onApprove,
-            icon: isLoading
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.gavel_rounded, size: 16),
-            label: const Text('SELAR VEREDITO'),
-            style: FilledButton.styleFrom(
-              backgroundColor: VeraProbColors.success,
-              foregroundColor: VeraProbColors.background,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          label: sealBlockedReason,
+          child: Tooltip(
+            message: sealBlockedReason,
+            child: FilledButton.icon(
+              onPressed: (isLoading || !canSeal) ? null : onApprove,
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.gavel_rounded, size: 16),
+              label: const Text('SELAR VEREDITO'),
+              style: FilledButton.styleFrom(
+                backgroundColor: VeraProbColors.success,
+                foregroundColor: VeraProbColors.background,
+                disabledBackgroundColor: VeraProbColors.textDisabled.withValues(
+                  alpha: 0.3,
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+              ),
             ),
           ),
         ),
@@ -922,6 +1504,127 @@ class _VerdictActionRow extends StatelessWidget {
             label: const Text('SOLICITAR PROVA FORENSE'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.warning,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Zona 5 (disputed): inline resolution controls for a contested verdict.
+///
+/// Mirrors [_VerdictActionRow] but closes the dispute loop (INV-23):
+/// - ACEITAR JUSTIFICATIVA → `disputed → rejected` (fine inhibited), reason ≥10.
+/// - RECUSAR JUSTIFICATIVA → `disputed → applied` (fine upheld, snapshot), reason ≥10.
+/// - CANCELAR SOLICITAÇÃO → `disputed → pending` (retract), no reason.
+///
+/// Inline (not modal) to avoid `barrierDismissible:false` stacking (Lesson 4)
+/// and preserve map focus.
+class _DisputeResolutionRow extends StatelessWidget {
+  final bool isLoading;
+  final bool showAcceptField;
+  final bool showRefuseField;
+  final TextEditingController acceptController;
+  final TextEditingController refuseController;
+  final VoidCallback onAcceptTap;
+  final VoidCallback onAcceptConfirm;
+  final VoidCallback onRefuseTap;
+  final VoidCallback onRefuseConfirm;
+  final VoidCallback onRetract;
+
+  const _DisputeResolutionRow({
+    required this.isLoading,
+    required this.showAcceptField,
+    required this.showRefuseField,
+    required this.acceptController,
+    required this.refuseController,
+    required this.onAcceptTap,
+    required this.onAcceptConfirm,
+    required this.onRefuseTap,
+    required this.onRefuseConfirm,
+    required this.onRetract,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        // ACEITAR — accepts the contractor's justification (fine inhibited).
+        if (showAcceptField)
+          ListenableBuilder(
+            listenable: acceptController,
+            builder: (_, _) {
+              final canConfirm = acceptController.text.trim().length >= 10;
+              return FilledButton.icon(
+                onPressed: isLoading || !canConfirm ? null : onAcceptConfirm,
+                icon: const Icon(Icons.check_circle_outline, size: 16),
+                label: const Text('CONFIRMAR ACEITE'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VeraProbColors.success,
+                  foregroundColor: VeraProbColors.background,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+              );
+            },
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onAcceptTap,
+            icon: const Icon(Icons.check_circle_outline, size: 16),
+            label: const Text('ACEITAR JUSTIFICATIVA'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VeraProbColors.success,
+              side: const BorderSide(color: VeraProbColors.success),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        // RECUSAR — refuses the justification (fine upheld → applied, snapshot).
+        if (showRefuseField)
+          ListenableBuilder(
+            listenable: refuseController,
+            builder: (_, _) {
+              final canConfirm = refuseController.text.trim().length >= 10;
+              return FilledButton.icon(
+                onPressed: isLoading || !canConfirm ? null : onRefuseConfirm,
+                icon: const Icon(Icons.gavel_rounded, size: 16),
+                label: const Text('CONFIRMAR RECUSA'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: VeraProbColors.error,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
+                ),
+              );
+            },
+          )
+        else
+          OutlinedButton.icon(
+            onPressed: isLoading ? null : onRefuseTap,
+            icon: const Icon(Icons.gavel_rounded, size: 16),
+            label: const Text('RECUSAR JUSTIFICATIVA'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: VeraProbColors.error,
+              side: const BorderSide(color: VeraProbColors.error),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            ),
+          ),
+        // CANCELAR — retracts the dispute request (back to pending), no reason.
+        Semantics(
+          label: 'Cancelar solicitação de prova — devolve à fila de pendentes',
+          child: TextButton.icon(
+            onPressed: isLoading ? null : onRetract,
+            icon: const Icon(Icons.undo, size: 16),
+            label: const Text('CANCELAR SOLICITAÇÃO'),
+            style: TextButton.styleFrom(
+              foregroundColor: VeraProbColors.textSecondary,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),

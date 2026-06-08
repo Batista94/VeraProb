@@ -50,22 +50,33 @@ def main():
     violations = 0
     scanned = 0
     
-    for root, dirs, files in os.walk(root_dir):
-        # Skip ignored directories
-        dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+    try:
+        import subprocess
+        # Tracked files and untracked (but not ignored) files
+        tracked = subprocess.check_output(['git', 'ls-files']).decode('utf-8').splitlines()
+        untracked = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard']).decode('utf-8').splitlines()
+        all_files = tracked + untracked
         
-        for file in files:
-            ext = os.path.splitext(file)[1].lower()
-            if ext in TARGET_EXTENSIONS:
-                filepath = os.path.join(root, file)
-                scanned += 1
-                issues = check_file(filepath)
-                
-                if issues:
-                    violations += 1
-                    print(f"  {RED}❌ {filepath}{NC}")
-                    for issue in issues:
-                        print(f"     └─ {issue}")
+        files_to_check = [f for f in all_files if os.path.isfile(f) and not any(part in IGNORE_DIRS for part in f.replace('\\', '/').split('/'))]
+    except Exception:
+        # Fallback if git is not available
+        files_to_check = []
+        for root, dirs, files in os.walk(root_dir):
+            dirs[:] = [d for d in dirs if d not in IGNORE_DIRS]
+            for file in files:
+                files_to_check.append(os.path.join(root, file))
+
+    for filepath in files_to_check:
+        ext = os.path.splitext(filepath)[1].lower()
+        if ext in TARGET_EXTENSIONS:
+            scanned += 1
+            issues = check_file(filepath)
+            
+            if issues:
+                violations += 1
+                print(f"  {RED}❌ {filepath}{NC}")
+                for issue in issues:
+                    print(f"     └─ {issue}")
 
     print(f"{'─' * 55}")
     if violations == 0:

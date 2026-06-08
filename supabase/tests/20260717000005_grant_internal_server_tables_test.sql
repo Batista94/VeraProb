@@ -59,7 +59,7 @@ SELECT table_privs_are('public', 'forensic_throttle_events', 'service_role', ARR
 
 -- 11. idempotency_keys
 SELECT table_privs_are('public', 'idempotency_keys', 'anon', ARRAY[]::text[], 'anon should have no privileges on idempotency_keys');
-SELECT table_privs_are('public', 'idempotency_keys', 'authenticated', ARRAY[]::text[], 'authenticated should have no privileges on idempotency_keys');
+SELECT table_privs_are('public', 'idempotency_keys', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE'], 'authenticated should have SELECT, INSERT, and UPDATE privileges on idempotency_keys');
 SELECT table_privs_are('public', 'idempotency_keys', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on idempotency_keys');
 
 -- 12. justification_recomputation_signals

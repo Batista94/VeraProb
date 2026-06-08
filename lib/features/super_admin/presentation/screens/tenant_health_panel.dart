@@ -346,10 +346,16 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             DropdownButtonFormField<PlanType>(
+              isExpanded: true,
               initialValue: _selectedPlan,
               decoration: const InputDecoration(labelText: 'Plano'),
               items: PlanType.values
-                  .map((p) => DropdownMenuItem(value: p, child: Text(p.label)))
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p,
+                      child: Text(p.label, overflow: TextOverflow.ellipsis),
+                    ),
+                  )
                   .toList(),
               onChanged: _isSaving
                   ? null

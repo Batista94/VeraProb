@@ -6,6 +6,10 @@ This file imports `AGENTS.md` (universal context) above and appends Claude Code-
 
 ---
 
+> **CRITICAL AGENT RULE:** All AI-generated or edited files MUST use LF (`\n`) exclusively for line endings, even on Windows. CRLF is strictly blocked and will fail the Integrity Guard.
+
+---
+
 ## ORCHESTRATION (Makefile)
 
 Full target catalog in `AGENTS.md` "Setup" section. Claude-relevant highlights:

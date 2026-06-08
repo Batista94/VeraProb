@@ -167,6 +167,13 @@
     "description": "View '${viewName}' created without 'WITH (security_invoker = true)' option. Omitting this defaults to SECURITY DEFINER, bypassing RLS (INV-2, INV-22).",
     "severity": "BLOCK"
   },
+  "ALWAYS-TRUE-RLS-POLICY-BLOCK": {
+    "type": "sql_rls_integrity",
+    "pattern": "CREATE\\s+POLICY",
+    "path_filter": "supabase/migrations/",
+    "description": "PERMISSIVE policy '${policyName}' uses USING(true)/WITH CHECK(true) for a client role (public/authenticated/anon). This is an always-true cross-tenant hole (INV-1, INV-22, INV-26). Scope it to service_role, add a tenant predicate, or use AS RESTRICTIVE. Bypass after Council review: '-- pr_scanner: allow-permissive-true-policy (Council-approved: <reason>)'.",
+    "severity": "BLOCK"
+  },
   "INFRA-LEAK-UI": {
     "pattern": "import 'package:veraprob/infrastructure/(?!(observability|config)/)",
     "path_filter": "lib/features/",

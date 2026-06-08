@@ -577,8 +577,8 @@ void _testCnpjSearch() {
         await tester.enterText(find.byType(TextField), '11.444.AAA.777');
         await tester.pumpAndSettle();
 
-        expect(find.text('Omni Consórcio'), findsOneWidget);
-        expect(find.text('Hydra Corp'), findsNothing);
+        expect(find.text('Omni Consórcio'), findsNothing);
+        expect(find.text('Nenhuma organização encontrada.'), findsOneWidget);
       },
     );
 

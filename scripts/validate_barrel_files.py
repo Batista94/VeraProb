@@ -24,9 +24,32 @@ BLUE = '\033[0;34m'
 BOLD = '\033[1m'
 NC = '\033[0m'
 
+def has_stdin_data() -> bool:
+    if sys.stdin.isatty():
+        return False
+    if sys.platform == "win32":
+        try:
+            import msvcrt
+            import ctypes
+            handle = msvcrt.get_osfhandle(sys.stdin.fileno())
+            total_bytes = ctypes.c_ulong(0)
+            res = ctypes.windll.kernel32.PeekNamedPipe(
+                handle, None, 0, None, ctypes.byref(total_bytes), None
+            )
+            return res != 0 and total_bytes.value > 0
+        except Exception:
+            return False
+    else:
+        try:
+            import select
+            r, _, _ = select.select([sys.stdin], [], [], 0.05)
+            return bool(r)
+        except Exception:
+            return False
+
 def get_changed_files(branch="main"):
-    # Priority: Stdin (passed from bash wrapper)
-    if not sys.stdin.isatty():
+    # Priority 1: Stdin (passed from bash wrapper)
+    if has_stdin_data():
         try:
             stdin_data = sys.stdin.read().strip()
             if stdin_data:
@@ -36,19 +59,51 @@ def get_changed_files(branch="main"):
         except Exception:
             pass
 
+    files = []
+
+    # Get staged files (critical for pre-commit hook context)
     try:
-        # Fallback to manual git check if not piped
-        output = subprocess.check_output(["git", "diff", "--name-only", branch], text=True, encoding='utf-8')
-        files = [f.replace("\\", "/").strip() for f in output.splitlines()]
-        
+        staged = subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True, encoding='utf-8')
+        files.extend([f.replace("\\", "/").strip() for f in staged.splitlines() if f.strip()])
+    except Exception:
+        pass
+
+    # Try checking diff against the specified branch or revision
+    ref_to_use = None
+    for ref in [branch, "main", "HEAD~1", "HEAD"]:
+        if not ref:
+            continue
+        try:
+            # Check if ref exists
+            subprocess.run(["git", "rev-parse", "--verify", ref], capture_output=True, check=True)
+            ref_to_use = ref
+            break
+        except Exception:
+            continue
+
+    if ref_to_use:
+        try:
+            output = subprocess.check_output(["git", "diff", "--name-only", ref_to_use], text=True, encoding='utf-8')
+            files.extend([f.replace("\\", "/").strip() for f in output.splitlines() if f.strip()])
+        except Exception:
+            pass
+    else:
+        # Fallback to simple git diff (unstaged changes)
+        try:
+            output = subprocess.check_output(["git", "diff", "--name-only"], text=True, encoding='utf-8')
+            files.extend([f.replace("\\", "/").strip() for f in output.splitlines() if f.strip()])
+        except Exception:
+            pass
+
+    try:
+        # Untracked files
         untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard"], text=True, encoding='utf-8')
-        files.extend([f.replace("\\", "/").strip() for f in untracked.splitlines()])
-        
-        files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
-        return list(set([f for f in files if not any(p in f for p in IGNORE_PATTERNS)]))
-    except Exception as e:
-        print(f"{YELLOW}Warning: Failed to get changed files via git: {e}{NC}")
-        return []
+        files.extend([f.replace("\\", "/").strip() for f in untracked.splitlines() if f.strip()])
+    except Exception:
+        pass
+
+    files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
+    return list(set([f for f in files if not any(p in f for p in IGNORE_PATTERNS)]))
 
 def resolve_path(current_file, target_path):
     current_file = current_file.replace("\\", "/")

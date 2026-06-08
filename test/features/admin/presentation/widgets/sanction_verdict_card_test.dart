@@ -6,11 +6,18 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
+    show DisputeResolution;
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
+import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -18,6 +25,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
+import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 import 'package:veraprob/domain/shared/date_time_provider.dart';
@@ -86,6 +94,26 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
 
   int approveCalls = 0;
   int rejectCalls = 0;
+  int resolveDisputeCalls = 0;
+  DisputeResolution? lastResolution;
+  String? lastResolutionReason;
+
+  @override
+  Future<void> resolveDispute({
+    required String queueEntryId,
+    required DisputeResolution resolution,
+    required String resolvedByUserId,
+    required String actorEmail,
+    String? resolutionReason,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    resolveDisputeCalls++;
+    lastResolution = resolution;
+    lastResolutionReason = resolutionReason;
+    state = const AsyncData(null);
+  }
 
   @override
   Future<void> approve({
@@ -124,16 +152,22 @@ SanctionQueueItemView _makeItem({
   double? geofenceRadiusMeters,
   String id = 'test-id-001',
   String contractId = 'contract-001',
+  String clauseRef = 'ATR-01',
+  double deltaValue = 5.0,
+  double thresholdValue = 0.0,
+  String? vehiclePlate = 'TST-0001',
+  String? operatorName = 'João Silva',
+  String? rejectionReason,
 }) {
   final evidence = VerdictEvidence.create(
-    clauseRef: 'ATR-01',
+    clauseRef: clauseRef,
     ruleId: 'rule-001',
     ruleVersion: 1,
     primaryEvidenceLat: -23.5,
     primaryEvidenceLng: -46.6,
     primaryEvidenceTimestampUtc: DateTime.utc(2026, 1, 15, 10, 0),
-    deltaValue: 5.0,
-    thresholdValue: 0.0,
+    deltaValue: deltaValue,
+    thresholdValue: thresholdValue,
     fineCents: Money(fineCents),
     confidenceScore: confidenceScore,
     geofenceCenterLat: geofenceCenterLat,
@@ -149,6 +183,9 @@ SanctionQueueItemView _makeItem({
     verdictEvidence: evidence,
     status: status,
     createdAtUtc: DateTime.utc(2026, 1, 15, 10, 0),
+    vehiclePlate: vehiclePlate,
+    operatorName: operatorName,
+    rejectionReason: rejectionReason,
   );
 }
 
@@ -276,7 +313,9 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('shows SELADO badge when status is rejected', (tester) async {
+    testWidgets('shows VEREDITO RECUSADO badge when status is rejected', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
 
@@ -285,7 +324,34 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELADO'), findsOneWidget);
+      expect(find.text('VEREDITO RECUSADO'), findsOneWidget);
+      expect(find.text('SELADO'), findsNothing);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('rejected verdict surfaces MOTIVO DA RECUSA with reason', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.rejected,
+            rejectionReason:
+                'Justificativa do contratante aceita pelo auditor.',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('MOTIVO DA RECUSA'), findsOneWidget);
+      expect(
+        find.text('Justificativa do contratante aceita pelo auditor.'),
+        findsOneWidget,
+      );
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -483,6 +549,54 @@ void main() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'tapping address re-centers every time (selectionEpoch increments)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final container = tester.container();
+        final address = find.byType(ReverseGeocodedAddress);
+        expect(address, findsOneWidget);
+
+        // First tap: focus set, epoch = 1.
+        await tester.tap(address);
+        await tester.pump();
+        final first = container.read(selectedSanctionFocusProvider);
+        expect(first, isNotNull);
+        expect(first!.sanctionId, item.id);
+        expect(first.selectionEpoch, 1);
+
+        // Re-tap the SAME (already-focused) address: must re-emit a distinct
+        // event so the map re-frames — epoch increments, sanction unchanged.
+        await tester.tap(address);
+        await tester.pump();
+        final second = container.read(selectedSanctionFocusProvider);
+        expect(second!.sanctionId, item.id);
+        expect(second.selectionEpoch, 2);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — Audit: Reject Justification', () {
@@ -602,11 +716,11 @@ void main() {
     });
   });
 
-  group('SanctionVerdictCard — INV-7 Parity (disputed)', () {
-    testWidgets('disputed status locks the card same as applied', (
+  group('SanctionVerdictCard — Dispute Resolution (Pacote 3)', () {
+    testWidgets('disputed is interactive: 3 resolution actions, full opacity', (
       tester,
     ) async {
-      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
 
       await tester.pumpWidget(
@@ -614,12 +728,141 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELADO'), findsOneWidget);
+      expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
+      expect(find.text('ACEITAR JUSTIFICATIVA'), findsOneWidget);
+      expect(find.text('RECUSAR JUSTIFICATIVA'), findsOneWidget);
+      expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
+      // Pending-only controls must NOT leak into a disputed card.
       expect(find.text('SELAR VEREDITO'), findsNothing);
       expect(find.text('RECUSAR VEREDITO'), findsNothing);
 
       final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(opacity.opacity, closeTo(0.6, 0.001));
+      expect(opacity.opacity, closeTo(1.0, 0.001));
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('ACEITAR reveals reason field; CONFIRMAR ACEITE gated at 10', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+
+      await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+
+      // < 10 chars → disabled.
+      await tester.enterText(find.byType(TextField), 'curto');
+      await tester.pump();
+      var btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR ACEITE'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
+      expect(btn.onPressed, isNull);
+
+      // >= 10 chars → enabled, fires accept.
+      await tester.enterText(
+        find.byType(TextField),
+        'Justificativa do contratante procede.',
+      );
+      await tester.pump();
+      btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR ACEITE'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
+      expect(btn.onPressed, isNotNull);
+
+      await tester.tap(find.text('CONFIRMAR ACEITE'));
+      await tester.pump();
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.accept);
+      expect(
+        notifier.lastResolutionReason,
+        'Justificativa do contratante procede.',
+      );
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('RECUSAR JUSTIFICATIVA fires overturn with reason', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('RECUSAR JUSTIFICATIVA'));
+      await tester.pump();
+
+      await tester.enterText(
+        find.byType(TextField),
+        'Evidência insuficiente; multa mantida.',
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('CONFIRMAR RECUSA'));
+      await tester.pump();
+
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.overturn);
+      expect(
+        notifier.lastResolutionReason,
+        'Evidência insuficiente; multa mantida.',
+      );
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('CANCELAR SOLICITAÇÃO retracts with no reason, no field', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(status: SanctionReviewStatus.disputed),
+          notifier: notifier,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('CANCELAR SOLICITAÇÃO'));
+      await tester.pump();
+
+      expect(find.byType(TextField), findsNothing);
+      expect(notifier.resolveDisputeCalls, 1);
+      expect(notifier.lastResolution, DisputeResolution.retract);
+      expect(notifier.lastResolutionReason, isNull);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -679,4 +922,235 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
   });
+
+  group('SanctionVerdictCard — Sealed Evidence Action Button', () {
+    testWidgets(
+      'renders Visualizar Evidência Forense when status is applied and opens modal',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.applied);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._baseOverrides(
+                item: item,
+                notifier: _MockSanctionActionNotifier(),
+              ),
+              forensicEvidenceSnapshotRepositoryProvider.overrideWithValue(
+                _MockSnapshotRepo(),
+              ),
+              securityIncidentLoggerProvider.overrideWithValue(
+                _MockSecurityIncidentLogger(),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final btn = find.text('Visualizar Evidência Forense');
+        expect(btn, findsOneWidget);
+
+        await tester.tap(btn);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(ForensicEvidenceModal), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+  });
+
+  group('SanctionVerdictCard — Severity accent (status-driven)', () {
+    Color accentColor(WidgetTester tester) {
+      final box = tester.widget<DecoratedBox>(
+        find.byKey(const ValueKey('verdict-severity-accent')),
+      );
+      return (box.decoration as BoxDecoration).color!;
+    }
+
+    testWidgets('pending keeps red accent even when focused', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(_buildCard(_makeItem()));
+      await tester.pump();
+
+      // Unfocused pending → red.
+      expect(accentColor(tester), VeraProbColors.error);
+
+      // Focus the card by tapping its clause badge.
+      await tester.tap(find.text('ATR-01'));
+      await tester.pump();
+
+      // Still red — focus must not override severity.
+      expect(accentColor(tester), VeraProbColors.error);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('disputed → amber accent; applied → grey accent', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.disputed)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.warning);
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.applied)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.textDisabled);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('rejected → attenuated red accent (distinct from pending)', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
+      );
+      await tester.pump();
+      expect(accentColor(tester), VeraProbColors.error.withValues(alpha: 0.5));
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+
+  group('SanctionVerdictCard — Asset/Operator identity (INV-14)', () {
+    testWidgets('renders vehicle plate and operator name prominently', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(vehiclePlate: 'TST-0001', operatorName: 'Ana Reis'),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('TST-0001'), findsOneWidget);
+      expect(find.text('Ana Reis'), findsOneWidget);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('null operator degrades to "Não Identificado"', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: 'TST-0001', operatorName: null)),
+      );
+      await tester.pump();
+
+      expect(find.text('Não Identificado'), findsOneWidget);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('SELAR disabled when vehicle plate is missing', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: null), notifier: notifier),
+      );
+      await tester.pump();
+
+      final btnFinder = find.ancestor(
+        of: find.text('SELAR VEREDITO'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final btn = tester.widget<FilledButton>(btnFinder.first);
+      expect(btn.onPressed, isNull);
+
+      // Tapping must not invoke approve.
+      await tester.tap(find.text('SELAR VEREDITO'), warnIfMissed: false);
+      await tester.pump();
+      expect(notifier.approveCalls, 0);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('SELAR enabled when vehicle plate is present', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      final notifier = _MockSanctionActionNotifier();
+      await tester.pumpWidget(
+        _buildCard(_makeItem(vehiclePlate: 'TST-0001'), notifier: notifier),
+      );
+      await tester.pump();
+
+      final btnFinder = find.ancestor(
+        of: find.text('SELAR VEREDITO'),
+        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      );
+      final btn = tester.widget<FilledButton>(btnFinder.first);
+      expect(btn.onPressed, isNotNull);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+
+  group('SanctionVerdictCard — VEL layout', () {
+    testWidgets('renders speed raw details for VEL clauses', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+
+      final velItem = _makeItem(
+        id: 'test-vel-01',
+        clauseRef: 'VEL-01',
+        thresholdValue: 80.0,
+        deltaValue: 5.0,
+      );
+
+      await tester.pumpWidget(_buildCard(velItem));
+      await tester.pump();
+
+      expect(find.text('VELOCIDADE REGISTRADA'), findsOneWidget);
+      expect(find.text('LIMITE CONTRATUAL'), findsOneWidget);
+      expect(find.text('EXCESSO'), findsOneWidget);
+      expect(
+        find.text('85.0'),
+        findsOneWidget,
+      ); // limit + delta = 80.0 + 5.0 = 85.0 (rendered separately from unit)
+      expect(find.text('80.0 km/h'), findsOneWidget); // limit
+      expect(find.text('+5.0 km/h'), findsOneWidget); // excess
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+}
+
+// ── Test Mock Definitions for Forensic Evidence Modal ─────────────────────────
+
+class _MockSnapshotRepo implements ForensicEvidenceSnapshotRepository {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MockSecurityIncidentLogger extends SecurityIncidentLogger {
+  _MockSecurityIncidentLogger() : super(null);
 }

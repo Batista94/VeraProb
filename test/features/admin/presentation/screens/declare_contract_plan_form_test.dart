@@ -149,7 +149,7 @@ Widget _buildForm({
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
-void main() {
+void _testPureMoneyLogic() {
   // ── Group 1: parseReaisToCents — BigInt precision (INV-4) ────────────────
   group('parseReaisToCents — BigInt precision (INV-4)', () {
     test('empty string returns 0', () {
@@ -190,6 +190,65 @@ void main() {
     });
   });
 
+  // ── Group 8: Step 2 — Valor Base > 0 (Business Maverick / INV-4) ─────────
+  group('Step 2 — Valor Base BigInt > 0 (INV-4)', () {
+    test('baseVal 0 → error triggered', () {
+      const error = 'O valor base da viagem contratada não pode ser zero.';
+      final baseVal = parseReaisToCents('0,00');
+      if (baseVal <= 0) {
+        expect(error, contains('não pode ser zero'));
+      }
+    });
+
+    test('baseVal > 0 → no block', () {
+      final baseVal = parseReaisToCents('150,00');
+      expect(baseVal, greaterThan(0));
+    });
+
+    test('empty base value → parseReaisToCents returns 0', () {
+      expect(parseReaisToCents(''), 0);
+    });
+  });
+
+  // ── Group 19: _addReturnShift blocked when base value is zero (Integrity) ──
+  // Exploit path: submitting a zero-value shift then adding a return shift
+  // could produce a plan with baseValueCents=0, violating INV-4 (money must be
+  // positive BigInt cents). The guard must fire BEFORE the snapshot is created.
+  group('_addReturnShift blocked when base value is zero (INV-4 Integrity)', () {
+    test(
+      'error string for zero base value on addReturnShift is correct sentinel',
+      () {
+        const expected =
+            'O valor base da viagem contratada não pode ser zero antes de adicionar outro turno.';
+        expect(expected, contains('não pode ser zero'));
+        expect(expected, contains('antes de adicionar outro turno'));
+      },
+    );
+
+    test(
+      'parseReaisToCents of empty string equals 0 — addReturnShift guard fires',
+      () {
+        final baseVal = parseReaisToCents('');
+        expect(baseVal <= 0, isTrue);
+      },
+    );
+
+    test(
+      'parseReaisToCents of "0,00" equals 0 — addReturnShift guard fires',
+      () {
+        final baseVal = parseReaisToCents('0,00');
+        expect(baseVal <= 0, isTrue);
+      },
+    );
+
+    test('parseReaisToCents > 0 means addReturnShift guard does NOT fire', () {
+      final baseVal = parseReaisToCents('100,00');
+      expect(baseVal > 0, isTrue);
+    });
+  });
+}
+
+void _testForensicHashDeterminism() {
   // ── Group 2: SHA-256 determinism (INV-9 / INV-15) ────────────────────────
   group('SHA-256 hash — forensic determinism (INV-9, INV-15)', () {
     String hash(
@@ -233,7 +292,9 @@ void main() {
       expect(hash(_contractId, 5000, []), isNot(hash(_contractId, 5000, pat)));
     });
   });
+}
 
+void _testIdempotencyAndKeyRotation() {
   // ── Group 3: Idempotency — onFormChanged (ARCH / INV-33) ─────────────────
   group('Idempotency — onFormChanged (INV-33)', () {
     test('key stable when state is AsyncData (no rotation)', () {
@@ -311,17 +372,57 @@ void main() {
     });
   });
 
+  // ── Group 12: Idempotency — onFormChanged on zone selection (INV-33) ──────
+  group('Idempotency — onFormChanged on zone selection (INV-33)', () {
+    testWidgets(
+      'formChangedCallCount increments when origin zone is selected',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final notifier = _StubCommandNotifier(_contractId);
+        await tester.pumpWidget(
+          _buildForm(zones: _allZones, notifier: notifier),
+        );
+        await tester.pumpAndSettle();
+
+        expect(notifier.formChangedCallCount, 0);
+
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('origin_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Garagem Central'));
+        await tester.pumpAndSettle();
+
+        expect(notifier.formChangedCallCount, greaterThan(0));
+      },
+    );
+  });
+}
+
+void _testGeofenceAndZoneValidation() {
   // ── Group 4: INV-33 Geofence Gate — QA-Security ──────────────────────────
   group('INV-33 Geofence Gate — QA-Security', () {
-    test('zone missing geofence → missingNames non-empty → BLOQUEIO message', () {
-      final zone = _zoneNoGeo;
-      final missing = [if (zone.geofence == null) zone.name];
-      expect(missing, isNotEmpty);
-      final msg =
-          'BLOQUEIO DE AUDITORIA: ${missing.join(' e ')} não possui geofence configurado';
-      expect(msg, contains('BLOQUEIO DE AUDITORIA'));
-      expect(msg, contains('Zona Sem Geofence'));
-    });
+    test(
+      'zone missing geofence → missingNames non-empty → warning message',
+      () {
+        final zone = _zoneNoGeo;
+        final missing = [if (zone.geofence == null) zone.name];
+        expect(missing, isNotEmpty);
+        final verb = missing.length > 1 ? 'têm' : 'tem';
+        final msg =
+            '${missing.join(' e ')} ainda não $verb localização definida '
+            'no mapa. Clique em "Definir Localização" abaixo do campo da zona.';
+        expect(msg, contains('localização definida no mapa'));
+        expect(msg, contains('Zona Sem Geofence'));
+      },
+    );
 
     test('zone WITH geofence → missingNames empty → no block', () {
       final missing = [if (_zoneOrigin.geofence == null) _zoneOrigin.name];
@@ -372,51 +473,6 @@ void main() {
     });
   });
 
-  // ── Group 5: Swap Logic — _resetForReturnShift (UX-Operations) ───────────
-  group('Swap Logic — _resetForReturnShift (UX-Operations)', () {
-    test('swap inverts origin ↔ destination IDs', () {
-      var origin = 'z-origin';
-      var dest = 'z-dest';
-
-      final tmp = origin;
-      origin = dest;
-      dest = tmp;
-
-      expect(origin, 'z-dest');
-      expect(dest, 'z-origin');
-    });
-
-    test('after swap, arrival and departure times reset to null', () {
-      TimeOfDay? arrival = const TimeOfDay(hour: 8, minute: 0);
-      TimeOfDay? departure = const TimeOfDay(hour: 17, minute: 0);
-
-      arrival = null;
-      departure = null;
-
-      expect(arrival, isNull);
-      expect(departure, isNull);
-    });
-
-    test('base value resets to empty after swap', () {
-      var baseValue = '150,00';
-      baseValue = '';
-      expect(baseValue, isEmpty);
-    });
-
-    testWidgets('"+ Adicionar Turno de Retorno" button absent on step 0', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(600, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(_buildForm(zones: _allZones));
-      await tester.pumpAndSettle();
-
-      expect(find.text('+ Adicionar Turno de Retorno'), findsNothing);
-    });
-  });
-
   // ── Group 6: Step 0 Validation (Origin ≠ Destination) ───────────────────
   group('Step 0 — Origin ≠ Destination (QA-Security)', () {
     test('same zone IDs → must-be-different guard fires', () {
@@ -453,6 +509,105 @@ void main() {
     });
   });
 
+  // ── Group 11: Audit Gate — geofence blocker (INV-33) ─────────────────────
+  group('Audit Gate — geofence blocker (INV-33)', () {
+    testWidgets('warning message shown when destination zone lacks geofence', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
+
+      // Select origin zone (has geofence) — key starts as 'origin_null'
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('origin_null')),
+          matching: find.byType(TextFormField),
+        ),
+        'Garagem',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Garagem Central'));
+      await tester.pumpAndSettle();
+
+      // Select destination zone WITHOUT geofence — key still 'destination_null'
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey('destination_null')),
+          matching: find.byType(TextFormField),
+        ),
+        'Sem',
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Zona Sem Geofence'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Continuar').first);
+      await tester.pump();
+
+      expect(
+        find.textContaining('ainda não tem localização definida no mapa'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  // ── Group 14: Origin == Destination guard ─────────────────────────────────
+  group('Zone validation — origin ≠ destination guard', () {
+    testWidgets(
+      'shows devem ser diferentes when same zone selected for both fields',
+      (tester) async {
+        tester.view.physicalSize = const Size(600, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        await tester.pumpWidget(_buildForm(zones: _allZones));
+        await tester.pumpAndSettle();
+
+        // Select origin as 'Garagem Central'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('origin_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Garagem Central'));
+        await tester.pumpAndSettle();
+
+        // Select SAME zone for destination — key still 'destination_null'
+        await tester.enterText(
+          find.descendant(
+            of: find.byKey(const ValueKey('destination_null')),
+            matching: find.byType(TextFormField),
+          ),
+          'Garagem',
+        );
+        await tester.pumpAndSettle();
+        // Origin field shows 'Garagem Central'; dropdown also shows it.
+        // Target the ListTile in the dropdown specifically.
+        await tester.tap(
+          find.ancestor(
+            of: find.text('Garagem Central'),
+            matching: find.byType(ListTile),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Continuar').first);
+        await tester.pump();
+
+        expect(find.textContaining('devem ser diferentes'), findsOneWidget);
+      },
+    );
+  });
+}
+
+void _testStepperNavigation() {
   // ── Group 7: Step 1 — Min 1 day + times (UX/Ops) ────────────────────────
   group('Step 1 — Turno validation (UX/Ops)', () {
     test('empty selectedDays triggers min-day error', () {
@@ -490,26 +645,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Turno'), findsOneWidget);
-    });
-  });
-
-  // ── Group 8: Step 2 — Valor Base > 0 (Business Maverick / INV-4) ─────────
-  group('Step 2 — Valor Base BigInt > 0 (INV-4)', () {
-    test('baseVal 0 → error triggered', () {
-      const error = 'O valor base da viagem contratada não pode ser zero.';
-      final baseVal = parseReaisToCents('0,00');
-      if (baseVal <= 0) {
-        expect(error, contains('não pode ser zero'));
-      }
-    });
-
-    test('baseVal > 0 → no block', () {
-      final baseVal = parseReaisToCents('150,00');
-      expect(baseVal, greaterThan(0));
-    });
-
-    test('empty base value → parseReaisToCents returns 0', () {
-      expect(parseReaisToCents(''), 0);
     });
   });
 
@@ -611,10 +746,14 @@ void main() {
     });
   });
 
-  // ── Group 11: Audit Gate — geofence blocker (INV-33) ─────────────────────
-  group('Audit Gate — geofence blocker (INV-33)', () {
+  // ── Group 23: onStepTapped — forward nav blocked on invalid step (Navigation)
+  // _onStepTapped(1) from step 0 triggers _validateStep0(). Without zone
+  // selection, validation fails and _currentStep stays at 0.
+  // Exploit path: bypassing step validation by directly tapping a future step
+  // header could allow a user to submit with incomplete/unvalidated data.
+  group('onStepTapped — forward navigation blocked (Navigation / Security)', () {
     testWidgets(
-      'BLOQUEIO DE AUDITORIA shown when destination zone lacks geofence',
+      'tapping disabled Turno step keeps user on step 0 — guard enforced by StepState',
       (tester) async {
         tester.view.physicalSize = const Size(600, 900);
         tester.view.devicePixelRatio = 1.0;
@@ -623,71 +762,58 @@ void main() {
         await tester.pumpWidget(_buildForm(zones: _allZones));
         await tester.pumpAndSettle();
 
-        // Select origin zone (has geofence) — key starts as 'origin_null'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('origin_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Garagem',
+        // Step 1 starts disabled — Flutter Stepper blocks onStepTapped silently
+        expect(
+          tester.widget<Stepper>(find.byType(Stepper)).steps[1].state,
+          equals(StepState.disabled),
         );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Garagem Central'));
-        await tester.pumpAndSettle();
 
-        // Select destination zone WITHOUT geofence — key still 'destination_null'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('destination_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Sem',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Zona Sem Geofence'));
-        await tester.pumpAndSettle();
-
-        await tester.tap(find.text('Continuar').first);
+        // Tap is silently ignored; no validation fires, no error banner
+        await tester.tap(find.text('Turno'), warnIfMissed: false);
         await tester.pump();
 
-        expect(find.textContaining('BLOQUEIO DE AUDITORIA'), findsOneWidget);
+        expect(find.byIcon(Icons.error_outline), findsNothing);
+        expect(
+          tester.widget<Stepper>(find.byType(Stepper)).currentStep,
+          equals(0),
+        );
       },
     );
-  });
 
-  // ── Group 12: Idempotency — onFormChanged on zone selection (INV-33) ──────
-  group('Idempotency — onFormChanged on zone selection (INV-33)', () {
     testWidgets(
-      'formChangedCallCount increments when origin zone is selected',
+      'tapping disabled Acordo de Penalidades step keeps user on step 0',
       (tester) async {
         tester.view.physicalSize = const Size(600, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
-        final notifier = _StubCommandNotifier(_contractId);
-        await tester.pumpWidget(
-          _buildForm(zones: _allZones, notifier: notifier),
+        await tester.pumpWidget(_buildForm(zones: _allZones));
+        await tester.pumpAndSettle();
+
+        // Step 2 starts disabled — Flutter Stepper blocks onStepTapped silently
+        expect(
+          tester.widget<Stepper>(find.byType(Stepper)).steps[2].state,
+          equals(StepState.disabled),
         );
-        await tester.pumpAndSettle();
 
-        expect(notifier.formChangedCallCount, 0);
-
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('origin_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Garagem',
+        // Tap is silently ignored; user stays on step 0
+        await tester.tap(
+          find.text('Acordo de Penalidades'),
+          warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Garagem Central'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        expect(notifier.formChangedCallCount, greaterThan(0));
+        expect(find.byIcon(Icons.error_outline), findsNothing);
+        expect(
+          tester.widget<Stepper>(find.byType(Stepper)).currentStep,
+          equals(0),
+        );
       },
     );
   });
+}
 
+void _testDialogLifecycle() {
   // ── Group 13: Dialog barrier — barrierDismissible: false ─────────────────
   group('Dialog — barrierDismissible: false', () {
     testWidgets('dialog stays open when barrier area tapped outside form', (
@@ -734,57 +860,121 @@ void main() {
     });
   });
 
-  // ── Group 14: Origin == Destination guard ─────────────────────────────────
-  group('Zone validation — origin ≠ destination guard', () {
+  // ── Group 21: Dialog header close button calls Navigator.pop(false) ────────
+  // The header's IconButton(Icons.close) calls onClose → Navigator.pop(false).
+  // This test wraps the form in a real dialog route and verifies dismissal.
+  group('Dialog header close button — Navigator.pop(false) (Navigation)', () {
     testWidgets(
-      'shows devem ser diferentes when same zone selected for both fields',
+      'tapping the close IconButton in the header dismisses the dialog',
       (tester) async {
         tester.view.physicalSize = const Size(600, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
-        await tester.pumpWidget(_buildForm(zones: _allZones));
-        await tester.pumpAndSettle();
-
-        // Select origin as 'Garagem Central'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('origin_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Garagem',
-        );
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Garagem Central'));
-        await tester.pumpAndSettle();
-
-        // Select SAME zone for destination — key still 'destination_null'
-        await tester.enterText(
-          find.descendant(
-            of: find.byKey(const ValueKey('destination_null')),
-            matching: find.byType(TextFormField),
-          ),
-          'Garagem',
-        );
-        await tester.pumpAndSettle();
-        // Origin field shows 'Garagem Central'; dropdown also shows it.
-        // Target the ListTile in the dropdown specifically.
-        await tester.tap(
-          find.ancestor(
-            of: find.text('Garagem Central'),
-            matching: find.byType(ListTile),
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _baseOverrides(zones: _allZones),
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () => showDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (_) => const DeclareContractPlanForm(
+                        contractId: _contractId,
+                        contractName: _contractName,
+                        contractorName: _contractorName,
+                      ),
+                    ),
+                    child: const Text('Open'),
+                  ),
+                ),
+              ),
+            ),
           ),
         );
+
+        await tester.tap(find.text('Open'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text('Continuar').first);
-        await tester.pump();
+        expect(find.byType(DeclareContractPlanForm), findsOneWidget);
 
-        expect(find.textContaining('devem ser diferentes'), findsOneWidget);
+        // Tap the close icon in the dialog header
+        await tester.tap(find.byIcon(Icons.close));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DeclareContractPlanForm), findsNothing);
       },
     );
   });
 
+  // ── Group 22: onStepCancel from step 0 closes dialog (Navigation) ─────────
+  // _onStepCancel at step 0 calls Navigator.of(context).pop(false).
+  // The stepper "Cancelar" TextButton routes through onStepCancel.
+  group('onStepCancel at step 0 — closes dialog (Navigation)', () {
+    testWidgets('tapping stepper Cancelar at step 0 dismisses the dialog', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: _baseOverrides(zones: _allZones),
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<bool>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (_) => const DeclareContractPlanForm(
+                      contractId: _contractId,
+                      contractName: _contractName,
+                      contractorName: _contractorName,
+                    ),
+                  ),
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeclareContractPlanForm), findsOneWidget);
+
+      // At step 0, the cancel button shows 'Cancelar'
+      expect(find.text('Cancelar'), findsAtLeastNWidgets(1));
+
+      await tester.tap(find.text('Cancelar').first);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DeclareContractPlanForm), findsNothing);
+    });
+
+    testWidgets('Voltar is absent at step 0 — confirms cancel semantics', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Voltar'), findsNothing);
+      expect(find.text('Cancelar'), findsAtLeastNWidgets(1));
+    });
+  });
+}
+
+void _testSessionAndLoadingGuards() {
   // ── Group 15: Session Validation — null orgId/operatorId (Confidentiality) ─
   // Exploit path: a token refresh races with submit and nullifies orgId after
   // widget build but before _submit() reads the provider. The guard must
@@ -1119,6 +1309,53 @@ void main() {
       },
     );
   });
+}
+
+void _testReturnShiftLogic() {
+  // ── Group 5: Swap Logic — _resetForReturnShift (UX-Operations) ───────────
+  group('Swap Logic — _resetForReturnShift (UX-Operations)', () {
+    test('swap inverts origin ↔ destination IDs', () {
+      var origin = 'z-origin';
+      var dest = 'z-dest';
+
+      final tmp = origin;
+      origin = dest;
+      dest = tmp;
+
+      expect(origin, 'z-dest');
+      expect(dest, 'z-origin');
+    });
+
+    test('after swap, arrival and departure times reset to null', () {
+      TimeOfDay? arrival = const TimeOfDay(hour: 8, minute: 0);
+      TimeOfDay? departure = const TimeOfDay(hour: 17, minute: 0);
+
+      arrival = null;
+      departure = null;
+
+      expect(arrival, isNull);
+      expect(departure, isNull);
+    });
+
+    test('base value resets to empty after swap', () {
+      var baseValue = '150,00';
+      baseValue = '';
+      expect(baseValue, isEmpty);
+    });
+
+    testWidgets('"+ Adicionar Turno de Retorno" button absent on step 0', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(600, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
+
+      expect(find.text('+ Adicionar Turno de Retorno'), findsNothing);
+    });
+  });
 
   // ── Group 18: _resetForReturnShift field defaults (UX-Operations) ─────────
   group('_resetForReturnShift default values (UX-Operations)', () {
@@ -1187,44 +1424,9 @@ void main() {
       },
     );
   });
+}
 
-  // ── Group 19: _addReturnShift blocked when base value is zero (Integrity) ──
-  // Exploit path: submitting a zero-value shift then adding a return shift
-  // could produce a plan with baseValueCents=0, violating INV-4 (money must be
-  // positive BigInt cents). The guard must fire BEFORE the snapshot is created.
-  group('_addReturnShift blocked when base value is zero (INV-4 Integrity)', () {
-    test(
-      'error string for zero base value on addReturnShift is correct sentinel',
-      () {
-        const expected =
-            'O valor base da viagem contratada não pode ser zero antes de adicionar outro turno.';
-        expect(expected, contains('não pode ser zero'));
-        expect(expected, contains('antes de adicionar outro turno'));
-      },
-    );
-
-    test(
-      'parseReaisToCents of empty string equals 0 — addReturnShift guard fires',
-      () {
-        final baseVal = parseReaisToCents('');
-        expect(baseVal <= 0, isTrue);
-      },
-    );
-
-    test(
-      'parseReaisToCents of "0,00" equals 0 — addReturnShift guard fires',
-      () {
-        final baseVal = parseReaisToCents('0,00');
-        expect(baseVal <= 0, isTrue);
-      },
-    );
-
-    test('parseReaisToCents > 0 means addReturnShift guard does NOT fire', () {
-      final baseVal = parseReaisToCents('100,00');
-      expect(baseVal > 0, isTrue);
-    });
-  });
-
+void _testTenantIsolationAndResponsive() {
   // ── Group 20: Stepper type — horizontal vs vertical (UI Responsiveness) ───
   // The stepper layout toggles at width=720. Tests cover both sides of the
   // threshold to guard against regression in the MediaQuery branch.
@@ -1325,185 +1527,6 @@ void main() {
                 widget is Stepper && widget.type == StepperType.horizontal,
           ),
           findsOneWidget,
-        );
-      },
-    );
-  });
-
-  // ── Group 21: Dialog header close button calls Navigator.pop(false) ────────
-  // The header's IconButton(Icons.close) calls onClose → Navigator.pop(false).
-  // This test wraps the form in a real dialog route and verifies dismissal.
-  group('Dialog header close button — Navigator.pop(false) (Navigation)', () {
-    testWidgets(
-      'tapping the close IconButton in the header dismisses the dialog',
-      (tester) async {
-        tester.view.physicalSize = const Size(600, 900);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: _baseOverrides(zones: _allZones),
-            child: MaterialApp(
-              home: Scaffold(
-                body: Builder(
-                  builder: (context) => ElevatedButton(
-                    onPressed: () => showDialog<bool>(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => const DeclareContractPlanForm(
-                        contractId: _contractId,
-                        contractName: _contractName,
-                        contractorName: _contractorName,
-                      ),
-                    ),
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Open'));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(DeclareContractPlanForm), findsOneWidget);
-
-        // Tap the close icon in the dialog header
-        await tester.tap(find.byIcon(Icons.close));
-        await tester.pumpAndSettle();
-
-        expect(find.byType(DeclareContractPlanForm), findsNothing);
-      },
-    );
-  });
-
-  // ── Group 22: onStepCancel from step 0 closes dialog (Navigation) ─────────
-  // _onStepCancel at step 0 calls Navigator.of(context).pop(false).
-  // The stepper "Cancelar" TextButton routes through onStepCancel.
-  group('onStepCancel at step 0 — closes dialog (Navigation)', () {
-    testWidgets('tapping stepper Cancelar at step 0 dismisses the dialog', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(600, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: _baseOverrides(zones: _allZones),
-          child: MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () => showDialog<bool>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (_) => const DeclareContractPlanForm(
-                      contractId: _contractId,
-                      contractName: _contractName,
-                      contractorName: _contractorName,
-                    ),
-                  ),
-                  child: const Text('Open'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DeclareContractPlanForm), findsOneWidget);
-
-      // At step 0, the cancel button shows 'Cancelar'
-      expect(find.text('Cancelar'), findsAtLeastNWidgets(1));
-
-      await tester.tap(find.text('Cancelar').first);
-      await tester.pumpAndSettle();
-
-      expect(find.byType(DeclareContractPlanForm), findsNothing);
-    });
-
-    testWidgets('Voltar is absent at step 0 — confirms cancel semantics', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(600, 900);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-
-      await tester.pumpWidget(_buildForm(zones: _allZones));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Voltar'), findsNothing);
-      expect(find.text('Cancelar'), findsAtLeastNWidgets(1));
-    });
-  });
-
-  // ── Group 23: onStepTapped — forward nav blocked on invalid step (Navigation)
-  // _onStepTapped(1) from step 0 triggers _validateStep0(). Without zone
-  // selection, validation fails and _currentStep stays at 0.
-  // Exploit path: bypassing step validation by directly tapping a future step
-  // header could allow a user to submit with incomplete/unvalidated data.
-  group('onStepTapped — forward navigation blocked (Navigation / Security)', () {
-    testWidgets(
-      'tapping disabled Turno step keeps user on step 0 — guard enforced by StepState',
-      (tester) async {
-        tester.view.physicalSize = const Size(600, 900);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(_buildForm(zones: _allZones));
-        await tester.pumpAndSettle();
-
-        // Step 1 starts disabled — Flutter Stepper blocks onStepTapped silently
-        expect(
-          tester.widget<Stepper>(find.byType(Stepper)).steps[1].state,
-          equals(StepState.disabled),
-        );
-
-        // Tap is silently ignored; no validation fires, no error banner
-        await tester.tap(find.text('Turno'), warnIfMissed: false);
-        await tester.pump();
-
-        expect(find.byIcon(Icons.error_outline), findsNothing);
-        expect(
-          tester.widget<Stepper>(find.byType(Stepper)).currentStep,
-          equals(0),
-        );
-      },
-    );
-
-    testWidgets(
-      'tapping disabled Acordo de Penalidades step keeps user on step 0',
-      (tester) async {
-        tester.view.physicalSize = const Size(600, 900);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-
-        await tester.pumpWidget(_buildForm(zones: _allZones));
-        await tester.pumpAndSettle();
-
-        // Step 2 starts disabled — Flutter Stepper blocks onStepTapped silently
-        expect(
-          tester.widget<Stepper>(find.byType(Stepper)).steps[2].state,
-          equals(StepState.disabled),
-        );
-
-        // Tap is silently ignored; user stays on step 0
-        await tester.tap(
-          find.text('Acordo de Penalidades'),
-          warnIfMissed: false,
-        );
-        await tester.pump();
-
-        expect(find.byIcon(Icons.error_outline), findsNothing);
-        expect(
-          tester.widget<Stepper>(find.byType(Stepper)).currentStep,
-          equals(0),
         );
       },
     );
@@ -1671,4 +1694,30 @@ void main() {
       },
     );
   });
+
+  // ── Group 26: Responsive / overflow ───────────────────────────────────────
+  group('DeclareContractPlanForm — responsive / overflow', () {
+    testWidgets('does not overflow on narrow screens', (tester) async {
+      tester.view.physicalSize = const Size(320, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(_buildForm(zones: _allZones));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Zonas Operacionais'), findsOneWidget);
+    });
+  });
+}
+
+void main() {
+  _testPureMoneyLogic();
+  _testForensicHashDeterminism();
+  _testIdempotencyAndKeyRotation();
+  _testGeofenceAndZoneValidation();
+  _testStepperNavigation();
+  _testDialogLifecycle();
+  _testSessionAndLoadingGuards();
+  _testReturnShiftLogic();
+  _testTenantIsolationAndResponsive();
 }

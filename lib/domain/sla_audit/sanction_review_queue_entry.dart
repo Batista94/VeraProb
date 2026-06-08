@@ -36,6 +36,11 @@ class SanctionReviewQueueEntry extends Equatable {
   /// Excluded from [props]: identity is [id]-based, not plate-based.
   final String? vehiclePlate;
 
+  /// Denormalized operator (driver) name, resolved at INSERT time by the DB
+  /// trigger (migration 20260805000002_srq_operator_name.sql). Nullable —
+  /// telemetry may arrive without an authenticated operator (INV-14).
+  final String? operatorName;
+
   const SanctionReviewQueueEntry({
     required this.id,
     required this.organizationId,
@@ -49,13 +54,24 @@ class SanctionReviewQueueEntry extends Equatable {
     this.reviewedByUserId,
     this.rejectionReason,
     this.vehiclePlate,
+    this.operatorName,
   });
 
+  /// Returns a copy with the given fields replaced.
+  ///
+  /// Nullable review fields cannot be cleared by passing `null` (the
+  /// `?? this.x` fallback would preserve the old value). To null them — as the
+  /// dispute *retract* arc requires (`disputed → pending` must wipe the prior
+  /// review) — pass the matching `clear*` flag. A `clear*` flag always wins
+  /// over a positional value for the same field.
   SanctionReviewQueueEntry copyWith({
     SanctionReviewStatus? status,
     DateTime? reviewedAtUtc,
     String? reviewedByUserId,
     String? rejectionReason,
+    bool clearReviewedAtUtc = false,
+    bool clearReviewedByUserId = false,
+    bool clearRejectionReason = false,
   }) {
     return SanctionReviewQueueEntry(
       id: id,
@@ -66,10 +82,17 @@ class SanctionReviewQueueEntry extends Equatable {
       verdictEvidence: verdictEvidence,
       status: status ?? this.status,
       createdAtUtc: createdAtUtc,
-      reviewedAtUtc: reviewedAtUtc ?? this.reviewedAtUtc,
-      reviewedByUserId: reviewedByUserId ?? this.reviewedByUserId,
-      rejectionReason: rejectionReason ?? this.rejectionReason,
+      reviewedAtUtc: clearReviewedAtUtc
+          ? null
+          : (reviewedAtUtc ?? this.reviewedAtUtc),
+      reviewedByUserId: clearReviewedByUserId
+          ? null
+          : (reviewedByUserId ?? this.reviewedByUserId),
+      rejectionReason: clearRejectionReason
+          ? null
+          : (rejectionReason ?? this.rejectionReason),
       vehiclePlate: vehiclePlate,
+      operatorName: operatorName,
     );
   }
 

@@ -32,42 +32,46 @@ class RoiGuardianStrip extends ConsumerWidget {
         AsyncError() => const SizedBox.shrink(),
         AsyncData(:final value) => () {
           if (value == null) return const SizedBox.shrink();
-          return Row(
-            children: [
-              const Icon(
-                Icons.shield_outlined,
-                size: 14,
-                color: VeraProbColors.primary,
-              ),
-              const SizedBox(width: 6),
-              _Metric(
-                label: 'RECEITA RECUPERADA',
-                value: _formatCents(value.totalRecoveredCents),
-                color: VeraProbColors.success,
-              ),
-              _Divider(),
-              _Metric(
-                label: 'GLOSAS EVITADAS',
-                value: _formatCents(value.totalAvoidedPenaltyCents),
-                color: VeraProbColors.warning,
-              ),
-              _Divider(),
-              _RoiAtualMetric(roiBps: value.roiBps),
-              _Divider(),
-              _Metric(
-                label: 'VIAGENS AUTO-VINCULADAS',
-                value: value.totalLinkedTrips.toString(),
-                color: VeraProbColors.primary,
-              ),
-              if (value.pendingOrphans > 0) ...[
+          // Horizontal scroll: prevents overflow on narrow windows (Lesson #3)
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.shield_outlined,
+                  size: 14,
+                  color: VeraProbColors.primary,
+                ),
+                const SizedBox(width: 6),
+                _Metric(
+                  label: 'RECEITA RECUPERADA',
+                  value: _formatCents(value.totalRecoveredCents),
+                  color: VeraProbColors.success,
+                ),
                 _Divider(),
                 _Metric(
-                  label: 'ÓRFÃOS PENDENTES',
-                  value: value.pendingOrphans.toString(),
-                  color: VeraProbColors.error,
+                  label: 'GLOSAS EVITADAS',
+                  value: _formatCents(value.totalAvoidedPenaltyCents),
+                  color: VeraProbColors.warning,
                 ),
+                _Divider(),
+                _RoiAtualMetric(roiBps: value.roiBps),
+                _Divider(),
+                _Metric(
+                  label: 'VIAGENS AUTO-VINCULADAS',
+                  value: value.totalLinkedTrips.toString(),
+                  color: VeraProbColors.primary,
+                ),
+                if (value.pendingOrphans > 0) ...[
+                  _Divider(),
+                  _Metric(
+                    label: 'ÓRFÃOS PENDENTES',
+                    value: value.pendingOrphans.toString(),
+                    color: VeraProbColors.error,
+                  ),
+                ],
               ],
-            ],
+            ),
           );
         }(),
       },

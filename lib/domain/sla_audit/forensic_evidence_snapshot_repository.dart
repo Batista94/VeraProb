@@ -47,6 +47,23 @@ abstract class ForensicEvidenceSnapshotRepository {
     required String idempotencyKey,
   });
 
+  /// Seals a forensic snapshot for an existing DISPUTE_OVERTURNED ledger entry.
+  ///
+  /// Unlike [seal], this method does NOT append a new ledger entry (INV-3).
+  /// It links the snapshot to [ledgerEntryId] — the entry already appended by
+  /// [ResolveDisputeHandler] — and computes the integrity hash identically so
+  /// [verify] works without modification.
+  Future<ForensicEvidenceSnapshot> sealForDispute({
+    required String organizationId,
+    required String ledgerEntryId,
+    required String contractId,
+    required String setId,
+    required int planVersion,
+    required DateTime occurredAtUtc,
+    required String sealedBy,
+    required String idempotencyKey,
+  });
+
   /// Returns the snapshot bound to a verdict, or null if none exists for this
   /// tenant (cross-tenant / unknown → null, 404 parity per INV-26).
   Future<ForensicEvidenceSnapshot?> findByLedgerEntry({

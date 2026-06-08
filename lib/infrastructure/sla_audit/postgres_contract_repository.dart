@@ -88,14 +88,39 @@ class PostgresContractRepository extends BasePostgresRepository
 
   @override
   Future<Contract> save(Contract contract) async {
-    // Dispatch to create or update based on version:
-    // version == 1 means this is a new aggregate (never persisted).
-    // version > 1 means this aggregate was loaded from DB and mutated.
-    if (contract.version == 1) {
+    // Dispatch based on version sentinel:
+    // version == 0: new aggregate, never committed to DB → INSERT.
+    // version >= 1: loaded via reconstitute() → UPDATE (version bumped by DB trigger).
+    if (contract.version == 0) {
       await _create(contract);
-      return contract; // Insert: version stays at 1 until first update
+      // DB DEFAULT assigns version=1 on INSERT. Reconstitute so the caller's
+      // reference reflects the live DB state and subsequent save() calls route
+      // to _update(), not _create() again.
+      return Contract.reconstitute(
+        id: contract.id,
+        version: 1,
+        organizationId: contract.organizationId,
+        name: contract.name,
+        contractorName: contract.contractorName,
+        contractorId: contract.contractorId,
+        description: contract.description,
+        validFromUtc: contract.validFromUtc,
+        validUntilUtc: contract.validUntilUtc,
+        status: contract.status,
+        createdAtUtc: contract.createdAtUtc,
+        activatedAtUtc: contract.activatedAtUtc,
+        closedAtUtc: contract.closedAtUtc,
+        closedByUserId: contract.closedByUserId,
+        closeReason: contract.closeReason,
+        submittedForApprovalAtUtc: contract.submittedForApprovalAtUtc,
+        clonedFromContractId: contract.clonedFromContractId,
+        financialCeiling: contract.financialCeiling,
+        penaltyMultiplierBps: contract.penaltyMultiplierBps,
+        latitude: contract.latitude,
+        longitude: contract.longitude,
+      );
     } else {
-      return _update(contract); // Returns entity with bumped version
+      return _update(contract);
     }
   }
 
@@ -107,6 +132,7 @@ class PostgresContractRepository extends BasePostgresRepository
         'organization_id': contract.organizationId,
         'name': contract.name,
         'contractor_name': contract.contractorName,
+        'contractor_id': contract.contractorId,
         'description': contract.description,
         'valid_from_utc': contract.validFromUtc.toIso8601String(),
         'valid_until_utc': contract.validUntilUtc.toIso8601String(),
@@ -152,6 +178,7 @@ class PostgresContractRepository extends BasePostgresRepository
         data: {
           'name': contract.name,
           'contractor_name': contract.contractorName,
+          'contractor_id': contract.contractorId,
           'description': contract.description,
           'valid_from_utc': contract.validFromUtc.toIso8601String(),
           'valid_until_utc': contract.validUntilUtc.toIso8601String(),
@@ -182,6 +209,7 @@ class PostgresContractRepository extends BasePostgresRepository
         organizationId: contract.organizationId,
         name: contract.name,
         contractorName: contract.contractorName,
+        contractorId: contract.contractorId,
         description: contract.description,
         validFromUtc: contract.validFromUtc,
         validUntilUtc: contract.validUntilUtc,
@@ -277,6 +305,7 @@ class PostgresContractRepository extends BasePostgresRepository
       organizationId: row['organization_id'] as String,
       name: row['name'] as String,
       contractorName: row['contractor_name'] as String,
+      contractorId: row['contractor_id'] as String?,
       description: row['description'] as String?,
       validFromUtc: parseUtc(row['valid_from_utc'], 'valid_from_utc'),
       validUntilUtc: parseUtc(row['valid_until_utc'], 'valid_until_utc'),

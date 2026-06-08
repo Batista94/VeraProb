@@ -172,7 +172,7 @@ class PostgresPlanDeclarationRepository extends BasePostgresRepository
     // (plan_declaration_id, shift_pattern_index, operational_date)
     await client
         .from('contractual_service_executions')
-        .upsert(data, ignoreDuplicates: true);
+        .upsert(data, onConflict: 'set_id', ignoreDuplicates: true);
   }
 
   PlanDeclaration _mapToEntity(Map<String, dynamic> data) {

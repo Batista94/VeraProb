@@ -42,6 +42,15 @@ class SanctionQueueItemView extends Equatable {
   /// Null for legacy rows or unbound vehicles.
   final String? vehiclePlate;
 
+  /// Denormalized operator (driver) name from the DB row (INV-14).
+  /// Null when telemetry arrived without an authenticated operator.
+  final String? operatorName;
+
+  /// Transport-agnostic alias for the bound asset identifier (INV-14).
+  /// Today resolves to the vehicle plate; stays stable if the asset model
+  /// generalizes beyond road vehicles.
+  String? get assetIdentifier => vehiclePlate;
+
   const SanctionQueueItemView({
     required this.id,
     required this.organizationId,
@@ -58,6 +67,7 @@ class SanctionQueueItemView extends Equatable {
     this.windowStartUtc,
     this.windowEndUtc,
     this.vehiclePlate,
+    this.operatorName,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -103,6 +113,7 @@ class SanctionQueueItemView extends Equatable {
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
+      operatorName: row['operator_name'] as String?,
     );
   }
 
@@ -120,6 +131,7 @@ class SanctionQueueItemView extends Equatable {
       reviewedByUserId: entry.reviewedByUserId,
       rejectionReason: entry.rejectionReason,
       vehiclePlate: entry.vehiclePlate,
+      operatorName: entry.operatorName,
     );
   }
 
@@ -142,5 +154,6 @@ class SanctionQueueItemView extends Equatable {
     reviewedByUserId,
     rejectionReason,
     vehiclePlate,
+    operatorName,
   ];
 }

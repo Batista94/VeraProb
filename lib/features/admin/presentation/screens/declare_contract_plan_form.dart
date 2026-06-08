@@ -66,6 +66,7 @@ class _DeclareContractPlanFormState
   int _highestStepReached = 0;
   bool _isSubmitting = false;
   String? _errorMessage;
+  bool _errorIsWarning = false;
 
   // ── Round-trip: accumulator of confirmed turns ───────────────
   final List<ShiftDraftSnapshot> _confirmedShiftDrafts = [];
@@ -141,7 +142,12 @@ class _DeclareContractPlanFormState
   }
 
   void _clearError() {
-    if (_errorMessage != null) setState(() => _errorMessage = null);
+    if (_errorMessage != null) {
+      setState(() {
+        _errorMessage = null;
+        _errorIsWarning = false;
+      });
+    }
   }
 
   @override
@@ -230,31 +236,30 @@ class _DeclareContractPlanFormState
 
   // ── Stepper Navigation ───────────────────────────────────────
 
-  String? _validateStep0() {
+  String? _validateStep0Selection() {
     if (_selectedOriginZoneId == null || _selectedDestinationZoneId == null) {
       return 'Selecione a Zona de Partida e a Zona de Chegada para continuar.';
     }
     if (_selectedOriginZoneId == _selectedDestinationZoneId) {
       return 'A Zona de Partida e Chegada devem ser diferentes.';
     }
-    final zones = ref.read(operationalZonesProvider).value ?? [];
-    final originZone = zones
-        .where((z) => z.id == _selectedOriginZoneId)
-        .firstOrNull;
-    final destZone = zones
-        .where((z) => z.id == _selectedDestinationZoneId)
-        .firstOrNull;
-    final missingNames = [
-      if (originZone?.geofence == null) originZone?.name ?? 'Zona de Partida',
-      if (destZone?.geofence == null) destZone?.name ?? 'Zona de Chegada',
-    ];
-    if (missingNames.isNotEmpty) {
-      return 'BLOQUEIO DE AUDITORIA: ${missingNames.join(' e ')} não possui '
-          'geofence configurado (Latitude, Longitude e Raio). '
-          'Acesse Zonas Operacionais → edite a zona → preencha os campos de '
-          'Geofence antes de continuar.';
-    }
     return null;
+  }
+
+  /// Returns an amber-warning message when selected zones lack map locations.
+  /// Uses local state (updated immediately by onGeofenceConfigured).
+  String? _validateStep0Geofence() {
+    final missingNames = [
+      if (_selectedOriginZone != null && _selectedOriginZone!.geofence == null)
+        _selectedOriginZone!.name,
+      if (_selectedDestinationZone != null &&
+          _selectedDestinationZone!.geofence == null)
+        _selectedDestinationZone!.name,
+    ];
+    if (missingNames.isEmpty) return null;
+    final verb = missingNames.length > 1 ? 'têm' : 'tem';
+    return '${missingNames.join(' e ')} ainda não $verb localização definida '
+        'no mapa. Clique em "Definir Localização" abaixo do campo da zona.';
   }
 
   String? _validateStep1() {
@@ -277,8 +282,14 @@ class _DeclareContractPlanFormState
 
   void _onStepContinue() {
     String? error;
+    var isWarning = false;
+
     if (_currentStep == 0) {
-      error = _validateStep0();
+      error = _validateStep0Selection();
+      if (error == null) {
+        error = _validateStep0Geofence();
+        if (error != null) isWarning = true;
+      }
     } else if (_currentStep == 1) {
       error = _validateStep1();
     } else if (_currentStep == 2) {
@@ -286,12 +297,16 @@ class _DeclareContractPlanFormState
     }
 
     if (error != null) {
-      setState(() => _errorMessage = error);
+      setState(() {
+        _errorMessage = error;
+        _errorIsWarning = isWarning;
+      });
       return;
     }
 
     setState(() {
       _errorMessage = null;
+      _errorIsWarning = false;
       if (_currentStep < 3) {
         _currentStep++;
         if (_currentStep > _highestStepReached) {
@@ -309,6 +324,7 @@ class _DeclareContractPlanFormState
     if (step < _currentStep) {
       setState(() {
         _errorMessage = null;
+        _errorIsWarning = false;
         _currentStep = step;
       });
       return;
@@ -316,21 +332,42 @@ class _DeclareContractPlanFormState
 
     if (step > _highestStepReached) {
       for (var i = _currentStep; i < step; i++) {
-        String? error;
         if (i == 0) {
-          error = _validateStep0();
-        } else if (i == 1) {
-          error = _validateStep1();
-        } else if (i == 2) {
-          error = _validateStep2();
-        }
-        if (error != null) {
-          setState(() => _errorMessage = error);
-          return;
+          final selErr = _validateStep0Selection();
+          if (selErr != null) {
+            setState(() {
+              _errorMessage = selErr;
+              _errorIsWarning = false;
+            });
+            return;
+          }
+          final geoErr = _validateStep0Geofence();
+          if (geoErr != null) {
+            setState(() {
+              _errorMessage = geoErr;
+              _errorIsWarning = true;
+            });
+            return;
+          }
+        } else {
+          String? error;
+          if (i == 1) {
+            error = _validateStep1();
+          } else if (i == 2) {
+            error = _validateStep2();
+          }
+          if (error != null) {
+            setState(() {
+              _errorMessage = error;
+              _errorIsWarning = false;
+            });
+            return;
+          }
         }
       }
       setState(() {
         _errorMessage = null;
+        _errorIsWarning = false;
         _currentStep = step;
         if (step > _highestStepReached) _highestStepReached = step;
       });
@@ -339,6 +376,7 @@ class _DeclareContractPlanFormState
 
     setState(() {
       _errorMessage = null;
+      _errorIsWarning = false;
       _currentStep = step;
     });
   }
@@ -426,6 +464,8 @@ class _DeclareContractPlanFormState
   }
 
   Future<void> _submit() async {
+    if (_isSubmitting) return;
+
     final organizationId = ref.read(currentOrganizationIdProvider);
     final operatorId = ref.read(currentOperatorIdProvider);
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
@@ -433,6 +473,8 @@ class _DeclareContractPlanFormState
       setState(() => _errorMessage = 'Sessão inválida. Faça login novamente.');
       return;
     }
+
+    final navigator = Navigator.of(context);
 
     setState(() {
       _isSubmitting = true;
@@ -478,7 +520,7 @@ class _DeclareContractPlanFormState
       );
 
       if (planId != null && mounted) {
-        Navigator.of(context).pop(true);
+        navigator.pop(true);
       } else {
         // [Forensic Error Display] Read status from notifier
         final status = ref
@@ -582,6 +624,127 @@ class _DeclareContractPlanFormState
     return ReviewStep(allTurns: allTurns, contractId: widget.contractId);
   }
 
+  Widget _buildStepperControls(
+    BuildContext context,
+    ControlsDetails details,
+    bool isLoading,
+  ) {
+    final isLastStep = _currentStep == 3;
+    final isStep3 = _currentStep == 2;
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          FilledButton.icon(
+            onPressed: isLoading ? null : details.onStepContinue,
+            icon: isLoading
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : Icon(isLastStep ? Icons.publish : Icons.arrow_forward),
+            label: Text(isLastStep ? 'Publicar SLA B2B' : 'Continuar'),
+          ),
+          if (isStep3)
+            OutlinedButton.icon(
+              onPressed: isLoading ? null : _addReturnShift,
+              icon: const Icon(Icons.add, size: 16),
+              label: const Text('+ Adicionar Turno de Retorno'),
+            ),
+          TextButton(
+            onPressed: isLoading ? null : details.onStepCancel,
+            child: Text(_currentStep == 0 ? 'Cancelar' : 'Voltar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Step> _buildStepperSteps() {
+    return [
+      Step(
+        title: const Text('Zonas Operacionais'),
+        content: DeclarePlanZonesStep(
+          selectedOriginZone: _selectedOriginZone,
+          selectedOriginZoneId: _selectedOriginZoneId,
+          selectedDestinationZone: _selectedDestinationZone,
+          selectedDestinationZoneId: _selectedDestinationZoneId,
+          onOriginChanged: (zone) => setState(() {
+            _selectedOriginZone = zone;
+            _selectedOriginZoneId = zone?.id;
+            _onDataChanged();
+          }),
+          onOriginConfigured: (zone) => setState(() {
+            _selectedOriginZone = zone;
+            _onDataChanged();
+          }),
+          onDestinationChanged: (zone) => setState(() {
+            _selectedDestinationZone = zone;
+            _selectedDestinationZoneId = zone?.id;
+            _onDataChanged();
+          }),
+          onDestinationConfigured: (zone) => setState(() {
+            _selectedDestinationZone = zone;
+            _onDataChanged();
+          }),
+          onSwap: () {
+            setState(() {
+              final tmpZone = _selectedOriginZone;
+              _selectedOriginZone = _selectedDestinationZone;
+              _selectedDestinationZone = tmpZone;
+              final tmpId = _selectedOriginZoneId;
+              _selectedOriginZoneId = _selectedDestinationZoneId;
+              _selectedDestinationZoneId = tmpId;
+              _onDataChanged();
+            });
+          },
+        ),
+        isActive: _currentStep >= 0,
+        state: _currentStep > 0 ? StepState.complete : StepState.editing,
+      ),
+      Step(
+        title: const Text('Turno'),
+        content: _buildStep2(),
+        isActive: _currentStep >= 1,
+        state: _currentStep > 1
+            ? StepState.complete
+            : _currentStep == 1
+            ? StepState.editing
+            : _highestStepReached >= 1
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+      Step(
+        title: const Text('Acordo de Penalidades'),
+        content: _buildStep3(),
+        isActive: _currentStep >= 2,
+        state: _currentStep > 2
+            ? StepState.complete
+            : _currentStep == 2
+            ? StepState.editing
+            : _highestStepReached >= 2
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+      Step(
+        title: const Text('Exposição de Risco'),
+        content: _buildStep4(),
+        isActive: _currentStep >= 3,
+        state: _currentStep == 3
+            ? StepState.editing
+            : _highestStepReached >= 3
+            ? StepState.indexed
+            : StepState.disabled,
+      ),
+    ];
+  }
+
   // ── Build ────────────────────────────────────────────────────
 
   @override
@@ -622,25 +785,35 @@ class _DeclareContractPlanFormState
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: VeraProbColors.error.withValues(alpha: 0.1),
+                    color: _errorIsWarning
+                        ? VeraProbColors.warning.withValues(alpha: 0.1)
+                        : VeraProbColors.error.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(
-                      color: VeraProbColors.error.withValues(alpha: 0.3),
+                      color: _errorIsWarning
+                          ? VeraProbColors.warning.withValues(alpha: 0.3)
+                          : VeraProbColors.error.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: VeraProbColors.error,
+                      Icon(
+                        _errorIsWarning
+                            ? Icons.info_outline
+                            : Icons.error_outline,
+                        color: _errorIsWarning
+                            ? VeraProbColors.warning
+                            : VeraProbColors.error,
                         size: 16,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           _errorMessage!,
-                          style: const TextStyle(
-                            color: VeraProbColors.error,
+                          style: TextStyle(
+                            color: _errorIsWarning
+                                ? VeraProbColors.warning
+                                : VeraProbColors.error,
                             fontSize: 13,
                           ),
                         ),
@@ -658,129 +831,9 @@ class _DeclareContractPlanFormState
                 onStepContinue: _onStepContinue,
                 onStepCancel: _onStepCancel,
                 onStepTapped: _onStepTapped,
-                controlsBuilder: (context, details) {
-                  final isLastStep = _currentStep == 3;
-                  final isStep3 = _currentStep == 2;
-                  return Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: Wrap(
-                      spacing: 12,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: isLoading ? null : details.onStepContinue,
-                          icon: isLoading
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Icon(
-                                  isLastStep
-                                      ? Icons.publish
-                                      : Icons.arrow_forward,
-                                ),
-                          label: Text(
-                            isLastStep ? 'Publicar SLA B2B' : 'Continuar',
-                          ),
-                        ),
-                        if (isStep3)
-                          OutlinedButton.icon(
-                            onPressed: isLoading ? null : _addReturnShift,
-                            icon: const Icon(Icons.add, size: 16),
-                            label: const Text('+ Adicionar Turno de Retorno'),
-                          ),
-                        TextButton(
-                          onPressed: isLoading ? null : details.onStepCancel,
-                          child: Text(
-                            _currentStep == 0 ? 'Cancelar' : 'Voltar',
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                steps: [
-                  Step(
-                    title: const Text('Zonas Operacionais'),
-                    content: DeclarePlanZonesStep(
-                      selectedOriginZone: _selectedOriginZone,
-                      selectedOriginZoneId: _selectedOriginZoneId,
-                      selectedDestinationZone: _selectedDestinationZone,
-                      selectedDestinationZoneId: _selectedDestinationZoneId,
-                      onOriginChanged: (zone) => setState(() {
-                        _selectedOriginZone = zone;
-                        _selectedOriginZoneId = zone?.id;
-                        _onDataChanged();
-                      }),
-                      onOriginConfigured: (zone) => setState(() {
-                        _selectedOriginZone = zone;
-                        _onDataChanged();
-                      }),
-                      onDestinationChanged: (zone) => setState(() {
-                        _selectedDestinationZone = zone;
-                        _selectedDestinationZoneId = zone?.id;
-                        _onDataChanged();
-                      }),
-                      onDestinationConfigured: (zone) => setState(() {
-                        _selectedDestinationZone = zone;
-                        _onDataChanged();
-                      }),
-                      onSwap: () {
-                        setState(() {
-                          final tmpZone = _selectedOriginZone;
-                          _selectedOriginZone = _selectedDestinationZone;
-                          _selectedDestinationZone = tmpZone;
-                          final tmpId = _selectedOriginZoneId;
-                          _selectedOriginZoneId = _selectedDestinationZoneId;
-                          _selectedDestinationZoneId = tmpId;
-                          _onDataChanged();
-                        });
-                      },
-                    ),
-                    isActive: _currentStep >= 0,
-                    state: _currentStep > 0
-                        ? StepState.complete
-                        : StepState.editing,
-                  ),
-                  Step(
-                    title: const Text('Turno'),
-                    content: _buildStep2(),
-                    isActive: _currentStep >= 1,
-                    state: _currentStep > 1
-                        ? StepState.complete
-                        : _currentStep == 1
-                        ? StepState.editing
-                        : _highestStepReached >= 1
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                  Step(
-                    title: const Text('Acordo de Penalidades'),
-                    content: _buildStep3(),
-                    isActive: _currentStep >= 2,
-                    state: _currentStep > 2
-                        ? StepState.complete
-                        : _currentStep == 2
-                        ? StepState.editing
-                        : _highestStepReached >= 2
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                  Step(
-                    title: const Text('Exposição de Risco'),
-                    content: _buildStep4(),
-                    isActive: _currentStep >= 3,
-                    state: _currentStep == 3
-                        ? StepState.editing
-                        : _highestStepReached >= 3
-                        ? StepState.indexed
-                        : StepState.disabled,
-                  ),
-                ],
+                controlsBuilder: (context, details) =>
+                    _buildStepperControls(context, details, isLoading),
+                steps: _buildStepperSteps(),
               ),
             ),
           ],

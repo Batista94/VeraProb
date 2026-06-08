@@ -255,36 +255,23 @@ void _test54() {
       );
       await SuperAdminWidgetHelpers.confirmModal(tester);
 
-      // Aguardar processamento (sem refresh manual da página)
-      await tester.pumpAndSettle(
-        const Duration(milliseconds: 100),
-        EnginePhase.sendSemanticsUpdate,
-        SuperAdminTestConfig.defaultTimeout,
-      );
+      // Aguardar processamento e verificar que o botão alternou INSTANTANEAMENTE
+      // para "Arquivar" (sem necessidade de refresh da página) (Req 5.4)
+      await SuperAdminWidgetHelpers.retryUntil(tester, () async {
+        await tester.pump(const Duration(milliseconds: 100));
+        final arquivarAfter = find.byTooltip('Arquivar');
+        final arquivarAfterText = find.widgetWithText(FilledButton, 'Arquivar');
+        final arquivarAfterElevated = find.widgetWithText(
+          ElevatedButton,
+          'Arquivar',
+        );
+        final arquivarAfterGeneric = find.textContaining('Arquivar');
 
-      // Verificar que o botão alternou INSTANTANEAMENTE para "Arquivar"
-      // (sem necessidade de refresh da página)
-      final arquivarAfter = find.byTooltip('Arquivar');
-      final arquivarAfterText = find.widgetWithText(FilledButton, 'Arquivar');
-      final arquivarAfterElevated = find.widgetWithText(
-        ElevatedButton,
-        'Arquivar',
-      );
-      final arquivarAfterGeneric = find.textContaining('Arquivar');
-
-      final archiveButtonPresent =
-          arquivarAfter.evaluate().isNotEmpty ||
-          arquivarAfterText.evaluate().isNotEmpty ||
-          arquivarAfterElevated.evaluate().isNotEmpty ||
-          arquivarAfterGeneric.evaluate().isNotEmpty;
-
-      expect(
-        archiveButtonPresent,
-        isTrue,
-        reason:
-            'O botão deve alternar instantaneamente para "Arquivar" '
-            'após desarquivamento, sem necessidade de refresh (Req 5.4)',
-      );
+        return arquivarAfter.evaluate().isNotEmpty ||
+            arquivarAfterText.evaluate().isNotEmpty ||
+            arquivarAfterElevated.evaluate().isNotEmpty ||
+            arquivarAfterGeneric.evaluate().isNotEmpty;
+      }, timeout: SuperAdminTestConfig.defaultTimeout);
 
       // Verificar que "Desarquivar" NÃO está mais presente
       final desarquivarAfter = find.widgetWithText(FilledButton, 'Desarquivar');

@@ -21,11 +21,17 @@ class SanctionMapFocus {
   /// Geofence radius in metres. Defaults to 50m.
   final double geofenceRadiusMeters;
 
+  /// Monotonic tag identifying a distinct selection/recenter event. Re-selecting
+  /// the same sanction bumps this so the map re-frames even when the geographic
+  /// payload is identical (explicit recenter intent; survives a future `==`).
+  final int selectionEpoch;
+
   const SanctionMapFocus({
     required this.sanctionId,
     required this.infractionPoint,
     this.geofenceCenter,
     this.geofenceRadiusMeters = 50.0,
+    this.selectionEpoch = 0,
   });
 }
 
@@ -35,10 +41,26 @@ class SanctionMapFocus {
 /// - **Reader:** [TelemetrySyncMap] (via `ref.listen`)
 /// - **Null:** No sanction selected → map shows default overview.
 class _SelectedSanctionFocusNotifier extends Notifier<SanctionMapFocus?> {
+  int _epoch = 0;
+
   @override
   SanctionMapFocus? build() => null;
 
   void set(SanctionMapFocus? value) => state = value;
+
+  /// Focus (or re-focus) the map on [focus], always emitting a distinct event.
+  /// Used by the address affordance so re-tapping an already-selected sanction
+  /// re-frames the map to the forensic zoom even after the auditor panned away.
+  void recenter(SanctionMapFocus focus) {
+    _epoch++;
+    state = SanctionMapFocus(
+      sanctionId: focus.sanctionId,
+      infractionPoint: focus.infractionPoint,
+      geofenceCenter: focus.geofenceCenter,
+      geofenceRadiusMeters: focus.geofenceRadiusMeters,
+      selectionEpoch: _epoch,
+    );
+  }
 }
 
 final selectedSanctionFocusProvider =

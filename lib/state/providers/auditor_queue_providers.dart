@@ -1,16 +1,22 @@
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/dispute_sanction_command.dart';
+import 'package:veraprob/application/sla_audit/dispute_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart';
+import 'package:veraprob/application/sla_audit/resolve_dispute_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_service.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/notifiers/async_command_mixin.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
@@ -49,6 +55,31 @@ final pendingSanctionsStreamProvider =
 /// Derived count of pending sanctions for the navigation badge.
 final pendingSanctionsCountProvider = Provider.autoDispose<int>((ref) {
   final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+  return switch (sanctionsAsync) {
+    AsyncData(:final value) => value.length,
+    AsyncError() => 0,
+    AsyncLoading() => 0,
+  };
+});
+
+/// Stream of disputed/waiting evidence sanction items for the current session's organization.
+final disputedSanctionsStreamProvider =
+    StreamProvider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      return ref
+          .watch(supabaseClientProvider)
+          .from('sanction_review_queue')
+          .stream(primaryKey: ['id'])
+          .eq('status', 'disputed')
+          .map(
+            (rows) =>
+                rows.map((row) => SanctionQueueItemView.fromRow(row)).toList(),
+          )
+          .distinct(listEquals);
+    });
+
+/// Derived count of disputed sanctions.
+final disputedSanctionsCountProvider = Provider.autoDispose<int>((ref) {
+  final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
   return switch (sanctionsAsync) {
     AsyncData(:final value) => value.length,
     AsyncError() => 0,
@@ -153,6 +184,70 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     clock: ref.watch(dateTimeProviderProvider),
   );
 
+  DisputeSanctionHandler get _disputeHandler => DisputeSanctionHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    rbac: RbacService(),
+  );
+
+  ResolveDisputeHandler get _resolveDisputeHandler => ResolveDisputeHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    vault: ref.watch(forensicEvidenceSnapshotRepositoryProvider),
+    rbac: RbacService(),
+    dateTimeProvider: ref.watch(dateTimeProviderProvider),
+  );
+
+  Future<void> dispute({
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _disputeHandler.handle(
+        DisputeSanctionCommand(
+          queueEntryId: queueEntryId,
+          disputedByUserId: disputedByUserId,
+          actorEmail: actorEmail,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  Future<void> resolveDispute({
+    required String queueEntryId,
+    required DisputeResolution resolution,
+    required String resolvedByUserId,
+    required String actorEmail,
+    String? resolutionReason,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _resolveDisputeHandler.handle(
+        ResolveDisputeCommand(
+          queueEntryId: queueEntryId,
+          resolution: resolution,
+          resolvedByUserId: resolvedByUserId,
+          actorEmail: actorEmail,
+          resolutionReason: resolutionReason,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
   Future<void> approve({
     required String queueEntryId,
     required String approvedByUserId,
@@ -197,5 +292,162 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
         ),
       ),
     );
+  }
+}
+
+// ── Filter and Sealed Sanctions Pagination (Enterprise Hardening) ───────────
+
+enum AuditorQueueFilter { pending, disputed, sealed }
+
+class AuditorQueueFilterNotifier extends Notifier<AuditorQueueFilter> {
+  @override
+  AuditorQueueFilter build() => AuditorQueueFilter.pending;
+
+  void setFilter(AuditorQueueFilter value) => state = value;
+}
+
+/// Provider managing the active filter state for the Auditor Queue.
+final auditorQueueFilterProvider =
+    NotifierProvider.autoDispose<
+      AuditorQueueFilterNotifier,
+      AuditorQueueFilter
+    >(AuditorQueueFilterNotifier.new);
+
+class SealedSanctionsState {
+  final List<SanctionQueueItemView> items;
+  final bool isLoading;
+  final bool hasMore;
+  final DateTime startDate;
+  final DateTime endDate;
+
+  const SealedSanctionsState({
+    required this.items,
+    required this.isLoading,
+    required this.hasMore,
+    required this.startDate,
+    required this.endDate,
+  });
+
+  SealedSanctionsState copyWith({
+    List<SanctionQueueItemView>? items,
+    bool? isLoading,
+    bool? hasMore,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) {
+    return SealedSanctionsState(
+      items: items ?? this.items,
+      isLoading: isLoading ?? this.isLoading,
+      hasMore: hasMore ?? this.hasMore,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+    );
+  }
+}
+
+class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
+  static const int _pageSize = 20;
+
+  @override
+  SealedSanctionsState build() {
+    final now = DateTime.now().toUtc();
+    final start = now.subtract(const Duration(days: 7));
+    // Initial fetch scheduled for post-build to avoid ref.read during build
+    Future.microtask(() => fetchNextPage(clear: true));
+
+    return SealedSanctionsState(
+      items: const [],
+      isLoading: false,
+      hasMore: true,
+      startDate: start,
+      endDate: now,
+    );
+  }
+
+  Future<void> updateDateFilter(DateTime start, DateTime end) async {
+    state = state.copyWith(
+      startDate: start,
+      endDate: end,
+      items: const [],
+      hasMore: true,
+    );
+    await fetchNextPage(clear: true);
+  }
+
+  Future<void> fetchNextPage({bool clear = false}) async {
+    if (state.isLoading || (!clear && !state.hasMore)) return;
+
+    state = state.copyWith(isLoading: true);
+
+    try {
+      final client = ref.read(supabaseClientProvider);
+      final orgId = ref.read(currentOrganizationIdProvider);
+      if (orgId == null) {
+        state = state.copyWith(isLoading: false, hasMore: false);
+        return;
+      }
+
+      final offset = clear ? 0 : state.items.length;
+
+      final rows = await client
+          .from('sanction_review_queue')
+          .select()
+          .eq('organization_id', orgId)
+          .inFilter('status', const ['applied', 'rejected'])
+          .gte('created_at', state.startDate.toIso8601String())
+          .lte('created_at', state.endDate.toIso8601String())
+          .order('created_at', ascending: false)
+          .range(offset, offset + _pageSize - 1);
+
+      final newItems = (rows as List)
+          .map(
+            (row) => SanctionQueueItemView.fromRow(row as Map<String, dynamic>),
+          )
+          .toList();
+
+      state = state.copyWith(
+        items: clear ? newItems : [...state.items, ...newItems],
+        isLoading: false,
+        hasMore: newItems.length == _pageSize,
+      );
+    } catch (e, stack) {
+      state = state.copyWith(isLoading: false);
+      // INV-26: do not expose internal error details directly
+      debugPrint('[SealedSanctionsNotifier] Error: $e\n$stack');
+    }
+  }
+}
+
+final sealedSanctionsNotifierProvider =
+    NotifierProvider.autoDispose<SealedSanctionsNotifier, SealedSanctionsState>(
+      SealedSanctionsNotifier.new,
+    );
+
+// ── Simulation wrapper (state layer — features must not import domain) ────────
+
+/// Calls [SanctionSimulationService.simulateSpeedViolation] and converts
+/// any exception to a human-readable message so features never import
+/// from the domain layer directly (INV-13).
+///
+/// Returns null on success. Returns an error message string on any failure
+/// (both [DomainException] and unexpected infra/DB errors). Callers must
+/// treat null as the ONLY success signal.
+Future<String?> runSanctionSimulation(
+  WidgetRef ref, {
+  required String organizationId,
+  required String vehiclePlate,
+}) async {
+  try {
+    await ref
+        .read(sanctionSimulationServiceProvider)
+        .simulateSpeedViolation(
+          organizationId: organizationId,
+          vehiclePlate: vehiclePlate,
+        );
+    return null;
+  } on DomainException catch (e) {
+    return e.message;
+  } catch (_) {
+    return 'Não foi possível simular a sanção. Verifique se há contratos ativos.';
   }
 }

@@ -113,6 +113,262 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
     }
   }
 
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VeraProbColors.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.person_add_alt_1,
+              size: 22,
+              color: VeraProbColors.primary,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Cadastrar motorista',
+              style: VeraProbTypography.sectionTitle,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: _handleClose,
+            tooltip: 'Fechar',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBanner() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: VeraProbColors.primary.withValues(alpha: 0.3),
+          width: 0.5,
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 18,
+            color: VeraProbColors.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Este cadastro registra o motorista na frota. O acesso ao sistema é configurado separadamente.',
+              style: VeraProbTypography.bodyMedium.copyWith(height: 1.4),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonalDataCard() {
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: VeraProbColors.border),
+      ),
+      color: VeraProbColors.surfaceElevated,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.badge_outlined,
+                  size: 18,
+                  color: VeraProbColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Dados Pessoais',
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: VeraProbColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nome completo',
+                        style: VeraProbTypography.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _nameController,
+                        decoration: const InputDecoration(
+                          hintText: 'Ex: João Carlos da Silva',
+                        ),
+                        textCapitalization: TextCapitalization.words,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'O nome é obrigatório';
+                          }
+                          if (v.trim().length < 3) {
+                            return 'Informe o nome completo';
+                          }
+                          return null;
+                        },
+                        enabled: !_isSaving,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Número da CNH',
+                        style: VeraProbTypography.caption.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: _cnhController,
+                        decoration: const InputDecoration(
+                          hintText: 'Ex: 12345678900',
+                        ),
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(11),
+                        ],
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'A CNH é obrigatória';
+                          }
+                          if (v.trim().length < 9) {
+                            return 'Mínimo 9 dígitos';
+                          }
+                          return null;
+                        },
+                        enabled: !_isSaving,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner() {
+    if (_errorMessage == null) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber,
+            size: 18,
+            color: VeraProbColors.error,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _errorMessage!,
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.error,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFooter() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: VeraProbColors.border)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: _isSaving ? null : _handleClose,
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: const Text('Cancelar'),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            flex: 2,
+            child: FilledButton(
+              onPressed: _isSaving ? null : _handleSubmit,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+              child: _isSaving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation(
+                          VeraProbColors.background,
+                        ),
+                      ),
+                    )
+                  : const Text(
+                      'Cadastrar',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return SlideTransition(
@@ -125,44 +381,7 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
           color: VeraProbColors.surface,
           child: Column(
             children: [
-              // Drawer header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: VeraProbColors.border),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.person_add_alt_1,
-                        size: 22,
-                        color: VeraProbColors.primary,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Text(
-                        'Cadastrar motorista',
-                        style: VeraProbTypography.sectionTitle,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: _handleClose,
-                      tooltip: 'Fechar',
-                    ),
-                  ],
-                ),
-              ),
-              // Form body
+              _buildHeader(),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
@@ -171,183 +390,17 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Info banner
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: VeraProbColors.surfaceElevated,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: VeraProbColors.primary.withValues(
-                                alpha: 0.3,
-                              ),
-                              width: 0.5,
-                            ),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Icon(
-                                Icons.info_outline,
-                                size: 18,
-                                color: VeraProbColors.primary,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Este cadastro registra o motorista na frota. O acesso ao sistema é configurado separadamente.',
-                                  style: VeraProbTypography.bodyMedium.copyWith(
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildInfoBanner(),
                         const SizedBox(height: 28),
-
-                        // Name field
-                        Text(
-                          'Nome completo',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _nameController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex: João Carlos da Silva',
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'O nome é obrigatório';
-                            }
-                            if (v.trim().length < 3) {
-                              return 'Informe o nome completo';
-                            }
-                            return null;
-                          },
-                          enabled: !_isSaving,
-                        ),
-                        const SizedBox(height: 24),
-
-                        // CNH field
-                        Text(
-                          'Número da CNH',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        TextFormField(
-                          controller: _cnhController,
-                          decoration: const InputDecoration(
-                            hintText: 'Ex: 12345678900',
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(11),
-                          ],
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'O número da CNH é obrigatório';
-                            }
-                            if (v.trim().length < 9) {
-                              return 'CNH deve ter no mínimo 9 dígitos';
-                            }
-                            return null;
-                          },
-                          enabled: !_isSaving,
-                        ),
-
-                        // Error message
-                        if (_errorMessage != null) ...[
-                          const SizedBox(height: 20),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: VeraProbColors.error.withValues(
-                                alpha: 0.08,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: VeraProbColors.error.withValues(
-                                  alpha: 0.4,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.warning_amber,
-                                  size: 18,
-                                  color: VeraProbColors.error,
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _errorMessage!,
-                                    style: VeraProbTypography.bodyMedium
-                                        .copyWith(color: VeraProbColors.error),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                        _buildPersonalDataCard(),
+                        const SizedBox(height: 20),
+                        _buildErrorBanner(),
                       ],
                     ),
                   ),
                 ),
               ),
-              // Drawer footer
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: VeraProbColors.border)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _isSaving ? null : _handleClose,
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: const Text('Cancelar'),
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      flex: 2,
-                      child: FilledButton(
-                        onPressed: _isSaving ? null : _handleSubmit,
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        child: _isSaving
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    VeraProbColors.background,
-                                  ),
-                                ),
-                              )
-                            : const Text(
-                                'Cadastrar',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildFooter(),
             ],
           ),
         ),

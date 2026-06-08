@@ -4,8 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/contractual_risk_radar.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
+import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
+import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/contract_providers.dart';
 
 /// Tier-1 OCC dashboard: an asymmetric Bento grid prioritising actionable
 /// financial signal over decoration. Left pane = financial KPIs (1-tap
@@ -32,6 +35,23 @@ class DashboardScreen extends ConsumerWidget {
         return ListView(
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
           children: [
+            AnimatedSize(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOutCubic,
+              child: ref.watch(onboardingBannerVisibleProvider)
+                  ? Padding(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      child: OnboardingProgressBanner(
+                        onNavigate: (destIdx) {
+                          ref.read(adminIndexProvider.notifier).set(destIdx);
+                          ref
+                              .read(selectedContractIdProvider.notifier)
+                              .set(null);
+                        },
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
             const _DashboardHeader(),
             const SizedBox(height: 32),
             if (isWide)

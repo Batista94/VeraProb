@@ -52,8 +52,8 @@ void main() {
 
     tearDownAll(() async {
       if (!supabaseAvailable) return;
-      await SuperAdminDataFactory.cleanup(testOrg);
-      await SuperAdminDataFactory.cleanup(testOrgSingleAdmin);
+      // await SuperAdminDataFactory.cleanup(testOrg);
+      // await SuperAdminDataFactory.cleanup(testOrgSingleAdmin);
     });
 
     testWidgets('3.1 Modal_Confirmação exibido ao revogar convite pendente', (

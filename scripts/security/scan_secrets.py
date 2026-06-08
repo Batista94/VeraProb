@@ -24,18 +24,21 @@ import subprocess
 import datetime
 import argparse
 
-# ── ANSI Colors ───────────────────────────────────────────────────────────────
-RED    = "\033[0;31m"
-YELLOW = "\033[1;33m"
-GREEN  = "\033[0;32m"
-BOLD   = "\033[1m"
-NC     = "\033[0m"
+# ── ANSI Colors (TTY-gated) ───────────────────────────────────────────────────
+import sys as _sys
+_TTY = _sys.stdout.isatty()
+RED    = "\033[0;31m" if _TTY else ""
+YELLOW = "\033[1;33m" if _TTY else ""
+GREEN  = "\033[0;32m" if _TTY else ""
+BOLD   = "\033[1m"    if _TTY else ""
+NC     = "\033[0m"    if _TTY else ""
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 TARGET_EXTENSIONS = {".dart", ".sql", ".ts", ".env", ".json", ".yaml", ".yml", ".py", ".sh"}
 
 WHITELIST_PATHS = [
     "pubspec.lock", "package-lock.json", "scripts/security/scan_secrets.py",
+    "scripts/security/pr_full_scanner.sh",
 ]
 
 # Audit log location (never committed)
@@ -51,8 +54,9 @@ REGEX_PATTERNS = [
     # JWT tokens (header present -> likely real token)
     (r"(eyJh|eyJi|eyJj)[a-zA-Z0-9_\-]{10,}\.[a-zA-Z0-9_\-]{10,}", "JWT Token"),
     # Generic API key patterns (key=, secret=, password=, token=, etc.)
+    # Negative lookbehind (?<![a-zA-Z]) prevents matching camelCase suffixes like ruleTypeKey.
     (
-        r'(key|secret|password|passwd|pwd|token|auth|service_role|anon_key|api_key|access_key|private_key)'
+        r'(?<![a-zA-Z])(key|secret|password|passwd|pwd|token|auth|service_role|anon_key|api_key|access_key|private_key)'
         r'[\s]*[:=][\s]*["\'][a-zA-Z0-9_\-]{16,}["\']',
         "Generic API Key / Secret",
     ),
@@ -168,7 +172,7 @@ def is_whitelisted(filepath: str) -> bool:
 # ── Audit Log ─────────────────────────────────────────────────────────────────
 def write_audit_log(entries: list[str], bypass: bool = False, bypass_reason: str = "") -> None:
     os.makedirs(os.path.dirname(AUDIT_LOG), exist_ok=True)
-    timestamp = datetime.datetime.utcnow().isoformat() + "Z"
+    timestamp = datetime.datetime.now(datetime.UTC).isoformat()
     with open(AUDIT_LOG, "a", encoding="utf-8") as log_file:
         log_file.write("\n" + "="*70 + "\n")
         log_file.write("TIMESTAMP: " + timestamp + "\n")

@@ -72,6 +72,7 @@ const _entitySpecs = <EntitySpec>[
       'reviewedByUserId',
       'rejectionReason',
       'vehiclePlate',
+      'operatorName',
     ],
     // UI-enriched fields resolved asynchronously — not DB identity.
     excludedFields: ['contractName', 'windowStartUtc', 'windowEndUtc'],

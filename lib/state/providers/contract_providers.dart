@@ -160,6 +160,7 @@ final declareContractualPlanHandlerProvider =
         contractRepository: ref.watch(contractRepositoryProvider),
         zoneRepository: ref.watch(operationalZoneRepositoryProvider),
         vehicleRepository: ref.watch(activeVehicleRepositoryProvider),
+        projectionService: ref.watch(shiftProjectionServiceProvider),
         clock: ref.watch(dateTimeProviderProvider),
         idempotencyStore: ref.watch(idempotencyStoreProvider),
       );

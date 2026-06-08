@@ -5,7 +5,6 @@ import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_v
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/telemetry_sync_map.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
@@ -109,9 +108,7 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
             ),
             const SizedBox(height: 24),
             Expanded(
-              child: isWide
-                  ? _buildSplitPane(sanctionsAsync)
-                  : _buildCardList(sanctionsAsync),
+              child: isWide ? _buildSplitPane(ref) : _buildCardList(ref),
             ),
           ],
         ),
@@ -120,14 +117,12 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
   }
 
   /// Wide layout: Card list (flex 6) + Forensic Map (flex 4).
-  Widget _buildSplitPane(
-    AsyncValue<List<SanctionQueueItemView>> sanctionsAsync,
-  ) {
+  Widget _buildSplitPane(WidgetRef ref) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Left: Sanction card list
-        Expanded(flex: 6, child: _buildCardList(sanctionsAsync)),
+        Expanded(flex: 6, child: _buildCardList(ref)),
         // Divider
         Container(
           width: 1,
@@ -147,26 +142,103 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
   }
 
   /// Card list (shared between split-pane and single-column layouts).
-  Widget _buildCardList(
-    AsyncValue<List<SanctionQueueItemView>> sanctionsAsync,
-  ) {
-    return switch (sanctionsAsync) {
-      AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
-        child: Text(
-          'Erro ao carregar fila: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+  Widget _buildCardList(WidgetRef ref) {
+    final filter = ref.watch(auditorQueueFilterProvider);
+    if (filter == AuditorQueueFilter.pending) {
+      final sanctionsAsync = ref.watch(pendingSanctionsStreamProvider);
+      return switch (sanctionsAsync) {
+        AsyncLoading() => const Center(child: CircularProgressIndicator()),
+        AsyncError(:final error) => Center(
+          child: Text(
+            'Erro ao carregar fila: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
         ),
-      ),
-      AsyncData(:final value) =>
-        value.isEmpty
-            ? const _EmptyState()
-            : ListView.separated(
-                itemCount: value.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
-              ),
-    };
+        AsyncData(:final value) =>
+          value.isEmpty
+              ? const _EmptyState()
+              : ListView.separated(
+                  itemCount: value.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
+                ),
+      };
+    } else if (filter == AuditorQueueFilter.disputed) {
+      final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
+      return switch (sanctionsAsync) {
+        AsyncLoading() => const Center(child: CircularProgressIndicator()),
+        AsyncError(:final error) => Center(
+          child: Text(
+            'Erro ao carregar fila: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+        ),
+        AsyncData(:final value) =>
+          value.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Text(
+                      'Nenhuma sanção aguardando evidência.',
+                      style: TextStyle(color: VeraProbColors.textSecondary),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  itemCount: value.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
+                ),
+      };
+    } else {
+      final sealedState = ref.watch(sealedSanctionsNotifierProvider);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const _DateFilterBar(),
+          const SizedBox(height: 12),
+          Expanded(
+            child: sealedState.items.isEmpty && !sealedState.isLoading
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        'Nenhum veredito selado encontrado neste período.',
+                        style: TextStyle(color: VeraProbColors.textSecondary),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount:
+                        sealedState.items.length +
+                        (sealedState.hasMore ? 1 : 0),
+                    separatorBuilder: (_, _) => const SizedBox(height: 12),
+                    itemBuilder: (context, i) {
+                      if (i == sealedState.items.length) {
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Center(
+                            child: sealedState.isLoading
+                                ? const CircularProgressIndicator()
+                                : OutlinedButton(
+                                    onPressed: () => ref
+                                        .read(
+                                          sealedSanctionsNotifierProvider
+                                              .notifier,
+                                        )
+                                        .fetchNextPage(),
+                                    child: const Text('CARREGAR MAIS'),
+                                  ),
+                          ),
+                        );
+                      }
+                      return SanctionVerdictCard(item: sealedState.items[i]);
+                    },
+                  ),
+          ),
+        ],
+      );
+    }
   }
 }
 
@@ -176,7 +248,8 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
 /// [SanctionSimulationService] so testers can exercise the review flow without
 /// needing Stress Mode or manual Studio inserts.
 class _SimulateButton extends ConsumerStatefulWidget {
-  const _SimulateButton();
+  final bool isNarrow;
+  const _SimulateButton({this.isNarrow = false});
 
   @override
   ConsumerState<_SimulateButton> createState() => _SimulateButtonState();
@@ -197,13 +270,17 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
     }
     setState(() => _loading = true);
     try {
-      await ref
-          .read(sanctionSimulationServiceProvider)
-          .simulateSpeedViolation(
-            organizationId: orgId,
-            vehiclePlate: 'TST-0001',
-          );
-      if (mounted) {
+      final error = await runSanctionSimulation(
+        ref,
+        organizationId: orgId,
+        vehiclePlate: 'TST-0001',
+      );
+      if (!mounted) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: VeraProbColors.error),
+        );
+      } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -213,7 +290,6 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
         );
       }
     } catch (_) {
-      // INV-26: No internal details leaked — generic error only
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -231,6 +307,27 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isNarrow) {
+      return Tooltip(
+        message: 'Gerar Sanção de Teste',
+        child: OutlinedButton(
+          onPressed: _loading ? null : _simulate,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: VeraProbColors.textSecondary,
+            side: const BorderSide(color: VeraProbColors.textDisabled),
+            padding: const EdgeInsets.all(8),
+            minimumSize: const Size(36, 36),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.science_outlined, size: 16),
+        ),
+      );
+    }
     return OutlinedButton.icon(
       onPressed: _loading ? null : _simulate,
       icon: _loading
@@ -253,7 +350,7 @@ class _SimulateButtonState extends ConsumerState<_SimulateButton> {
 
 // ── Header ────────────────────────────────────────────────────────────────────
 
-class _Header extends StatelessWidget {
+class _Header extends ConsumerWidget {
   final AsyncValue<List<SanctionQueueItemView>> sanctionsAsync;
   final bool showMapToggle;
   final VoidCallback? onMapToggle;
@@ -265,56 +362,128 @@ class _Header extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filter = ref.watch(auditorQueueFilterProvider);
     final count = switch (sanctionsAsync) {
       AsyncData(:final value) => value.length,
-      AsyncError() => 0,
-      AsyncLoading() => 0,
+      _ => 0,
     };
-    return Row(
-      children: [
-        const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
-        const SizedBox(width: 12),
-        Text('Tribunal de Auditoria', style: VeraProbTypography.sectionTitle),
-        const SizedBox(width: 12),
-        if (count > 0)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-              color: VeraProbColors.error.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '$count pendente${count > 1 ? 's' : ''}',
-              style: VeraProbTypography.badge.copyWith(
-                color: VeraProbColors.error,
+    final disputedCount = switch (ref.watch(disputedSanctionsStreamProvider)) {
+      AsyncData(:final value) => value.length,
+      _ => 0,
+    };
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Lesson #3: narrow panel — short labels + tooltip on segments
+        final isNarrow = constraints.maxWidth < 900;
+        return Row(
+          children: [
+            const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                'Tribunal de Auditoria',
+                style: VeraProbTypography.sectionTitle,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-        const Spacer(),
-        // WS-5: Map toggle for narrow screens
-        if (showMapToggle)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: OutlinedButton.icon(
-              onPressed: onMapToggle,
-              icon: const Icon(Icons.map_outlined, size: 16),
-              label: const Text('Mapa Forense'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: VeraProbColors.primary,
-                side: BorderSide(
-                  color: VeraProbColors.primary.withValues(alpha: 0.5),
-                ),
-                textStyle: const TextStyle(fontSize: 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
+            const SizedBox(width: 12),
+
+            // Segmented filter toggle — Expanded prevents right overflow
+            Expanded(
+              flex: 3,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<AuditorQueueFilter>(
+                  segments: [
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.pending,
+                      // Lesson #3: short label on narrow, full label on wide
+                      label: isNarrow
+                          ? Tooltip(
+                              message: 'Pendentes ($count)',
+                              child: Text('($count)'),
+                            )
+                          : Text('Pendentes ($count)'),
+                      icon: const Icon(
+                        Icons.pending_actions_outlined,
+                        size: 14,
+                      ),
+                    ),
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.disputed,
+                      label: isNarrow
+                          ? Tooltip(
+                              message: 'Aguardando Evidência ($disputedCount)',
+                              child: Text('($disputedCount)'),
+                            )
+                          : Text('Aguardando Evidência ($disputedCount)'),
+                      icon: const Icon(
+                        Icons.hourglass_empty_outlined,
+                        size: 14,
+                      ),
+                    ),
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.sealed,
+                      label: isNarrow
+                          ? const Tooltip(
+                              message: 'Concluídos',
+                              child: SizedBox.shrink(),
+                            )
+                          : const Text('Concluídos'),
+                      icon: const Icon(Icons.verified_user_outlined, size: 14),
+                    ),
+                  ],
+                  selected: {filter},
+                  onSelectionChanged: (newSelection) {
+                    ref
+                        .read(auditorQueueFilterProvider.notifier)
+                        .setFilter(newSelection.first);
+                  },
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: VeraProbColors.primary.withValues(
+                      alpha: 0.15,
+                    ),
+                    selectedForegroundColor: VeraProbColors.primary,
+                    foregroundColor: VeraProbColors.textSecondary,
+                    side: const BorderSide(color: VeraProbColors.border),
+                  ),
                 ),
               ),
             ),
-          ),
-        const _SimulateButton(),
-      ],
+
+            const Spacer(),
+            // WS-5: Map toggle for narrow screens
+            if (showMapToggle)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Tooltip(
+                  message: 'Mapa Forense',
+                  child: OutlinedButton.icon(
+                    onPressed: onMapToggle,
+                    icon: const Icon(Icons.map_outlined, size: 16),
+                    label: isNarrow
+                        ? const SizedBox.shrink()
+                        : const Text('Mapa Forense'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: VeraProbColors.primary,
+                      side: BorderSide(
+                        color: VeraProbColors.primary.withValues(alpha: 0.5),
+                      ),
+                      textStyle: const TextStyle(fontSize: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            _SimulateButton(isNarrow: isNarrow),
+          ],
+        );
+      },
     );
   }
 }
@@ -349,6 +518,66 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           const _SimulateButton(),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Date Filter Bar ───────────────────────────────────────────────────────────
+
+class _DateFilterBar extends ConsumerWidget {
+  const _DateFilterBar();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(sealedSanctionsNotifierProvider);
+    String format(DateTime d) =>
+        '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.date_range_outlined,
+            size: 16,
+            color: VeraProbColors.textSecondary,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Período: ${format(state.startDate.toLocal())} até ${format(state.endDate.toLocal())}',
+            style: VeraProbTypography.bodySmall,
+          ),
+          const Spacer(),
+          TextButton.icon(
+            onPressed: () async {
+              final picked = await showDateRangePicker(
+                context: context,
+                initialDateRange: DateTimeRange(
+                  start: state.startDate,
+                  end: state.endDate,
+                ),
+                firstDate: DateTime(2025),
+                lastDate: DateTime.now().toUtc().add(const Duration(days: 1)),
+              );
+              if (picked != null) {
+                await ref
+                    .read(sealedSanctionsNotifierProvider.notifier)
+                    .updateDateFilter(picked.start, picked.end);
+              }
+            },
+            icon: const Icon(Icons.edit_calendar_outlined, size: 14),
+            label: const Text('ALTERAR'),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+          ),
         ],
       ),
     );

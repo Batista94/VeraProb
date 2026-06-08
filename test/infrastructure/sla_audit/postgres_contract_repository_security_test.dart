@@ -280,7 +280,7 @@ void main() {
         final contract = _buildContract(
           id: contractId,
           organizationId: orgLegit,
-          version: 1, // version == 1 triggers _create path
+          version: 0, // version == 0 triggers _create path
         );
 
         await repo.save(contract);
@@ -324,7 +324,7 @@ void main() {
         final tamperedContract = _buildContract(
           id: 'contract-sec-2b',
           organizationId: orgTamper,
-          version: 1,
+          version: 0, // version == 0 triggers _create path
         );
 
         await repo.save(tamperedContract);

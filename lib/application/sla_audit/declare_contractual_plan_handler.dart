@@ -15,6 +15,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'declare_contractual_plan_command.dart';
 import 'sla_ledger_mapper.dart';
 
@@ -29,6 +30,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
   final ContractRepository _contractRepository;
   final OperationalZoneRepository _zoneRepository;
   final IActiveVehicleRepository _vehicleRepository;
+  final ShiftProjectionService _projectionService;
   final IDateTimeProvider _clock;
   final IIdempotencyStore _idempotencyStore;
 
@@ -39,6 +41,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
     required ContractRepository contractRepository,
     required OperationalZoneRepository zoneRepository,
     required IActiveVehicleRepository vehicleRepository,
+    required ShiftProjectionService projectionService,
     required IDateTimeProvider clock,
     required IIdempotencyStore idempotencyStore,
   }) : _tenantValidator = tenantValidator,
@@ -47,6 +50,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
        _contractRepository = contractRepository,
        _zoneRepository = zoneRepository,
        _vehicleRepository = vehicleRepository,
+       _projectionService = projectionService,
        _clock = clock,
        _idempotencyStore = idempotencyStore;
 
@@ -93,7 +97,37 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
     final saved = await _repository.save(plan);
     await _handleContractLifecycle(command, contract);
     await _auditToLedger(command, saved);
+
+    if (saved.isShiftBased) {
+      _runBackgroundProjection(saved, command);
+    }
+
     return saved;
+  }
+
+  void _runBackgroundProjection(
+    PlanDeclaration plan,
+    DeclareContractualPlanCommand command,
+  ) {
+    Future.microtask(() async {
+      try {
+        final projected = await _projectionService.projectDays(
+          plan,
+          from: command.declaredAtUtc,
+          contractualValue: Money(command.contractualValueCents),
+          days: 30,
+        );
+        if (projected.isNotEmpty) {
+          await _repository.saveProjectedSets(
+            plan.id,
+            projected,
+            organizationId: plan.organizationId,
+          );
+        }
+      } catch (e) {
+        // Silently capture errors in background task to prevent crashes
+      }
+    });
   }
 
   /// Guard validation & enrichment (INV-1 tenant isolation, INV-18 state gates).

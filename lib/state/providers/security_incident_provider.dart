@@ -9,7 +9,7 @@ import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 /// INV-26: Logging failures are silently swallowed — the caller must never
 /// learn whether the log succeeded or failed.
 class SecurityIncidentLogger {
-  final Ref _ref;
+  final Ref? _ref;
 
   SecurityIncidentLogger(this._ref);
 
@@ -26,7 +26,8 @@ class SecurityIncidentLogger {
     required Map<String, dynamic> jwtClaimsSnapshot,
   }) async {
     try {
-      final client = _ref.read(supabaseClientProvider);
+      final client = _ref?.read(supabaseClientProvider);
+      if (client == null) return;
       await client.functions.invoke(
         'log-security-incident',
         body: {

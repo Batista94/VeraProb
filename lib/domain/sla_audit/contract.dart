@@ -1,3 +1,4 @@
+// pr_scanner: complexity-ok — Domain Aggregate Root with extensive lifecycle and validation rules
 import 'dart:collection';
 
 import 'package:equatable/equatable.dart';
@@ -39,13 +40,20 @@ class Contract extends Equatable {
 
   /// Optimistic locking version counter. Auto-incremented on each UPDATE.
   /// Used to detect concurrent modifications (Lost Update prevention).
-  /// New aggregates start at version 1.
+  /// New aggregates (not yet persisted) start at version 0. DB assigns 1 on INSERT.
   final int version;
 
   // ── Attributes ────────────────────────────────────────────
   final String organizationId;
   final String name;
   final String contractorName;
+
+  /// FK → public.contractors(id). Formal link to the organization's client
+  /// (contractor). Nullable during the normalization rollout — legacy rows and
+  /// new drafts may still rely on the denormalized [contractorName] until the
+  /// contractor is formally selected (migration 20260806000001).
+  final String? contractorId;
+
   final String? description;
   final DateTime validFromUtc;
   final DateTime validUntilUtc;
@@ -109,6 +117,7 @@ class Contract extends Equatable {
     required this.organizationId,
     required this.name,
     required this.contractorName,
+    this.contractorId,
     this.description,
     required this.validFromUtc,
     required this.validUntilUtc,
@@ -187,7 +196,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
-      version: 1, // New aggregate starts at version 1
+      version: 0, // Sentinel: not yet committed to DB. DB assigns 1 on INSERT.
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -255,7 +264,7 @@ class Contract extends Equatable {
 
     return Contract._(
       id: id,
-      version: 1, // Cloned aggregate starts at version 1
+      version: 0, // Sentinel: not yet committed to DB. DB assigns 1 on INSERT.
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
@@ -282,6 +291,7 @@ class Contract extends Equatable {
     required String organizationId,
     required String name,
     required String contractorName,
+    String? contractorId,
     String? description,
     required DateTime validFromUtc,
     required DateTime validUntilUtc,
@@ -306,6 +316,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -328,12 +339,20 @@ class Contract extends Equatable {
   }
 
   // ── copyWith ──────────────────────────────────────────────
+  /// Returns a new [Contract] with selected fields overridden.
+  ///
+  /// Field resolution is delegated to grouped private resolvers
+  /// ([_resolveIdentity], [_resolveParties], [_resolveValidity],
+  /// [_resolveLifecycle], [_resolveTerms], [_resolveGeoSeal]) to keep this
+  /// method's complexity flat. `domainEvents` is always reset — copyWith is a
+  /// structural projection, not a state transition.
   Contract copyWith({
     String? id,
     int? version,
     String? organizationId,
     String? name,
     String? contractorName,
+    String? contractorId,
     String? description,
     DateTime? validFromUtc,
     DateTime? validUntilUtc,
@@ -352,33 +371,167 @@ class Contract extends Equatable {
     String? previousHash,
     String? currentHash,
   }) {
+    final identity = _resolveIdentity(id, version, organizationId);
+    final parties = _resolveParties(
+      name,
+      contractorName,
+      contractorId,
+      description,
+    );
+    final validity = _resolveValidity(
+      validFromUtc,
+      validUntilUtc,
+      status,
+      createdAtUtc,
+    );
+    final lifecycle = _resolveLifecycle(
+      activatedAtUtc,
+      closedAtUtc,
+      closedByUserId,
+      closeReason,
+      submittedForApprovalAtUtc,
+    );
+    final terms = _resolveTerms(
+      clonedFromContractId,
+      financialCeiling,
+      penaltyMultiplierBps,
+    );
+    final geoSeal = _resolveGeoSeal(
+      latitude,
+      longitude,
+      previousHash,
+      currentHash,
+    );
+
     return Contract._(
-      id: id ?? this.id,
-      version: version ?? this.version,
-      organizationId: organizationId ?? this.organizationId,
-      name: name ?? this.name,
-      contractorName: contractorName ?? this.contractorName,
-      description: description ?? this.description,
-      validFromUtc: validFromUtc ?? this.validFromUtc,
-      validUntilUtc: validUntilUtc ?? this.validUntilUtc,
-      status: status ?? this.status,
-      createdAtUtc: createdAtUtc ?? this.createdAtUtc,
-      activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
-      closedAtUtc: closedAtUtc ?? this.closedAtUtc,
-      closedByUserId: closedByUserId ?? this.closedByUserId,
-      closeReason: closeReason ?? this.closeReason,
-      submittedForApprovalAtUtc:
-          submittedForApprovalAtUtc ?? this.submittedForApprovalAtUtc,
-      clonedFromContractId: clonedFromContractId ?? this.clonedFromContractId,
-      financialCeiling: financialCeiling ?? this.financialCeiling,
-      penaltyMultiplierBps: penaltyMultiplierBps ?? this.penaltyMultiplierBps,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
-      previousHash: previousHash ?? this.previousHash,
-      currentHash: currentHash ?? this.currentHash,
+      id: identity.id,
+      version: identity.version,
+      organizationId: identity.organizationId,
+      name: parties.name,
+      contractorName: parties.contractorName,
+      contractorId: parties.contractorId,
+      description: parties.description,
+      validFromUtc: validity.validFromUtc,
+      validUntilUtc: validity.validUntilUtc,
+      status: validity.status,
+      createdAtUtc: validity.createdAtUtc,
+      activatedAtUtc: lifecycle.activatedAtUtc,
+      closedAtUtc: lifecycle.closedAtUtc,
+      closedByUserId: lifecycle.closedByUserId,
+      closeReason: lifecycle.closeReason,
+      submittedForApprovalAtUtc: lifecycle.submittedForApprovalAtUtc,
+      clonedFromContractId: terms.clonedFromContractId,
+      financialCeiling: terms.financialCeiling,
+      penaltyMultiplierBps: terms.penaltyMultiplierBps,
+      latitude: geoSeal.latitude,
+      longitude: geoSeal.longitude,
+      previousHash: geoSeal.previousHash,
+      currentHash: geoSeal.currentHash,
       domainEvents: const [],
     );
   }
+
+  ({String id, int version, String organizationId}) _resolveIdentity(
+    String? id,
+    int? version,
+    String? organizationId,
+  ) => (
+    id: id ?? this.id,
+    version: version ?? this.version,
+    organizationId: organizationId ?? this.organizationId,
+  );
+
+  ({
+    String name,
+    String contractorName,
+    String? contractorId,
+    String? description,
+  })
+  _resolveParties(
+    String? name,
+    String? contractorName,
+    String? contractorId,
+    String? description,
+  ) => (
+    name: name ?? this.name,
+    contractorName: contractorName ?? this.contractorName,
+    contractorId: contractorId ?? this.contractorId,
+    description: description ?? this.description,
+  );
+
+  ({
+    DateTime validFromUtc,
+    DateTime validUntilUtc,
+    ContractStatus status,
+    DateTime createdAtUtc,
+  })
+  _resolveValidity(
+    DateTime? validFromUtc,
+    DateTime? validUntilUtc,
+    ContractStatus? status,
+    DateTime? createdAtUtc,
+  ) => (
+    validFromUtc: validFromUtc ?? this.validFromUtc,
+    validUntilUtc: validUntilUtc ?? this.validUntilUtc,
+    status: status ?? this.status,
+    createdAtUtc: createdAtUtc ?? this.createdAtUtc,
+  );
+
+  ({
+    DateTime? activatedAtUtc,
+    DateTime? closedAtUtc,
+    String? closedByUserId,
+    String? closeReason,
+    DateTime? submittedForApprovalAtUtc,
+  })
+  _resolveLifecycle(
+    DateTime? activatedAtUtc,
+    DateTime? closedAtUtc,
+    String? closedByUserId,
+    String? closeReason,
+    DateTime? submittedForApprovalAtUtc,
+  ) => (
+    activatedAtUtc: activatedAtUtc ?? this.activatedAtUtc,
+    closedAtUtc: closedAtUtc ?? this.closedAtUtc,
+    closedByUserId: closedByUserId ?? this.closedByUserId,
+    closeReason: closeReason ?? this.closeReason,
+    submittedForApprovalAtUtc:
+        submittedForApprovalAtUtc ?? this.submittedForApprovalAtUtc,
+  );
+
+  ({
+    String? clonedFromContractId,
+    Money? financialCeiling,
+    int penaltyMultiplierBps,
+  })
+  _resolveTerms(
+    String? clonedFromContractId,
+    Money? financialCeiling,
+    int? penaltyMultiplierBps,
+  ) => (
+    clonedFromContractId: clonedFromContractId ?? this.clonedFromContractId,
+    financialCeiling: financialCeiling ?? this.financialCeiling,
+    penaltyMultiplierBps: penaltyMultiplierBps ?? this.penaltyMultiplierBps,
+  );
+
+  // Physical Metric - Double Required
+  ({
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
+  })
+  _resolveGeoSeal(
+    double? latitude, // Physical Metric - Double Required
+    double? longitude, // Physical Metric - Double Required
+    String? previousHash,
+    String? currentHash,
+  ) => (
+    latitude: latitude ?? this.latitude,
+    longitude: longitude ?? this.longitude,
+    previousHash: previousHash ?? this.previousHash,
+    currentHash: currentHash ?? this.currentHash,
+  );
 
   // ── State transitions ─────────────────────────────────────
 
@@ -415,6 +568,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -465,6 +619,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -512,6 +667,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -575,6 +731,7 @@ class Contract extends Equatable {
       organizationId: organizationId,
       name: name,
       contractorName: contractorName,
+      contractorId: contractorId,
       description: description,
       validFromUtc: validFromUtc,
       validUntilUtc: validUntilUtc,
@@ -638,6 +795,7 @@ class Contract extends Equatable {
     organizationId,
     name,
     contractorName,
+    contractorId,
     description,
     validFromUtc,
     validUntilUtc,

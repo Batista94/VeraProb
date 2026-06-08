@@ -2,15 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/enums/vehicle_status.dart';
-import 'package:veraprob/state/providers/operational_zone_providers.dart';
-import 'package:veraprob/state/providers/contractor_providers.dart';
-import 'package:veraprob/state/providers/sla_template_providers.dart';
-import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
-import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
+import 'package:veraprob/features/admin/providers/onboarding_provider.dart';
 
-/// Slim top bar verifying 4 core master data prerequisites.
-/// Renders as a 48px strip anchored above the main content — no layout displacement.
+/// Slim top bar verifying 5 core master data and contract prerequisites.
+/// Renders as a 60px card anchored above the main content — no layout displacement.
 /// Auto-removes from DOM when all prerequisites are met.
 class OnboardingProgressBanner extends ConsumerWidget {
   final ValueChanged<int> onNavigate;
@@ -19,46 +14,9 @@ class OnboardingProgressBanner extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final zonesAsync = ref.watch(operationalZonesProvider);
-    final contractorsAsync = ref.watch(contractorListProvider);
-    final vehiclesAsync = ref.watch(vehiclesListProvider);
-    final rulesAsync = ref.watch(slaTemplatesProvider);
+    final progress = ref.watch(onboardingProgressProvider);
 
-    final hasZones = (zonesAsync.value ?? []).isNotEmpty;
-    final hasContractors = (contractorsAsync.value ?? []).isNotEmpty;
-    final hasVehicles = (vehiclesAsync.value ?? []).any(
-      (v) =>
-          v.status == VehicleStatus.available ||
-          v.status == VehicleStatus.inService,
-    );
-    final hasRules = (rulesAsync.value ?? []).isNotEmpty;
-
-    final prerequisites = [
-      _Prerequisite(
-        label: 'Zonas',
-        isFulfilled: hasZones,
-        navIndex: AdminNav.zones.index,
-      ),
-      _Prerequisite(
-        label: 'Contratantes',
-        isFulfilled: hasContractors,
-        navIndex: AdminNav.contractors.index,
-      ),
-      _Prerequisite(
-        label: 'Veículos',
-        isFulfilled: hasVehicles,
-        navIndex: AdminNav.drivers.index,
-      ),
-      _Prerequisite(
-        label: 'SLA Template',
-        isFulfilled: hasRules,
-        navIndex: AdminNav.slaTemplates.index,
-      ),
-    ];
-
-    final completedCount = prerequisites.where((p) => p.isFulfilled).length;
-
-    if (completedCount == prerequisites.length) {
+    if (progress.isComplete) {
       return const SizedBox.shrink(); // All green — remove from DOM
     }
 
@@ -66,46 +24,34 @@ class OnboardingProgressBanner extends ConsumerWidget {
       duration: const Duration(milliseconds: 300),
       child: _SlimBar(
         key: const ValueKey('onboarding_bar'),
-        prerequisites: prerequisites,
-        completedCount: completedCount,
+        progress: progress,
         onNavigate: onNavigate,
       ),
     );
   }
 }
 
-class _Prerequisite {
-  final String label;
-  final bool isFulfilled;
-  final int navIndex;
-
-  const _Prerequisite({
-    required this.label,
-    required this.isFulfilled,
-    required this.navIndex,
-  });
-}
-
 class _SlimBar extends StatelessWidget {
-  final List<_Prerequisite> prerequisites;
-  final int completedCount;
+  final OnboardingProgress progress;
   final ValueChanged<int> onNavigate;
 
-  const _SlimBar({
-    super.key,
-    required this.prerequisites,
-    required this.completedCount,
-    required this.onNavigate,
-  });
+  const _SlimBar({super.key, required this.progress, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
-      margin: const EdgeInsets.only(bottom: 1),
-      decoration: const BoxDecoration(
+      height: 60,
+      decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: VeraProbColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -119,7 +65,7 @@ class _SlimBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Configuração  $completedCount/${prerequisites.length}',
+                    'Configuração  ${progress.completedCount}/${progress.steps.length}',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
@@ -131,7 +77,7 @@ class _SlimBar extends StatelessWidget {
                   ClipRRect(
                     borderRadius: BorderRadius.circular(2),
                     child: LinearProgressIndicator(
-                      value: completedCount / prerequisites.length,
+                      value: progress.completedCount / progress.steps.length,
                       backgroundColor: VeraProbColors.border,
                       valueColor: const AlwaysStoppedAnimation<Color>(
                         VeraProbColors.primary,
@@ -148,12 +94,10 @@ class _SlimBar extends StatelessWidget {
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: prerequisites
+                  children: progress.steps
                       .map(
-                        (p) => _PrerequisiteDot(
-                          prerequisite: p,
-                          onNavigate: onNavigate,
-                        ),
+                        (p) =>
+                            _PrerequisiteDot(step: p, onNavigate: onNavigate),
                       )
                       .toList(),
                 ),
@@ -167,29 +111,26 @@ class _SlimBar extends StatelessWidget {
 }
 
 class _PrerequisiteDot extends StatelessWidget {
-  final _Prerequisite prerequisite;
+  final OnboardingStep step;
   final ValueChanged<int> onNavigate;
 
-  const _PrerequisiteDot({
-    required this.prerequisite,
-    required this.onNavigate,
-  });
+  const _PrerequisiteDot({required this.step, required this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
-    final color = prerequisite.isFulfilled
+    final color = step.isFulfilled
         ? VeraProbColors.success
         : VeraProbColors.error;
 
     return Tooltip(
-      message: prerequisite.isFulfilled
-          ? '${prerequisite.label}: configurado'
-          : '${prerequisite.label}: pendente — clique para configurar',
+      message: step.isFulfilled
+          ? '${step.label}: configurado'
+          : '${step.label}: pendente — clique para configurar',
       child: InkWell(
         // Fulfilled items are NOT interactive
-        onTap: prerequisite.isFulfilled
+        onTap: step.isFulfilled
             ? null
-            : () => onNavigate(prerequisite.navIndex),
+            : () => onNavigate(step.destination.index),
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -197,7 +138,7 @@ class _PrerequisiteDot extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                prerequisite.isFulfilled
+                step.isFulfilled
                     ? Icons.check_circle_rounded
                     : Icons.radio_button_unchecked_rounded,
                 size: 14,
@@ -205,14 +146,14 @@ class _PrerequisiteDot extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Text(
-                prerequisite.label,
+                step.label,
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: prerequisite.isFulfilled
+                  color: step.isFulfilled
                       ? VeraProbColors.textSecondary
                       : color,
-                  decoration: prerequisite.isFulfilled
+                  decoration: step.isFulfilled
                       ? TextDecoration.none
                       : TextDecoration.underline,
                   decorationColor: color,

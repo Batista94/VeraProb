@@ -148,6 +148,15 @@ class ReviewRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isNarrow = MediaQuery.sizeOf(context).width < 480;
+    final Widget valueText = Text(
+      value,
+      style: const TextStyle(
+        fontSize: 12,
+        color: VeraProbColors.textPrimary,
+        fontWeight: FontWeight.w500,
+      ),
+    );
+
     final List<Widget> content = [
       SizedBox(
         width: isNarrow ? null : 130,
@@ -160,17 +169,7 @@ class ReviewRow extends StatelessWidget {
         ),
       ),
       if (isNarrow) const SizedBox(height: 2),
-      Expanded(
-        flex: isNarrow ? 0 : 1,
-        child: Text(
-          value,
-          style: const TextStyle(
-            fontSize: 12,
-            color: VeraProbColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
+      isNarrow ? valueText : Expanded(child: valueText),
     ];
 
     return Padding(

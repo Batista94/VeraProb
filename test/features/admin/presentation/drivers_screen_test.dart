@@ -245,7 +245,7 @@ void main() {
 
       // Verify validation messages
       expect(find.text('O nome é obrigatório'), findsOneWidget);
-      expect(find.text('O número da CNH é obrigatório'), findsOneWidget);
+      expect(find.text('A CNH é obrigatória'), findsOneWidget);
 
       // Verify addDriver was NOT called
       verifyNever(() => mockDriverRepository.addDriver(any()));

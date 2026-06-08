@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/contractor.dart';
 import 'package:veraprob/domain/sla_audit/contractor_repository.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
@@ -114,6 +115,17 @@ class PostgresContractorRepository extends BasePostgresRepository
         'created_at_utc': contractor.createdAtUtc.toIso8601String(),
       });
     } on PostgrestException catch (e) {
+      // Surface name-uniqueness violations as a clean domain error so the UI
+      // can show a human-readable message without leaking the constraint name.
+      if (e.code == '23505' &&
+          (e.message.contains('uq_contractor_name_per_org') ||
+              (e.details as String?)?.contains('uq_contractor_name_per_org') ==
+                  true)) {
+        throw const IntegrityException(
+          'Já existe um contratante com este nome nesta organização.',
+          field: 'name',
+        );
+      }
       throw mapPostgrestToDomainException(
         e,
         resourceType: 'contractor',

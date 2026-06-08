@@ -65,7 +65,7 @@ Critical subset:
 - Clean Imports: no unused imports.
 - Unused Locals: never leave unused locals in tests or production code (enforced as error).
 - Files `kebab-case`, types `PascalCase`, members `camelCase`.
-- Encoding UTF-8 LF mandatory (CRLF blocked — Linux/Docker parity).
+- Encoding UTF-8 LF mandatory (CRLF blocked — Linux/Docker parity). AI agents MUST ensure all generated or edited files use LF (`\n`) exclusively, even on Windows.
 - `const` whenever possible.
 - Unused params: single `_` (avoid `unnecessary_underscores` error).
 - `DateTime.now()` MUST be followed by `.toUtc()` (INV-6).
@@ -111,6 +111,7 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 | 5 | Clear Error Messaging — no `[DBG]` prefixes, no stack traces, domain-language only |
 | 6 | E2E Test Protocols — dart-defines, selectors, HttpOverrides, modal cancel, CNPJ factory |
 | 7 | Regression Ack Discipline — `// pr_scanner: ignore-regression` only after Council review |
+| 8 | Flutter Web Wasm Async Context — capture `Navigator.of(context)` + `ScaffoldMessenger.of(context)` BEFORE first `await` in dialogs; add `_isSaving` guard to prevent ClickDebouncer loop (CT02) |
 
 ## Database Governance
 

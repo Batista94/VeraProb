@@ -4,6 +4,7 @@ import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/contractual_service_input.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_command.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
+import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
@@ -24,8 +25,37 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:veraprob/domain/sla_audit/contractual_service_execution.dart';
+import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 
 class MockAuthRepository extends Mock implements IAuthRepository {}
+
+class _FakeShiftProjectionService implements ShiftProjectionService {
+  @override
+  Future<List<ContractualServiceExecution>> projectDays(
+    PlanDeclaration plan, {
+    required DateTime from,
+    required Money contractualValue,
+    int days = 30,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<void> ensureProjected(
+    String organizationId, {
+    required Money contractualValue,
+    int days = 30,
+  }) async {}
+
+  @override
+  Future<void> detectAndAlertGaps(
+    PlanDeclaration plan, {
+    required DateTime asOf,
+  }) async {}
+}
+
+final _fakeProjection = _FakeShiftProjectionService();
 
 const _orgId = 'org-1';
 
@@ -55,6 +85,7 @@ void main() {
       vehicleRepository: InMemoryActiveVehicleRepository(
         countsByOrg: {_orgId: activeVehicleCount},
       ),
+      projectionService: _fakeProjection,
       clock: clock,
       idempotencyStore: InMemoryIdempotencyStore(),
     );

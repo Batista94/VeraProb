@@ -154,6 +154,13 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (widget.existingZone == null && (_lat == null || _lng == null)) {
+      setState(
+        () => _errorMessage =
+            'Toque no mapa ou busque um endereço para definir a localização da zona antes de salvar.',
+      );
+      return;
+    }
     setState(() {
       _isSubmitting = true;
       _errorMessage = null;
@@ -292,48 +299,46 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     );
   }
 
-  Widget _buildFormFields() {
+  Widget _buildTypeDropdown() {
+    return DropdownButtonFormField<ZoneType>(
+      initialValue: _selectedType,
+      decoration: const InputDecoration(labelText: 'Tipo *'),
+      items: ZoneType.values
+          .map(
+            (t) => DropdownMenuItem(
+              value: t,
+              child: Row(
+                children: [
+                  Icon(t.icon, size: 18),
+                  const SizedBox(width: 8),
+                  Text(t.label),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      onChanged: (v) => setState(() => _selectedType = v!),
+    );
+  }
+
+  Widget _buildNameField() {
+    return TextFormField(
+      controller: _nameController,
+      focusNode: _nameFocus,
+      decoration: const InputDecoration(
+        labelText: 'Nome da Zona *',
+        hintText: 'Ex: Garagem Central, Portaria Sul',
+      ),
+      validator: (v) => (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+      autofocus: widget.existingZone == null,
+      onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+    );
+  }
+
+  Widget _buildAddressSearchField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // ── Tipo ──────────────────────────────────────────
-        DropdownButtonFormField<ZoneType>(
-          initialValue: _selectedType,
-          decoration: const InputDecoration(labelText: 'Tipo *'),
-          items: ZoneType.values
-              .map(
-                (t) => DropdownMenuItem(
-                  value: t,
-                  child: Row(
-                    children: [
-                      Icon(t.icon, size: 18),
-                      const SizedBox(width: 8),
-                      Text(t.label),
-                    ],
-                  ),
-                ),
-              )
-              .toList(),
-          onChanged: (v) => setState(() => _selectedType = v!),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Nome ──────────────────────────────────────────
-        TextFormField(
-          controller: _nameController,
-          focusNode: _nameFocus,
-          decoration: const InputDecoration(
-            labelText: 'Nome da Zona *',
-            hintText: 'Ex: Garagem Central, Portaria Sul',
-          ),
-          validator: (v) =>
-              (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
-          autofocus: widget.existingZone == null,
-          onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-        ),
-        const SizedBox(height: 16),
-
-        // ── Endereço com autocomplete Nominatim ───────────
         TextFormField(
           controller: _addressController,
           focusNode: _addressFocus,
@@ -360,8 +365,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           ),
           onChanged: _onAddressChanged,
         ),
-
-        // Suggestions dropdown
         if (_suggestions.isNotEmpty)
           Container(
             constraints: const BoxConstraints(maxHeight: 180),
@@ -395,154 +398,160 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
               },
             ),
           ),
+      ],
+    );
+  }
 
-        const SizedBox(height: 16),
-
-        // G2 — Geofence ExpansionTile
-        ExpansionTile(
-          leading: Icon(
-            Icons.radar,
-            color: _lat != null
-                ? VeraProbColors.success
-                : VeraProbColors.textSecondary,
-          ),
-          title: const Text('Configuração de Geofence'),
-          subtitle: Text(
-            _lat != null ? 'Configurado' : 'Zona Inativa para Auditoria',
-            style: TextStyle(
-              color: _lat != null
-                  ? VeraProbColors.success
-                  : VeraProbColors.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          initiallyExpanded: _lat != null,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Lat/lng — read-only display
-                  if (_lat != null && _lng != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+  Widget _buildMapLocationSection() {
+    return ExpansionTile(
+      leading: Icon(
+        Icons.radar,
+        color: _lat != null ? VeraProbColors.success : VeraProbColors.warning,
+      ),
+      title: const Text('Localização no Mapa *'),
+      subtitle: Text(
+        _lat != null ? 'Localização definida' : 'Necessário para monitoramento',
+        style: TextStyle(
+          color: _lat != null ? VeraProbColors.success : VeraProbColors.warning,
+          fontSize: 12,
+        ),
+      ),
+      initiallyExpanded: true,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (_lat != null && _lng != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.success.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: VeraProbColors.success.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.my_location,
+                        size: 14,
+                        color: VeraProbColors.success,
                       ),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.success.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: VeraProbColors.success.withValues(alpha: 0.35),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.my_location,
-                            size: 14,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
                             color: VeraProbColors.success,
+                            fontWeight: FontWeight.w600,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
-                                color: VeraProbColors.success,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () => setState(() {
-                              _lat = null;
-                              _lng = null;
-                            }),
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                              ),
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            child: const Text(
-                              'Limpar',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: VeraProbColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  else
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.warning.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: VeraProbColors.warning.withValues(alpha: 0.3),
                         ),
                       ),
-                      child: const Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.touch_app_outlined,
-                            size: 16,
+                      TextButton(
+                        onPressed: () => setState(() {
+                          _lat = null;
+                          _lng = null;
+                        }),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 6),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: const Text(
+                          'Limpar',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: VeraProbColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.warning.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: VeraProbColors.warning.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.touch_app_outlined,
+                        size: 16,
+                        color: VeraProbColors.warning,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Busque um endereço acima ou toque no mapa para '
+                          'marcar a localização da zona.',
+                          style: TextStyle(
+                            fontSize: 11,
                             color: VeraProbColors.warning,
                           ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'Busque um endereço ou clique no mapa para '
-                              'definir as coordenadas do geofence.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: VeraProbColors.warning,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-
-                  // ── Raio ────────────────────────────────
-                  TextFormField(
-                    controller: _radiusController,
-                    focusNode: _radiusFocus,
-                    decoration: const InputDecoration(
-                      labelText: 'Raio de Detecção',
-                      suffixText: 'm',
-                      helperText:
-                          'Distância usada pelo motor para detectar chegada/partida.',
-                    ),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) {
-                      if (_lat == null) return null;
-                      if (v == null || v.isEmpty) {
-                        return 'Obrigatório com geofence';
-                      }
-                      final n = int.tryParse(v);
-                      if (n == null || n <= 0 || n > 50000) {
-                        return '1 a 50.000 m';
-                      }
-                      return null;
-                    },
+                    ],
                   ),
-                ],
+                ),
+              TextFormField(
+                controller: _radiusController,
+                focusNode: _radiusFocus,
+                decoration: const InputDecoration(
+                  labelText: 'Distância de Detecção',
+                  suffixText: 'm',
+                  helperText:
+                      'Raio em metros para detectar chegada e saída da zona.',
+                  helperMaxLines: 2,
+                ),
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                validator: (v) {
+                  if (_lat == null) return null;
+                  if (v == null || v.isEmpty) {
+                    return 'Obrigatório quando localização está definida';
+                  }
+                  final n = int.tryParse(v);
+                  if (n == null || n <= 0 || n > 50000) {
+                    return '1 a 50.000 m';
+                  }
+                  return null;
+                },
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildTypeDropdown(),
+        const SizedBox(height: 16),
+        _buildNameField(),
+        const SizedBox(height: 16),
+        _buildAddressSearchField(),
+        const SizedBox(height: 16),
+        _buildMapLocationSection(),
       ],
     );
   }
