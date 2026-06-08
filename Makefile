@@ -44,8 +44,16 @@ help: ## Mostra este menu de ajuda
 setup: ## [A La Carte] Prepara o ambiente do zero (DB, Migrações, Seeds)
 	node scripts/dev/bootstrap_dev.mjs
 
+.env:
+	cp .env.example .env
+	@echo ".env criado."
+
 env: ## Cria o arquivo .env inicial a partir do template .env.example
-	@if [ ! -f .env ]; then cp .env.example .env && echo ".env criado."; else echo ".env já existe."; fi
+ifeq ($(wildcard .env),)
+	@$(MAKE) .env
+else
+	@echo ".env já existe."
+endif
 
 run: ## Inicia o ambiente de desenvolvimento local
 	powershell scripts/dev/run_dev.ps1
@@ -113,7 +121,9 @@ test-e2e: .local_deps_synced ## [E2E] Executa testes E2E SuperAdmin (auto-aplica
 		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
 
 test-e2e-file: .local_deps_synced ## [E2E] Executa um arquivo E2E específico: make test-e2e-file FILE=path/to/test.dart
-	@if [ -z "$(FILE)" ]; then echo "FILE=path/to/test.dart required"; exit 1; fi
+ifndef FILE
+	$(error FILE=path/to/test.dart is required)
+endif
 	flutter test $(FILE) \
 		--dart-define=SKIP_MFA_DEV=true \
 		--dart-define=ENV=dev \
