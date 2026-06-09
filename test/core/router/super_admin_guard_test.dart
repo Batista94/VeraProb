@@ -1,12 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
+/// Minimal router that builds the guarded [SuperAdminShell] via a
+/// [StatefulShellRoute.indexedStack] with placeholder branch bodies (the real
+/// branch screens pull heavy providers irrelevant to the guard's contract).
+GoRouter _superAdminRouter() {
+  StatefulShellBranch branch(String path) => StatefulShellBranch(
+    routes: [GoRoute(path: path, builder: (_, _) => const SizedBox.shrink())],
+  );
+
+  return GoRouter(
+    initialLocation: AppRoutes.superAdminTenants,
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            SuperAdminShell(navigationShell: navigationShell),
+        branches: [
+          branch(AppRoutes.superAdminTenants),
+          branch(AppRoutes.superAdminNewOrg),
+          branch(AppRoutes.superAdminAuditLog),
+        ],
+      ),
+    ],
+  );
+}
 
 class _FakeSecurityIncidentLogger implements SecurityIncidentLogger {
   final List<Map<String, dynamic>> calls = [];
@@ -33,10 +59,8 @@ void main() {
           (ref) => const Stream<AuthState>.empty(),
         ),
       ],
-      child: const MaterialApp(
-        // Simulating a deep link directly to the SuperAdmin portal
-        home: SuperAdminShell(),
-      ),
+      // Simulating a deep link directly to the SuperAdmin portal.
+      child: MaterialApp.router(routerConfig: _superAdminRouter()),
     );
   }
 

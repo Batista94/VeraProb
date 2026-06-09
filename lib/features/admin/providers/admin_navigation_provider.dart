@@ -42,20 +42,6 @@ const int pillarCount = 6;
 int railIndexFor(int realIndex) =>
     realIndex < pillarCount ? realIndex : AdminNav.adminHub.index;
 
-// State provider for the currently selected admin screen index.
-class _AdminIndexNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void set(int value) => state = value;
-
-  void go(AdminNav destination) => state = destination.index;
-}
-
-final adminIndexProvider = NotifierProvider<_AdminIndexNotifier, int>(
-  _AdminIndexNotifier.new,
-);
-
 class _OnboardingBannerVisibleNotifier extends Notifier<bool> {
   bool _isDismissed = false;
 

@@ -3,14 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
-
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 
 /// TOTP challenge screen for SuperAdmin login (INV-6).
 ///
@@ -86,10 +85,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
       switch (result) {
         case MfaVerificationSuccess():
-          await Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
-            (_) => false,
-          );
+          context.go(AppRoutes.superAdminTenants);
         case MfaVerificationFailure():
           setState(() {
             _isVerifying = false;
@@ -144,10 +140,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
   void _signOutAndReturn() {
     ref.read(authRepositoryProvider).signOut();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
-      (_) => false,
-    );
+    context.go(AppRoutes.login);
   }
 
   String _formatCountdown() {

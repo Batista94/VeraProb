@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'widgets/contractual_risk_radar.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
@@ -43,7 +45,7 @@ class DashboardScreen extends ConsumerWidget {
                       padding: const EdgeInsets.only(bottom: 24),
                       child: OnboardingProgressBanner(
                         onNavigate: (destIdx) {
-                          ref.read(adminIndexProvider.notifier).set(destIdx);
+                          context.go(AdminNav.values[destIdx].path);
                           ref
                               .read(selectedContractIdProvider.notifier)
                               .set(null);

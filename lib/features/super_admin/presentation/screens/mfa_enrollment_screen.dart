@@ -3,13 +3,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 
 /// TOTP enrollment screen for SuperAdmin (INV-6).
 ///
@@ -57,10 +56,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     } on MfaException catch (e) {
       if (e.isNotEnabled && kDebugMode) {
         if (!mounted) return;
-        await Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
-          (_) => false,
-        );
+        context.go(AppRoutes.superAdminTenants);
         return;
       }
       rethrow;
@@ -117,11 +113,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     }
   }
 
-  Future<void> _navigateToShell() async {
-    await Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
-      (_) => false,
-    );
+  void _navigateToShell() {
+    context.go(AppRoutes.superAdminMfaChallenge);
   }
 
   @override
@@ -170,13 +163,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           Text(_error!, style: const TextStyle(color: Colors.red)),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () async =>
-                await Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AdminLockScreen(),
-                  ),
-                  (_) => false,
-                ),
+            onPressed: () => context.go(AppRoutes.login),
             child: const Text('Voltar ao Login'),
           ),
         ],

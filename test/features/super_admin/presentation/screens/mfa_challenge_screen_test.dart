@@ -2,9 +2,10 @@
 /// adversarial scenarios (INV-6, INV-22).
 ///
 /// Strategy: override [mfaChallengeHandlerProvider] with a mocktail mock and
-/// drive the screen via `tester.enterText` (auto-submits at length 6).
-/// For target SuperAdminShell after success navigation, RBAC providers are
-/// stubbed minimally — `isSuperAdmin=true`, `isAal2=true`.
+/// drive the screen via `tester.enterText` (auto-submits at length 6). Post-auth
+/// navigation now flows through [GoRouter] (`context.go`), so the harness mounts
+/// the screen at `/mfa` with sentinel routes for the Tenants branch and `/login`
+/// and asserts the resolved router location instead of the pushed widget.
 library;
 
 import 'dart:async';
@@ -14,39 +15,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/super_admin/mfa_challenge_handler.dart';
 import 'package:veraprob/application/super_admin/mfa_result_view.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/super_admin/mfa_challenge_result.dart';
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
-import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
-import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 class _MockMfaChallengeHandler extends Mock implements MfaChallengeHandler {}
 
 class _MockAuthRepository extends Mock implements IAuthRepository {}
 
-class _MockNavigatorObserver extends Mock implements NavigatorObserver {}
-
 class _MockDateTimeProvider extends Mock implements IDateTimeProvider {}
-
-class _FakeSecurityIncidentLogger implements SecurityIncidentLogger {
-  @override
-  Future<void> log({
-    required String eventType,
-    required Map<String, dynamic> metadata,
-    required Map<String, dynamic> jwtClaimsSnapshot,
-  }) async {}
-}
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -58,42 +45,50 @@ class _MockHttpOverrides extends HttpOverrides {
 
 const _kCode = '123456';
 
-Widget _buildScreen({
+const _mfaPath = '/mfa';
+
+typedef _Harness = ({Widget widget, GoRouter router});
+
+_Harness _buildScreen({
   required _MockMfaChallengeHandler handler,
   required IDateTimeProvider timeProvider,
   IAuthRepository? authRepo,
-  NavigatorObserver? observer,
-  bool stubShellGuard = false,
 }) {
   final overrides = <Override>[
     mfaChallengeHandlerProvider.overrideWithValue(handler),
     dateTimeProviderProvider.overrideWithValue(timeProvider),
     if (authRepo != null) authRepositoryProvider.overrideWithValue(authRepo),
-    if (stubShellGuard) ...[
-      isSuperAdminProvider.overrideWithValue(true),
-      isSuperAdminAal2Provider.overrideWithValue(true),
-      securityIncidentLoggerProvider.overrideWithValue(
-        _FakeSecurityIncidentLogger(),
-      ),
-      authStateProvider.overrideWith((ref) => const Stream<AuthState>.empty()),
-    ],
   ];
 
-  return ProviderScope(
-    overrides: overrides,
-    child: MaterialApp(
-      home: const MfaChallengeScreen(),
-      navigatorObservers: observer != null ? [observer] : const [],
-    ),
+  final router = GoRouter(
+    initialLocation: _mfaPath,
+    routes: [
+      GoRoute(
+        path: _mfaPath,
+        builder: (context, state) => const MfaChallengeScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminTenants,
+        builder: (context, state) => const Text('route:tenants'),
+      ),
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const Text('route:login'),
+      ),
+    ],
   );
+
+  final widget = ProviderScope(
+    overrides: overrides,
+    child: MaterialApp.router(routerConfig: router),
+  );
+  return (widget: widget, router: router);
 }
 
+String _currentPath(GoRouter router) =>
+    router.routerDelegate.currentConfiguration.uri.path;
+
 void main() {
-  setUpAll(() {
-    registerFallbackValue(
-      MaterialPageRoute<void>(builder: (_) => const SizedBox()),
-    );
-  });
   setUp(() => HttpOverrides.global = _MockHttpOverrides());
   tearDown(() => HttpOverrides.global = null);
 
@@ -125,7 +120,7 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('14 happy path → navigates to SuperAdminShell', (tester) async {
+    testWidgets('14 happy path → navigates to Tenants branch', (tester) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -138,24 +133,19 @@ void main() {
         ),
       ).thenAnswer((_) async => const MfaVerificationSuccess());
 
-      final observer = _MockNavigatorObserver();
-      when(() => observer.didPush(any(), any())).thenAnswer((_) {});
-
-      await tester.pumpWidget(
-        _buildScreen(
-          handler: handler,
-          timeProvider: timeProvider,
-          observer: observer,
-          stubShellGuard: true,
-        ),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
       await enterCode(tester);
       await tester.pumpAndSettle();
 
       expect(find.byType(MfaChallengeScreen), findsNothing);
-      expect(find.byType(SuperAdminShell), findsOneWidget);
+      expect(_currentPath(harness.router), AppRoutes.superAdminTenants);
       verify(
         () => handler.verify(
           factorId: 'factor-f1',
@@ -186,9 +176,12 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _buildScreen(handler: handler, timeProvider: timeProvider),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
       await enterCode(tester);
@@ -223,9 +216,12 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _buildScreen(handler: handler, timeProvider: timeProvider),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
       await enterCode(tester);
@@ -261,9 +257,12 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _buildScreen(handler: handler, timeProvider: timeProvider),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
@@ -320,9 +319,12 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _buildScreen(handler: handler, timeProvider: timeProvider),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
@@ -355,9 +357,12 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        _buildScreen(handler: handler, timeProvider: timeProvider),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
       await enterCode(tester);
       await tester.pump();
@@ -392,13 +397,13 @@ void main() {
         () => authRepo.authStatusStream,
       ).thenAnswer((_) => const Stream<bool>.empty());
 
-      await tester.pumpWidget(
-        _buildScreen(
-          handler: handler,
-          timeProvider: timeProvider,
-          authRepo: authRepo,
-        ),
+      final harness = _buildScreen(
+        handler: handler,
+        timeProvider: timeProvider,
+        authRepo: authRepo,
       );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pumpAndSettle();
 
       await tester.tap(find.widgetWithText(TextButton, 'Voltar ao Login'));
@@ -406,7 +411,7 @@ void main() {
 
       verify(() => authRepo.signOut()).called(1);
       expect(find.byType(MfaChallengeScreen), findsNothing);
-      expect(find.byType(AdminLockScreen), findsOneWidget);
+      expect(_currentPath(harness.router), AppRoutes.login);
     });
   });
 }

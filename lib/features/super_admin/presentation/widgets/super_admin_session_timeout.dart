@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 
 /// Wraps the SuperAdmin shell to monitor for user inactivity.
 /// Shows a warning dialog after 5 minutes of idle time.
@@ -84,10 +85,7 @@ class _SuperAdminSessionTimeoutState
     } catch (_) {}
 
     if (mounted) {
-      await Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
-        (_) => false,
-      );
+      context.go(AppRoutes.login);
     }
   }
 

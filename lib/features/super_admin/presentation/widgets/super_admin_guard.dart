@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/impersonation_banner.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/mfa_disabled_banner.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
@@ -67,10 +68,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
           debugPrint(
             '[SuperAdminGuard] AAL2 missing — redirecting to MFA challenge',
           );
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
-            (_) => false,
-          );
+          context.go(AppRoutes.superAdminMfaChallenge);
         }
       });
       return const Scaffold();
@@ -143,7 +141,7 @@ class _SuperAdminGuardState extends ConsumerState<SuperAdminGuard> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(activeImpersonationSessionProvider.notifier).set(null);
       if (mounted) {
-        Navigator.of(context).popUntil((route) => route.isFirst);
+        context.go(AppRoutes.superAdminTenants);
       }
     });
   }

@@ -2,18 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_enrollment_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
-import 'admin_home.dart';
 
 class AdminLockScreen extends ConsumerStatefulWidget {
   const AdminLockScreen({super.key});
@@ -49,7 +47,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
   ///   - TOTP enrolled but AAL1 → MfaChallengeScreen
   ///   - AAL2 verified → SuperAdminShell
   ///
-  /// Regular tenant users → AdminHome (unchanged).
+  /// Regular tenant users → /admin/dashboard (admin shell).
   Future<void> _routeAfterAuth() async {
     if (_isRouting) return;
     setState(() => _isRouting = true);
@@ -71,9 +69,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
 
       if (!isSuperAdmin) {
         if (!mounted) return;
-        await Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const AdminHome()),
-        );
+        context.go(AppRoutes.adminDashboard);
         return;
       }
 
@@ -87,9 +83,7 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
           'Never passes in staging/prod. INV-6.',
         );
         if (!mounted) return;
-        await Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const SuperAdminShell()),
-        );
+        context.go(AppRoutes.superAdmin);
         return;
       }
 
@@ -99,27 +93,23 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
 
         if (!mounted) return;
 
-        final Widget destination;
+        final String destination;
         if (mfaStatus.needsEnrollment) {
-          destination = const MfaEnrollmentScreen();
+          destination = AppRoutes.superAdminMfaEnrollment;
         } else if (mfaStatus.needsChallenge) {
-          destination = const MfaChallengeScreen();
+          destination = AppRoutes.superAdminMfaChallenge;
         } else {
-          destination = const SuperAdminShell();
+          destination = AppRoutes.superAdmin;
         }
 
-        await Navigator.of(
-          context,
-        ).pushReplacement(MaterialPageRoute<void>(builder: (_) => destination));
+        context.go(destination);
       } catch (e) {
         if (kDebugMode) {
           debugPrint('[AUTH] MFA status check failed: $e');
         }
         // Fallback: send to challenge screen (safe default).
         if (!mounted) return;
-        await Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => const MfaChallengeScreen()),
-        );
+        context.go(AppRoutes.superAdminMfaChallenge);
       }
     } finally {
       if (mounted) setState(() => _isRouting = false);
