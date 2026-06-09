@@ -22,6 +22,23 @@ import 'superadmin_test_config.dart';
 ///
 /// **Validates: Requirements 1.3, 8.5**
 abstract class SuperAdminAuthHelper {
+  /// The `ErrorWidget.builder` value provided by `flutter_test` at test start,
+  /// captured before `app.main()`. [ErrorBoundary] reassigns the global builder
+  /// in `initState` on every mount; with go_router the `/login` route can be
+  /// re-mounted mid-test (e.g. token-expiry redirect in 8.5), leaving the global
+  /// pointing at the boundary closure when the test body ends — flutter_test's
+  /// `_verifyErrorWidgetBuilderUnset` then fails. Tests that intentionally end on
+  /// a freshly-mounted login screen call [resetErrorWidgetBuilder] as their last
+  /// step to restore this value.
+  static ErrorWidgetBuilder? _flutterTestErrorWidgetBuilder;
+
+  /// Restores the `ErrorWidget.builder` captured during [loginAsSuperAdmin].
+  /// No-op if login was never invoked in this test.
+  static void resetErrorWidgetBuilder() {
+    final builder = _flutterTestErrorWidgetBuilder;
+    if (builder != null) ErrorWidget.builder = builder;
+  }
+
   /// Realiza login como SuperAdmin via interação de UI.
   ///
   /// Fluxo:
@@ -63,6 +80,7 @@ abstract class SuperAdminAuthHelper {
     // e restaura logo após pumpAndSettle — ErrorBoundary só mounta 1x na vida do
     // app, não há risco de re-trigger.
     final originalErrorWidgetBuilder = ErrorWidget.builder;
+    _flutterTestErrorWidgetBuilder = originalErrorWidgetBuilder;
 
     app.main();
     await tester.pumpAndSettle();

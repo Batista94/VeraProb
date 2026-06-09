@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
@@ -9,9 +11,9 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/providers/onboarding_provider.dart';
 
 /// Administração — the launcher that consolidates every registry, rule and
-/// governance screen behind a single sidebar pillar. Cards drive
-/// [adminIndexProvider] to the target [AdminNav] screen; the shell renders a
-/// "Voltar para Administração" bar while a deep screen is open.
+/// governance screen behind a single sidebar pillar. Cards navigate to the
+/// target [AdminNav] screen via `context.go(item.destination.path)`; the shell
+/// renders a "Voltar para Administração" bar while a deep screen is open.
 ///
 /// WS-4: the Evidências card is visible only to AUDITOR and TENANT_ADMIN.
 class AdminHubScreen extends ConsumerWidget {
@@ -137,9 +139,7 @@ class AdminHubScreen extends ConsumerWidget {
                   for (final item in group.items)
                     _HubCard(
                       item: item,
-                      onTap: () => ref
-                          .read(adminIndexProvider.notifier)
-                          .go(item.destination),
+                      onTap: () => context.go(item.destination.path),
                     ),
                 ],
               );
@@ -350,11 +350,7 @@ class _HubOnboardingBanner extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                onPressed: () {
-                  ref
-                      .read(adminIndexProvider.notifier)
-                      .go(nextStep.destination);
-                },
+                onPressed: () => context.go(nextStep.destination.path),
               ),
             ],
           ),

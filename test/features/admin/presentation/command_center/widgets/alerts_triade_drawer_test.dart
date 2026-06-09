@@ -205,8 +205,9 @@ void main() {
   ///   - narrow (width ≤ 1071px) → exercises 300px clamp
   ///   - wide   (width ≥ 1430px) → exercises 400px clamp
   ///
-  /// Note: [adminIndexProvider] and [selectedContractIdProvider] use their
-  /// default notifiers — both are pure state with no external dependencies.
+  /// Note: [selectedContractIdProvider] uses its default notifier — pure state
+  /// with no external dependencies. No GoRouter ancestor is needed because no
+  /// test taps "Reconciliar" (the only `context.go` call site in the drawer).
   Future<void> buildHost(
     WidgetTester tester, {
     Size size = const Size(1280, 800),

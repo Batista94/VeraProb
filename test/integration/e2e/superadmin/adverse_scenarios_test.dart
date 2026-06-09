@@ -587,41 +587,50 @@ void main() {
       // Forçar expiração do token
       await SuperAdminAuthHelper.forceTokenExpiry();
 
-      // Pump para processar o evento de auth state change
-      await tester.pumpAndSettle(
-        const Duration(milliseconds: 100),
-        EnginePhase.sendSemanticsUpdate,
-        SuperAdminTestConfig.defaultTimeout,
-      );
+      try {
+        // Pump para processar o evento de auth state change
+        await tester.pumpAndSettle(
+          const Duration(milliseconds: 100),
+          EnginePhase.sendSemanticsUpdate,
+          SuperAdminTestConfig.defaultTimeout,
+        );
 
-      // ANTES de verificar redirecionamento, garantir que dados
-      // sensíveis foram limpos da tela (anti "Flash de Dados")
-      await SuperAdminAuthHelper.assertNoSensitiveDataVisible(tester);
+        // ANTES de verificar redirecionamento, garantir que dados
+        // sensíveis foram limpos da tela (anti "Flash de Dados")
+        await SuperAdminAuthHelper.assertNoSensitiveDataVisible(tester);
 
-      // AdminLockScreen usa TextField (não TextFormField) + ElevatedButton
-      // 'ACESSAR SISTEMA' (lib/features/admin/presentation/lock_screen.dart:265,275,305).
-      final loginFields = find.byType(TextField);
-      final loginButton = find.widgetWithText(
-        ElevatedButton,
-        'ACESSAR SISTEMA',
-      );
-      final loginButtonFilled = find.widgetWithText(
-        FilledButton,
-        'ACESSAR SISTEMA',
-      );
+        // AdminLockScreen usa TextField (não TextFormField) + ElevatedButton
+        // 'ACESSAR SISTEMA' (lib/features/admin/presentation/lock_screen.dart:265,275,305).
+        final loginFields = find.byType(TextField);
+        final loginButton = find.widgetWithText(
+          ElevatedButton,
+          'ACESSAR SISTEMA',
+        );
+        final loginButtonFilled = find.widgetWithText(
+          FilledButton,
+          'ACESSAR SISTEMA',
+        );
 
-      final isOnLoginScreen =
-          loginFields.evaluate().isNotEmpty &&
-          (loginButton.evaluate().isNotEmpty ||
-              loginButtonFilled.evaluate().isNotEmpty);
+        final isOnLoginScreen =
+            loginFields.evaluate().isNotEmpty &&
+            (loginButton.evaluate().isNotEmpty ||
+                loginButtonFilled.evaluate().isNotEmpty);
 
-      expect(
-        isOnLoginScreen,
-        isTrue,
-        reason:
-            'O sistema deve redirecionar para a tela de login após '
-            'expiração do token (Req 8.5)',
-      );
+        expect(
+          isOnLoginScreen,
+          isTrue,
+          reason:
+              'O sistema deve redirecionar para a tela de login após '
+              'expiração do token (Req 8.5)',
+        );
+      } finally {
+        // The token-expiry redirect re-mounts the ErrorBoundary-wrapped
+        // /login route, which reassigns the global ErrorWidget.builder.
+        // Restore flutter_test's builder before the body returns so the
+        // framework's end-of-test verification does not fail (go_router
+        // re-mounts the route; the legacy home: screen never did).
+        SuperAdminAuthHelper.resetErrorWidgetBuilder();
+      }
     });
 
     testWidgets('8.6 Mensagem apropriada ao revogar convite já aceito '

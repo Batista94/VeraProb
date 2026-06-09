@@ -12,12 +12,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/not_found_page.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/super_admin_guard.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/impersonation_banner.dart';
@@ -87,10 +88,19 @@ Override _authStateWithUserId(String userId) {
   return authStateProvider.overrideWith((ref) => Stream.value(authState));
 }
 
+/// Marker rendered by the `/super-admin/mfa-challenge` sentinel route. The guard
+/// now redirects there via `context.go` (instead of an imperative Navigator
+/// push), so MFA-redirect assertions check for this marker / the resolved router
+/// location rather than the `MfaChallengeScreen` widget type.
+const _mfaChallengeMarker = 'route:mfa-challenge';
+const _guardPath = '/guard';
+
 /// Builds the guard under test with the given provider overrides.
 ///
-/// [isRealAal2] overrides [isSuperAdminRealAal2Provider]. Defaults to [isAal2]
-/// so existing tests continue to pass unchanged.
+/// The guard issues `context.go(...)` (AAL2 redirect, impersonation cleanup), so
+/// it is mounted inside a [GoRouter] whose redirect targets are lightweight
+/// sentinel routes. [isRealAal2] overrides [isSuperAdminRealAal2Provider];
+/// defaults to [isAal2] so existing tests continue to pass unchanged.
 Widget _buildGuard({
   required bool isSuperAdmin,
   required bool isAal2,
@@ -100,6 +110,27 @@ Widget _buildGuard({
   Override? authOverride,
 }) {
   final fakeLogger = logger ?? _FakeSecurityIncidentLogger();
+
+  final router = GoRouter(
+    initialLocation: _guardPath,
+    routes: [
+      GoRoute(
+        path: _guardPath,
+        builder: (_, _) => const SuperAdminGuard(
+          child: Scaffold(body: Text('CHILD_RENDERED')),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminMfaChallenge,
+        builder: (_, _) => const Text(_mfaChallengeMarker),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminTenants,
+        builder: (_, _) => const Text('route:tenants'),
+      ),
+    ],
+  );
+  addTearDown(router.dispose);
 
   return ProviderScope(
     overrides: [
@@ -115,9 +146,7 @@ Widget _buildGuard({
             (ref) => const Stream<AuthState>.empty(),
           ),
     ],
-    child: const MaterialApp(
-      home: SuperAdminGuard(child: Scaffold(body: Text('CHILD_RENDERED'))),
-    ),
+    child: MaterialApp.router(routerConfig: router),
   );
 }
 
@@ -496,10 +525,10 @@ void main() {
         // Process the post-frame callback (impersonation cleanup).
         await tester.pump();
 
-        // MfaChallengeScreen MUST NOT appear — the impersonation invalidation
+        // MFA challenge MUST NOT appear — the impersonation invalidation
         // takes precedence over any MFA redirect.
         expect(
-          find.byType(MfaChallengeScreen),
+          find.text(_mfaChallengeMarker),
           findsNothing,
           reason:
               'MFA redirect MUST NOT fire when _impersonationInvalidated '
@@ -521,9 +550,9 @@ void main() {
         // Process the post-frame callback (MFA redirect).
         await tester.pumpAndSettle();
 
-        // MfaChallengeScreen MUST appear via navigation.
+        // MFA challenge route MUST appear via navigation.
         expect(
-          find.byType(MfaChallengeScreen),
+          find.text(_mfaChallengeMarker),
           findsOneWidget,
           reason:
               'MFA redirect MUST fire when aal2=false and no '
@@ -560,9 +589,9 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // After impersonation invalidation, MfaChallengeScreen must NOT appear.
+        // After impersonation invalidation, the MFA challenge must NOT appear.
         expect(
-          find.byType(MfaChallengeScreen),
+          find.text(_mfaChallengeMarker),
           findsNothing,
           reason:
               'MFA redirect MUST be suppressed when impersonation '

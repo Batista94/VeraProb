@@ -19,6 +19,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Potential revenue leakage in Shadow Executions via strict Notifier lifecycle guards.
 
+## [Unreleased] - URL-based Routing (go_router Migration)
+
+### Added
+- **`lib/app/routing/`**: `go_router` 17.3.0 routing layer. `app_routes.dart` (path constants + bidirectional `AdminNav`↔path map) and `app_router.dart` (`appRouterProvider`, route tree, redirect guard, `refreshListenable` on `authStateProvider`).
+- URL for every screen via `StatefulShellRoute.indexedStack` (18 admin branches, 3 super-admin branches). F5 restores the current screen with auth re-validated.
+- Super-admin tenant deep link `/super-admin/tenants/:id` (selects `selectedTenantIdProvider`).
+
+### Changed
+- **Major**: Replaced `MaterialApp(home:)` + imperative `Navigator` with `MaterialApp.router`. `AdminLayout` now consumes `StatefulNavigationShell` (`goBranch`); `_routeAfterAuth` uses `context.go` (async MFA decision retained in `AdminLockScreen`, not the router redirect).
+- Super-admin shell converted to full branch routing wrapped in `SuperAdminSessionTimeout` + `SuperAdminGuard`; standalone MFA gate routes `/super-admin/mfa-enrollment`, `/super-admin/mfa-challenge`.
+- Path URL strategy via `flutter_web_plugins` `usePathUrlStrategy()` (INV-17 safe — no `dart:html`/`dart:js`). Public token deep links (`/accept-invite`, `/review-contract`, `/justify`) preserved.
+
+### Removed
+- `adminIndexProvider` / `_AdminIndexNotifier` (in-memory nav index) and `lib/features/admin/presentation/admin_home.dart` (dissolved into router branch builders).
+
 ## [Unreleased] - Architectural Integrity Enforcement
 
 ### Added

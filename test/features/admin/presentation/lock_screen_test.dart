@@ -11,14 +11,15 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
-import 'package:veraprob/features/super_admin/presentation/screens/mfa_challenge_screen.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
@@ -84,13 +85,37 @@ class _AuthWarmupWrapper extends ConsumerWidget {
   }
 }
 
-Widget _buildScreen({
+/// Router whose `/login` renders the [AdminLockScreen]; post-auth destinations
+/// (`/super-admin`, MFA gates, `/admin/dashboard`) are sentinels so the
+/// `context.go(...)` issued by `_routeAfterAuth` resolves to a real location we
+/// can assert against — replacing the removed imperative `Navigator` push.
+GoRouter _buildRouter() {
+  GoRoute sentinel(String path) =>
+      GoRoute(path: path, builder: (context, state) => Text('route:$path'));
+
+  return GoRouter(
+    initialLocation: AppRoutes.login,
+    routes: [
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const _AuthWarmupWrapper(),
+      ),
+      sentinel(AppRoutes.adminDashboard),
+      sentinel(AppRoutes.superAdmin),
+      sentinel(AppRoutes.superAdminMfaEnrollment),
+      sentinel(AppRoutes.superAdminMfaChallenge),
+    ],
+  );
+}
+
+({Widget widget, GoRouter router}) _buildScreen({
   required _MockAuthRepository authRepo,
   required _MockMfaRepository mfaRepo,
 }) {
   final authState = _makeSuperAdminAuthState();
+  final router = _buildRouter();
 
-  return ProviderScope(
+  final widget = ProviderScope(
     overrides: [
       authRepositoryProvider.overrideWithValue(authRepo),
       mfaRepositoryProvider.overrideWithValue(mfaRepo),
@@ -101,9 +126,14 @@ Widget _buildScreen({
         _FakeSecurityIncidentLogger(),
       ),
     ],
-    child: const MaterialApp(home: _AuthWarmupWrapper()),
+    child: MaterialApp.router(routerConfig: router),
   );
+
+  return (widget: widget, router: router);
 }
+
+String _currentPath(GoRouter router) =>
+    router.routerDelegate.currentConfiguration.uri.path;
 
 // ─── Tests ──────────────────────────────────────────────────────────────────
 
@@ -133,9 +163,9 @@ void main() {
       final completer = Completer<MfaStatus>();
       when(() => mfaRepo.getMfaStatus()).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(
-        _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo),
-      );
+      final harness = _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo);
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       // Let StreamProvider process Stream.value emission (warmup).
       await tester.pump();
 
@@ -162,9 +192,9 @@ void main() {
       final completer = Completer<MfaStatus>();
       when(() => mfaRepo.getMfaStatus()).thenAnswer((_) => completer.future);
 
-      await tester.pumpWidget(
-        _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo),
-      );
+      final harness = _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo);
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pump();
 
       // Trigger routing via stream.
@@ -193,18 +223,18 @@ void main() {
         () => mfaRepo.getMfaStatus(),
       ).thenAnswer((_) async => throw Exception('network'));
 
-      await tester.pumpWidget(
-        _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo),
-      );
+      final harness = _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo);
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pump();
 
       authStatusCtrl.add(true);
-      // pumpAndSettle is required to wait for the Navigator transition to complete.
+      // pumpAndSettle waits for the router redirect to settle on the gate route.
       await tester.pumpAndSettle();
 
-      // Verify the safe fallback: on MFA error, navigate to challenge screen.
+      // Verify the safe fallback: on MFA error, route to the challenge gate.
       verify(() => mfaRepo.getMfaStatus()).called(greaterThanOrEqualTo(1));
-      expect(find.byType(MfaChallengeScreen), findsOneWidget);
+      expect(_currentPath(harness.router), AppRoutes.superAdminMfaChallenge);
     });
 
     testWidgets('guard resets after navigation completes', (tester) async {
@@ -217,9 +247,9 @@ void main() {
         );
       });
 
-      await tester.pumpWidget(
-        _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo),
-      );
+      final harness = _buildScreen(authRepo: authRepo, mfaRepo: mfaRepo);
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
       await tester.pump();
 
       // First event triggers routing and navigates away.

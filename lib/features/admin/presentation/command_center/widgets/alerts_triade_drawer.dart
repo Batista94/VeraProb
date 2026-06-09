@@ -2,6 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/evidence_dossier_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
@@ -488,10 +490,8 @@ class _RichEvidenceCard extends ConsumerWidget {
                     ref
                         .read(selectedContractIdProvider.notifier)
                         .set(alert.contractId);
-                    ref
-                        .read(adminIndexProvider.notifier)
-                        .set(AdminNav.slaAudit.index);
                     Navigator.of(context).pop();
+                    context.go(AdminNav.slaAudit.path);
                   },
                 ),
               ),

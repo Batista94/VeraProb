@@ -1,34 +1,103 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/justification_providers.dart';
 
 /// Scaffold handle for imperative drawer control (incident-responsive
 /// command center: auto-open on escalation, auto-close when the queue clears).
 final _adminScaffoldKey = GlobalKey<ScaffoldState>();
 
+/// Admin shell — the URL-addressable container for the 18 admin destinations.
+///
+/// Fed by the router's [StatefulShellRoute.indexedStack]: branch identity
+/// (`navigationShell.currentIndex`) equals the `AdminNav` index, so the
+/// sidebar, hub launcher, onboarding banner and command-center drawer stay in
+/// sync against a single source of truth (the URL).
 class AdminLayout extends ConsumerWidget {
-  final List<Widget> children;
-  final List<NavigationRailDestination> destinations;
+  final StatefulNavigationShell navigationShell;
 
-  const AdminLayout({
-    super.key,
-    required this.children,
-    required this.destinations,
-  });
+  const AdminLayout({super.key, required this.navigationShell});
+
+  /// Switches to the branch at [index] (an `AdminNav` index) and clears any
+  /// open contract detail so the destination opens at its list root.
+  void _goBranch(WidgetRef ref, int index) {
+    navigationShell.goBranch(index);
+    ref.read(selectedContractIdProvider.notifier).set(null);
+  }
+
+  /// The 6 operational pillars rendered in the sidebar rail. Badges are live
+  /// (pending sanctions / justifications) so the rail doubles as a triage cue.
+  List<NavigationRailDestination> _buildDestinations(WidgetRef ref) {
+    final pendingCount = ref.watch(pendingSanctionsCountProvider);
+    final pendingJustificationCount = ref.watch(
+      pendingJustificationsCountProvider,
+    );
+
+    return [
+      const NavigationRailDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: Text('Painel de Controle'),
+      ),
+      NavigationRailDestination(
+        icon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval),
+        ),
+        label: const Text('Fila Auditora'),
+      ),
+      NavigationRailDestination(
+        icon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield),
+        ),
+        label: const Text('Portal Defesa'),
+      ),
+      const NavigationRailDestination(
+        icon: Icon(Icons.account_balance_outlined),
+        selectedIcon: Icon(Icons.account_balance),
+        label: Text('Impacto Financeiro'),
+      ),
+      const NavigationRailDestination(
+        icon: Icon(Icons.history_outlined),
+        selectedIcon: Icon(Icons.history),
+        label: Text('Auditoria OCC'),
+      ),
+      const NavigationRailDestination(
+        icon: Icon(Icons.admin_panel_settings_outlined),
+        selectedIcon: Icon(Icons.admin_panel_settings),
+        label: Text('Administração'),
+      ),
+    ];
+  }
 
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
@@ -43,10 +112,7 @@ class AdminLayout extends ConsumerWidget {
           // ── Logo Home-Anchor ──────────────────────────
           InkWell(
             borderRadius: BorderRadius.circular(8),
-            onTap: () {
-              ref.read(adminIndexProvider.notifier).set(0);
-              ref.read(selectedContractIdProvider.notifier).set(null);
-            },
+            onTap: () => _goBranch(ref, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -100,12 +166,7 @@ class AdminLayout extends ConsumerWidget {
             const _FeedHealthBadge(),
           ],
           const SizedBox(width: 8),
-          _OnboardingBadge(
-            onNavigate: () {
-              ref.read(adminIndexProvider.notifier).set(0);
-              ref.read(selectedContractIdProvider.notifier).set(null);
-            },
-          ),
+          _OnboardingBadge(onNavigate: () => _goBranch(ref, 0)),
           const SizedBox(width: 8),
           const _AlertsButton(),
           const SizedBox(width: 8),
@@ -134,6 +195,7 @@ class AdminLayout extends ConsumerWidget {
     WidgetRef ref,
     bool isWideScreen,
     int selectedIndex,
+    List<NavigationRailDestination> destinations,
   ) {
     return Container(
       decoration: const BoxDecoration(
@@ -153,8 +215,7 @@ class AdminLayout extends ConsumerWidget {
                   selectedIndex: railIndexFor(selectedIndex),
                   onDestinationSelected: (railIndex) {
                     if (railIndex == selectedIndex) return;
-                    ref.read(adminIndexProvider.notifier).set(railIndex);
-                    ref.read(selectedContractIdProvider.notifier).set(null);
+                    _goBranch(ref, railIndex);
                   },
                   useIndicator: true,
                   destinations: destinations,
@@ -169,7 +230,8 @@ class AdminLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedIndex = ref.watch(adminIndexProvider);
+    final selectedIndex = navigationShell.currentIndex;
+    final destinations = _buildDestinations(ref);
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
 
     // ── Incident-responsive drawer ─────────────────────────────
@@ -191,7 +253,7 @@ class AdminLayout extends ConsumerWidget {
     });
 
     return CallbackShortcuts(
-      bindings: _pillarShortcuts(ref),
+      bindings: _pillarShortcuts(),
       child: Focus(
         autofocus: true,
         child: Scaffold(
@@ -204,7 +266,13 @@ class AdminLayout extends ConsumerWidget {
           appBar: _buildAppBar(context, ref, isWideScreen),
           body: Row(
             children: [
-              _buildSidebar(context, ref, isWideScreen, selectedIndex),
+              _buildSidebar(
+                context,
+                ref,
+                isWideScreen,
+                selectedIndex,
+                destinations,
+              ),
               Expanded(
                 child: Align(
                   alignment: Alignment.topCenter,
@@ -217,9 +285,9 @@ class AdminLayout extends ConsumerWidget {
                           // Deep hub screen → offer a path back to the launcher.
                           if (selectedIndex > AdminNav.adminHub.index)
                             _HubBackButton(
-                              onBack: () => ref
-                                  .read(adminIndexProvider.notifier)
-                                  .set(AdminNav.adminHub.index),
+                              onBack: () => navigationShell.goBranch(
+                                AdminNav.adminHub.index,
+                              ),
                             ),
                           if (ref.watch(selectedContractIdProvider) != null)
                             _InternalBackButton(
@@ -227,12 +295,7 @@ class AdminLayout extends ConsumerWidget {
                                   .read(selectedContractIdProvider.notifier)
                                   .set(null),
                             ),
-                          Expanded(
-                            child: IndexedStack(
-                              index: selectedIndex,
-                              children: children,
-                            ),
-                          ),
+                          Expanded(child: navigationShell),
                         ],
                       ),
                     ),
@@ -247,8 +310,8 @@ class AdminLayout extends ConsumerWidget {
   }
 
   /// Ctrl/Cmd+1…6 jump straight to a sidebar pillar (Tier-1 OCC speed).
-  Map<ShortcutActivator, VoidCallback> _pillarShortcuts(WidgetRef ref) {
-    void go(int index) => ref.read(adminIndexProvider.notifier).set(index);
+  Map<ShortcutActivator, VoidCallback> _pillarShortcuts() {
+    void go(int index) => navigationShell.goBranch(index);
     const keys = [
       LogicalKeyboardKey.digit1,
       LogicalKeyboardKey.digit2,
@@ -367,10 +430,7 @@ class _LogoutButton extends ConsumerWidget {
       onPressed: () async {
         await ref.read(authRepositoryProvider).signOut();
         if (context.mounted) {
-          await Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
-            (_) => false,
-          );
+          context.go(AppRoutes.login);
         }
       },
     );

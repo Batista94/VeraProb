@@ -3,20 +3,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'
-    show AuthChangeEvent, AuthState;
+import 'app/routing/app_router.dart';
 import 'infrastructure/config/environment.dart';
 import 'core/theme/app_theme.dart';
 import 'domain/shared/brazil_time.dart';
 import 'features/shared/providers.dart';
-import 'features/shared/widgets/error_boundary.dart';
-import 'features/admin/presentation/lock_screen.dart';
-import 'features/admin/presentation/screens/accept_invite_screen.dart';
-import 'features/admin/presentation/screens/driver_justification_page.dart';
-import 'features/admin/presentation/screens/review_contract_screen.dart';
 import 'infrastructure/config/supabase_client.dart';
 import 'infrastructure/persistence/persistence_mode.dart';
 import 'infrastructure/persistence/persistence_provider.dart';
@@ -25,7 +19,6 @@ import 'infrastructure/observability/analytics_service.dart';
 import 'infrastructure/providers/supabase_provider.dart';
 import 'state/providers/sla_providers.dart';
 import 'state/providers/auth_providers.dart';
-import 'state/providers/super_admin_providers.dart';
 import 'state/retry_policy.dart';
 
 /// Test-only overrides to inject mocks during E2E testing.
@@ -34,6 +27,10 @@ List<Override> testProviderOverrides = [];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // INV-17: path-based URLs (real paths, not hash) so every screen is
+  // deep-linkable and F5 restores it. Uses dart:js_interop internally — no
+  // dart:html / legacy js.
+  usePathUrlStrategy();
   BrazilTime.ensureInitialized(); // timezone DB must be ready before ShiftPattern.create()
 
   // Bootstrap environment
@@ -63,30 +60,6 @@ void main() async {
 
       final prefs = await SharedPreferences.getInstance();
 
-      // Phase 6 — Detect public deep links on Flutter Web startup.
-      final uri = Uri.base;
-      final queryToken = uri.queryParameters['token'];
-      final isInviteRoute =
-          uri.path.contains('accept-invite') && queryToken != null;
-      final isReviewContractRoute =
-          uri.path.contains('review-contract') && queryToken != null;
-      final isJustifyRoute = uri.path.contains('justify') && queryToken != null;
-      final superAdminTenantId = () {
-        final segments = uri.pathSegments;
-        if (segments.length >= 3 &&
-            segments[0] == 'super-admin' &&
-            segments[1] == 'tenants') {
-          final id = segments[2];
-          final uuidRegex = RegExp(
-            r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
-          );
-          if (uuidRegex.hasMatch(id)) {
-            return id;
-          }
-        }
-        return null;
-      }();
-
       runApp(
         ProviderScope(
           observers: const [SentryRiverpodObserver()],
@@ -101,56 +74,18 @@ void main() async {
             persistenceModeProvider.overrideWithValue(PersistenceMode.postgres),
             ...testProviderOverrides,
           ],
-          child: VeraProbAdminApp(
-            inviteToken: isInviteRoute ? queryToken : null,
-            reviewContractToken: isReviewContractRoute ? queryToken : null,
-            justifyToken: isJustifyRoute ? queryToken : null,
-            superAdminTenantId: superAdminTenantId,
-          ),
+          child: const VeraProbAdminApp(),
         ),
       );
     },
   );
 }
 
-class VeraProbAdminApp extends ConsumerStatefulWidget {
-  final String? inviteToken;
-  final String? reviewContractToken;
-  final String? justifyToken;
-  final String? superAdminTenantId;
-
-  const VeraProbAdminApp({
-    super.key,
-    this.inviteToken,
-    this.reviewContractToken,
-    this.justifyToken,
-    this.superAdminTenantId,
-  });
+class VeraProbAdminApp extends ConsumerWidget {
+  const VeraProbAdminApp({super.key});
 
   @override
-  ConsumerState<VeraProbAdminApp> createState() => _VeraProbAdminAppState();
-}
-
-class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
-  // INV-8.5: Global auth-redirect on signedOut. Without this, when token
-  // expires SuperAdminGuard renders NotFoundPage (since super_admin claim
-  // disappears) and user is trapped with no path back to login.
-  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.superAdminTenantId != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref
-            .read(selectedTenantIdProvider.notifier)
-            .select(widget.superAdminTenantId);
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     // FASE 8 — Start the ContractualEvaluationSubscriber reactively.
     // Ensure it only runs when an organizationId is available in the session.
     // This prevents the StateError on startup when use is not logged in.
@@ -160,29 +95,15 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       }
     });
 
-    // INV-8.5 anti "Flash de Dados": on signedOut (token expiry / manual
-    // logout / server invalidation), fully reset the route stack back to
-    // AdminLockScreen. AdminLockScreen pushReplacement on login wipes itself
-    // from the stack, so popUntil would not reach a login route.
-    // Suppress on the initial `initialSession` emission (previous == null).
-    ref.listen<AsyncValue<AuthState>>(authStateProvider, (previous, next) {
-      if (previous == null) return;
-      if (next.value?.event != AuthChangeEvent.signedOut) return;
-      final navigator = _navigatorKey.currentState;
-      if (navigator == null) return;
-      navigator.pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => const AdminLockScreen()),
-        (_) => false,
-      );
-    });
-
-    return MaterialApp(
+    // INV-8.5 / AUTH-TRAP: signedOut bounce is handled by the router's
+    // `refreshListenable` (AuthRefreshNotifier) — the redirect guard re-runs on
+    // every auth event and sends a session-less user back to /login from any
+    // screen. Sentry route tracking lives on the GoRouter `observers`.
+    return MaterialApp.router(
       title: 'veraprob — Control Center',
       theme: AppTheme.darkTheme,
       debugShowCheckedModeBanner: false,
-      navigatorKey: _navigatorKey,
-      // 8.4 — Sentry route tracking (no-op when Sentry is disabled in dev)
-      navigatorObservers: [SentryNavigatorObserver()],
+      routerConfig: ref.watch(appRouterProvider),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -190,13 +111,6 @@ class _VeraProbAdminAppState extends ConsumerState<VeraProbAdminApp> {
       ],
       supportedLocales: const [Locale('pt', 'BR')],
       locale: const Locale('pt', 'BR'),
-      home: widget.justifyToken != null
-          ? DriverJustificationPage(token: widget.justifyToken!)
-          : widget.reviewContractToken != null
-          ? ReviewContractScreen(token: widget.reviewContractToken!)
-          : widget.inviteToken != null
-          ? AcceptInviteScreen(token: widget.inviteToken!)
-          : const ErrorBoundary(child: AdminLockScreen()),
     );
   }
 }

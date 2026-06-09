@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
+
+/// Builds the guarded [SuperAdminShell] through a [StatefulShellRoute] with
+/// placeholder branch bodies — the rail's destinations come from the shell, not
+/// the branch screens.
+GoRouter _superAdminRouter() {
+  StatefulShellBranch branch(String path) => StatefulShellBranch(
+    routes: [GoRoute(path: path, builder: (_, _) => const SizedBox.shrink())],
+  );
+
+  return GoRouter(
+    initialLocation: AppRoutes.superAdminTenants,
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            SuperAdminShell(navigationShell: navigationShell),
+        branches: [
+          branch(AppRoutes.superAdminTenants),
+          branch(AppRoutes.superAdminNewOrg),
+          branch(AppRoutes.superAdminAuditLog),
+        ],
+      ),
+    ],
+  );
+}
 
 void main() {
   Widget buildTestableWidget({
@@ -23,7 +49,7 @@ void main() {
           (ref) => const Stream<AuthState>.empty(),
         ),
       ],
-      child: const MaterialApp(home: SuperAdminShell()),
+      child: MaterialApp.router(routerConfig: _superAdminRouter()),
     );
   }
 

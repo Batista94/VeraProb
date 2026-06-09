@@ -1,35 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/super_admin/proxy_resilience_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/features/admin/presentation/lock_screen.dart';
-import 'screens/tenant_health_panel.dart';
-import 'screens/create_organization_wizard.dart';
-import 'screens/super_admin_audit_log_screen.dart';
 import 'widgets/contingency_banner.dart';
 import 'widgets/super_admin_guard.dart';
 import 'widgets/super_admin_session_timeout.dart';
 
 /// Isolated shell for the SuperAdmin portal.
 ///
-/// Navigation: indigo NavigationRail with 3 destinations.
-/// Wrapped in [SuperAdminGuard] — access denied if JWT lacks `super_admin: true`.
-class SuperAdminShell extends ConsumerStatefulWidget {
-  const SuperAdminShell({super.key});
+/// Navigation: indigo NavigationRail with 3 URL-addressable branches, fed by the
+/// router's [StatefulShellRoute.indexedStack] (`navigationShell.currentIndex`
+/// equals the branch order: Tenants / Nova Org / Audit Log). Wrapped in
+/// [SuperAdminGuard] — access denied if JWT lacks `super_admin: true`.
+class SuperAdminShell extends ConsumerWidget {
+  final StatefulNavigationShell navigationShell;
+
+  const SuperAdminShell({super.key, required this.navigationShell});
 
   @override
-  ConsumerState<SuperAdminShell> createState() => _SuperAdminShellState();
-}
-
-class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
-  int _selectedIndex = 0;
-
-  void _goToTenants() => setState(() => _selectedIndex = 0);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return SuperAdminSessionTimeout(
       child: SuperAdminGuard(
         child: Scaffold(
@@ -38,9 +31,8 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
               // ── NavigationRail (indigo) ─────────────────────────────
               NavigationRail(
                 backgroundColor: VeraProbColors.superAdminSurface,
-                selectedIndex: _selectedIndex,
-                onDestinationSelected: (i) =>
-                    setState(() => _selectedIndex = i),
+                selectedIndex: navigationShell.currentIndex,
+                onDestinationSelected: navigationShell.goBranch,
                 labelType: NavigationRailLabelType.all,
                 selectedIconTheme: const IconThemeData(color: Colors.white),
                 unselectedIconTheme: const IconThemeData(color: Colors.white54),
@@ -77,12 +69,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                       ref.read(proxyResilienceProvider.notifier).reset();
                       await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
-                        await Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const AdminLockScreen(),
-                          ),
-                          (_) => false,
-                        );
+                        context.go(AppRoutes.login);
                       }
                     },
                   ),
@@ -111,7 +98,7 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
                 child: Column(
                   children: [
                     const ContingencyBanner(),
-                    Expanded(child: _buildBody()),
+                    Expanded(child: navigationShell),
                   ],
                 ),
               ),
@@ -120,18 +107,5 @@ class _SuperAdminShellState extends ConsumerState<SuperAdminShell> {
         ),
       ),
     );
-  }
-
-  Widget _buildBody() {
-    switch (_selectedIndex) {
-      case 0:
-        return const TenantHealthPanel();
-      case 1:
-        return CreateOrganizationWizard(onSuccess: _goToTenants);
-      case 2:
-        return const SuperAdminAuditLogScreen();
-      default:
-        return const SizedBox.shrink();
-    }
   }
 }

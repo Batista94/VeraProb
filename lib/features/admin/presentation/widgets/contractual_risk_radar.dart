@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
@@ -75,8 +77,7 @@ class FinancialKpiRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final impactAsync = ref.watch(financialImpactProvider);
     // Provenance: every KPI is one tap from the raw impact ledger.
-    void drillDown() =>
-        ref.read(adminIndexProvider.notifier).go(AdminNav.financialImpact);
+    void drillDown() => context.go(AdminNav.financialImpact.path);
 
     return switch (impactAsync) {
       AsyncLoading() => const Center(
