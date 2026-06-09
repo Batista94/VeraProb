@@ -15,6 +15,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_forensic_evidence_snapshot_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_dispute_resolution_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 
@@ -119,8 +120,11 @@ void main() {
     handler = ResolveDisputeHandler(
       tenantValidator: tenantValidator,
       queueRepo: queueRepo,
-      ledger: ledger,
-      vault: vault,
+      resolutionRepo: InMemorySanctionDisputeResolutionRepository(
+        queueRepo: queueRepo,
+        ledger: ledger,
+        vault: vault,
+      ),
       rbac: RbacService(),
     );
     when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(

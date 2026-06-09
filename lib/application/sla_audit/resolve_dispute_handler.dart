@@ -2,34 +2,35 @@ import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
-import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
-import 'package:veraprob/domain/sla_audit/domain_event.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/sla_audit/execution_events.dart';
-import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
+import 'package:veraprob/domain/sla_audit/sanction_dispute_resolution_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_transition_guard.dart';
-import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'resolve_dispute_command.dart';
-import 'sla_ledger_mapper.dart';
 
 /// Application handler for [ResolveDisputeCommand].
 ///
 /// Closes the `disputed` dead-end: an auditor resolves a disputed sanction into
 /// one of three arcs (accept/overturn/retract). All arcs are validated by the
-/// centralized [SanctionTransitionGuard] and anchored by a distinct ledger fact
-/// for deterministic replay (INV-15).
+/// centralized [SanctionTransitionGuard] before the write.
 ///
-/// **Concurrency:** a non-RPC idempotency guard balances `SANCTION_DISPUTED`
-/// opens against resolution facts in the ledger. If the current dispute was
-/// already resolved by another auditor, it raises
-/// [IdempotencyProcessingException] before any side-effect (no double append).
+/// **Concurrency + atomicity (DB-enforced):** the write path is a single call to
+/// [SanctionDisputeResolutionRepository.resolveDispute], backed by the
+/// `resolve_dispute` SECURITY DEFINER RPC. The RPC row-locks the queue entry,
+/// re-checks the `disputed` status (closing the TOCTOU race), appends the
+/// resolution ledger fact (INV-3), flips the queue, and seals the overturn
+/// snapshot (INV-21) — all in ONE transaction. The former 3–4 non-atomic
+/// PostgREST round-trips are gone. A concurrent loser raises
+/// [IdempotencyProcessingException] from the RPC; no second fact is appended.
+///
+/// The client-side checks below (tenant, RBAC, reason, status, transition) are
+/// retained as fail-fast UX and anti-oracle guards; they are NOT the concurrency
+/// barrier — that is the DB row lock.
 class ResolveDisputeHandler {
   final TenantValidationService _tenantValidator;
   final SanctionReviewQueueRepository _queueRepo;
-  final SlaAuditLedgerRepository _ledger;
-  final ForensicEvidenceSnapshotRepository _vault;
+  final SanctionDisputeResolutionRepository _resolutionRepo;
   final RbacService _rbac;
   final IDateTimeProvider _clock;
   final SanctionTransitionGuard _guard;
@@ -37,23 +38,15 @@ class ResolveDisputeHandler {
   ResolveDisputeHandler({
     required TenantValidationService tenantValidator,
     required SanctionReviewQueueRepository queueRepo,
-    required SlaAuditLedgerRepository ledger,
-    required ForensicEvidenceSnapshotRepository vault,
+    required SanctionDisputeResolutionRepository resolutionRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
-       _ledger = ledger,
-       _vault = vault,
+       _resolutionRepo = resolutionRepo,
        _rbac = rbac,
        _clock = dateTimeProvider ?? BrazilDateTimeProvider(),
        _guard = const SanctionTransitionGuard();
-
-  static const _resolutionTypes = {
-    'DISPUTE_ACCEPTED',
-    'DISPUTE_OVERTURNED',
-    'DISPUTE_RETRACTED',
-  };
 
   Future<void> handle(ResolveDisputeCommand command) async {
     // 1. Fail-Fast tenant sync (INV-1, INV-22).
@@ -95,38 +88,19 @@ class ResolveDisputeHandler {
     final target = _targetStatus(command.resolution);
     _guard.assertTransitionAllowed(entry.status, target);
 
-    // 7. Idempotency guard (concurrency): the current dispute must be unresolved.
-    await _assertCurrentDisputeUnresolved(command, entry.organizationId);
-
-    final now = _clock.nowUtc();
-    final reason = command.resolutionReason?.trim();
-
-    // 8. Append the resolution fact FIRST (INV-3 append-only, Pillar C).
-    final event = _buildEvent(command, entry, now, reason);
-    final ledgerEntryId = await _ledger.append(
-      SlaLedgerMapper.mapToEntry(event),
+    // 7. Atomic write (lock → re-check → ledger append → queue flip → overturn
+    // seal) in ONE DB transaction. Concurrency control + atomicity live here.
+    final ledgerType = _ledgerType(command.resolution);
+    await _resolutionRepo.resolveDispute(
+      organizationId: command.organizationId,
+      queueEntryId: command.queueEntryId,
+      resolution: ledgerType,
+      resolutionReason: command.resolutionReason?.trim(),
+      resolvedByUserId: command.resolvedByUserId,
+      actorEmail: command.actorEmail,
+      occurredAtUtc: _clock.nowUtc(),
+      idempotencyKey: '${command.queueEntryId}:$ledgerType:SNAPSHOT',
     );
-
-    // 9. Apply the queue transition.
-    await _queueRepo.updateStatus(
-      _applyTransition(entry, command, now, reason),
-    );
-
-    // 10. Seal forensic snapshot for overturn arc (INV-9, INV-21).
-    //     Linked to the DISPUTE_OVERTURNED ledger entry just appended.
-    //     No new ledger entry is created (INV-3).
-    if (command.resolution == DisputeResolution.overturn) {
-      await _vault.sealForDispute(
-        organizationId: command.organizationId,
-        ledgerEntryId: ledgerEntryId,
-        contractId: entry.contractId,
-        setId: entry.setId,
-        planVersion: 0,
-        occurredAtUtc: now,
-        sealedBy: command.resolvedByUserId,
-        idempotencyKey: '${command.queueEntryId}:DISPUTE_OVERTURNED:SNAPSHOT',
-      );
-    }
   }
 
   void _assertReason(ResolveDisputeCommand command) {
@@ -149,115 +123,14 @@ class ResolveDisputeHandler {
     }
   }
 
-  Future<void> _assertCurrentDisputeUnresolved(
-    ResolveDisputeCommand command,
-    String organizationId,
-  ) async {
-    final related = await _ledger.getEntriesByQueueEntryId(
-      command.queueEntryId,
-      organizationId: organizationId,
-    );
-    final opens = related.where((e) => e.type == 'SANCTION_DISPUTED').length;
-    final resolutions = related
-        .where((e) => _resolutionTypes.contains(e.type))
-        .length;
-    if (resolutions >= opens) {
-      throw IdempotencyProcessingException(
-        idempotencyKey: command.queueEntryId,
-        commandPath: 'resolve_dispute',
-        message: 'This dispute has already been resolved by another auditor.',
-      );
-    }
-  }
-
-  DomainEvent _buildEvent(
-    ResolveDisputeCommand command,
-    SanctionReviewQueueEntry entry,
-    DateTime now,
-    String? reason,
-  ) {
-    final args = (
-      organizationId: entry.organizationId,
-      occurredAtUtc: now,
-      setId: entry.setId,
-      contractId: entry.contractId,
-      queueEntryId: entry.id,
-      resolvedByUserId: command.resolvedByUserId,
-      actorEmail: command.actorEmail,
-      resolutionReason: reason,
-      verdictEvidence: entry.verdictEvidence,
-    );
-    switch (command.resolution) {
+  String _ledgerType(DisputeResolution resolution) {
+    switch (resolution) {
       case DisputeResolution.accept:
-        return DisputeAcceptedEvent(
-          organizationId: args.organizationId,
-          occurredAtUtc: args.occurredAtUtc,
-          setId: args.setId,
-          contractId: args.contractId,
-          planVersion: 0,
-          queueEntryId: args.queueEntryId,
-          resolvedByUserId: args.resolvedByUserId,
-          actorEmail: args.actorEmail,
-          resolutionReason: args.resolutionReason,
-          verdictEvidence: args.verdictEvidence,
-        );
+        return 'DISPUTE_ACCEPTED';
       case DisputeResolution.overturn:
-        return DisputeOverturnedEvent(
-          organizationId: args.organizationId,
-          occurredAtUtc: args.occurredAtUtc,
-          setId: args.setId,
-          contractId: args.contractId,
-          planVersion: 0,
-          queueEntryId: args.queueEntryId,
-          resolvedByUserId: args.resolvedByUserId,
-          actorEmail: args.actorEmail,
-          resolutionReason: args.resolutionReason,
-          verdictEvidence: args.verdictEvidence,
-        );
+        return 'DISPUTE_OVERTURNED';
       case DisputeResolution.retract:
-        return DisputeRetractedEvent(
-          organizationId: args.organizationId,
-          occurredAtUtc: args.occurredAtUtc,
-          setId: args.setId,
-          contractId: args.contractId,
-          planVersion: 0,
-          queueEntryId: args.queueEntryId,
-          resolvedByUserId: args.resolvedByUserId,
-          actorEmail: args.actorEmail,
-          resolutionReason: args.resolutionReason,
-          verdictEvidence: args.verdictEvidence,
-        );
-    }
-  }
-
-  SanctionReviewQueueEntry _applyTransition(
-    SanctionReviewQueueEntry entry,
-    ResolveDisputeCommand command,
-    DateTime now,
-    String? reason,
-  ) {
-    switch (command.resolution) {
-      case DisputeResolution.accept:
-        return entry.copyWith(
-          status: SanctionReviewStatus.rejected,
-          reviewedAtUtc: now,
-          reviewedByUserId: command.resolvedByUserId,
-          rejectionReason: reason,
-        );
-      case DisputeResolution.overturn:
-        return entry.copyWith(
-          status: SanctionReviewStatus.applied,
-          reviewedAtUtc: now,
-          reviewedByUserId: command.resolvedByUserId,
-        );
-      case DisputeResolution.retract:
-        // Return to the queue: wipe the review trail but preserve the original
-        // disputer (reviewedByUserId) for forensic honesty.
-        return entry.copyWith(
-          status: SanctionReviewStatus.pending,
-          clearReviewedAtUtc: true,
-          clearRejectionReason: true,
-        );
+        return 'DISPUTE_RETRACTED';
     }
   }
 }

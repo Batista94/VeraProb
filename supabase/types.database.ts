@@ -4768,6 +4768,19 @@ export type Database = {
         Returns: undefined;
       };
       reset_mfa_lockout: { Args: { p_user_id: string }; Returns: undefined };
+      resolve_dispute: {
+        Args: {
+          p_actor_email: string;
+          p_idempotency_key: string;
+          p_occurred_at_utc: string;
+          p_organization_id: string;
+          p_queue_entry_id: string;
+          p_resolution: string;
+          p_resolution_reason: string;
+          p_resolved_by_user_id: string;
+        };
+        Returns: Json;
+      };
       resolve_telegram_orphan_with_link: {
         Args: { p_driver_id: string; p_short_id: string };
         Returns: string;
