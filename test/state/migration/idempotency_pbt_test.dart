@@ -9,13 +9,17 @@
 ///
 /// Strategy: Source-code structural verification.
 ///
-/// 1. All handlers that write to append-only tables use one of the three
+/// 1. All handlers that write to append-only tables use one of the
 ///    idempotency mechanisms:
 ///    a) IdempotentHandlerMixin (CloseContractHandler, DeclareContractualPlanHandler)
 ///    b) Status guards — checking entry status before proceeding
-///       (ApproveSanctionHandler, RejectSanctionHandler,
-///        ApproveJustificationHandler, RejectJustificationHandler)
+///       (ApproveJustificationHandler, RejectJustificationHandler)
 ///    c) Deterministic IDs (not used by current handlers)
+///    d) DB transactional RPC — the ledger append + status flip happen inside a
+///       single SECURITY DEFINER transaction (row lock → status re-check →
+///       append → flip). The Dart handler delegates the write to a repository
+///       port; idempotency is enforced by the DB, not Dart source structure
+///       (ApproveSanctionHandler, RejectSanctionHandler — same as resolve_dispute).
 /// 2. Each handler has at least one test that executes the same operation twice.
 /// 3. ContractCommandState generates a stable idempotencyKey in build() that
 ///    persists across retries.
@@ -75,6 +79,14 @@ enum IdempotencyMechanism {
   /// Uses deterministic IDs (e.g., content-hash-based UUIDs) to ensure
   /// that duplicate inserts are rejected by the database unique constraint.
   deterministicId,
+
+  /// Delegates the ledger append + status flip to a single SECURITY DEFINER
+  /// RPC (row lock → status re-check → append → flip, all in one transaction).
+  /// The Dart handler keeps a fail-fast status guard for UX/anti-oracle, but
+  /// the authoritative idempotency barrier is the DB row lock — not the Dart
+  /// source structure. Verified by pgTAP concurrency tests, not by asserting
+  /// `_ledger.append` ordering in the handler.
+  dbTransactionalRpc,
 }
 
 /// All 6 handlers that write to append-only ledger tables.
@@ -100,7 +112,7 @@ const _appendOnlyHandlers = <AppendOnlyHandlerSpec>[
   AppendOnlyHandlerSpec(
     handlerFilePath: 'lib/application/sla_audit/approve_sanction_handler.dart',
     displayName: 'ApproveSanctionHandler',
-    mechanism: IdempotencyMechanism.statusGuard,
+    mechanism: IdempotencyMechanism.dbTransactionalRpc,
     testFilePath:
         'test/application/sla_audit/approve_sanction_handler_test.dart',
     mechanismMarker: 'entry.status != SanctionReviewStatus.pending',
@@ -109,7 +121,7 @@ const _appendOnlyHandlers = <AppendOnlyHandlerSpec>[
   AppendOnlyHandlerSpec(
     handlerFilePath: 'lib/application/sla_audit/reject_sanction_handler.dart',
     displayName: 'RejectSanctionHandler',
-    mechanism: IdempotencyMechanism.statusGuard,
+    mechanism: IdempotencyMechanism.dbTransactionalRpc,
     testFilePath:
         'test/application/sla_audit/reject_sanction_handler_test.dart',
     mechanismMarker: 'entry.status != SanctionReviewStatus.pending',
@@ -306,7 +318,29 @@ void main() {
       );
       final content = File(spec.handlerFilePath).readAsStringSync();
 
-      // All handlers must reference the ledger repository
+      // DB-transactional handlers delegate the ledger append into a single
+      // SECURITY DEFINER RPC (atomicity in the DB, not the Dart handler). They
+      // must route the write through the transactional review repository port
+      // and must NOT perform a separate, non-atomic `_ledger.append` here.
+      if (spec.mechanism == IdempotencyMechanism.dbTransactionalRpc) {
+        expect(
+          content.contains('_reviewRepo'),
+          isTrue,
+          reason:
+              '${spec.displayName} must delegate the append to the '
+              'transactional review repository (single RPC write path, INV-3)',
+        );
+        expect(
+          content.contains('_ledger.append'),
+          isFalse,
+          reason:
+              '${spec.displayName} must NOT perform a separate non-atomic '
+              '_ledger.append — the append lives inside the RPC transaction',
+        );
+        return;
+      }
+
+      // All other handlers must reference the ledger repository
       final hasLedgerField =
           content.contains('SlaAuditLedgerRepository') ||
           content.contains('_ledger');
@@ -319,7 +353,7 @@ void main() {
             'to write to the append-only ledger (INV-3)',
       );
 
-      // All handlers must call append on the ledger
+      // All other handlers must call append on the ledger
       expect(
         content.contains('_ledger.append') || content.contains('ledger.append'),
         isTrue,

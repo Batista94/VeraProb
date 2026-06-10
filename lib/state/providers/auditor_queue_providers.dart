@@ -172,14 +172,14 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
   ApproveSanctionHandler get _approveHandler => ApproveSanctionHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
     rbac: RbacService(),
   );
 
   RejectSanctionHandler get _rejectHandler => RejectSanctionHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
     rbac: RbacService(),
     clock: ref.watch(dateTimeProviderProvider),
   );

@@ -3,46 +3,54 @@ import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
-import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'approve_sanction_command.dart';
-import 'sla_ledger_mapper.dart';
 
 /// Application handler for [ApproveSanctionCommand].
 ///
 /// Enforces Human-in-the-Loop: only this handler can generate a
 /// `VERDICT_SEALED` ledger entry. The engine NEVER does this directly.
 ///
-/// Contains NO domain logic — authorization and idempotency guards are
-/// application-layer concerns. Ledger append is irreversible (INV-1).
+/// **Concurrency + atomicity (DB-enforced):** the write path is a single call to
+/// [SanctionReviewCommandRepository.approveSanction], backed by the
+/// `approve_sanction` SECURITY DEFINER RPC. The RPC row-locks the queue entry,
+/// re-checks the `pending` status (closing the TOCTOU race where two auditors
+/// appended duplicate `VERDICT_SEALED` facts), appends the verdict ledger fact
+/// (INV-3), and flips the queue — all in ONE transaction. A concurrent loser
+/// raises `IdempotencyProcessingException` from the RPC; no second fact is
+/// appended.
+///
+/// The client-side checks below (tenant, RBAC, status) are retained as fail-fast
+/// UX and anti-oracle guards; they are NOT the concurrency barrier — that is the
+/// DB row lock.
 class ApproveSanctionHandler {
   final TenantValidationService _tenantValidator;
   final SanctionReviewQueueRepository _queueRepo;
-  final SlaAuditLedgerRepository _ledger;
+  final SanctionReviewCommandRepository _reviewRepo;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
 
   ApproveSanctionHandler({
     required TenantValidationService tenantValidator,
     required SanctionReviewQueueRepository queueRepo,
-    required SlaAuditLedgerRepository ledger,
+    required SanctionReviewCommandRepository reviewRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
-       _ledger = ledger,
+       _reviewRepo = reviewRepo,
        _rbac = rbac,
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   /// Handles the command by transitioning the queue entry to [applied]
-  /// and appending a `VERDICT_SEALED` entry to the immutable ledger.
+  /// and appending a `VERDICT_SEALED` entry to the immutable ledger, atomically.
   ///
   /// Throws [DomainException] if:
   /// - [callerRole] does not have [UserPermission.canApproveSanctions]
   /// - Queue entry not found for the given [organizationId]
-  /// - Entry is not in [SanctionReviewStatus.pending] (idempotency guard, INV-24)
+  /// - Entry is not in [SanctionReviewStatus.pending] (idempotency fail-fast)
   Future<void> handle(ApproveSanctionCommand command) async {
     // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
     await _tenantValidator.assertTenantMatches(
@@ -55,7 +63,8 @@ class ApproveSanctionHandler {
       throw const DomainException('Unauthorized.');
     }
 
-    // 2. Load queue entry — scoped to organizationId (tenant isolation, INV-6)
+    // 3. Load queue entry — scoped to organizationId (tenant isolation, INV-1).
+    //    Fail-fast UX guard only; the authoritative lock lives in the RPC.
     final entry = await _queueRepo.findById(
       command.queueEntryId,
       organizationId: command.organizationId,
@@ -66,37 +75,21 @@ class ApproveSanctionHandler {
       );
     }
 
-    // 3. Idempotency guard (INV-24): only pending entries can be approved
+    // 4. Idempotency fail-fast: only pending entries can be approved.
     if (entry.status != SanctionReviewStatus.pending) {
       throw DomainException(
         'Sanction "${command.queueEntryId}" is already ${entry.status.name}.',
       );
     }
 
-    final now = _dateTimeProvider.nowUtc();
-
-    // 4. Build domain event carrying VerdictEvidence forward
-    final event = SanctionAppliedEvent(
-      organizationId: entry.organizationId,
-      occurredAtUtc: now,
-      setId: entry.setId,
-      contractId: entry.contractId,
-      planVersion: 0, // planVersion is not carried in the queue entry
-      queueEntryId: entry.id,
-      approvedByUserId: command.approvedByUserId,
-      actorEmail: command.actorEmail,
-      verdictEvidence: entry.verdictEvidence,
-    );
-
-    // 5. Append VERDICT_SEALED to the immutable ledger (INV-1, Pillar C)
-    await _ledger.append(SlaLedgerMapper.mapToEntry(event));
-
-    // 6. Update queue entry status to applied
-    final updated = entry.copyWith(
-      status: SanctionReviewStatus.applied,
-      reviewedAtUtc: now,
+    // 5. Atomic write (lock → re-check → ledger append → queue flip) in ONE DB
+    //    transaction. Concurrency control + atomicity live here.
+    await _reviewRepo.approveSanction(
+      organizationId: command.organizationId,
+      queueEntryId: command.queueEntryId,
       reviewedByUserId: command.approvedByUserId,
+      actorEmail: command.actorEmail,
+      occurredAtUtc: _dateTimeProvider.nowUtc(),
     );
-    await _queueRepo.updateStatus(updated);
   }
 }

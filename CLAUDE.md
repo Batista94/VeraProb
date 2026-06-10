@@ -61,9 +61,8 @@ Mandatory for all IDEs (Antigravity/Claude/Kiro). Failure to execute = VETO.
 | H-07 | TDD ASSIST | `onTestFail` | Senior Persona suggestion for fix |
 | H-08 | CHAOS SUGGEST | `onTestRun` | `skill://iot-chaos-simulator/auto-suggest` |
 | H-09 | CACHE REFRESH | `postSave` | `bash scripts/refresh_schema_cache.sh` (PostgREST sync) |
-| H-10 | MISSION SYNC | `onMissionComplete` | `mcp:memory/sync_project_state` (Memory persistence) |
-| H-11 | INDEX ADVISOR | `preCommit` | `python scripts/index_advisor.py` (INV-12) |
-| H-12 | CODE QUALITY | `preCommit` | `dart fix --apply && flutter analyze` (Clean Code) |
+| H-10 | INDEX ADVISOR | `preCommit` | `python scripts/index_advisor.py` (INV-12) |
+| H-11 | CODE QUALITY | `preCommit` | `dart fix --apply && flutter analyze` (Clean Code) |
 
 ## SCANNER PROTOCOLS
 
