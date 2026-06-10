@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-06-10
-**Current Status:** Phase 10.5 (In Progress) · [NEXT: Phase 10.5 — Core Transactional Integrity]
+**Current Status:** Phase 10.6 (In Progress) · [NEXT: Phase 10.6 — Forensic Operations & Dispute Reality]
 
 ---
 
@@ -35,7 +35,7 @@
 - [x] **[BACKEND] Snapshot Persistence:** Persistência de um snapshot JSON imutável da regra de SLA exata e assinatura digital no momento em que um veredito é selado.
 - [x] **[UX/UI] Evidence Audit Modal:** Exibição do snapshot em modo Read-Only na Fila Auditora para vereditos com status [🔒 Selado] e verificação visual do selo de integridade (Hash Match).
 
-### [ ] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima)
+### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima)
 
 - [x] **Database Transactional Hardening (approve/reject):** Vereditos iniciais (`approve`/`reject`) migrados para os RPCs `approve_sanction`/`reject_sanction` `SECURITY DEFINER` (migração `20260812000001`): `lock (FOR UPDATE)` → re-check `status='pending'` → append no ledger (`VERDICT_SEALED`/`VERDICT_REFUSED`) → flip da fila, tudo em UMA transação. Fecha a corrida TOCTOU que gerava fatos duplicados (INV-3). Hardening máximo: revisor vinculado ao JWT `sub` (anti-spoof), sem grant a `anon`/`service_role`, RBAC server-side (`TENANT_ADMIN`/`AUDITOR`), `42501` idêntico para wrong-org/not-found (INV-26), motivo de rejeição fail-closed. Trilha Dart refatorada para chamada RPC única; PBT de idempotência migrado p/ mecanismo `dbTransactionalRpc`. pgTAP 21/21, `make test-db` 559 PASS, scanner `[GO]`.
 - [x] **Atomicidade total (RPC transacional):** Resolução de disputas (`accept`/`overturn`/`retract`) migrada para o RPC `resolve_dispute` `SECURITY DEFINER`: `lock (FOR UPDATE)` → re-check de status → append no ledger → update da fila → (overturn) selo de snapshot inline, tudo em UMA transação. Fecha a corrida TOCTOU (INV-3) e o buraco de não-atomicidade (INV-21). Hardening máximo: rejeita JWT nulo, sem grant a `anon`/`service_role`, RBAC server-side (`TENANT_ADMIN`/`AUDITOR`), `42501` idêntico para wrong-org/not-found (INV-26), índice único parcial por-partição como defesa-em-profundidade (`23505`). Twin-flaw corrigida: `seal_dispute_resolution_snapshot` agora fail-closed em JWT nulo. (approve/reject seguem como dívida pré-existente apontada por QA-Security.)
