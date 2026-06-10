@@ -194,8 +194,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
   ResolveDisputeHandler get _resolveDisputeHandler => ResolveDisputeHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
-    vault: ref.watch(forensicEvidenceSnapshotRepositoryProvider),
+    resolutionRepo: ref.watch(sanctionDisputeResolutionRepositoryProvider),
     rbac: RbacService(),
     dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );

@@ -7,12 +7,14 @@ CREATE EXTENSION IF NOT EXISTS pgtap;
 -- 8 tables * 2 assertions (one for authenticated, one for service_role) = 16 tests
 SELECT plan(16);
 
--- 1. organizations
-SELECT table_privs_are('public', 'organizations', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have CRUD on organizations');
+-- 1. organizations — trust root: authenticated read-only; writes via SECURITY DEFINER
+--    RPCs only. INSERT/UPDATE/DELETE revoked in 20260811000001_harden_identity_trust_roots.
+SELECT table_privs_are('public', 'organizations', 'authenticated', ARRAY['SELECT'], 'authenticated should have SELECT-only on organizations (trust root)');
 SELECT table_privs_are('public', 'organizations', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on organizations');
 
--- 2. user_roles
-SELECT table_privs_are('public', 'user_roles', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have CRUD on user_roles');
+-- 2. user_roles — organization_id claim source: authenticated read-only; writes via
+--    SECURITY DEFINER RPCs only. INSERT/UPDATE/DELETE revoked in 20260811000001.
+SELECT table_privs_are('public', 'user_roles', 'authenticated', ARRAY['SELECT'], 'authenticated should have SELECT-only on user_roles (claim trust root)');
 SELECT table_privs_are('public', 'user_roles', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on user_roles');
 
 -- 3. drivers

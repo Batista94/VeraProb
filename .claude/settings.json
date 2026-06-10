@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(flutter run *)",
-      "Bash(tee /c/tmp/flutter_run.log)"
+      "Bash(tee /c/tmp/flutter_run.log)",
+      "Bash(bash scripts/security/pr_full_scanner.sh)",
+      "Bash(make test-db *)"
     ]
   }
 }

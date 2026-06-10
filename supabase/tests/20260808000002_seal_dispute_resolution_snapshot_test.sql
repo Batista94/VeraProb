@@ -66,6 +66,12 @@ SELECT ok(
   'service_role may execute seal_dispute_resolution_snapshot'
 );
 
+-- Hardened guard (20260809000002) is fail-closed on NULL JWT: the happy-path
+-- calls below MUST run under an authenticated Org A session.
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims =
+  '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000000b1"}}';
+
 -- 5. Happy-path execution
 SELECT lives_ok(
   $$ SELECT public.seal_dispute_resolution_snapshot(
@@ -101,7 +107,6 @@ SELECT is(
 );
 
 -- 8. Cross-tenant check
-SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims =
   '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000000b2"}}';
 

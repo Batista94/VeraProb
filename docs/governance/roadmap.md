@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-06-01
-**Current Status:** Phase 10.4.C (In Progress) · [NEXT: Phase 10.4.C — Forensic Evidence UI Integration]
+**Revision:** 2026-06-09
+**Current Status:** Phase 10.5 (In Progress) · [NEXT: Phase 10.5 — Bulk SLA & Contractor Consent Flow]
 
 ---
 
@@ -10,35 +10,35 @@
 | Aspect | Status |
 | :--- | :--- |
 | Tests | 1571 passing · 18 skipped · 0 failures ✅ |
-| Migrations | 227 applied ✅ |
+| Migrations | 239 applied ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 
 ---
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 12 itens de Readiness pendentes.
+**Status:** EM ANDAMENTO — 7 itens de Readiness pendentes.
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
 - [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
-- [ ] **Industrial Deep Forms:** Dark theme (Industrial Deep) applied to 100% of form and drawer components.
+- [x] **Industrial Deep Forms:** Dark theme (Industrial Deep) applied to 100% of form and drawer components.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 - [ ] **Financial Guard:** 'Stop-Loss' logic available in contract and penalty setup.
-- [ ] ROI Dashboard with Bento Grid and 'Savings BRL' visible.
+- [x] ROI Dashboard with Bento Grid and 'Savings BRL' visible.
 - [ ] Terms of Use and Privacy Policy (LGPD) integrated into Onboarding.
 - [ ] **Self-Service Onboarding:** Tenant creation flow with automated limit configuration.
-- [ ] **Evidence Proof:** Functional "Generate Forensic Evidence" button in each verdict.
+- [x] **Evidence Proof:** Functional "Generate Forensic Evidence" button in each verdict.
 - [ ] **Legal Gate:** System access block pending specific telemetry LGPD acceptance.
 
 ---
 
 ## Phase 10 — CI/CD & Launch Preparation
 
-### [/] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
+### [x] Phase 10.4.C — Forensic Evidence Snapshot & Immutability
 - [x] **[BACKEND] Snapshot Persistence:** Persistência de um snapshot JSON imutável da regra de SLA exata e assinatura digital no momento em que um veredito é selado.
-- [ ] **[UX/UI] Evidence Audit Modal:** Exibição do snapshot em modo Read-Only na Fila Auditora para vereditos com status [🔒 Selado] e verificação visual do selo de integridade (Hash Match).
+- [x] **[UX/UI] Evidence Audit Modal:** Exibição do snapshot em modo Read-Only na Fila Auditora para vereditos com status [🔒 Selado] e verificação visual do selo de integridade (Hash Match).
 
 ### [ ] Phase 10.5 — Bulk SLA & Contractor Consent Flow
 
@@ -49,13 +49,13 @@
 
 *This phase separates simple SaaS clones from a hardened forensic auditing tool.*
 
-- [ ] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
-- [ ] **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
+- [x] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
+- [x] **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
 - [ ] **Automated Billing Provisioning (Stripe/Stax):** Integration/placeholder for billing account provisioning at Org creation.
 - [ ] **Support Impersonation Security:** "Grant Support Access" button with mandatory audit log and auto-expiry.
 - [ ] **Tenant Heartbeat Dashboard:** SuperAdmin view of "Signal Health" (GPS success rate vs hardware failures).
 - [ ] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
-- [ ] **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
+- [/] **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
 
 ### [ ] Phase 10.7 — Operational Automation & Data Ingestion
 
@@ -66,7 +66,7 @@
 
 - [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente. (Pausado da Fase 10.4)
 - [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards). (Pausado da Fase 10.4)
-- [ ] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
+- [x] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
 - [ ] **[BIZ] Forensic Dispute Portal (ReadOnly):** Tela externa (link temporário/tokenizado) para que transportadores visualizem as evidências contra eles sem precisar de login no sistema core.
 - [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
 - [ ] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
@@ -77,7 +77,7 @@
 - [ ] **Dual-control (quatro-olhos) em vereditos de alto valor:** Acima de um threshold de `fineCents`, exigir segundo auditor para `overturn`/`apply` — controle anti-fraude padrão SOC2/Tier-1.
 - [ ] **Notificação/webhook na resolução:** Resend/PostHog/webhook ao contratante quando disputa é resolvida (transparência + reduz re-contestação). Já há stack Resend disponível.
 - [ ] **Resolução em lote + filtros:** Auditor com fila grande precisa de bulk-resolve e filtros (clausula/veículo/contrato/valor) na aba Concluídos — reduz custo operacional (margem do cliente final).
-- [ ] **Atomicidade total (RPC transacional):** A guarda idempotente fecha a janela; o passo definitivo é RPC `SECURITY DEFINER` append+update atômico, eliminando o par não-transacional também em approve/reject (dívida pré-existente apontada por QA-Security).
+- [x] **Atomicidade total (RPC transacional):** Resolução de disputas (`accept`/`overturn`/`retract`) migrada para o RPC `resolve_dispute` `SECURITY DEFINER`: `lock (FOR UPDATE)` → re-check de status → append no ledger → update da fila → (overturn) selo de snapshot inline, tudo em UMA transação. Fecha a corrida TOCTOU (INV-3) e o buraco de não-atomicidade (INV-21). Hardening máximo: rejeita JWT nulo, sem grant a `anon`/`service_role`, RBAC server-side (`TENANT_ADMIN`/`AUDITOR`), `42501` idêntico para wrong-org/not-found (INV-26), índice único parcial por-partição como defesa-em-profundidade (`23505`). Twin-flaw corrigida: `seal_dispute_resolution_snapshot` agora fail-closed em JWT nulo. (approve/reject seguem como dívida pré-existente apontada por QA-Security.)
 - [ ] **Trilha de "quem cancelou":** No retract, preservamos `reviewed_by` do disputante; o ledger `DISPUTE_RETRACTED` registra o cancelador. Expor essa cadeia na UI (timeline de estados do card) eleva a explicabilidade (INV-23).
 
 ### [ ] Phase 10.9 — Operational Intelligence & Decision
@@ -92,7 +92,7 @@
 - [ ] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual.
 - [ ] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures.
 - [ ] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles.
-- [ ] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
+- [x] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
 - [ ] **[BIZ] Partner Billing Reconciliation:** Invoice crossing tool (CSV Upload) against the immutable Ledger for identifying billing discrepancies.
 - [ ] **[BIZ] Forensic Dispute Portal:** Limited external interface for carriers/drivers to view evidence snapshots and submit digital counter-proofs.
 - [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance.
