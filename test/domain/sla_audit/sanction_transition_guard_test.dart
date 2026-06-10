@@ -14,6 +14,13 @@ void main() {
       (SanctionReviewStatus.disputed, SanctionReviewStatus.applied),
       (SanctionReviewStatus.disputed, SanctionReviewStatus.rejected),
       (SanctionReviewStatus.disputed, SanctionReviewStatus.pending),
+      // Dual-control fork + resolution (Phase 10.5 Item 2).
+      (SanctionReviewStatus.pending, SanctionReviewStatus.pendingPeerReview),
+      (SanctionReviewStatus.disputed, SanctionReviewStatus.pendingPeerReview),
+      (SanctionReviewStatus.pendingPeerReview, SanctionReviewStatus.applied),
+      (SanctionReviewStatus.pendingPeerReview, SanctionReviewStatus.rejected),
+      (SanctionReviewStatus.pendingPeerReview, SanctionReviewStatus.pending),
+      (SanctionReviewStatus.pendingPeerReview, SanctionReviewStatus.disputed),
     ];
 
     for (final (from, to) in legal) {
@@ -37,6 +44,13 @@ void main() {
       // No self-loops on transient states.
       (SanctionReviewStatus.pending, SanctionReviewStatus.pending),
       (SanctionReviewStatus.disputed, SanctionReviewStatus.disputed),
+      (
+        SanctionReviewStatus.pendingPeerReview,
+        SanctionReviewStatus.pendingPeerReview,
+      ),
+      // Terminal states never enter peer review.
+      (SanctionReviewStatus.applied, SanctionReviewStatus.pendingPeerReview),
+      (SanctionReviewStatus.rejected, SanctionReviewStatus.pendingPeerReview),
     ];
 
     for (final (from, to) in illegal) {

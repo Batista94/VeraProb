@@ -46,6 +46,17 @@ class SanctionQueueItemView extends Equatable {
   /// Null when telemetry arrived without an authenticated operator.
   final String? operatorName;
 
+  /// Dual-control (Phase 10.5 Item 2): first reviewer of a high-value verdict
+  /// held in `pending_peer_review`. The confirming auditor must differ.
+  final String? firstReviewerId;
+
+  /// Proposed terminal action awaiting a second auditor
+  /// (`APPROVE`/`REJECT`/`OVERTURN`/`DISPUTE_ACCEPT`).
+  final String? peerReviewProposedAction;
+
+  /// TTL deadline after which the peer review reverts to its origin status.
+  final DateTime? peerReviewExpiresAtUtc;
+
   /// Transport-agnostic alias for the bound asset identifier (INV-14).
   /// Today resolves to the vehicle plate; stays stable if the asset model
   /// generalizes beyond road vehicles.
@@ -68,6 +79,9 @@ class SanctionQueueItemView extends Equatable {
     this.windowEndUtc,
     this.vehiclePlate,
     this.operatorName,
+    this.firstReviewerId,
+    this.peerReviewProposedAction,
+    this.peerReviewExpiresAtUtc,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -105,7 +119,7 @@ class SanctionQueueItemView extends Equatable {
       verdictEvidence: VerdictEvidence.fromJson(
         row['verdict_evidence'] as Map<String, dynamic>,
       ),
-      status: SanctionReviewStatus.values.byName(row['status'] as String),
+      status: SanctionReviewStatusDb.fromDbValue(row['status'] as String),
       createdAtUtc: DateTime.parse(row['created_at'] as String),
       reviewedAtUtc: row['reviewed_at'] != null
           ? DateTime.parse(row['reviewed_at'] as String)
@@ -114,6 +128,11 @@ class SanctionQueueItemView extends Equatable {
       rejectionReason: row['rejection_reason'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
       operatorName: row['operator_name'] as String?,
+      firstReviewerId: row['first_reviewer_id'] as String?,
+      peerReviewProposedAction: row['peer_review_proposed_action'] as String?,
+      peerReviewExpiresAtUtc: row['peer_review_expires_at'] != null
+          ? DateTime.parse(row['peer_review_expires_at'] as String)
+          : null,
     );
   }
 
@@ -132,6 +151,9 @@ class SanctionQueueItemView extends Equatable {
       rejectionReason: entry.rejectionReason,
       vehiclePlate: entry.vehiclePlate,
       operatorName: entry.operatorName,
+      firstReviewerId: entry.firstReviewerId,
+      peerReviewProposedAction: entry.peerReviewProposedAction,
+      peerReviewExpiresAtUtc: entry.peerReviewExpiresAtUtc,
     );
   }
 
@@ -155,5 +177,8 @@ class SanctionQueueItemView extends Equatable {
     rejectionReason,
     vehiclePlate,
     operatorName,
+    firstReviewerId,
+    peerReviewProposedAction,
+    peerReviewExpiresAtUtc,
   ];
 }

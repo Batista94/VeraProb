@@ -48,12 +48,7 @@
       "action": "skill://iot-chaos-simulator/auto-suggest",
       "description": "Sugere testes de resiliência em cenários críticos de telemetria."
     },
-    {
-      "event": "onMissionComplete",
-      "agent": "architect",
-      "action": "mcp:memory/sync_project_state",
-      "description": "Sincroniza automaticamente Invariantes e decisões arquiteturais com o Knowledge Graph."
-    },
+
     {
       "event": "postSave",
       "condition": "file.extension == '.sql' && file.path.includes('supabase/migrations/')",

@@ -87,7 +87,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
       await client
           .from('sanction_review_queue')
           .update({
-            'status': entry.status.name,
+            'status': entry.status.dbValue,
             'reviewed_at': entry.reviewedAtUtc?.toIso8601String(),
             'reviewed_by': entry.reviewedByUserId,
             'rejection_reason': entry.rejectionReason,
@@ -109,11 +109,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
       verdictEvidence: VerdictEvidence.fromJson(
         row['verdict_evidence'] as Map<String, dynamic>,
       ),
-      status: IntegrityException.shield(
-        SanctionReviewStatus.values,
-        row['status'] as String,
-        'status',
-      ),
+      status: _parseStatus(row['status'] as String),
       createdAtUtc: DateTime.parse(row['created_at'] as String),
       reviewedAtUtc: row['reviewed_at'] != null
           ? DateTime.parse(row['reviewed_at'] as String)
@@ -122,6 +118,23 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
       rejectionReason: row['rejection_reason'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
       operatorName: row['operator_name'] as String?,
+      firstReviewerId: row['first_reviewer_id'] as String?,
+      peerReviewProposedAction: row['peer_review_proposed_action'] as String?,
+      peerReviewOriginStatus: row['peer_review_origin_status'] as String?,
+      peerReviewExpiresAtUtc: row['peer_review_expires_at'] != null
+          ? DateTime.parse(row['peer_review_expires_at'] as String)
+          : null,
     );
+  }
+
+  static SanctionReviewStatus _parseStatus(String value) {
+    try {
+      return SanctionReviewStatusDb.fromDbValue(value);
+    } on ArgumentError {
+      throw IntegrityException(
+        'Invalid enum value "$value" for field "status"',
+        field: 'status',
+      );
+    }
   }
 }

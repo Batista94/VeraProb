@@ -5,6 +5,46 @@ All notable changes to VeraProb will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Database Privilege Hardening & Forensic Trust Roots
+
+CIA sweep (2026-06-10, merged in `88a43946` + `ea7917a4`). Closed a critical mass-deletion
+vector and hardened the identity trust root behind tenant isolation.
+
+### Security
+- **Critical — mass-deletion vector closed:** Revoked `TRUNCATE` from `anon`/`authenticated`
+  on all `public` tables. RLS does **not** gate `TRUNCATE`, so the legacy `ALTER DEFAULT
+  PRIVILEGES` grant let an extracted anon key (or any tenant user) wipe every tenant's data
+  and the immutable forensic ledger. (`20260811000000`)
+- **Append-only ledger enforced at the grant layer (INV-3):** Revoked `UPDATE`/`DELETE`/
+  `TRUNCATE` from client roles on `sla_audit_ledger_v2` (+ partitions) and
+  `forensic_evidence_snapshots`. Client roles keep only `SELECT`/`INSERT`. (`20260811000000`)
+- **Identity trust-root hardened (INV-1, INV-22):** Revoked `INSERT`/`UPDATE`/`DELETE` from
+  `authenticated` on `user_roles` and `organizations` — the tables `custom_access_token_hook`
+  derives the `organization_id` claim from. Removes a latent self-elevation primitive (writes
+  were already RLS-blocked; the dead grant was the residual risk). Legit writes flow only
+  through `SECURITY DEFINER` RPCs. `super_admin_users` already sound. (`20260811000001`)
+- **anon Data API surface reduced:** Revoked all `anon` grants on 22 tenant/business tables
+  (no anon RLS policy existed — defense in depth). Public-flow token tables retained.
+- **search_path pinned (CWE-426):** `auto_enqueue_sanction_recommended` and
+  `create_execution_for_operator` now `SET search_path = public`. (`20260811000000`)
+- **PostGIS `spatial_ref_sys` write-guard:** Role-scoped `BEFORE` trigger blocks
+  `anon`/`authenticated` writes on the PostGIS catalog while relocation to the `extensions`
+  schema is staged (advisor `rls_disabled_in_public`). (`20260810000000`, `20260810000001`)
+- **Legacy insecure default removed:** `ALTER DEFAULT PRIVILEGES` for `anon`/`authenticated`
+  revoked so future tables no longer inherit the full-DML grant.
+
+### Validated
+- Forged-JWT INV-22 red-team (runtime, `SET ROLE` + `request.jwt.claims`): cross-tenant
+  read/write blocked both directions, missing-claim fail-closed, anon/authenticated `TRUNCATE`
+  denied, self-elevation on `user_roles` denied. JWT claim injected server-side from
+  `user_roles` (client cannot influence). Residual = platform JWT signing only.
+- Full test pyramid green on the merge commit: pgTAP 538, integration 82, unit/widget 1916.
+
+### Changed
+- Updated grant-baseline pgTAP tests (`20260527164000`, `20260717000008`) to assert the
+  least-privilege end state (ledger append-only; `user_roles`/`organizations` SELECT-only
+  for `authenticated`).
+
 ## [1.4.0] - 2026-05-07
 ### Added
 - Comprehensive forensic audit of the entire dependency graph (INV-25).

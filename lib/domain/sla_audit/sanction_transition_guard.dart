@@ -9,14 +9,18 @@ import 'sanction_review_queue_entry.dart';
 /// deterministic, auditable lifecycle).
 ///
 /// Legal arcs:
-/// - `pending`  → `applied` | `rejected` | `disputed`
-/// - `disputed` → `applied` | `rejected` | `pending` (retract)
+/// - `pending`            → `applied` | `rejected` | `disputed` | `pendingPeerReview`
+/// - `disputed`           → `applied` | `rejected` | `pending` (retract) | `pendingPeerReview`
+/// - `pendingPeerReview`  → `applied` | `rejected` (confirm) | `pending` | `disputed` (decline/expiry)
 /// - `applied`, `rejected` are terminal (no outgoing arcs)
 ///
 /// Note: this guard validates *state-machine legality*, not *handler
 /// ownership*. The pending-only handlers (approve/reject/dispute) additionally
 /// require a `pending` source so that the `disputed → *` arcs are owned
-/// exclusively by the dispute-resolution flow.
+/// exclusively by the dispute-resolution flow. The `* → pendingPeerReview` arcs
+/// are the dual-control fork (a high-value verdict held for a second auditor);
+/// `pendingPeerReview → *` is owned by the confirm/decline/expiry flow, which
+/// reverts to the recorded origin (`pending` or `disputed`).
 class SanctionTransitionGuard {
   const SanctionTransitionGuard();
 
@@ -25,11 +29,19 @@ class SanctionTransitionGuard {
       SanctionReviewStatus.applied,
       SanctionReviewStatus.rejected,
       SanctionReviewStatus.disputed,
+      SanctionReviewStatus.pendingPeerReview,
     },
     SanctionReviewStatus.disputed: {
       SanctionReviewStatus.applied,
       SanctionReviewStatus.rejected,
       SanctionReviewStatus.pending,
+      SanctionReviewStatus.pendingPeerReview,
+    },
+    SanctionReviewStatus.pendingPeerReview: {
+      SanctionReviewStatus.applied,
+      SanctionReviewStatus.rejected,
+      SanctionReviewStatus.pending,
+      SanctionReviewStatus.disputed,
     },
     SanctionReviewStatus.applied: <SanctionReviewStatus>{},
     SanctionReviewStatus.rejected: <SanctionReviewStatus>{},

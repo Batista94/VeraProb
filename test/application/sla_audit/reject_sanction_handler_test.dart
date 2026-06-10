@@ -11,6 +11,7 @@ import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_command_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sanction_review_queue_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
@@ -60,7 +61,10 @@ void main() {
     handler = RejectSanctionHandler(
       tenantValidator: tenantValidator,
       queueRepo: queueRepo,
-      ledger: ledger,
+      reviewRepo: InMemorySanctionReviewCommandRepository(
+        queueRepo: queueRepo,
+        ledger: ledger,
+      ),
       rbac: RbacService(),
       clock: clock,
     );

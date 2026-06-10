@@ -95,11 +95,20 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final evidence = item.verdictEvidence;
     final actionState = ref.watch(sanctionActionStateProvider(item.id));
     final isLoading = actionState is AsyncLoading;
-    // Pacote 3: `disputed` is now interactive (auditor resolves the dispute),
-    // so only terminal verdicts (applied/rejected) are locked.
+    // Pacote 3: `disputed` is now interactive (auditor resolves the dispute);
+    // Phase 10.5: `pending_peer_review` is interactive (second auditor confirms/
+    // declines). Only terminal verdicts (applied/rejected) are locked.
     final isLocked =
         item.status != SanctionReviewStatus.pending &&
-        item.status != SanctionReviewStatus.disputed;
+        item.status != SanctionReviewStatus.disputed &&
+        item.status != SanctionReviewStatus.pendingPeerReview;
+
+    // Dual-control: the current auditor cannot confirm a verdict they requested.
+    final currentUserId = ref.watch(currentOperatorIdProvider);
+    final isOwnPeerRequest =
+        item.status == SanctionReviewStatus.pendingPeerReview &&
+        item.firstReviewerId != null &&
+        item.firstReviewerId == currentUserId;
 
     // INV-14/INV-23: the bound asset (vehicle) is mandatory to seal the evidence.
     // An unidentified asset cannot anchor a forensic verdict.
@@ -128,6 +137,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     const double leftBorderWidth = 3;
     if (item.status == SanctionReviewStatus.disputed) {
       leftBorderColor = VeraProbColors.warning;
+    } else if (item.status == SanctionReviewStatus.pendingPeerReview) {
+      leftBorderColor = VeraProbColors.primary;
     } else if (item.status == SanctionReviewStatus.rejected) {
       // Refused verdict: attenuated red — distinct from the live pending red.
       leftBorderColor = VeraProbColors.error.withValues(alpha: 0.5);
@@ -447,6 +458,18 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         onRefuseConfirm: _onRefuseDispute,
                         onRetract: _onRetractDispute,
                       ),
+                    )
+                  else if (item.status ==
+                      SanctionReviewStatus.pendingPeerReview)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
+                      child: _PeerReviewRow(
+                        isLoading: isLoading,
+                        isOwnRequest: isOwnPeerRequest,
+                        proposedAction: item.peerReviewProposedAction,
+                        onConfirm: () => _onConfirmPeerReview(context),
+                        onDecline: () => _onDeclinePeerReview(context),
+                      ),
                     ),
                   if (item.status == SanctionReviewStatus.applied)
                     _buildForensicEvidenceVisualizerRow(context, item),
@@ -495,6 +518,48 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                               fontSize: 9,
                               fontWeight: FontWeight.w700,
                               color: VeraProbColors.warning,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
+              else if (item.status == SanctionReviewStatus.pendingPeerReview)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message:
+                        'Veredito de alto valor — requer um segundo auditor',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: VeraProbColors.primary.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.groups_2_outlined,
+                            size: 12,
+                            color: VeraProbColors.primary,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'AGUARDANDO 2º AUDITOR',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.primary,
                               letterSpacing: 0.8,
                             ),
                           ),
@@ -864,6 +929,50 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       });
       _acceptReasonController.clear();
       _rejectController.clear();
+    }
+  }
+
+  Future<void> _onConfirmPeerReview(BuildContext context) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .confirmPeerReview(
+          queueEntryId: widget.item.id,
+          confirmedByUserId: userId,
+          actorEmail: email,
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      ref.invalidate(peerReviewSanctionsStreamProvider);
+    }
+  }
+
+  Future<void> _onDeclinePeerReview(BuildContext context) async {
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final email = ref.read(currentOperatorEmailProvider);
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .declinePeerReview(
+          queueEntryId: widget.item.id,
+          declinedByUserId: userId,
+          actorEmail: email,
+          reason: '',
+          callerRole: UserRole.auditor,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      // Reverts to its origin lane (pending or disputed).
+      ref.invalidate(peerReviewSanctionsStreamProvider);
+      ref.invalidate(pendingSanctionsStreamProvider);
+      ref.invalidate(disputedSanctionsStreamProvider);
     }
   }
 
@@ -1628,6 +1737,97 @@ class _DisputeResolutionRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Zona 5 (pending_peer_review): dual-control confirm/decline for a high-value
+/// verdict awaiting a SECOND auditor (Phase 10.5 Item 2).
+///
+/// The confirm button is DISABLED for the auditor who requested the verdict
+/// ([isOwnRequest]) — the server enforces reviewer2 != reviewer1, and the UI
+/// mirrors it so the requester never even attempts a self-confirmation.
+class _PeerReviewRow extends StatelessWidget {
+  final bool isLoading;
+  final bool isOwnRequest;
+  final String? proposedAction;
+  final VoidCallback onConfirm;
+  final VoidCallback onDecline;
+
+  const _PeerReviewRow({
+    required this.isLoading,
+    required this.isOwnRequest,
+    required this.proposedAction,
+    required this.onConfirm,
+    required this.onDecline,
+  });
+
+  String get _actionLabel => switch (proposedAction) {
+    'APPROVE' => 'Selar veredito (multa aplicada)',
+    'REJECT' => 'Recusar veredito (multa anulada)',
+    'OVERTURN' => 'Manter multa (disputa refutada)',
+    'DISPUTE_ACCEPT' => 'Aceitar justificativa (multa anulada)',
+    _ => 'Confirmar veredito',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final confirmTooltip = isOwnRequest
+        ? 'Você solicitou este veredito — outro auditor deve confirmar'
+        : 'Confirmar como segundo auditor: $_actionLabel';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AÇÃO PROPOSTA: ${_actionLabel.toUpperCase()}',
+          style: VeraProbTypography.badge.copyWith(
+            color: VeraProbColors.primary,
+            fontSize: 9,
+            letterSpacing: 0.6,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            Semantics(
+              label: confirmTooltip,
+              child: Tooltip(
+                message: confirmTooltip,
+                child: FilledButton.icon(
+                  onPressed: (isLoading || isOwnRequest) ? null : onConfirm,
+                  icon: const Icon(Icons.how_to_reg_outlined, size: 16),
+                  label: const Text('CONFIRMAR (2º AUDITOR)'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VeraProbColors.success,
+                    foregroundColor: VeraProbColors.background,
+                    disabledBackgroundColor: VeraProbColors.textDisabled
+                        .withValues(alpha: 0.3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: isLoading ? null : onDecline,
+              icon: const Icon(Icons.undo, size: 16),
+              label: const Text('RECUSAR REVISÃO'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.textSecondary,
+                side: const BorderSide(color: VeraProbColors.border),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
