@@ -51,8 +51,9 @@ SELECT table_privs_are('public', 'operational_alerts', 'service_role', ARRAY['SE
 SELECT table_privs_are('public', 'contractual_financial_snapshot', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have CRUD on contractual_financial_snapshot');
 SELECT table_privs_are('public', 'contractual_financial_snapshot', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on contractual_financial_snapshot');
 
--- 12. sla_audit_ledger_v2
-SELECT table_privs_are('public', 'sla_audit_ledger_v2', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have CRUD on sla_audit_ledger_v2');
+-- 12. sla_audit_ledger_v2 — INV-3 append-only: authenticated may SELECT + INSERT (append),
+--     never UPDATE/DELETE. UPDATE/DELETE/TRUNCATE revoked in 20260811000000_harden_client_role_grants.
+SELECT table_privs_are('public', 'sla_audit_ledger_v2', 'authenticated', ARRAY['SELECT', 'INSERT'], 'authenticated should have append-only (SELECT, INSERT) on sla_audit_ledger_v2 (INV-3)');
 SELECT table_privs_are('public', 'sla_audit_ledger_v2', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on sla_audit_ledger_v2');
 
 -- 13. service_manifests
