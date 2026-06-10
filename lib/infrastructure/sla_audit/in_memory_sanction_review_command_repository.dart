@@ -1,5 +1,6 @@
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
@@ -25,11 +26,21 @@ class InMemorySanctionReviewCommandRepository
   InMemorySanctionReviewCommandRepository({
     required SanctionReviewQueueRepository queueRepo,
     required SlaAuditLedgerRepository ledger,
+    int? dualControlThresholdCents,
+    int dualControlTtlHours = 48,
   }) : _queue = queueRepo,
-       _ledger = ledger;
+       _ledger = ledger,
+       _thresholdCents = dualControlThresholdCents,
+       _ttlHours = dualControlTtlHours;
 
   final SanctionReviewQueueRepository _queue;
   final SlaAuditLedgerRepository _ledger;
+
+  /// Dual-control threshold (BIGINT cents). `null` ⇒ dual-control OFF (every
+  /// verdict goes terminal). Mirrors `COALESCE(contract, org)` resolved by the
+  /// DB; in-memory mode takes a single flat value.
+  final int? _thresholdCents;
+  final int _ttlHours;
 
   static const _verdictTypes = {'VERDICT_SEALED', 'VERDICT_REFUSED'};
 
@@ -42,6 +53,18 @@ class InMemorySanctionReviewCommandRepository
     required DateTime occurredAtUtc,
   }) async {
     final entry = await _lockPending(organizationId, queueEntryId);
+
+    if (_exceedsThreshold(entry)) {
+      return _forkToPeerReview(
+        entry: entry,
+        reviewedByUserId: reviewedByUserId,
+        actorEmail: actorEmail,
+        proposedAction: 'APPROVE',
+        originStatus: 'pending',
+        reason: null,
+        occurredAtUtc: occurredAtUtc,
+      );
+    }
 
     final ledgerEntryId = await _ledger.append(
       SlaLedgerEntry(
@@ -96,6 +119,18 @@ class InMemorySanctionReviewCommandRepository
 
     final entry = await _lockPending(organizationId, queueEntryId);
 
+    if (_exceedsThreshold(entry)) {
+      return _forkToPeerReview(
+        entry: entry,
+        reviewedByUserId: reviewedByUserId,
+        actorEmail: actorEmail,
+        proposedAction: 'REJECT',
+        originStatus: 'pending',
+        reason: reason,
+        occurredAtUtc: occurredAtUtc,
+      );
+    }
+
     final ledgerEntryId = await _ledger.append(
       SlaLedgerEntry(
         organizationId: organizationId,
@@ -128,6 +163,193 @@ class InMemorySanctionReviewCommandRepository
       ledgerEntryId: ledgerEntryId,
       finalQueueStatus: 'rejected',
     );
+  }
+
+  @override
+  Future<SanctionReviewResult> confirmPeerReview({
+    required String organizationId,
+    required String queueEntryId,
+    required String reviewedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  }) async {
+    final entry = await _lockPeerReview(organizationId, queueEntryId);
+
+    // ★ ANTI-FRAUD: reviewer2 must differ from reviewer1.
+    if (reviewedByUserId == entry.firstReviewerId) {
+      throw DualControlSelfApprovalException(queueEntryId: queueEntryId);
+    }
+
+    final (status, ledgerType) = switch (entry.peerReviewProposedAction) {
+      'APPROVE' => (SanctionReviewStatus.applied, 'VERDICT_SEALED'),
+      'OVERTURN' => (SanctionReviewStatus.applied, 'DISPUTE_OVERTURNED'),
+      'REJECT' => (SanctionReviewStatus.rejected, 'VERDICT_REFUSED'),
+      'DISPUTE_ACCEPT' => (SanctionReviewStatus.rejected, 'DISPUTE_ACCEPTED'),
+      _ => throw SovereigntyViolationException(
+        payloadOrgId: organizationId,
+        jwtOrgId: organizationId,
+        message: 'Peer review rejected.',
+      ),
+    };
+
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: ledgerType,
+        operatorId: reviewedByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: occurredAtUtc,
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'first_reviewer_id': entry.firstReviewerId,
+          'second_reviewer_id': reviewedByUserId,
+          'confirmed_by_user_id': reviewedByUserId,
+          'actor_email': actorEmail,
+          'proposed_action': entry.peerReviewProposedAction,
+          'verdict_evidence': entry.verdictEvidence.toJson(),
+        },
+      ),
+    );
+
+    await _queue.updateStatus(
+      entry.copyWith(
+        status: status,
+        reviewedAtUtc: occurredAtUtc,
+        reviewedByUserId: reviewedByUserId,
+        clearPeerReview: true,
+      ),
+    );
+
+    return SanctionReviewResult(
+      ledgerEntryId: ledgerEntryId,
+      finalQueueStatus: status.dbValue,
+    );
+  }
+
+  @override
+  Future<SanctionReviewResult> declinePeerReview({
+    required String organizationId,
+    required String queueEntryId,
+    required String reviewedByUserId,
+    required String actorEmail,
+    required String reason,
+    required DateTime occurredAtUtc,
+  }) async {
+    final entry = await _lockPeerReview(organizationId, queueEntryId);
+    final origin = entry.peerReviewOriginStatus == 'disputed'
+        ? SanctionReviewStatus.disputed
+        : SanctionReviewStatus.pending;
+
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: 'PEER_REVIEW_DECLINED',
+        operatorId: reviewedByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: occurredAtUtc,
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'declined_by_user_id': reviewedByUserId,
+          'first_reviewer_id': entry.firstReviewerId,
+          'actor_email': actorEmail,
+          'origin_status': origin.dbValue,
+          'decline_reason': reason.trim().isEmpty ? null : reason.trim(),
+        },
+      ),
+    );
+
+    await _queue.updateStatus(
+      entry.copyWith(status: origin, clearPeerReview: true),
+    );
+
+    return SanctionReviewResult(
+      ledgerEntryId: ledgerEntryId,
+      finalQueueStatus: origin.dbValue,
+    );
+  }
+
+  bool _exceedsThreshold(SanctionReviewQueueEntry entry) {
+    final threshold = _thresholdCents;
+    return threshold != null &&
+        entry.verdictEvidence.fineCents.cents > threshold;
+  }
+
+  Future<SanctionReviewResult> _forkToPeerReview({
+    required SanctionReviewQueueEntry entry,
+    required String reviewedByUserId,
+    required String actorEmail,
+    required String proposedAction,
+    required String originStatus,
+    required String? reason,
+    required DateTime occurredAtUtc,
+  }) async {
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: entry.organizationId,
+        type: 'PEER_REVIEW_REQUESTED',
+        operatorId: reviewedByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: occurredAtUtc,
+        payload: {
+          'queue_entry_id': entry.id,
+          'first_reviewer_id': reviewedByUserId,
+          'actor_email': actorEmail,
+          'proposed_action': proposedAction,
+          'peer_review_reason': reason,
+          'fine_cents': entry.verdictEvidence.fineCents.cents,
+          'threshold_cents': _thresholdCents,
+          'verdict_evidence': entry.verdictEvidence.toJson(),
+        },
+      ),
+    );
+
+    await _queue.updateStatus(
+      entry.copyWith(
+        status: SanctionReviewStatus.pendingPeerReview,
+        firstReviewerId: reviewedByUserId,
+        peerReviewProposedAction: proposedAction,
+        peerReviewOriginStatus: originStatus,
+        peerReviewExpiresAtUtc: occurredAtUtc.add(Duration(hours: _ttlHours)),
+      ),
+    );
+
+    return SanctionReviewResult(
+      ledgerEntryId: ledgerEntryId,
+      finalQueueStatus: 'pending_peer_review',
+    );
+  }
+
+  /// Re-reads an entry expected to be in `pending_peer_review`, mirroring the
+  /// RPC's anti-oracle + idempotency posture.
+  Future<SanctionReviewQueueEntry> _lockPeerReview(
+    String organizationId,
+    String queueEntryId,
+  ) async {
+    final entry = await _queue.findById(
+      queueEntryId,
+      organizationId: organizationId,
+    );
+    if (entry == null) {
+      throw SovereigntyViolationException(
+        payloadOrgId: organizationId,
+        jwtOrgId: organizationId,
+        message: 'Peer review rejected.',
+      );
+    }
+    if (entry.status != SanctionReviewStatus.pendingPeerReview) {
+      throw IdempotencyProcessingException(
+        idempotencyKey: queueEntryId,
+        commandPath: 'peer_review',
+        message: 'This item is no longer awaiting a second auditor.',
+      );
+    }
+    return entry;
   }
 
   /// Re-reads the entry under the same anti-oracle + idempotency posture as the

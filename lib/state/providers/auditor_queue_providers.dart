@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
+import 'package:veraprob/application/sla_audit/confirm_peer_review_command.dart';
+import 'package:veraprob/application/sla_audit/confirm_peer_review_handler.dart';
+import 'package:veraprob/application/sla_audit/decline_peer_review_command.dart';
+import 'package:veraprob/application/sla_audit/decline_peer_review_handler.dart';
 import 'package:veraprob/application/sla_audit/dispute_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/dispute_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
@@ -80,6 +84,31 @@ final disputedSanctionsStreamProvider =
 /// Derived count of disputed sanctions.
 final disputedSanctionsCountProvider = Provider.autoDispose<int>((ref) {
   final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
+  return switch (sanctionsAsync) {
+    AsyncData(:final value) => value.length,
+    AsyncError() => 0,
+    AsyncLoading() => 0,
+  };
+});
+
+/// Stream of items awaiting a SECOND auditor (dual-control hold lane).
+final peerReviewSanctionsStreamProvider =
+    StreamProvider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      return ref
+          .watch(supabaseClientProvider)
+          .from('sanction_review_queue')
+          .stream(primaryKey: ['id'])
+          .eq('status', 'pending_peer_review')
+          .map(
+            (rows) =>
+                rows.map((row) => SanctionQueueItemView.fromRow(row)).toList(),
+          )
+          .distinct(listEquals);
+    });
+
+/// Derived count of items awaiting a second auditor.
+final peerReviewSanctionsCountProvider = Provider.autoDispose<int>((ref) {
+  final sanctionsAsync = ref.watch(peerReviewSanctionsStreamProvider);
   return switch (sanctionsAsync) {
     AsyncData(:final value) => value.length,
     AsyncError() => 0,
@@ -199,6 +228,24 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     dateTimeProvider: ref.watch(dateTimeProviderProvider),
   );
 
+  ConfirmPeerReviewHandler get _confirmPeerReviewHandler =>
+      ConfirmPeerReviewHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+        reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
+        rbac: RbacService(),
+        clock: ref.watch(dateTimeProviderProvider),
+      );
+
+  DeclinePeerReviewHandler get _declinePeerReviewHandler =>
+      DeclinePeerReviewHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+        reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
+        rbac: RbacService(),
+        clock: ref.watch(dateTimeProviderProvider),
+      );
+
   Future<void> dispute({
     required String queueEntryId,
     required String disputedByUserId,
@@ -285,6 +332,57 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           rejectedByUserId: rejectedByUserId,
           actorEmail: actorEmail,
           rejectionReason: rejectionReason,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  /// Dual-control: the SECOND auditor confirms a high-value verdict held in
+  /// `pending_peer_review`. The handler propagates
+  /// `DualControlSelfApprovalException` if [confirmedByUserId] is the requester.
+  Future<void> confirmPeerReview({
+    required String queueEntryId,
+    required String confirmedByUserId,
+    required String actorEmail,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _confirmPeerReviewHandler.handle(
+        ConfirmPeerReviewCommand(
+          queueEntryId: queueEntryId,
+          confirmedByUserId: confirmedByUserId,
+          actorEmail: actorEmail,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  /// Dual-control: decline a `pending_peer_review` item, reverting it to its
+  /// origin status. Permitted to any auditor (incl. the first reviewer).
+  Future<void> declinePeerReview({
+    required String queueEntryId,
+    required String declinedByUserId,
+    required String actorEmail,
+    required String reason,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _declinePeerReviewHandler.handle(
+        DeclinePeerReviewCommand(
+          queueEntryId: queueEntryId,
+          declinedByUserId: declinedByUserId,
+          actorEmail: actorEmail,
+          reason: reason,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,

@@ -40,4 +40,30 @@ abstract class SanctionReviewCommandRepository {
     required String rejectionReason,
     required DateTime occurredAtUtc,
   });
+
+  /// Confirms a high-value verdict held in `pending_peer_review`, applying the
+  /// recorded proposed action terminally (dual-control / four-eyes).
+  ///
+  /// [reviewedByUserId] is the SECOND auditor (bound to the JWT `sub`). The RPC
+  /// raises `DualControlSelfApprovalException` if it equals the first reviewer —
+  /// reviewer2 != reviewer1 is enforced server-side, not by the client.
+  Future<SanctionReviewResult> confirmPeerReview({
+    required String organizationId,
+    required String queueEntryId,
+    required String reviewedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  });
+
+  /// Declines a `pending_peer_review` item, reverting it to its origin status
+  /// (`pending` or `disputed`). Permitted to any auditor, including the first
+  /// reviewer withdrawing their own request.
+  Future<SanctionReviewResult> declinePeerReview({
+    required String organizationId,
+    required String queueEntryId,
+    required String reviewedByUserId,
+    required String actorEmail,
+    required String reason,
+    required DateTime occurredAtUtc,
+  });
 }

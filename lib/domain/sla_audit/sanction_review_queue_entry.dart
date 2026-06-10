@@ -3,7 +3,17 @@ import 'package:equatable/equatable.dart';
 import 'verdict_evidence.dart';
 
 /// Possible review states for a sanction queue entry.
-enum SanctionReviewStatus { pending, applied, rejected, disputed }
+///
+/// [pendingPeerReview] is the dual-control (four-eyes) holding state: a verdict
+/// whose fine exceeds the resolved threshold waits here for a SECOND, DISTINCT
+/// auditor to confirm or decline (Phase 10.5, Item 2).
+enum SanctionReviewStatus {
+  pending,
+  applied,
+  rejected,
+  disputed,
+  pendingPeerReview,
+}
 
 /// Entity representing a pending human review of an engine-recommended sanction.
 ///
@@ -41,6 +51,23 @@ class SanctionReviewQueueEntry extends Equatable {
   /// telemetry may arrive without an authenticated operator (INV-14).
   final String? operatorName;
 
+  /// Dual-control (Phase 10.5, Item 2). Populated only while [status] is
+  /// [SanctionReviewStatus.pendingPeerReview].
+
+  /// JWT sub of the auditor who requested the high-value verdict. The confirm
+  /// RPC rejects a second reviewer whose JWT sub equals this (reviewer2 != 1).
+  final String? firstReviewerId;
+
+  /// Proposed terminal action awaiting a second auditor:
+  /// `APPROVE` | `REJECT` | `OVERTURN` | `DISPUTE_ACCEPT`.
+  final String? peerReviewProposedAction;
+
+  /// Status to revert to on decline/expiry (`pending` or `disputed`).
+  final String? peerReviewOriginStatus;
+
+  /// When the pending peer review lapses and reverts to origin (TTL).
+  final DateTime? peerReviewExpiresAtUtc;
+
   const SanctionReviewQueueEntry({
     required this.id,
     required this.organizationId,
@@ -55,6 +82,10 @@ class SanctionReviewQueueEntry extends Equatable {
     this.rejectionReason,
     this.vehiclePlate,
     this.operatorName,
+    this.firstReviewerId,
+    this.peerReviewProposedAction,
+    this.peerReviewOriginStatus,
+    this.peerReviewExpiresAtUtc,
   });
 
   /// Returns a copy with the given fields replaced.
@@ -69,9 +100,14 @@ class SanctionReviewQueueEntry extends Equatable {
     DateTime? reviewedAtUtc,
     String? reviewedByUserId,
     String? rejectionReason,
+    String? firstReviewerId,
+    String? peerReviewProposedAction,
+    String? peerReviewOriginStatus,
+    DateTime? peerReviewExpiresAtUtc,
     bool clearReviewedAtUtc = false,
     bool clearReviewedByUserId = false,
     bool clearRejectionReason = false,
+    bool clearPeerReview = false,
   }) {
     return SanctionReviewQueueEntry(
       id: id,
@@ -93,9 +129,37 @@ class SanctionReviewQueueEntry extends Equatable {
           : (rejectionReason ?? this.rejectionReason),
       vehiclePlate: vehiclePlate,
       operatorName: operatorName,
+      firstReviewerId: clearPeerReview
+          ? null
+          : (firstReviewerId ?? this.firstReviewerId),
+      peerReviewProposedAction: clearPeerReview
+          ? null
+          : (peerReviewProposedAction ?? this.peerReviewProposedAction),
+      peerReviewOriginStatus: clearPeerReview
+          ? null
+          : (peerReviewOriginStatus ?? this.peerReviewOriginStatus),
+      peerReviewExpiresAtUtc: clearPeerReview
+          ? null
+          : (peerReviewExpiresAtUtc ?? this.peerReviewExpiresAtUtc),
     );
   }
 
   @override
   List<Object?> get props => [id];
+}
+
+/// DB ⇄ domain mapping for [SanctionReviewStatus].
+///
+/// Every status maps to its `.name` EXCEPT [SanctionReviewStatus.pendingPeerReview],
+/// which is stored snake_case (`pending_peer_review`) to match the DB CHECK
+/// constraint `chk_srq_status`.
+extension SanctionReviewStatusDb on SanctionReviewStatus {
+  String get dbValue => this == SanctionReviewStatus.pendingPeerReview
+      ? 'pending_peer_review'
+      : name;
+
+  static SanctionReviewStatus fromDbValue(String value) =>
+      value == 'pending_peer_review'
+      ? SanctionReviewStatus.pendingPeerReview
+      : SanctionReviewStatus.values.byName(value);
 }

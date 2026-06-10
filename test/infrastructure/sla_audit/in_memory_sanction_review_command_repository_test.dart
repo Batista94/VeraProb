@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
@@ -152,4 +153,123 @@ void main() {
       );
     },
   );
+
+  group('dual-control (threshold ON at 100000; fine is 150000)', () {
+    late InMemorySanctionReviewCommandRepository dcRepo;
+
+    setUp(() {
+      dcRepo = InMemorySanctionReviewCommandRepository(
+        queueRepo: queueRepo,
+        ledger: ledger,
+        dualControlThresholdCents: 100000,
+      );
+    });
+
+    test('high-value approve forks to pending_peer_review (no seal)', () async {
+      await queueRepo.enqueue(pendingEntry());
+
+      final result = await dcRepo.approveSanction(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-1',
+        actorEmail: 'auditor@test.com',
+        occurredAtUtc: now,
+      );
+
+      expect(result.finalQueueStatus, 'pending_peer_review');
+      final entry = await queueRepo.findById(
+        'entry-1',
+        organizationId: 'org-1',
+      );
+      expect(entry!.status, SanctionReviewStatus.pendingPeerReview);
+      expect(entry.firstReviewerId, 'auditor-1');
+      expect(
+        ledger.entries.where((e) => e.type == 'PEER_REVIEW_REQUESTED').length,
+        1,
+      );
+      expect(ledger.entries.where((e) => e.type == 'VERDICT_SEALED'), isEmpty);
+    });
+
+    test('requester cannot self-confirm their own verdict', () async {
+      await queueRepo.enqueue(pendingEntry());
+      await dcRepo.approveSanction(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-1',
+        actorEmail: 'auditor@test.com',
+        occurredAtUtc: now,
+      );
+
+      expect(
+        () => dcRepo.confirmPeerReview(
+          organizationId: 'org-1',
+          queueEntryId: 'entry-1',
+          reviewedByUserId: 'auditor-1', // same as first reviewer
+          actorEmail: 'auditor@test.com',
+          occurredAtUtc: now,
+        ),
+        throwsA(isA<DualControlSelfApprovalException>()),
+      );
+    });
+
+    test(
+      'distinct second auditor confirms → applied + dual signature',
+      () async {
+        await queueRepo.enqueue(pendingEntry());
+        await dcRepo.approveSanction(
+          organizationId: 'org-1',
+          queueEntryId: 'entry-1',
+          reviewedByUserId: 'auditor-1',
+          actorEmail: 'auditor@test.com',
+          occurredAtUtc: now,
+        );
+
+        final result = await dcRepo.confirmPeerReview(
+          organizationId: 'org-1',
+          queueEntryId: 'entry-1',
+          reviewedByUserId: 'auditor-2',
+          actorEmail: 'auditor2@test.com',
+          occurredAtUtc: now,
+        );
+
+        expect(result.finalQueueStatus, 'applied');
+        final seal = ledger.entries.firstWhere(
+          (e) => e.type == 'VERDICT_SEALED',
+        );
+        expect(seal.payload['first_reviewer_id'], 'auditor-1');
+        expect(seal.payload['second_reviewer_id'], 'auditor-2');
+      },
+    );
+
+    test('decline reverts a peer review to its origin (pending)', () async {
+      await queueRepo.enqueue(pendingEntry());
+      await dcRepo.approveSanction(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-1',
+        actorEmail: 'auditor@test.com',
+        occurredAtUtc: now,
+      );
+
+      final result = await dcRepo.declinePeerReview(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-2',
+        actorEmail: 'auditor2@test.com',
+        reason: 'Need more context.',
+        occurredAtUtc: now,
+      );
+
+      expect(result.finalQueueStatus, 'pending');
+      final entry = await queueRepo.findById(
+        'entry-1',
+        organizationId: 'org-1',
+      );
+      expect(entry!.status, SanctionReviewStatus.pending);
+      expect(
+        ledger.entries.where((e) => e.type == 'PEER_REVIEW_DECLINED').length,
+        1,
+      );
+    });
+  });
 }

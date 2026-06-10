@@ -89,7 +89,7 @@ enum IdempotencyMechanism {
   dbTransactionalRpc,
 }
 
-/// All 6 handlers that write to append-only ledger tables.
+/// All 8 handlers that write to append-only ledger tables.
 const _appendOnlyHandlers = <AppendOnlyHandlerSpec>[
   AppendOnlyHandlerSpec(
     handlerFilePath: 'lib/application/sla_audit/close_contract_handler.dart',
@@ -146,6 +146,30 @@ const _appendOnlyHandlers = <AppendOnlyHandlerSpec>[
         'test/application/sla_audit/justification/reject_justification_handler_test.dart',
     mechanismMarker: 'justification.isPending',
     doubleExecutionMarker: 'already processed',
+  ),
+  // Dual-control (Phase 10.5 Item 2): both delegate the append + flip to a
+  // single SECURITY DEFINER RPC (confirm/decline_peer_review). Same DB-atomic
+  // idempotency posture as approve/reject; the fail-fast pendingPeerReview guard
+  // is UX/anti-oracle only.
+  AppendOnlyHandlerSpec(
+    handlerFilePath:
+        'lib/application/sla_audit/confirm_peer_review_handler.dart',
+    displayName: 'ConfirmPeerReviewHandler',
+    mechanism: IdempotencyMechanism.dbTransactionalRpc,
+    testFilePath:
+        'test/application/sla_audit/confirm_peer_review_handler_test.dart',
+    mechanismMarker: 'entry.status != SanctionReviewStatus.pendingPeerReview',
+    doubleExecutionMarker: 'idemp-double-confirm',
+  ),
+  AppendOnlyHandlerSpec(
+    handlerFilePath:
+        'lib/application/sla_audit/decline_peer_review_handler.dart',
+    displayName: 'DeclinePeerReviewHandler',
+    mechanism: IdempotencyMechanism.dbTransactionalRpc,
+    testFilePath:
+        'test/application/sla_audit/decline_peer_review_handler_test.dart',
+    mechanismMarker: 'entry.status != SanctionReviewStatus.pendingPeerReview',
+    doubleExecutionMarker: 'idemp-double-decline',
   ),
 ];
 
@@ -490,13 +514,13 @@ void main() {
 
     // ── Sub-property 10: Handler count completeness ─────────────────────
     Glados(any.intInRange(0, _appendOnlyHandlers.length - 1)).test(
-      'append-only handler list is complete (6 handlers)',
+      'append-only handler list is complete (8 handlers)',
       (index) {
         expect(
           _appendOnlyHandlers.length,
-          equals(6),
+          equals(8),
           reason:
-              'Must verify all 6 append-only handlers for INV-3 compliance. '
+              'Must verify all 8 append-only handlers for INV-3 compliance. '
               'If a new handler is added, update this test.',
         );
 

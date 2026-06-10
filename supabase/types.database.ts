@@ -539,6 +539,7 @@ export type Database = {
           created_at_utc: string;
           current_hash: string | null;
           description: string | null;
+          dual_control_threshold_cents: number | null;
           external_id: string | null;
           financial_ceiling_cents: number | null;
           id: string;
@@ -566,6 +567,7 @@ export type Database = {
           created_at_utc?: string;
           current_hash?: string | null;
           description?: string | null;
+          dual_control_threshold_cents?: number | null;
           external_id?: string | null;
           financial_ceiling_cents?: number | null;
           id?: string;
@@ -593,6 +595,7 @@ export type Database = {
           created_at_utc?: string;
           current_hash?: string | null;
           description?: string | null;
+          dual_control_threshold_cents?: number | null;
           external_id?: string | null;
           financial_ceiling_cents?: number | null;
           id?: string;
@@ -2033,6 +2036,8 @@ export type Database = {
           created_at: string;
           currency_code: string | null;
           data_retention_days: number;
+          dual_control_threshold_cents: number | null;
+          dual_control_ttl_hours: number;
           dwell_time_seconds: number;
           external_id: string | null;
           id: string;
@@ -2064,6 +2069,8 @@ export type Database = {
           created_at?: string;
           currency_code?: string | null;
           data_retention_days?: number;
+          dual_control_threshold_cents?: number | null;
+          dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
           external_id?: string | null;
           id?: string;
@@ -2095,6 +2102,8 @@ export type Database = {
           created_at?: string;
           currency_code?: string | null;
           data_retention_days?: number;
+          dual_control_threshold_cents?: number | null;
+          dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
           external_id?: string | null;
           id?: string;
@@ -2382,11 +2391,17 @@ export type Database = {
         Row: {
           contract_id: string;
           created_at: string;
+          first_reviewed_at: string | null;
+          first_reviewer_id: string | null;
           id: string;
           ledger_entry_id: string;
           operator_name: string | null;
           organization_id: string;
           organization_name: string | null;
+          peer_review_expires_at: string | null;
+          peer_review_origin_status: string | null;
+          peer_review_proposed_action: string | null;
+          peer_review_reason: string | null;
           rejection_reason: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -2398,11 +2413,17 @@ export type Database = {
         Insert: {
           contract_id: string;
           created_at?: string;
+          first_reviewed_at?: string | null;
+          first_reviewer_id?: string | null;
           id?: string;
           ledger_entry_id: string;
           operator_name?: string | null;
           organization_id: string;
           organization_name?: string | null;
+          peer_review_expires_at?: string | null;
+          peer_review_origin_status?: string | null;
+          peer_review_proposed_action?: string | null;
+          peer_review_reason?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -2414,11 +2435,17 @@ export type Database = {
         Update: {
           contract_id?: string;
           created_at?: string;
+          first_reviewed_at?: string | null;
+          first_reviewer_id?: string | null;
           id?: string;
           ledger_entry_id?: string;
           operator_name?: string | null;
           organization_id?: string;
           organization_name?: string | null;
+          peer_review_expires_at?: string | null;
+          peer_review_origin_status?: string | null;
+          peer_review_proposed_action?: string | null;
+          peer_review_reason?: string | null;
           rejection_reason?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -4217,6 +4244,20 @@ export type Database = {
       };
     };
     Functions: {
+      _append_peer_review_requested: {
+        Args: {
+          p_actor_email: string;
+          p_fine_cents: number;
+          p_first_reviewer: string;
+          p_occurred_at_utc: string;
+          p_organization_id: string;
+          p_proposed_action: string;
+          p_queue: Database["public"]["Tables"]["sanction_review_queue"]["Row"];
+          p_reason: string;
+          p_threshold_cents: number;
+        };
+        Returns: string;
+      };
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string };
         Returns: undefined;
@@ -4234,6 +4275,14 @@ export type Database = {
       _postgis_stats: {
         Args: { ""?: string; att_name: string; tbl: unknown };
         Returns: string;
+      };
+      _resolve_dual_control_threshold: {
+        Args: { p_contract_id: string; p_organization_id: string };
+        Returns: number;
+      };
+      _resolve_dual_control_ttl: {
+        Args: { p_organization_id: string };
+        Returns: number;
       };
       _st_3dintersects: {
         Args: { geom1: unknown; geom2: unknown };
@@ -4435,6 +4484,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      confirm_peer_review: {
+        Args: {
+          p_actor_email: string;
+          p_idempotency_key: string;
+          p_occurred_at_utc: string;
+          p_organization_id: string;
+          p_queue_entry_id: string;
+          p_reviewed_by_user_id: string;
+        };
+        Returns: Json;
+      };
       consume_telegram_binding_token: {
         Args: { p_chat_id: number; p_code: string };
         Returns: {
@@ -4470,6 +4530,17 @@ export type Database = {
       deactivate_member: {
         Args: { p_target_user_id: string };
         Returns: undefined;
+      };
+      decline_peer_review: {
+        Args: {
+          p_actor_email: string;
+          p_occurred_at_utc: string;
+          p_organization_id: string;
+          p_queue_entry_id: string;
+          p_reason: string;
+          p_reviewed_by_user_id: string;
+        };
+        Returns: Json;
       };
       disablelongtransactions: { Args: never; Returns: string };
       dropgeometrycolumn:
@@ -4507,6 +4578,7 @@ export type Database = {
         | { Args: { table_name: string }; Returns: string };
       enablelongtransactions: { Args: never; Returns: string };
       equals: { Args: { geom1: unknown; geom2: unknown }; Returns: boolean };
+      expire_stale_peer_reviews: { Args: never; Returns: number };
       fail_idempotency_key: {
         Args: {
           p_id: string;
