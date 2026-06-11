@@ -173,7 +173,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000009a1',
        '00000000-0000-0000-0000-0000000009e5',
        '00000000-0000-0000-0000-0000000009b9', 'auditor1@test.com',
-       'Carrier disputes the GPS trace.', '2026-08-12T12:02:30Z'
+       'Carrier disputes the GPS trace.', 'FORCE_MAJEURE', '2026-08-12T12:02:30Z'
      ) $$,
   'high-value reject forks into peer review'
 );

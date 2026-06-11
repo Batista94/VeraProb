@@ -539,6 +539,7 @@ export type Database = {
           created_at_utc: string;
           current_hash: string | null;
           description: string | null;
+          dispute_resolution_sla_days: number | null;
           dual_control_threshold_cents: number | null;
           external_id: string | null;
           financial_ceiling_cents: number | null;
@@ -567,6 +568,7 @@ export type Database = {
           created_at_utc?: string;
           current_hash?: string | null;
           description?: string | null;
+          dispute_resolution_sla_days?: number | null;
           dual_control_threshold_cents?: number | null;
           external_id?: string | null;
           financial_ceiling_cents?: number | null;
@@ -595,6 +597,7 @@ export type Database = {
           created_at_utc?: string;
           current_hash?: string | null;
           description?: string | null;
+          dispute_resolution_sla_days?: number | null;
           dual_control_threshold_cents?: number | null;
           external_id?: string | null;
           financial_ceiling_cents?: number | null;
@@ -2226,6 +2229,7 @@ export type Database = {
           created_at: string;
           currency_code: string | null;
           data_retention_days: number;
+          dispute_resolution_sla_days: number;
           dual_control_threshold_cents: number | null;
           dual_control_ttl_hours: number;
           dwell_time_seconds: number;
@@ -2259,6 +2263,7 @@ export type Database = {
           created_at?: string;
           currency_code?: string | null;
           data_retention_days?: number;
+          dispute_resolution_sla_days?: number;
           dual_control_threshold_cents?: number | null;
           dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
@@ -2292,6 +2297,7 @@ export type Database = {
           created_at?: string;
           currency_code?: string | null;
           data_retention_days?: number;
+          dispute_resolution_sla_days?: number;
           dual_control_threshold_cents?: number | null;
           dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
@@ -2581,6 +2587,8 @@ export type Database = {
         Row: {
           contract_id: string;
           created_at: string;
+          disputed_at: string | null;
+          disputed_by: string | null;
           first_reviewed_at: string | null;
           first_reviewer_id: string | null;
           id: string;
@@ -2595,6 +2603,7 @@ export type Database = {
           peer_review_reason_code: string | null;
           rejection_reason: string | null;
           rejection_reason_code: string | null;
+          resolution_due_at: string | null;
           resolution_reason_code: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
@@ -2606,6 +2615,8 @@ export type Database = {
         Insert: {
           contract_id: string;
           created_at?: string;
+          disputed_at?: string | null;
+          disputed_by?: string | null;
           first_reviewed_at?: string | null;
           first_reviewer_id?: string | null;
           id?: string;
@@ -2620,6 +2631,7 @@ export type Database = {
           peer_review_reason_code?: string | null;
           rejection_reason?: string | null;
           rejection_reason_code?: string | null;
+          resolution_due_at?: string | null;
           resolution_reason_code?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -2631,6 +2643,8 @@ export type Database = {
         Update: {
           contract_id?: string;
           created_at?: string;
+          disputed_at?: string | null;
+          disputed_by?: string | null;
           first_reviewed_at?: string | null;
           first_reviewer_id?: string | null;
           id?: string;
@@ -2645,6 +2659,7 @@ export type Database = {
           peer_review_reason_code?: string | null;
           rejection_reason?: string | null;
           rejection_reason_code?: string | null;
+          resolution_due_at?: string | null;
           resolution_reason_code?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
@@ -4506,6 +4521,10 @@ export type Database = {
         Args: { ""?: string; att_name: string; tbl: unknown };
         Returns: string;
       };
+      _resolve_dispute_sla_days: {
+        Args: { p_contract_id: string; p_organization_id: string };
+        Returns: number;
+      };
       _resolve_dual_control_threshold: {
         Args: { p_contract_id: string; p_organization_id: string };
         Returns: number;
@@ -4843,6 +4862,7 @@ export type Database = {
           window_start_utc: string;
         }[];
       };
+      flag_sla_breached_disputes: { Args: never; Returns: number };
       generate_monthly_audit_package: {
         Args: {
           p_contract_id?: string;
@@ -5094,6 +5114,7 @@ export type Database = {
           p_occurred_at_utc: string;
           p_organization_id: string;
           p_queue_entry_id: string;
+          p_reason_code: string;
           p_rejection_reason: string;
           p_reviewed_by_user_id: string;
         };
@@ -5112,6 +5133,7 @@ export type Database = {
           p_occurred_at_utc: string;
           p_organization_id: string;
           p_queue_entry_id: string;
+          p_reason_code: string;
           p_resolution: string;
           p_resolution_reason: string;
           p_resolved_by_user_id: string;

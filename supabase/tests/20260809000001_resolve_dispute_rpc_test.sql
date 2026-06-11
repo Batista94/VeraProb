@@ -52,7 +52,7 @@ VALUES
 SELECT has_function(
   'public', 'resolve_dispute',
   ARRAY['uuid', 'uuid', 'text', 'text', 'uuid', 'text',
-        'timestamp with time zone', 'text'],
+        'timestamp with time zone', 'text', 'text'],
   'resolve_dispute exists with the expected signature'
 );
 
@@ -66,7 +66,7 @@ SELECT is(
 -- 3. authenticated may execute.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'authenticated may execute resolve_dispute'
 );
@@ -74,7 +74,7 @@ SELECT ok(
 -- 4. anon may NOT execute (Max hardening).
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'anon may NOT execute resolve_dispute'
 );
@@ -82,7 +82,7 @@ SELECT ok(
 -- 5. service_role may NOT execute (Max hardening — no Data-API bypass path).
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'service_role may NOT execute resolve_dispute'
 );
@@ -103,7 +103,8 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000009e1',
        'DISPUTE_ACCEPTED', 'Contractor proved force majeure.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:00:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:00:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'resolve_dispute (accept) executes for an authenticated auditor'
 );
@@ -133,7 +134,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e1',
        'DISPUTE_ACCEPTED', 'Contractor proved force majeure.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:05:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:05:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'P0001',
   NULL,
@@ -147,7 +149,8 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000009e2',
        'DISPUTE_OVERTURNED', 'Evidence reinstated after appeal.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:10:00Z', '00000000-0000-0000-0000-0000000009e2:DISPUTE_OVERTURNED:SNAPSHOT'
+       '2026-08-09T12:10:00Z', '00000000-0000-0000-0000-0000000009e2:DISPUTE_OVERTURNED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'resolve_dispute (overturn) executes and seals inline'
 );
@@ -173,7 +176,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e3',
        'DISPUTE_ACCEPTED', 'cross tenant attempt here',
        '00000000-0000-0000-0000-0000000009b9', 'evil@test.com',
-       '2026-08-09T12:15:00Z', '00000000-0000-0000-0000-0000000009e3:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:15:00Z', '00000000-0000-0000-0000-0000000009e3:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   '42501',
   NULL,
@@ -191,7 +195,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e4',
        'DISPUTE_ACCEPTED', 'operator escalation attempt',
        '00000000-0000-0000-0000-0000000009b9', 'op@test.com',
-       '2026-08-09T12:20:00Z', '00000000-0000-0000-0000-0000000009e4:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:20:00Z', '00000000-0000-0000-0000-0000000009e4:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   '42501',
   NULL,

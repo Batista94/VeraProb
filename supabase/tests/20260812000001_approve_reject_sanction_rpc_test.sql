@@ -56,7 +56,7 @@ SELECT is(
 -- 3. reject_sanction exists with the expected signature.
 SELECT has_function(
   'public', 'reject_sanction',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'text', 'timestamp with time zone'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'text', 'text', 'timestamp with time zone'],
   'reject_sanction exists with the expected signature'
 );
 
@@ -94,7 +94,7 @@ SELECT ok(
 -- 8. authenticated may execute reject.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'authenticated may execute reject_sanction'
 );
@@ -102,7 +102,7 @@ SELECT ok(
 -- 9. anon may NOT execute reject.
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'anon may NOT execute reject_sanction'
 );
@@ -110,7 +110,7 @@ SELECT ok(
 -- 10. service_role may NOT execute reject.
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'service_role may NOT execute reject_sanction'
 );
@@ -170,7 +170,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000008a1',
        '00000000-0000-0000-0000-0000000008e2',
        '00000000-0000-0000-0000-0000000008b9', 'auditor@test.com',
-       'GPS evidence was inconclusive for this route.',
+       'GPS evidence was inconclusive for this route.', 'FORCE_MAJEURE',
        '2026-08-12T12:10:00Z'
      ) $$,
   'reject_sanction executes for an authenticated auditor'
@@ -194,18 +194,20 @@ SELECT is(
   'reject appends exactly one VERDICT_REFUSED fact'
 );
 
--- 18. Reject with an empty reason is rejected (fail-closed, opaque 42501).
+-- 18. Reject with an empty reason_code is rejected (fail-closed, opaque 42501).
+-- Post-taxonomy (008): the structured reason_code is the mandatory field; free
+-- text is an optional complement, so the gate moved from reason → reason_code.
 SELECT throws_ok(
   $$ SELECT public.reject_sanction(
        '00000000-0000-0000-0000-0000000008a1',
        '00000000-0000-0000-0000-0000000008e3',
        '00000000-0000-0000-0000-0000000008b9', 'auditor@test.com',
-       '    ',
+       '    ', '   ',
        '2026-08-12T12:12:00Z'
      ) $$,
   '42501',
   NULL,
-  'reject with an empty reason fails closed (42501)'
+  'reject with an empty reason_code fails closed (42501)'
 );
 
 -- 19. Reviewer spoofing: p_reviewed_by_user_id <> JWT sub is rejected (42501).
