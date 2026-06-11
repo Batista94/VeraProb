@@ -2162,6 +2162,58 @@ export type Database = {
           },
         ];
       };
+      organization_holidays: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          holiday_date: string;
+          id: string;
+          is_national: boolean;
+          label: string;
+          organization_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          holiday_date: string;
+          id?: string;
+          is_national?: boolean;
+          label: string;
+          organization_id: string;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          holiday_date?: string;
+          id?: string;
+          is_national?: boolean;
+          label?: string;
+          organization_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "organization_holidays_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "organization_holidays_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "organization_holidays_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       organizations: {
         Row: {
           allowed_domains: string[];
@@ -4427,6 +4479,15 @@ export type Database = {
         };
         Returns: string;
       };
+      _compute_business_day_deadline: {
+        Args: {
+          p_business_days: number;
+          p_organization_id: string;
+          p_start_date: string;
+        };
+        Returns: string;
+      };
+      _compute_easter: { Args: { p_year: number }; Returns: string };
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string };
         Returns: undefined;
@@ -5090,6 +5151,10 @@ export type Database = {
           p_verdict_type: string;
         };
         Returns: Json;
+      };
+      seed_brazilian_national_holidays: {
+        Args: { p_organization_id: string; p_year: number };
+        Returns: number;
       };
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown };
