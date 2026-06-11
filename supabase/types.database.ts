@@ -2540,7 +2540,10 @@ export type Database = {
           peer_review_origin_status: string | null;
           peer_review_proposed_action: string | null;
           peer_review_reason: string | null;
+          peer_review_reason_code: string | null;
           rejection_reason: string | null;
+          rejection_reason_code: string | null;
+          resolution_reason_code: string | null;
           reviewed_at: string | null;
           reviewed_by: string | null;
           set_id: string;
@@ -2562,7 +2565,10 @@ export type Database = {
           peer_review_origin_status?: string | null;
           peer_review_proposed_action?: string | null;
           peer_review_reason?: string | null;
+          peer_review_reason_code?: string | null;
           rejection_reason?: string | null;
+          rejection_reason_code?: string | null;
+          resolution_reason_code?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           set_id: string;
@@ -2584,7 +2590,10 @@ export type Database = {
           peer_review_origin_status?: string | null;
           peer_review_proposed_action?: string | null;
           peer_review_reason?: string | null;
+          peer_review_reason_code?: string | null;
           rejection_reason?: string | null;
+          rejection_reason_code?: string | null;
+          resolution_reason_code?: string | null;
           reviewed_at?: string | null;
           reviewed_by?: string | null;
           set_id?: string;
@@ -2592,7 +2601,29 @@ export type Database = {
           vehicle_plate?: string | null;
           verdict_evidence?: Json;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "sanction_review_queue_peer_review_reason_code_fkey";
+            columns: ["peer_review_reason_code"];
+            isOneToOne: false;
+            referencedRelation: "dispute_reason_codes";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "sanction_review_queue_rejection_reason_code_fkey";
+            columns: ["rejection_reason_code"];
+            isOneToOne: false;
+            referencedRelation: "dispute_reason_codes";
+            referencedColumns: ["code"];
+          },
+          {
+            foreignKeyName: "sanction_review_queue_resolution_reason_code_fkey";
+            columns: ["resolution_reason_code"];
+            isOneToOne: false;
+            referencedRelation: "dispute_reason_codes";
+            referencedColumns: ["code"];
+          },
+        ];
       };
       service_manifests: {
         Row: {
