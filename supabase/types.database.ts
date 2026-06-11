@@ -6033,6 +6033,15 @@ export type Database = {
         Args: { p_category: string; p_description: string; p_token: string };
         Returns: string;
       };
+      verify_evidence_hash: {
+        Args: {
+          p_attachment_id: string;
+          p_computed_hash: string;
+          p_organization_id: string;
+          p_verified_at: string;
+        };
+        Returns: string;
+      };
       verify_forensic_evidence: {
         Args: { p_ledger_entry_id: string; p_organization_id: string };
         Returns: Json;
