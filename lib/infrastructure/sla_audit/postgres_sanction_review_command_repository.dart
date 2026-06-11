@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
+import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_result.dart';
@@ -126,6 +127,31 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
       return SanctionReviewResult.fromJson(result);
     } on PostgrestException catch (e) {
       throw _mapError(e, queueEntryId, 'decline_peer_review');
+    }
+  }
+
+  @override
+  Future<DisputeSanctionResult> disputeSanction({
+    required String organizationId,
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  }) async {
+    try {
+      final result = await client.rpc<Map<String, dynamic>>(
+        'dispute_sanction',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_disputed_by_user_id': disputedByUserId,
+          'p_actor_email': actorEmail,
+          'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+        },
+      );
+      return DisputeSanctionResult.fromJson(result);
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'dispute_sanction');
     }
   }
 

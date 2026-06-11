@@ -1,5 +1,6 @@
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
@@ -10,7 +11,7 @@ import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 /// In-memory implementation of [SanctionReviewCommandRepository].
 ///
-/// Mirrors the `approve_sanction` / `reject_sanction` SECURITY DEFINER RPCs
+/// Mirrors the `approve_sanction` / `reject_sanction` / `dispute_sanction` SECURITY DEFINER RPCs
 /// against the in-memory queue + ledger so in-memory persistence mode (and
 /// handler unit tests) exercise the SAME atomic semantics as Postgres:
 ///   look up (locked) → status re-check → ledger append → queue flip.
@@ -42,7 +43,11 @@ class InMemorySanctionReviewCommandRepository
   final int? _thresholdCents;
   final int _ttlHours;
 
-  static const _verdictTypes = {'VERDICT_SEALED', 'VERDICT_REFUSED'};
+  static const _verdictTypes = {
+    'VERDICT_SEALED',
+    'VERDICT_REFUSED',
+    'SANCTION_DISPUTED',
+  };
 
   @override
   Future<SanctionReviewResult> approveSanction({
@@ -95,6 +100,54 @@ class InMemorySanctionReviewCommandRepository
     return SanctionReviewResult(
       ledgerEntryId: ledgerEntryId,
       finalQueueStatus: 'applied',
+    );
+  }
+
+  @override
+  Future<DisputeSanctionResult> disputeSanction({
+    required String organizationId,
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  }) async {
+    final entry = await _lockPending(organizationId, queueEntryId);
+
+    // SLA logic mocked for in-memory (e.g. + 5 days)
+    final resolutionDue = occurredAtUtc.add(const Duration(days: 5));
+
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: 'SANCTION_DISPUTED',
+        operatorId: disputedByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: occurredAtUtc,
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'disputed_by_user_id': disputedByUserId,
+          'actor_email': actorEmail,
+          'verdict_evidence': entry.verdictEvidence.toJson(),
+          'resolution_due_at': resolutionDue.toIso8601String(),
+          'dispute_sla_days': 5,
+        },
+      ),
+    );
+
+    await _queue.updateStatus(
+      entry.copyWith(
+        status: SanctionReviewStatus.disputed,
+        reviewedAtUtc: occurredAtUtc,
+        reviewedByUserId: disputedByUserId,
+      ),
+    );
+
+    return DisputeSanctionResult(
+      ledgerEntryId: ledgerEntryId,
+      finalQueueStatus: 'disputed',
+      resolutionDueAtUtc: resolutionDue,
     );
   }
 

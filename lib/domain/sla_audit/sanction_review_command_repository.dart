@@ -1,14 +1,16 @@
+import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_result.dart';
 
-/// Port for the atomic INITIAL verdict write path (approve / reject of a pending
-/// sanction).
+/// Port for the atomic INITIAL verdict write path (approve / reject / dispute
+/// of a pending sanction).
 ///
-/// Backed by the `approve_sanction` / `reject_sanction` SECURITY DEFINER RPCs,
-/// which migrate concurrency control and atomicity into the database: a single
-/// transaction row-locks the queue entry, re-checks its `pending` status
-/// (closing the TOCTOU race that let two auditors append duplicate VERDICT
-/// facts), appends the verdict ledger fact (INV-3 append-only), and flips the
-/// queue status. Collapses the former non-atomic round-trips into one.
+/// Backed by the `approve_sanction` / `reject_sanction` / `dispute_sanction`
+/// SECURITY DEFINER RPCs, which migrate concurrency control and atomicity into
+/// the database: a single transaction row-locks the queue entry, re-checks its
+/// `pending` status (closing the TOCTOU race that let two auditors append
+/// duplicate VERDICT facts), appends the verdict ledger fact (INV-3 append-only),
+/// and flips the queue status. Collapses the former non-atomic round-trips into
+/// one.
 ///
 /// On a concurrent double-review, the losing caller observes a non-pending
 /// status after acquiring the lock and the implementation raises
@@ -64,6 +66,21 @@ abstract class SanctionReviewCommandRepository {
     required String reviewedByUserId,
     required String actorEmail,
     required String reason,
+    required DateTime occurredAtUtc,
+  });
+
+  /// Transitions a pending sanction to `disputed` atomically.
+  ///
+  /// Seals `disputed_at`, `disputed_by`, and `resolution_due_at` inline inside
+  /// the DB transaction. The SLA deadline is computed server-side using
+  /// `_resolve_dispute_sla_days` + `_compute_business_day_deadline` (INV-15).
+  ///
+  /// Throws [IdempotencyProcessingException] if the entry is no longer pending.
+  Future<DisputeSanctionResult> disputeSanction({
+    required String organizationId,
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
     required DateTime occurredAtUtc,
   });
 }
