@@ -986,6 +986,83 @@ export type Database = {
         };
         Relationships: [];
       };
+      dispute_evidence_attachments: {
+        Row: {
+          attached_at: string;
+          deleted_at: string | null;
+          file_name: string;
+          file_size_bytes: number;
+          hash_verified_at: string | null;
+          id: string;
+          mime_type: string;
+          organization_id: string;
+          queue_entry_id: string;
+          sha256_hash: string;
+          storage_path: string;
+          uploaded_by: string;
+          verification_status: string;
+        };
+        Insert: {
+          attached_at?: string;
+          deleted_at?: string | null;
+          file_name: string;
+          file_size_bytes: number;
+          hash_verified_at?: string | null;
+          id?: string;
+          mime_type: string;
+          organization_id: string;
+          queue_entry_id: string;
+          sha256_hash: string;
+          storage_path: string;
+          uploaded_by: string;
+          verification_status?: string;
+        };
+        Update: {
+          attached_at?: string;
+          deleted_at?: string | null;
+          file_name?: string;
+          file_size_bytes?: number;
+          hash_verified_at?: string | null;
+          id?: string;
+          mime_type?: string;
+          organization_id?: string;
+          queue_entry_id?: string;
+          sha256_hash?: string;
+          storage_path?: string;
+          uploaded_by?: string;
+          verification_status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "dispute_evidence_attachments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dispute_evidence_attachments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dispute_evidence_attachments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "dispute_evidence_attachments_queue_entry_id_fkey";
+            columns: ["queue_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sanction_review_queue";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       drivers: {
         Row: {
           archived_at_utc: string | null;
@@ -4416,6 +4493,20 @@ export type Database = {
           p_reviewed_by_user_id: string;
         };
         Returns: Json;
+      };
+      attach_dispute_evidence: {
+        Args: {
+          p_attached_at_utc: string;
+          p_file_name: string;
+          p_file_size_bytes: number;
+          p_mime_type: string;
+          p_organization_id: string;
+          p_queue_entry_id: string;
+          p_sha256_hash: string;
+          p_storage_path: string;
+          p_uploaded_by: string;
+        };
+        Returns: string;
       };
       batch_update_contracts: { Args: { p_updates: Json }; Returns: Json };
       batch_update_vehicles: { Args: { p_updates: Json }; Returns: Json };
