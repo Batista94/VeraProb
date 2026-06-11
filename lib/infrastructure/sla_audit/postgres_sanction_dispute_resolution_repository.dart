@@ -28,6 +28,7 @@ class PostgresSanctionDisputeResolutionRepository extends BasePostgresRepository
     required String queueEntryId,
     required String resolution,
     required String? resolutionReason,
+    required String? reasonCode,
     required String resolvedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
@@ -45,6 +46,7 @@ class PostgresSanctionDisputeResolutionRepository extends BasePostgresRepository
           'p_actor_email': actorEmail,
           'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
           'p_idempotency_key': idempotencyKey,
+          'p_reason_code': reasonCode,
         },
       );
       return DisputeResolutionResult.fromJson(result);

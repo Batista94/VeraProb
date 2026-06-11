@@ -57,6 +57,19 @@ class SanctionQueueItemView extends Equatable {
   /// TTL deadline after which the peer review reverts to its origin status.
   final DateTime? peerReviewExpiresAtUtc;
 
+  /// When the dispute was opened (`pending → disputed`). Sealed once at open
+  /// (INV-15). NEVER cleared — survives a retract so provenance stays auditable
+  /// (INV-23). A `pending` item carrying a non-null [disputedAtUtc] was disputed
+  /// and later retracted.
+  final DateTime? disputedAtUtc;
+
+  /// Actor who opened the dispute. NEVER cleared on retract (INV-23).
+  final String? disputedBy;
+
+  /// Business-day deadline to resolve the dispute (Componente 3 SLA timer).
+  /// Drives the [DisputeSlaChip] countdown / overdue signal on disputed cards.
+  final DateTime? resolutionDueAtUtc;
+
   /// Transport-agnostic alias for the bound asset identifier (INV-14).
   /// Today resolves to the vehicle plate; stays stable if the asset model
   /// generalizes beyond road vehicles.
@@ -82,6 +95,9 @@ class SanctionQueueItemView extends Equatable {
     this.firstReviewerId,
     this.peerReviewProposedAction,
     this.peerReviewExpiresAtUtc,
+    this.disputedAtUtc,
+    this.disputedBy,
+    this.resolutionDueAtUtc,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -133,6 +149,13 @@ class SanctionQueueItemView extends Equatable {
       peerReviewExpiresAtUtc: row['peer_review_expires_at'] != null
           ? DateTime.parse(row['peer_review_expires_at'] as String)
           : null,
+      disputedAtUtc: row['disputed_at'] != null
+          ? DateTime.parse(row['disputed_at'] as String)
+          : null,
+      disputedBy: row['disputed_by'] as String?,
+      resolutionDueAtUtc: row['resolution_due_at'] != null
+          ? DateTime.parse(row['resolution_due_at'] as String)
+          : null,
     );
   }
 
@@ -180,5 +203,8 @@ class SanctionQueueItemView extends Equatable {
     firstReviewerId,
     peerReviewProposedAction,
     peerReviewExpiresAtUtc,
+    disputedAtUtc,
+    disputedBy,
+    resolutionDueAtUtc,
   ];
 }

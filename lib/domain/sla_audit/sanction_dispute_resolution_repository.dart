@@ -25,6 +25,7 @@ abstract class SanctionDisputeResolutionRepository {
     required String queueEntryId,
     required String resolution,
     required String? resolutionReason,
+    required String? reasonCode,
     required String resolvedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,

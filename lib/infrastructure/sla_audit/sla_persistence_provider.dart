@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
+import 'package:veraprob/domain/sla_audit/dispute_evidence_repository.dart';
+import 'package:veraprob/domain/sla_audit/dispute_reason_code_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state_repository.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
@@ -18,6 +20,8 @@ import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'in_memory_contract_repository.dart';
 import 'in_memory_contractual_execution_state_repository.dart';
+import 'in_memory_dispute_evidence_repository.dart';
+import 'in_memory_dispute_reason_code_repository.dart';
 import 'in_memory_contractual_financial_snapshot_repository.dart';
 import 'in_memory_forensic_evidence_snapshot_repository.dart';
 import 'in_memory_plan_declaration_repository.dart';
@@ -29,6 +33,8 @@ import 'justification/in_memory_justification_repository.dart';
 import 'justification/postgres_justification_repository.dart';
 import 'postgres_contract_repository.dart';
 import 'postgres_contractual_execution_state_repository.dart';
+import 'postgres_dispute_evidence_repository.dart';
+import 'postgres_dispute_reason_code_repository.dart';
 import 'postgres_contractual_financial_snapshot_repository.dart';
 import 'postgres_idempotency_store.dart';
 import 'in_memory_idempotency_store.dart';
@@ -149,6 +155,27 @@ final sanctionDisputeResolutionRepositoryProvider =
         ),
       };
     });
+
+final disputeReasonCodeRepositoryProvider =
+    Provider<DisputeReasonCodeRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory => InMemoryDisputeReasonCodeRepository(),
+        PersistenceMode.postgres => PostgresDisputeReasonCodeRepository(
+          ref.watch(supabaseClientProvider),
+        ),
+      };
+    });
+
+final disputeEvidenceRepositoryProvider = Provider<DisputeEvidenceRepository>((
+  ref,
+) {
+  return switch (ref.watch(persistenceModeProvider)) {
+    PersistenceMode.inMemory => InMemoryDisputeEvidenceRepository(),
+    PersistenceMode.postgres => PostgresDisputeEvidenceRepository(
+      ref.watch(supabaseClientProvider),
+    ),
+  };
+});
 
 final justificationRepositoryProvider = Provider<JustificationRepository>((
   ref,

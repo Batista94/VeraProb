@@ -60,8 +60,9 @@ class ResolveDisputeHandler {
       throw const DomainException('Unauthorized.');
     }
 
-    // 3. Reason is mandatory for accept/overturn (forensic traceability).
-    _assertReason(command);
+    // 3. Structured reason_code mandatory for accept/overturn (Q2); free text
+    // optional. Authoritative catalogue validation is server-side (H5).
+    _assertReasonCode(command);
 
     // 4. Load entry scoped to organizationId (tenant isolation, INV-1).
     final entry = await _queueRepo.findById(
@@ -96,6 +97,7 @@ class ResolveDisputeHandler {
       queueEntryId: command.queueEntryId,
       resolution: ledgerType,
       resolutionReason: command.resolutionReason?.trim(),
+      reasonCode: command.reasonCode,
       resolvedByUserId: command.resolvedByUserId,
       actorEmail: command.actorEmail,
       occurredAtUtc: _clock.nowUtc(),
@@ -103,11 +105,19 @@ class ResolveDisputeHandler {
     );
   }
 
-  void _assertReason(ResolveDisputeCommand command) {
+  void _assertReasonCode(ResolveDisputeCommand command) {
     if (command.resolution == DisputeResolution.retract) return;
-    if ((command.resolutionReason?.trim().length ?? 0) < 10) {
+    final code = command.reasonCode?.trim();
+    if (code == null || code.isEmpty) {
       throw const DomainException(
-        'resolutionReason must be at least 10 characters.',
+        'A reason code is required for this resolution.',
+      );
+    }
+    // OTHER requires a free-text complement (UX forcing-function parity).
+    if (code == 'OTHER' &&
+        (command.resolutionReason?.trim().length ?? 0) < 10) {
+      throw const DomainException(
+        'OTHER requires a description (>= 10 chars).',
       );
     }
   }

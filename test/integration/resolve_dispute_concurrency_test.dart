@@ -177,6 +177,7 @@ void main() async {
                 queueEntryId: queueId,
                 resolution: 'DISPUTE_ACCEPTED',
                 resolutionReason: 'Justification accepted by auditor council.',
+                reasonCode: 'THIRD_PARTY_INCIDENT',
                 resolvedByUserId: _uuid.v4(),
                 actorEmail: _auditorEmail,
                 occurredAtUtc: DateTime.now().toUtc(),

@@ -116,6 +116,88 @@ final peerReviewSanctionsCountProvider = Provider.autoDispose<int>((ref) {
   };
 });
 
+// ── SLA aging: overdue / expiring disputes (Componente 4.6) ──────────────────
+
+/// Disputes approaching their deadline are flagged this many days in advance.
+const int kDisputeSlaWarningDays = 2;
+
+/// Disputed items already PAST their `resolution_due_at` deadline.
+///
+/// Derived client-side from [disputedSanctionsStreamProvider] (the row already
+/// carries `resolution_due_at`) — no extra query. Recomputes on every stream
+/// emission; "now" is sampled per emission, which is precise enough for the
+/// breach badge + drill-down.
+final overdueDisputesProvider =
+    Provider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      final now = DateTime.now().toUtc();
+      return switch (ref.watch(disputedSanctionsStreamProvider)) {
+        AsyncData(:final value) =>
+          value
+              .where(
+                (i) =>
+                    i.resolutionDueAtUtc != null &&
+                    i.resolutionDueAtUtc!.isBefore(now),
+              )
+              .toList(),
+        _ => const <SanctionQueueItemView>[],
+      };
+    });
+
+/// Count of overdue disputes — drives the [SlaBreachBadge] (hidden when 0).
+final overdueDisputesCountProvider = Provider.autoDispose<int>(
+  (ref) => ref.watch(overdueDisputesProvider).length,
+);
+
+/// Disputed items within [kDisputeSlaWarningDays] of the deadline but not yet
+/// overdue — the amber "expiring soon" cohort.
+final expiringDisputesProvider =
+    Provider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      final now = DateTime.now().toUtc();
+      final horizon = now.add(const Duration(days: kDisputeSlaWarningDays));
+      return switch (ref.watch(disputedSanctionsStreamProvider)) {
+        AsyncData(:final value) => value.where((i) {
+          final due = i.resolutionDueAtUtc;
+          return due != null && !due.isBefore(now) && due.isBefore(horizon);
+        }).toList(),
+        _ => const <SanctionQueueItemView>[],
+      };
+    });
+
+// ── Retraction provenance enrichment (INV-23) ────────────────────────────────
+
+/// Who cancelled a dispute and when, read from the latest `DISPUTE_RETRACTED`
+/// ledger fact. The queue row keeps `disputed_by`/`disputed_at` (who opened —
+/// never cleared), but the canceller lives only in the fact.
+typedef RetractionProvenance = ({
+  String? retractedBy,
+  DateTime? retractedAtUtc,
+});
+
+/// Lazily resolves the retraction fact for a queue item that returned to
+/// `pending` after a retract. Null when no retraction fact exists. RLS scopes
+/// the ledger read to the caller's org.
+final disputeRetractionProvenanceProvider = FutureProvider.autoDispose
+    .family<RetractionProvenance?, String>((ref, queueEntryId) async {
+      final row = await ref
+          .watch(supabaseClientProvider)
+          .from('sla_audit_ledger_v2')
+          .select('payload, occurred_at_utc')
+          .eq('type', 'DISPUTE_RETRACTED')
+          .eq('payload->>queue_entry_id', queueEntryId)
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (row == null) return null;
+      final payload = row['payload'] as Map<String, dynamic>?;
+      final occurred = row['occurred_at_utc'] as String?;
+      return (
+        retractedBy: payload?['retracted_by_user_id'] as String?,
+        retractedAtUtc: occurred == null
+            ? null
+            : DateTime.parse(occurred).toUtc(),
+      );
+    });
+
 // ── Contract name enrichment ──────────────────────────────────────────────────
 
 /// Resolves the human-readable contract name for a given [contractId].
@@ -274,6 +356,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     required String resolvedByUserId,
     required String actorEmail,
     String? resolutionReason,
+    String? reasonCode,
+    List<String> evidenceIds = const [],
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
@@ -286,6 +370,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           resolvedByUserId: resolvedByUserId,
           actorEmail: actorEmail,
           resolutionReason: resolutionReason,
+          reasonCode: reasonCode,
+          evidenceIds: evidenceIds,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,
@@ -409,6 +495,21 @@ final auditorQueueFilterProvider =
       AuditorQueueFilterNotifier,
       AuditorQueueFilter
     >(AuditorQueueFilterNotifier.new);
+
+/// When true, the `disputed` lane shows ONLY overdue items (resolution_due_at <
+/// now). Toggled on by the [SlaBreachBadge] drill-down; reset when the auditor
+/// changes the segmented filter.
+class DisputeOverdueOnlyNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final disputeOverdueOnlyProvider =
+    NotifierProvider.autoDispose<DisputeOverdueOnlyNotifier, bool>(
+      DisputeOverdueOnlyNotifier.new,
+    );
 
 class SealedSanctionsState {
   final List<SanctionQueueItemView> items;

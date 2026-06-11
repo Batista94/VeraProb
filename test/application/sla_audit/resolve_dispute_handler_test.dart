@@ -80,6 +80,7 @@ void main() {
   ResolveDisputeCommand command({
     DisputeResolution resolution = DisputeResolution.accept,
     String? resolutionReason = 'Contractor proved force majeure.',
+    String? reasonCode = 'THIRD_PARTY_INCIDENT',
     UserRole callerRole = UserRole.auditor,
     String organizationId = 'org-1',
   }) {
@@ -89,6 +90,7 @@ void main() {
       resolvedByUserId: 'auditor-1',
       actorEmail: 'auditor@veraprob.com',
       resolutionReason: resolutionReason,
+      reasonCode: reasonCode,
       callerRole: callerRole,
       organizationId: organizationId,
       sessionId: 'session-1',
@@ -181,30 +183,67 @@ void main() {
     });
   });
 
-  group('ResolveDisputeHandler - Reason validation', () {
-    test('accept requires reason >= 10 chars', () async {
+  group('ResolveDisputeHandler - Reason code validation (Q2/H6)', () {
+    test('accept requires a reason code', () async {
       await queueRepo.enqueue(makeDisputedEntry());
       await seedOpenDispute();
 
       await expectLater(
-        handler.handle(command(resolutionReason: 'short')),
+        handler.handle(command(reasonCode: null)),
         throwsA(isA<DomainException>()),
       );
     });
 
-    test('overturn requires reason >= 10 chars', () async {
+    test('overturn requires a reason code', () async {
       await queueRepo.enqueue(makeDisputedEntry());
       await seedOpenDispute();
 
       await expectLater(
         handler.handle(
-          command(resolution: DisputeResolution.overturn, resolutionReason: ''),
+          command(resolution: DisputeResolution.overturn, reasonCode: null),
         ),
         throwsA(isA<DomainException>()),
       );
     });
 
-    test('retract permits a null reason', () async {
+    test('OTHER without a >= 10 char description is rejected', () async {
+      await queueRepo.enqueue(makeDisputedEntry());
+      await seedOpenDispute();
+
+      await expectLater(
+        handler.handle(command(reasonCode: 'OTHER', resolutionReason: 'short')),
+        throwsA(isA<DomainException>()),
+      );
+    });
+
+    test('OTHER with a >= 10 char description passes', () async {
+      await queueRepo.enqueue(makeDisputedEntry());
+      await seedOpenDispute();
+
+      await expectLater(
+        handler.handle(
+          command(
+            reasonCode: 'OTHER',
+            resolutionReason: 'Detailed enough description.',
+          ),
+        ),
+        completes,
+      );
+    });
+
+    test('a non-OTHER code passes without free text', () async {
+      await queueRepo.enqueue(makeDisputedEntry());
+      await seedOpenDispute();
+
+      await expectLater(
+        handler.handle(
+          command(reasonCode: 'SENSOR_FAULT', resolutionReason: null),
+        ),
+        completes,
+      );
+    });
+
+    test('retract permits a null reason code and null reason', () async {
       await queueRepo.enqueue(makeDisputedEntry());
       await seedOpenDispute();
 
@@ -213,6 +252,7 @@ void main() {
           command(
             resolution: DisputeResolution.retract,
             resolutionReason: null,
+            reasonCode: null,
           ),
         ),
         completes,

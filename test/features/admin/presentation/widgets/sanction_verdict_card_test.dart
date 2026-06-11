@@ -97,6 +97,7 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
   int resolveDisputeCalls = 0;
   DisputeResolution? lastResolution;
   String? lastResolutionReason;
+  String? lastReasonCode;
 
   @override
   Future<void> resolveDispute({
@@ -105,6 +106,8 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
     required String resolvedByUserId,
     required String actorEmail,
     String? resolutionReason,
+    String? reasonCode,
+    List<String> evidenceIds = const [],
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
@@ -112,6 +115,7 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
     resolveDisputeCalls++;
     lastResolution = resolution;
     lastResolutionReason = resolutionReason;
+    lastReasonCode = reasonCode;
     state = const AsyncData(null);
   }
 
