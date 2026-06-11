@@ -55,7 +55,11 @@ interface BreachedFact {
   occurred_at_utc: string;
 }
 
-Deno.serve(async (req: Request): Promise<Response> => {
+export async function handler(
+  req: Request,
+  injectedSupabase?: any,
+  injectedResend?: any
+): Promise<Response> {
   // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -86,7 +90,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  const supabase = createClient(
+  const supabase = injectedSupabase || createClient(
     Deno.env.get("SUPABASE_URL")!,
     serviceRoleKey,
   );
@@ -154,7 +158,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       { status: 200, headers: { "Content-Type": "application/json" } },
     );
   }
-  const resend = new Resend(resendApiKey);
+  const resend = injectedResend || new Resend(resendApiKey);
 
   // ── Group pending facts by organization ─────────────────────────────────────
   const orgFactsMap = new Map<string, BreachedFact[]>();
@@ -303,4 +307,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }),
     { status: 200, headers: { "Content-Type": "application/json" } },
   );
-});
+}
+if (import.meta.main) {
+  Deno.serve(handler);
+}

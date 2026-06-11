@@ -57,7 +57,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   );
 });
 
-async function handler(
+export async function handler(
   ctx: SecurityContext,
   supabase: SupabaseClient,
   req: Request,
