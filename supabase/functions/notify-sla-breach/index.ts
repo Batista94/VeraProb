@@ -36,6 +36,7 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { Resend } from "npm:resend@4";
+import { signPayload } from "../shared/hmac_signer.ts";
 
 const FROM_ADDRESS = "VeraProb <alertas@resend.dev>";
 const NOTIFICATION_EVENT_TYPE = "SLA_BREACH_NOTIFICATION_SENT";
@@ -278,6 +279,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
             queue_entry_id: fact.payload.queue_entry_id,
             notified_emails: adminEmails,
             sent_at: now,
+            integrity_hash: await signPayload({ ledger_fact_id: fact.id, queue_entry_id: fact.payload.queue_entry_id, sent_at: now }), // INV-31
           },
         });
 
