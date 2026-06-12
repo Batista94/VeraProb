@@ -25,7 +25,7 @@ SELECT ok(
 -- ── T3: View direct privileges ───────────────────────────────────────────────
 SELECT table_privs_are('public', 'vw_device_heartbeat_status', 'anon', ARRAY[]::text[], 'anon has no privileges on vw_device_heartbeat_status');
 SELECT table_privs_are('public', 'vw_device_heartbeat_status', 'authenticated', ARRAY[]::text[], 'authenticated has no privileges on vw_device_heartbeat_status');
-SELECT table_privs_are('public', 'vw_device_heartbeat_status', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has SELECT and other privileges on vw_device_heartbeat_status');
+SELECT table_privs_are('public', 'vw_device_heartbeat_status', 'service_role', ARRAY['SELECT'], 'service_role has SELECT only on vw_device_heartbeat_status (read-only view, least privilege — 20260815000002)');
 
 -- ── T4: Dependent function exists ────────────────────────────────────────────
 SELECT has_function('public', 'get_device_heartbeat_status', ARRAY['uuid'], 'get_device_heartbeat_status(uuid) function exists');
