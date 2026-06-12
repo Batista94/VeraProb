@@ -76,6 +76,9 @@ const _entitySpecs = <EntitySpec>[
       'firstReviewerId',
       'peerReviewProposedAction',
       'peerReviewExpiresAtUtc',
+      'disputedAtUtc',
+      'disputedBy',
+      'resolutionDueAtUtc',
     ],
     // UI-enriched fields resolved asynchronously — not DB identity.
     excludedFields: ['contractName', 'windowStartUtc', 'windowEndUtc'],

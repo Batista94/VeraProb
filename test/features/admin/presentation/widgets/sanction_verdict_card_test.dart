@@ -1021,6 +1021,10 @@ void main() {
     });
   });
 
+  _sealedEvidenceAndStyleTests();
+}
+
+void _sealedEvidenceAndStyleTests() {
   group('SanctionVerdictCard — Sealed Evidence Action Button', () {
     testWidgets(
       'renders Visualizar Evidência Forense when status is applied and opens modal',
