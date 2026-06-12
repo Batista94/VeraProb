@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-06-10
-**Current Status:** Phase 10.6 (In Progress) · [NEXT: Phase 10.6 — Forensic Operations & Dispute Reality]
+**Revision:** 2026-06-12
+**Current Status:** Phase 10.6 (Core delivered) · [NEXT: validar CI E2E green + priorizar próximos itens BIZ]
 
 ---
 
@@ -9,9 +9,12 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| Tests | 1916 passing · 12 skipped · 0 failures ✅ |
-| Migrations | 245 applied ✅ |
+| DB Tests (pgTAP) | 824 passing · 63 files · `make test-db` ✅ |
+| Migrations | 264 applied ✅ (Phase 10.6 = 16) |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
+| CI Regression | MFA RPC `42501` → resolvido por `20260815000000` (re-run E2E pendente) ✅ |
+
+> **Regressão crítica fechada (2026-06-12):** `20260717000002` revogou `EXECUTE FROM PUBLIC` nas RPCs `record_mfa_failure`/`reset_mfa_lockout`/`check_mfa_lockout` sem re-grant explícito → `service_role` + `authenticated` perderam acesso. Quebrava login MFA do app (`SupabaseMfaRepository`) E `super-admin-proxy` (gate `check_mfa_lockout` em toda chamada → 500 → cascata de 85 falhas E2E + 9 integração). Fix `20260815000000` re-concede `EXECUTE` a `authenticated`+`service_role`; `anon` permanece revogado (intenção de segurança preservada). pgTAP 9/9.
 
 ---
 
@@ -41,19 +44,21 @@
 - [x] **Atomicidade total (RPC transacional):** Resolução de disputas (`accept`/`overturn`/`retract`) migrada para o RPC `resolve_dispute` `SECURITY DEFINER`: `lock (FOR UPDATE)` → re-check de status → append no ledger → update da fila → (overturn) selo de snapshot inline, tudo em UMA transação. Fecha a corrida TOCTOU (INV-3) e o buraco de não-atomicidade (INV-21). Hardening máximo: rejeita JWT nulo, sem grant a `anon`/`service_role`, RBAC server-side (`TENANT_ADMIN`/`AUDITOR`), `42501` idêntico para wrong-org/not-found (INV-26), índice único parcial por-partição como defesa-em-profundidade (`23505`). Twin-flaw corrigida: `seal_dispute_resolution_snapshot` agora fail-closed em JWT nulo. (approve/reject seguem como dívida pré-existente apontada por QA-Security.)
 - [x] **Dual-control (quatro-olhos) em vereditos de alto valor:** Acima de um threshold de `fineCents` (`organizations.dual_control_threshold_cents` + override por contrato; `COALESCE(contract, org)`), o veredito não vira terminal — entra em `pending_peer_review` exigindo um SEGUNDO auditor distinto. Cobre AMBAS direções (ENFORCE `approve`/`overturn` E WAIVE `reject`/`dispute-accept`) — o vetor de conluio real. Migrações `20260812000002` (schema: threshold org+contrato, status `pending_peer_review`, colunas `first_reviewer_id`/`peer_review_*`, novos fatos `PEER_REVIEW_*`) + `20260812000003` (RPCs: `approve`/`reject`/`resolve_dispute` `CREATE OR REPLACE` com branch de threshold; novas `confirm_peer_review`/`decline_peer_review`/`expire_stale_peer_reviews`). **Garantia matemática `reviewer2 != reviewer1`**: tanto `first_reviewer_id` quanto o confirmador derivam do JWT `sub` server-side — mesma pessoa ⇒ mesmo `sub` ⇒ `DualControlSelfApprovalException` (`P0001`); um auditor nunca solicita E confirma. Fato terminal carrega as DUAS assinaturas (trilha dual-signature SOC2). `fine_cents` lido do `verdict_evidence` selado (INV-15: threshold mudar em voo não altera veredito em andamento). TTL/expiry (anti-starvation, `expire_stale_peer_reviews` ator SYSTEM) + decline (qualquer auditor, incl. o requisitante). Domínio: enum `pendingPeerReview` + arcos no guard; handlers `ConfirmPeerReviewHandler`/`DeclinePeerReviewHandler`; UX: lane "Aguardando 2º Auditor" + confirm desabilitado para o requisitante. pgTAP 23/23 (+ schema 12/12), `make test-db` 594 PASS, `flutter analyze` limpo.
 
-### [ ] Phase 10.6 — Forensic Operations & Dispute Reality
+### [/] Phase 10.6 — Forensic Operations & Dispute Reality
 
-- [ ] **[near-term] Anexo de evidência do contratante:** "Aguardando Evidência" pressupõe que o contestante envia prova. Falta o canal de upload (foto/doc/telemetria externa) vinculado por `organization_id` (INV-1) e selado por SHA-256 (INV-9) — o auditor decide *sobre* algo.
-- [ ] **[near-term] Taxonomia de motivos (reason codes) vs texto livre:** `rejection_reason`/`resolutionReason` livres dificultam analytics e auditoria. Enum versionado de motivos (ex.: `FORCE_MAJEURE`, `SENSOR_FAULT`, `CONTRACT_EXCEPTION`) + campo livre opcional. Permite relatórios de "por que multas são inibidas".
-- [ ] **Trilha de "quem cancelou":** No retract, preservamos `reviewed_by` do disputante; o ledger `DISPUTE_RETRACTED` registra o cancelador. Expor essa cadeia na UI (timeline de estados do card) eleva a explicabilidade (INV-23).
-- [ ] **[near-term] SLA-timer de disputa (aging):** Toda disputa tem prazo de resolução (ex.: 5 dias úteis). Dashboard de "disputas vencendo/vencidas" + auto-escalonamento. Hoje uma disputa pode ficar `disputed` indefinidamente.
-- [ ] **[BIZ] Forensic Dispute Portal (ReadOnly):** Tela externa (link temporário/tokenizado) para que transportadores visualizem as evidências contra eles sem precisar de login no sistema core.
-- [ ] **[BIZ] Forensic Dispute Portal:** Limited external interface for carriers/drivers to view evidence snapshots and submit digital counter-proofs.
+> **Plano v3 (council-remediated) entregue 2026-06-12** — Componentes 1-5. Migrações `20260813000001`…`20260814000004` (15) + edge fns `verify-evidence-hash`, `notify-sla-breach`. `make test-db` 824 PASS. CI E2E pendente de re-run após fix do grant MFA (`20260815000000`).
+
+- [x] **[Comp 1] Anexo de evidência do contratante:** Canal de upload (foto/doc/telemetria externa) vinculado por `organization_id` (INV-1) e selado por SHA-256 (INV-9). Bucket de storage com gate por org + RPC `attach_dispute_evidence` + RPC `verify_evidence_hash`. O auditor decide *sobre* algo.
+- [x] **[Comp 2] Taxonomia de motivos (reason codes) vs texto livre:** Enum versionado de motivos agnóstico (B6: `SENSOR_FAULT`, `CONTRACT_EXCEPTION`, `OTHER`, `LEGACY_UNCLASSIFIED`…) + campo livre opcional. Colunas `rejection_reason_code`/`resolution_reason_code`. Feed de curadoria (`v_reason_code_curation_candidates`) para promover texto recorrente a códigos globais.
+- [x] **[Comp 3] Trilha de "quem cancelou":** No retract, `disputed_at`/`disputed_by` selados no open (INV-15) e NUNCA limpos (INV-23) — provenance sobrevive ao retract. Exposto na timeline do card + `RetractionProvenance` widget.
+- [x] **[Comp 3] SLA-timer de disputa (aging):** Prazo de resolução em dias úteis (`resolution_due_at`) com calendário de feriados por org (`organization_holidays`). `DisputeSlaChip` (countdown/overdue) no card. RPC `dispute_open` semeia o prazo.
+- [x] **[Comp 5.3] Forensic Dispute Portal (ReadOnly):** Tela externa tokenizada (link temporário TTL) para transportadores verem evidências sem login no core. Tokens (`dispute_portal_tokens`) + RPC `read_dispute_portal` + tipos de ledger de portal. (Stub ReadOnly; submissão de contraprova = backlog 10.7.)
+- [ ] **[BIZ] Forensic Dispute Portal (submissão):** Interface externa para carriers submeterem contraprovas digitais (além do ReadOnly entregue).
 - [x] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
 - [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
 - [ ] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
 - [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
-- [ ] **[BIZ] Human Verdict Affirmation:** Add 'Affirm Violation' (Seals Hash) or 'Inhibit Violation' (Mandatory comment) action buttons directly on the audit detail screen.
+- [x] **[Comp 5.4 · BIZ] Human Verdict Affirmation:** Botões `AFIRMAR VIOLAÇÃO` (sela hash) / `INIBIR VIOLAÇÃO` (comentário obrigatório) + fluxo de confirmação (`CONFIRMAR AFIRMAÇÃO`/`CONFIRMAR INIBIÇÃO`/`CANCELAR SOLICITAÇÃO`) direto no `SanctionVerdictCard`. Cobertura de widget 43 testes.
 - [x] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
 - [x] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
 - [ ] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual.
@@ -67,7 +72,7 @@
 
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
 - [ ] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
-- [ ] **Notificação/webhook na resolução:** Resend/PostHog/webhook ao contratante quando disputa é resolvida (transparência + reduz re-contestação). Já há stack Resend disponível.
+- [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
 
 ### [ ] Phase 10.8 — Shadow Processing & ROI Proving
 
