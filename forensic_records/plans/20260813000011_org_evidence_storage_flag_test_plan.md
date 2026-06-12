@@ -1,7 +1,7 @@
 # Plano de Testes — org_evidence_storage_flag
 
-**Migração:** `supabase/migrations/20260813000010_org_evidence_storage_flag.sql`
-**Teste pgTAP:** `supabase/tests/20260813000010_org_evidence_storage_flag_test.sql`
+**Migração:** `supabase/migrations/20260813000011_org_evidence_storage_flag.sql`
+**Teste pgTAP:** `supabase/tests/20260813000011_org_evidence_storage_flag_test.sql`
 **Invariantes:** INV-DB (ADD COLUMN com DEFAULT = instantâneo no PG11+; boolean
 dispensa CHECK), INV-1 (coluna viaja na linha da org, escopo via RLS).
 **Risco:** Baixo — uma única coluna booleana. Falha = gate de armazenamento não
