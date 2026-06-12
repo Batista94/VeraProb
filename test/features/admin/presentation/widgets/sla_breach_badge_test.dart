@@ -9,9 +9,7 @@ import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 Widget _host(List<Override> overrides) {
   return ProviderScope(
     overrides: overrides,
-    child: const MaterialApp(
-      home: Scaffold(body: SlaBreachBadge()),
-    ),
+    child: const MaterialApp(home: Scaffold(body: SlaBreachBadge())),
   );
 }
 

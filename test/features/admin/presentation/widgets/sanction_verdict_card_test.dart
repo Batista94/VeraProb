@@ -271,9 +271,7 @@ Widget _buildCard(
 
 /// Opens the dispute reason-code dropdown and selects the entry with [labelPt].
 Future<void> _selectReasonCode(WidgetTester tester, String labelPt) async {
-  await tester.tap(
-    find.byKey(const ValueKey('dispute-reason-code-dropdown')),
-  );
+  await tester.tap(find.byKey(const ValueKey('dispute-reason-code-dropdown')));
   await tester.pumpAndSettle();
   await tester.tap(find.text(labelPt).last);
   await tester.pumpAndSettle();
@@ -1274,30 +1272,29 @@ void main() {
   });
 
   group('SanctionVerdictCard — Retraction provenance (INV-23)', () {
-    testWidgets(
-      'pending item previously disputed surfaces RETRATADA trail',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 1600);
-        tester.view.devicePixelRatio = 1.0;
+    testWidgets('pending item previously disputed surfaces RETRATADA trail', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
 
-        await tester.pumpWidget(
-          _buildCard(
-            _makeItem(
-              status: SanctionReviewStatus.pending,
-              disputedAtUtc: DateTime.utc(2026, 1, 14, 9, 0),
-              disputedBy: 'auditor-7',
-            ),
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.pending,
+            disputedAtUtc: DateTime.utc(2026, 1, 14, 9, 0),
+            disputedBy: 'auditor-7',
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(find.text('SOLICITAÇÃO RETRATADA'), findsOneWidget);
-        expect(find.textContaining('Aberta por'), findsOneWidget);
-        expect(find.textContaining('Cancelada por'), findsOneWidget);
+      expect(find.text('SOLICITAÇÃO RETRATADA'), findsOneWidget);
+      expect(find.textContaining('Aberta por'), findsOneWidget);
+      expect(find.textContaining('Cancelada por'), findsOneWidget);
 
-        addTearDown(tester.view.resetPhysicalSize);
-      },
-    );
+      addTearDown(tester.view.resetPhysicalSize);
+    });
 
     testWidgets('plain pending item shows no retraction trail', (tester) async {
       tester.view.physicalSize = const Size(800, 1600);

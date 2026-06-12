@@ -2132,11 +2132,7 @@ class _RetractionProvenanceZone extends ConsumerWidget {
           children: [
             Row(
               children: [
-                const Icon(
-                  Icons.undo,
-                  size: 13,
-                  color: VeraProbColors.warning,
-                ),
+                const Icon(Icons.undo, size: 13, color: VeraProbColors.warning),
                 const SizedBox(width: 6),
                 Text(
                   'SOLICITAÇÃO RETRATADA',

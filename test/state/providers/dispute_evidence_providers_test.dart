@@ -112,9 +112,7 @@ void main() {
     final bytes = Uint8List.fromList([1, 2, 3, 4, 5]);
     final expected = sha256.convert(bytes).toString();
 
-    final controller = c.read(
-      disputeEvidenceControllerProvider(_qid).notifier,
-    );
+    final controller = c.read(disputeEvidenceControllerProvider(_qid).notifier);
     final ok = await controller.upload(
       fileName: 'laudo.png',
       mimeType: 'image/png',
@@ -132,9 +130,7 @@ void main() {
     final repo = _CapturingRepo();
     final c = _container(repo, orgId: null);
 
-    final controller = c.read(
-      disputeEvidenceControllerProvider(_qid).notifier,
-    );
+    final controller = c.read(disputeEvidenceControllerProvider(_qid).notifier);
     final ok = await controller.upload(
       fileName: 'x.png',
       mimeType: 'image/png',
