@@ -6,6 +6,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/widgets/sla_breach_badge.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/telemetry_sync_map.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 
@@ -165,6 +166,8 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
       };
     } else if (filter == AuditorQueueFilter.disputed) {
       final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
+      final overdueOnly = ref.watch(disputeOverdueOnlyProvider);
+      final now = DateTime.now().toUtc();
       return switch (sanctionsAsync) {
         AsyncLoading() => const Center(child: CircularProgressIndicator()),
         AsyncError(:final error) => Center(
@@ -173,22 +176,19 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
             style: const TextStyle(color: VeraProbColors.error),
           ),
         ),
-        AsyncData(:final value) =>
-          value.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Text(
-                      'Nenhuma sanção aguardando evidência.',
-                      style: TextStyle(color: VeraProbColors.textSecondary),
-                    ),
-                  ),
-                )
-              : ListView.separated(
-                  itemCount: value.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
-                ),
+        AsyncData(:final value) => _buildDisputedList(
+          ref,
+          overdueOnly
+              ? value
+                    .where(
+                      (i) =>
+                          i.resolutionDueAtUtc != null &&
+                          i.resolutionDueAtUtc!.isBefore(now),
+                    )
+                    .toList()
+              : value,
+          overdueOnly: overdueOnly,
+        ),
       };
     } else {
       final sealedState = ref.watch(sealedSanctionsNotifierProvider);
@@ -239,6 +239,94 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
         ],
       );
     }
+  }
+
+  /// Renders the `disputed` lane, optionally narrowed to the overdue cohort by
+  /// the [SlaBreachBadge] drill-down. When the drill-down is active a dismissible
+  /// banner makes the implicit filter explicit (Lesson #5: no silent state).
+  Widget _buildDisputedList(
+    WidgetRef ref,
+    List<SanctionQueueItemView> items, {
+    required bool overdueOnly,
+  }) {
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            overdueOnly
+                ? 'Nenhuma disputa vencida.'
+                : 'Nenhuma sanção aguardando evidência.',
+            style: const TextStyle(color: VeraProbColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final list = ListView.separated(
+      itemCount: items.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => SanctionVerdictCard(item: items[i]),
+    );
+
+    if (!overdueOnly) return list;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _OverdueFilterBanner(
+          count: items.length,
+          onClear: () =>
+              ref.read(disputeOverdueOnlyProvider.notifier).set(false),
+        ),
+        const SizedBox(height: 12),
+        Expanded(child: list),
+      ],
+    );
+  }
+}
+
+// ── Overdue drill-down banner ─────────────────────────────────────────────────
+
+/// Explicit indicator that the `disputed` lane is filtered to overdue items
+/// only (via the [SlaBreachBadge]). Tapping clears the filter back to all
+/// disputes.
+class _OverdueFilterBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onClear;
+
+  const _OverdueFilterBanner({required this.count, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    const red = VeraProbColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: red.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: red.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.alarm_outlined, size: 16, color: red),
+          const SizedBox(width: 10),
+          Text(
+            'Filtrando $count disputa(s) com SLA vencido',
+            style: const TextStyle(fontSize: 12, color: red),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: onClear,
+            style: TextButton.styleFrom(
+              foregroundColor: red,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+            child: const Text('LIMPAR'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -437,6 +525,8 @@ class _Header extends ConsumerWidget {
                   ],
                   selected: {filter},
                   onSelectionChanged: (newSelection) {
+                    // Manual filter change clears the breach-badge drill-down.
+                    ref.read(disputeOverdueOnlyProvider.notifier).set(false);
                     ref
                         .read(auditorQueueFilterProvider.notifier)
                         .setFilter(newSelection.first);
@@ -480,6 +570,7 @@ class _Header extends ConsumerWidget {
                   ),
                 ),
               ),
+            const SlaBreachBadge(),
             _SimulateButton(isNarrow: isNarrow),
           ],
         );

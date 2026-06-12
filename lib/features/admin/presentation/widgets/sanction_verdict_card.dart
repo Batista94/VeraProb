@@ -21,6 +21,7 @@ import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geoc
 import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
+import 'dispute_reason_code_dropdown.dart';
 import 'ghost_bar_widget.dart';
 import 'ingestion_health_widget.dart';
 import 'recurrence_badge_widget.dart';
@@ -50,6 +51,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   // Dispute resolution (disputed → *) — mutually exclusive reason fields.
   bool _showAcceptField = false;
   bool _showRefuseField = false;
+  // Structured taxonomy code (Componente 4.2). Required for accept/overturn;
+  // free-text becomes mandatory only when this equals 'OTHER'.
+  String? _selectedReasonCode;
   final _acceptReasonController = TextEditingController();
   bool _isDossierLoading = false;
   String? _dossierError;
@@ -367,6 +371,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                       (item.rejectionReason?.trim().isNotEmpty ?? false))
                     _RefusalReasonZone(reason: item.rejectionReason!.trim()),
 
+                  // ── Zona 4.3: Retraction provenance (re-pending verdicts) ─────
+                  // A `pending` item carrying a non-null disputedAtUtc was
+                  // disputed and later retracted — keep that trail visible
+                  // (INV-23) so a cancelled contestation is never a silent ghost.
+                  if (item.status == SanctionReviewStatus.pending &&
+                      item.disputedAtUtc != null)
+                    _RetractionProvenanceZone(item: item),
+
                   // ── Zona 4.5: Dossier Download ─────────────────────────────────
                   _DossierDownloadRow(
                     isLoading: _isDossierLoading,
@@ -402,20 +414,17 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                       child: _RejectReasonField(controller: _rejectController),
                     ),
-                  if (_showAcceptField)
+                  if (_showAcceptField || _showRefuseField)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                      child: _RejectReasonField(
-                        controller: _acceptReasonController,
-                        labelText: 'Motivo do aceite (mínimo 10 caracteres)',
-                      ),
-                    ),
-                  if (_showRefuseField)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-                      child: _RejectReasonField(
-                        controller: _rejectController,
-                        labelText: 'Motivo da recusa (mínimo 10 caracteres)',
+                      child: _DisputeReasonInput(
+                        isAccept: _showAcceptField,
+                        selectedCode: _selectedReasonCode,
+                        onCodeChanged: (code) =>
+                            setState(() => _selectedReasonCode = code),
+                        freeTextController: _showAcceptField
+                            ? _acceptReasonController
+                            : _rejectController,
                       ),
                     ),
 
@@ -440,23 +449,33 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   else if (item.status == SanctionReviewStatus.disputed)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-                      child: _DisputeResolutionRow(
-                        isLoading: isLoading,
-                        showAcceptField: _showAcceptField,
-                        showRefuseField: _showRefuseField,
-                        acceptController: _acceptReasonController,
-                        refuseController: _rejectController,
-                        onAcceptTap: () => setState(() {
-                          _showAcceptField = !_showAcceptField;
-                          _showRefuseField = false;
-                        }),
-                        onAcceptConfirm: _onAcceptDispute,
-                        onRefuseTap: () => setState(() {
-                          _showRefuseField = !_showRefuseField;
-                          _showAcceptField = false;
-                        }),
-                        onRefuseConfirm: _onRefuseDispute,
-                        onRetract: _onRetractDispute,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (item.resolutionDueAtUtc != null) ...[
+                            _DisputeSlaChip(dueAtUtc: item.resolutionDueAtUtc!),
+                            const SizedBox(height: 12),
+                          ],
+                          _DisputeResolutionRow(
+                            isLoading: isLoading,
+                            showAcceptField: _showAcceptField,
+                            showRefuseField: _showRefuseField,
+                            selectedReasonCode: _selectedReasonCode,
+                            acceptController: _acceptReasonController,
+                            refuseController: _rejectController,
+                            onAcceptTap: () => setState(() {
+                              _showAcceptField = !_showAcceptField;
+                              _showRefuseField = false;
+                            }),
+                            onAcceptConfirm: _onAcceptDispute,
+                            onRefuseTap: () => setState(() {
+                              _showRefuseField = !_showRefuseField;
+                              _showAcceptField = false;
+                            }),
+                            onRefuseConfirm: _onRefuseDispute,
+                            onRetract: _onRetractDispute,
+                          ),
+                        ],
                       ),
                     )
                   else if (item.status ==
@@ -882,18 +901,25 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     }
   }
 
-  Future<void> _onAcceptDispute() =>
-      _resolveDispute(DisputeResolution.accept, _acceptReasonController.text);
+  Future<void> _onAcceptDispute() => _resolveDispute(
+    DisputeResolution.accept,
+    _acceptReasonController.text,
+    _selectedReasonCode,
+  );
 
-  Future<void> _onRefuseDispute() =>
-      _resolveDispute(DisputeResolution.overturn, _rejectController.text);
+  Future<void> _onRefuseDispute() => _resolveDispute(
+    DisputeResolution.overturn,
+    _rejectController.text,
+    _selectedReasonCode,
+  );
 
   Future<void> _onRetractDispute() =>
-      _resolveDispute(DisputeResolution.retract, null);
+      _resolveDispute(DisputeResolution.retract, null, null);
 
   Future<void> _resolveDispute(
     DisputeResolution resolution,
     String? reason,
+    String? reasonCode,
   ) async {
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final email = ref.read(currentOperatorEmailProvider);
@@ -909,6 +935,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           resolutionReason: (trimmed == null || trimmed.isEmpty)
               ? null
               : trimmed,
+          reasonCode: reasonCode,
           callerRole: UserRole.auditor,
           organizationId: widget.item.organizationId,
           sessionId: sessionId,
@@ -926,6 +953,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       setState(() {
         _showAcceptField = false;
         _showRefuseField = false;
+        _selectedReasonCode = null;
       });
       _acceptReasonController.clear();
       _rejectController.clear();
@@ -1635,6 +1663,7 @@ class _DisputeResolutionRow extends StatelessWidget {
   final bool isLoading;
   final bool showAcceptField;
   final bool showRefuseField;
+  final String? selectedReasonCode;
   final TextEditingController acceptController;
   final TextEditingController refuseController;
   final VoidCallback onAcceptTap;
@@ -1647,6 +1676,7 @@ class _DisputeResolutionRow extends StatelessWidget {
     required this.isLoading,
     required this.showAcceptField,
     required this.showRefuseField,
+    required this.selectedReasonCode,
     required this.acceptController,
     required this.refuseController,
     required this.onAcceptTap,
@@ -1667,7 +1697,10 @@ class _DisputeResolutionRow extends StatelessWidget {
           ListenableBuilder(
             listenable: acceptController,
             builder: (_, _) {
-              final canConfirm = acceptController.text.trim().length >= 10;
+              final canConfirm = _disputeReasonSatisfied(
+                selectedReasonCode,
+                acceptController,
+              );
               return FilledButton.icon(
                 onPressed: isLoading || !canConfirm ? null : onAcceptConfirm,
                 icon: const Icon(Icons.check_circle_outline, size: 16),
@@ -1699,7 +1732,10 @@ class _DisputeResolutionRow extends StatelessWidget {
           ListenableBuilder(
             listenable: refuseController,
             builder: (_, _) {
-              final canConfirm = refuseController.text.trim().length >= 10;
+              final canConfirm = _disputeReasonSatisfied(
+                selectedReasonCode,
+                refuseController,
+              );
               return FilledButton.icon(
                 onPressed: isLoading || !canConfirm ? null : onRefuseConfirm,
                 icon: const Icon(Icons.gavel_rounded, size: 16),
@@ -1915,5 +1951,224 @@ class _ComplianceBadgeZone extends ConsumerWidget {
         );
       }(),
     };
+  }
+}
+
+// ── Componente 4.2: dispute reason input + SLA chip + retraction provenance ──
+
+/// Confirm-button gate (Componente 4.2): a structured [code] is mandatory; the
+/// free-text complement is required (>= 10 chars) ONLY for the `OTHER` code.
+/// Mirrors `ResolveDisputeHandler._assertReasonCode` so the UI never offers a
+/// resolution the application layer would reject.
+bool _disputeReasonSatisfied(String? code, TextEditingController controller) {
+  if (code == null) return false;
+  if (code == 'OTHER') return controller.text.trim().length >= 10;
+  return true;
+}
+
+/// Structured reason selector for a dispute resolution arc (accept/overturn).
+///
+/// Surfaces the [DisputeReasonCodeDropdown] (B6 taxonomy) and reveals the
+/// free-text field ONLY when `OTHER` is chosen — the 14 named codes are
+/// self-describing, so forcing prose on them is friction (Q2). The free-text is
+/// the human-readable description the handler then requires for `OTHER`.
+class _DisputeReasonInput extends StatelessWidget {
+  final bool isAccept;
+  final String? selectedCode;
+  final ValueChanged<String?> onCodeChanged;
+  final TextEditingController freeTextController;
+
+  const _DisputeReasonInput({
+    required this.isAccept,
+    required this.selectedCode,
+    required this.onCodeChanged,
+    required this.freeTextController,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isOther = selectedCode == 'OTHER';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DisputeReasonCodeDropdown(
+          selectedCode: selectedCode,
+          onChanged: onCodeChanged,
+          label: isAccept
+              ? 'Motivo do aceite (taxonomia)'
+              : 'Motivo da recusa (taxonomia)',
+        ),
+        if (isOther) ...[
+          const SizedBox(height: 10),
+          _RejectReasonField(
+            controller: freeTextController,
+            labelText: 'Descreva o motivo (mínimo 10 caracteres)',
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// SLA countdown chip for a `disputed` card (Componente 4.2c / 3 timer).
+///
+/// Reads `resolution_due_at`: green when comfortably ahead, amber within
+/// [kDisputeSlaWarningDays], red "VENCIDA" once past due. Makes the auditor's
+/// resolution deadline legible at a glance (the breach badge is the fleet-wide
+/// counterpart).
+class _DisputeSlaChip extends StatelessWidget {
+  final DateTime dueAtUtc;
+  const _DisputeSlaChip({required this.dueAtUtc});
+
+  static String _humanize(Duration d) {
+    final days = d.inDays;
+    final hours = d.inHours % 24;
+    if (days > 0) return '${days}d ${hours}h';
+    if (d.inHours > 0) return '${d.inHours}h ${d.inMinutes % 60}min';
+    return '${d.inMinutes}min';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now().toUtc();
+    final remaining = dueAtUtc.difference(now);
+    final overdue = remaining.isNegative;
+    final soon =
+        !overdue && remaining <= const Duration(days: kDisputeSlaWarningDays);
+
+    final color = overdue
+        ? VeraProbColors.error
+        : soon
+        ? VeraProbColors.warning
+        : VeraProbColors.onTime;
+    final label = overdue
+        ? 'SLA VENCIDA há ${_humanize(remaining.abs())}'
+        : 'SLA: ${_humanize(remaining)} restantes';
+    final icon = overdue
+        ? Icons.alarm_off_outlined
+        : soon
+        ? Icons.alarm_outlined
+        : Icons.timelapse_outlined;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.4,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Zona 4.3: provenance trail for a verdict that was disputed then retracted.
+///
+/// Shows WHO opened the contestation (kept on the queue row) and — enriched
+/// from the `DISPUTE_RETRACTED` ledger fact — WHO cancelled it and the elapsed
+/// gap. Keeps a cancelled dispute auditable (INV-23) instead of vanishing back
+/// into the pending queue without a trace.
+class _RetractionProvenanceZone extends ConsumerWidget {
+  final SanctionQueueItemView item;
+  const _RetractionProvenanceZone({required this.item});
+
+  static String _shortActor(String? id) {
+    if (id == null || id.trim().isEmpty) return 'desconhecido';
+    final v = id.trim();
+    return v.length <= 8 ? v : '${v.substring(0, 8)}…';
+  }
+
+  static String _formatLocal(DateTime utc) {
+    final l = utc.toLocal();
+    return '${l.day.toString().padLeft(2, '0')}/'
+        '${l.month.toString().padLeft(2, '0')} '
+        '${l.hour.toString().padLeft(2, '0')}:'
+        '${l.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provenance = ref
+        .watch(disputeRetractionProvenanceProvider(item.id))
+        .value;
+
+    final openedBy = _shortActor(item.disputedBy);
+    final openedAt = item.disputedAtUtc;
+    final retractedBy = _shortActor(provenance?.retractedBy);
+    final retractedAt = provenance?.retractedAtUtc;
+    final gap = (openedAt != null && retractedAt != null)
+        ? _DisputeSlaChip._humanize(retractedAt.difference(openedAt).abs())
+        : null;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.warning.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: VeraProbColors.warning.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.undo,
+                  size: 13,
+                  color: VeraProbColors.warning,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'SOLICITAÇÃO RETRATADA',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.warning,
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Aberta por $openedBy'
+              '${openedAt != null ? ' em ${_formatLocal(openedAt)}' : ''}.',
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+            Text(
+              'Cancelada por $retractedBy'
+              '${retractedAt != null ? ' em ${_formatLocal(retractedAt)}' : ''}'
+              '${gap != null ? ' (após $gap)' : ''}.',
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

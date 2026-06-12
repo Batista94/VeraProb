@@ -10,6 +10,7 @@ import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/dispute_reason_code.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
@@ -19,6 +20,7 @@ import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geoc
 import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/dispute_reason_code_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -73,6 +75,25 @@ class _MockTenantValidationService extends TenantValidationService {
 }
 
 final _fixedUtc = DateTime.utc(2026, 1, 15, 12, 0);
+
+/// Minimal grouped catalogue for the reason-code dropdown (Componente 4.2):
+/// one named TECHNICAL code + OTHER, keeping the test menu short/deterministic.
+const _testReasonCodes = <DisputeReasonCode>[
+  DisputeReasonCode(
+    code: 'SENSOR_FAULT',
+    category: 'TECHNICAL',
+    labelPt: 'Falha de Sensor',
+    labelEn: 'Sensor Fault',
+    isActive: true,
+  ),
+  DisputeReasonCode(
+    code: 'OTHER',
+    category: 'OTHER',
+    labelPt: 'Outro (ver comentário)',
+    labelEn: 'Other',
+    isActive: true,
+  ),
+];
 
 class _LoadingActionNotifier extends SanctionActionNotifier {
   _LoadingActionNotifier() : super('test-id');
@@ -162,6 +183,9 @@ SanctionQueueItemView _makeItem({
   String? vehiclePlate = 'TST-0001',
   String? operatorName = 'João Silva',
   String? rejectionReason,
+  DateTime? resolutionDueAtUtc,
+  DateTime? disputedAtUtc,
+  String? disputedBy,
 }) {
   final evidence = VerdictEvidence.create(
     clauseRef: clauseRef,
@@ -190,6 +214,9 @@ SanctionQueueItemView _makeItem({
     vehiclePlate: vehiclePlate,
     operatorName: operatorName,
     rejectionReason: rejectionReason,
+    resolutionDueAtUtc: resolutionDueAtUtc,
+    disputedAtUtc: disputedAtUtc,
+    disputedBy: disputedBy,
   );
 }
 
@@ -202,6 +229,8 @@ List<Override> _baseOverrides({
     contractNameProvider.overrideWith((ref, id) async => contractName),
     pendingSanctionsStreamProvider.overrideWith((ref) => Stream.value([item])),
     sanctionWindowProvider.overrideWith((ref, setId) async => null),
+    disputeReasonCodesProvider.overrideWith((ref) async => _testReasonCodes),
+    disputeRetractionProvenanceProvider.overrideWith((ref, id) async => null),
     sanctionActionStateProvider.overrideWith2((_) => notifier),
     tenantValidationServiceProvider.overrideWithValue(
       _MockTenantValidationService(),
@@ -238,6 +267,16 @@ Widget _buildCard(
       ),
     ),
   );
+}
+
+/// Opens the dispute reason-code dropdown and selects the entry with [labelPt].
+Future<void> _selectReasonCode(WidgetTester tester, String labelPt) async {
+  await tester.tap(
+    find.byKey(const ValueKey('dispute-reason-code-dropdown')),
+  );
+  await tester.pumpAndSettle();
+  await tester.tap(find.text(labelPt).last);
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -746,7 +785,55 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('ACEITAR reveals reason field; CONFIRMAR ACEITE gated at 10', (
+    testWidgets(
+      'ACEITAR: confirm gated on reason code; named code needs no free-text',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        final notifier = _MockSanctionActionNotifier();
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(status: SanctionReviewStatus.disputed),
+            notifier: notifier,
+          ),
+        );
+        await tester.pump();
+
+        // Reveal the reason-code dropdown.
+        await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
+        await tester.pumpAndSettle();
+        expect(
+          find.byKey(const ValueKey('dispute-reason-code-dropdown')),
+          findsOneWidget,
+        );
+
+        // No code yet → CONFIRMAR ACEITE disabled.
+        FilledButton acceptBtn() => tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('CONFIRMAR ACEITE'),
+                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              )
+              .first,
+        );
+        expect(acceptBtn().onPressed, isNull);
+
+        // Named code → enabled WITHOUT a free-text complement.
+        await _selectReasonCode(tester, 'Falha de Sensor');
+        expect(acceptBtn().onPressed, isNotNull);
+
+        await tester.tap(find.text('CONFIRMAR ACEITE'));
+        await tester.pump();
+        expect(notifier.resolveDisputeCalls, 1);
+        expect(notifier.lastResolution, DisputeResolution.accept);
+        expect(notifier.lastReasonCode, 'SENSOR_FAULT');
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets('ACEITAR: OTHER code reveals free-text gated at 10 chars', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -761,54 +848,43 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(TextField), findsNothing);
-
       await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
-      await tester.pump();
-      expect(find.byType(TextField), findsOneWidget);
+      await tester.pumpAndSettle();
+
+      await _selectReasonCode(tester, 'Outro (ver comentário)');
+
+      // Free-text field now present (in addition to the dropdown's field).
+      final freeText = find.byType(TextField).last;
+      FilledButton acceptBtn() => tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR ACEITE'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
 
       // < 10 chars → disabled.
-      await tester.enterText(find.byType(TextField), 'curto');
+      await tester.enterText(freeText, 'curto');
       await tester.pump();
-      var btn = tester.widget<FilledButton>(
-        find
-            .ancestor(
-              of: find.text('CONFIRMAR ACEITE'),
-              matching: find.byWidgetPredicate((w) => w is FilledButton),
-            )
-            .first,
-      );
-      expect(btn.onPressed, isNull);
+      expect(acceptBtn().onPressed, isNull);
 
-      // >= 10 chars → enabled, fires accept.
-      await tester.enterText(
-        find.byType(TextField),
-        'Justificativa do contratante procede.',
-      );
+      // >= 10 chars → enabled, fires accept with OTHER + description.
+      await tester.enterText(freeText, 'Descrição detalhada do motivo.');
       await tester.pump();
-      btn = tester.widget<FilledButton>(
-        find
-            .ancestor(
-              of: find.text('CONFIRMAR ACEITE'),
-              matching: find.byWidgetPredicate((w) => w is FilledButton),
-            )
-            .first,
-      );
-      expect(btn.onPressed, isNotNull);
+      expect(acceptBtn().onPressed, isNotNull);
 
       await tester.tap(find.text('CONFIRMAR ACEITE'));
       await tester.pump();
       expect(notifier.resolveDisputeCalls, 1);
       expect(notifier.lastResolution, DisputeResolution.accept);
-      expect(
-        notifier.lastResolutionReason,
-        'Justificativa do contratante procede.',
-      );
+      expect(notifier.lastReasonCode, 'OTHER');
+      expect(notifier.lastResolutionReason, 'Descrição detalhada do motivo.');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('RECUSAR JUSTIFICATIVA fires overturn with reason', (
+    testWidgets('RECUSAR JUSTIFICATIVA fires overturn with reason code', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -824,23 +900,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('RECUSAR JUSTIFICATIVA'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      await tester.enterText(
-        find.byType(TextField),
-        'Evidência insuficiente; multa mantida.',
-      );
-      await tester.pump();
+      await _selectReasonCode(tester, 'Falha de Sensor');
 
       await tester.tap(find.text('CONFIRMAR RECUSA'));
       await tester.pump();
 
       expect(notifier.resolveDisputeCalls, 1);
       expect(notifier.lastResolution, DisputeResolution.overturn);
-      expect(
-        notifier.lastResolutionReason,
-        'Evidência insuficiente; multa mantida.',
-      );
+      expect(notifier.lastReasonCode, 'SENSOR_FAULT');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -1142,6 +1211,102 @@ void main() {
       ); // limit + delta = 80.0 + 5.0 = 85.0 (rendered separately from unit)
       expect(find.text('80.0 km/h'), findsOneWidget); // limit
       expect(find.text('+5.0 km/h'), findsOneWidget); // excess
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+
+  group('SanctionVerdictCard — Dispute SLA chip (Componente 4.2c)', () {
+    testWidgets('overdue deadline renders VENCIDA chip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+
+      final due = DateTime.now().toUtc().subtract(const Duration(days: 1));
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.disputed,
+            resolutionDueAtUtc: due,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('SLA VENCIDA'), findsOneWidget);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('future deadline renders restantes chip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+
+      final due = DateTime.now().toUtc().add(const Duration(days: 5));
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.disputed,
+            resolutionDueAtUtc: due,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('restantes'), findsOneWidget);
+      expect(find.textContaining('SLA VENCIDA'), findsNothing);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('disputed without deadline shows no chip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.disputed)),
+      );
+      await tester.pump();
+
+      expect(find.textContaining('SLA'), findsNothing);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
+
+  group('SanctionVerdictCard — Retraction provenance (INV-23)', () {
+    testWidgets(
+      'pending item previously disputed surfaces RETRATADA trail',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(
+              status: SanctionReviewStatus.pending,
+              disputedAtUtc: DateTime.utc(2026, 1, 14, 9, 0),
+              disputedBy: 'auditor-7',
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('SOLICITAÇÃO RETRATADA'), findsOneWidget);
+        expect(find.textContaining('Aberta por'), findsOneWidget);
+        expect(find.textContaining('Cancelada por'), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets('plain pending item shows no retraction trail', (tester) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(_buildCard(_makeItem()));
+      await tester.pump();
+
+      expect(find.text('SOLICITAÇÃO RETRATADA'), findsNothing);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
