@@ -770,8 +770,8 @@ void main() {
       await tester.pump();
 
       expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
-      expect(find.text('ACEITAR JUSTIFICATIVA'), findsOneWidget);
-      expect(find.text('RECUSAR JUSTIFICATIVA'), findsOneWidget);
+      expect(find.text('INIBIR VIOLAÇÃO'), findsOneWidget);
+      expect(find.text('AFIRMAR VIOLAÇÃO'), findsOneWidget);
       expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
       // Pending-only controls must NOT leak into a disputed card.
       expect(find.text('SELAR VEREDITO'), findsNothing);
@@ -784,7 +784,7 @@ void main() {
     });
 
     testWidgets(
-      'ACEITAR: confirm gated on reason code; named code needs no free-text',
+      'INIBIR: confirm requires reason code AND a mandatory comment (5.4)',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
         tester.view.devicePixelRatio = 1.0;
@@ -798,40 +798,58 @@ void main() {
         );
         await tester.pump();
 
-        // Reveal the reason-code dropdown.
-        await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
+        // Reveal the reason-code dropdown + mandatory comment field.
+        await tester.tap(find.text('INIBIR VIOLAÇÃO'));
         await tester.pumpAndSettle();
         expect(
           find.byKey(const ValueKey('dispute-reason-code-dropdown')),
           findsOneWidget,
         );
 
-        // No code yet → CONFIRMAR ACEITE disabled.
-        FilledButton acceptBtn() => tester.widget<FilledButton>(
+        FilledButton inhibitBtn() => tester.widget<FilledButton>(
           find
               .ancestor(
-                of: find.text('CONFIRMAR ACEITE'),
+                of: find.text('CONFIRMAR INIBIÇÃO'),
                 matching: find.byWidgetPredicate((w) => w is FilledButton),
               )
               .first,
         );
-        expect(acceptBtn().onPressed, isNull);
 
-        // Named code → enabled WITHOUT a free-text complement.
+        // No code, no comment → disabled.
+        expect(inhibitBtn().onPressed, isNull);
+
+        // A named code ALONE is NOT enough — forgiving a fine demands prose.
         await _selectReasonCode(tester, 'Falha de Sensor');
-        expect(acceptBtn().onPressed, isNotNull);
+        expect(inhibitBtn().onPressed, isNull);
 
-        await tester.tap(find.text('CONFIRMAR ACEITE'));
+        // Comment < 10 chars → still disabled.
+        await tester.enterText(find.byType(TextField).last, 'curto');
+        await tester.pump();
+        expect(inhibitBtn().onPressed, isNull);
+
+        // Named code + comment >= 10 → enabled; fires accept with code + prose.
+        await tester.enterText(
+          find.byType(TextField).last,
+          'Sensor com falha comprovada em laudo.',
+        );
+        await tester.pump();
+        expect(inhibitBtn().onPressed, isNotNull);
+
+        await tester.tap(find.text('CONFIRMAR INIBIÇÃO'));
         await tester.pump();
         expect(notifier.resolveDisputeCalls, 1);
         expect(notifier.lastResolution, DisputeResolution.accept);
         expect(notifier.lastReasonCode, 'SENSOR_FAULT');
+        expect(
+          notifier.lastResolutionReason,
+          'Sensor com falha comprovada em laudo.',
+        );
 
         addTearDown(tester.view.resetPhysicalSize);
       },
     );
 
-    testWidgets('ACEITAR: OTHER code reveals free-text gated at 10 chars', (
+    testWidgets('AFIRMAR: OTHER code reveals free-text gated at 10 chars', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -846,17 +864,17 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('ACEITAR JUSTIFICATIVA'));
+      await tester.tap(find.text('AFIRMAR VIOLAÇÃO'));
       await tester.pumpAndSettle();
 
       await _selectReasonCode(tester, 'Outro (ver comentário)');
 
       // Free-text field now present (in addition to the dropdown's field).
       final freeText = find.byType(TextField).last;
-      FilledButton acceptBtn() => tester.widget<FilledButton>(
+      FilledButton affirmBtn() => tester.widget<FilledButton>(
         find
             .ancestor(
-              of: find.text('CONFIRMAR ACEITE'),
+              of: find.text('CONFIRMAR AFIRMAÇÃO'),
               matching: find.byWidgetPredicate((w) => w is FilledButton),
             )
             .first,
@@ -865,52 +883,61 @@ void main() {
       // < 10 chars → disabled.
       await tester.enterText(freeText, 'curto');
       await tester.pump();
-      expect(acceptBtn().onPressed, isNull);
+      expect(affirmBtn().onPressed, isNull);
 
-      // >= 10 chars → enabled, fires accept with OTHER + description.
+      // >= 10 chars → enabled, fires overturn with OTHER + description.
       await tester.enterText(freeText, 'Descrição detalhada do motivo.');
       await tester.pump();
-      expect(acceptBtn().onPressed, isNotNull);
+      expect(affirmBtn().onPressed, isNotNull);
 
-      await tester.tap(find.text('CONFIRMAR ACEITE'));
+      await tester.tap(find.text('CONFIRMAR AFIRMAÇÃO'));
       await tester.pump();
       expect(notifier.resolveDisputeCalls, 1);
-      expect(notifier.lastResolution, DisputeResolution.accept);
+      expect(notifier.lastResolution, DisputeResolution.overturn);
       expect(notifier.lastReasonCode, 'OTHER');
       expect(notifier.lastResolutionReason, 'Descrição detalhada do motivo.');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('RECUSAR JUSTIFICATIVA fires overturn with reason code', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets(
+      'AFIRMAR: named code fires overturn without a comment; seals hash cue',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
 
-      final notifier = _MockSanctionActionNotifier();
-      await tester.pumpWidget(
-        _buildCard(
-          _makeItem(status: SanctionReviewStatus.disputed),
-          notifier: notifier,
-        ),
-      );
-      await tester.pump();
+        final notifier = _MockSanctionActionNotifier();
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(status: SanctionReviewStatus.disputed),
+            notifier: notifier,
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.text('RECUSAR JUSTIFICATIVA'));
-      await tester.pumpAndSettle();
+        // Hash-seal cue is hidden until the affirm arc is opened.
+        expect(find.textContaining('sela o hash'), findsNothing);
 
-      await _selectReasonCode(tester, 'Falha de Sensor');
+        await tester.tap(find.text('AFIRMAR VIOLAÇÃO'));
+        await tester.pumpAndSettle();
 
-      await tester.tap(find.text('CONFIRMAR RECUSA'));
-      await tester.pump();
+        // 5.4: affirming surfaces the immutable-seal cue (INV-21).
+        expect(find.textContaining('sela o hash'), findsOneWidget);
 
-      expect(notifier.resolveDisputeCalls, 1);
-      expect(notifier.lastResolution, DisputeResolution.overturn);
-      expect(notifier.lastReasonCode, 'SENSOR_FAULT');
+        // Named code alone enables affirm — the sealed hash is the evidence.
+        await _selectReasonCode(tester, 'Falha de Sensor');
 
-      addTearDown(tester.view.resetPhysicalSize);
-    });
+        await tester.tap(find.text('CONFIRMAR AFIRMAÇÃO'));
+        await tester.pump();
+
+        expect(notifier.resolveDisputeCalls, 1);
+        expect(notifier.lastResolution, DisputeResolution.overturn);
+        expect(notifier.lastReasonCode, 'SENSOR_FAULT');
+        expect(notifier.lastResolutionReason, isNull);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
 
     testWidgets('CANCELAR SOLICITAÇÃO retracts with no reason, no field', (
       tester,

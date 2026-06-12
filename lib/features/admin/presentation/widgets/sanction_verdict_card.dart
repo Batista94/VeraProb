@@ -1650,11 +1650,16 @@ class _VerdictActionRow extends StatelessWidget {
   }
 }
 
-/// Zona 5 (disputed): inline resolution controls for a contested verdict.
+/// Zona 5 (disputed): inline Human Verdict Affirmation controls for a contested
+/// verdict (Componente 5.4).
 ///
-/// Mirrors [_VerdictActionRow] but closes the dispute loop (INV-23):
-/// - ACEITAR JUSTIFICATIVA → `disputed → rejected` (fine inhibited), reason ≥10.
-/// - RECUSAR JUSTIFICATIVA → `disputed → applied` (fine upheld, snapshot), reason ≥10.
+/// Mirrors [_VerdictActionRow] but closes the dispute loop (INV-23) with a
+/// differentiated human signature — never a rubber-stamp:
+/// - AFIRMAR VIOLAÇÃO → `disputed → applied` (fine upheld; seals the evidence
+///   hash inline, INV-21), structured reason code (free-text only for `OTHER`).
+/// - INIBIR VIOLAÇÃO → `disputed → rejected` (fine forgiven), structured reason
+///   code AND a mandatory written comment (≥10) — forgiving a computed penalty
+///   must carry human prose on record.
 /// - CANCELAR SOLICITAÇÃO → `disputed → pending` (retract), no reason.
 ///
 /// Inline (not modal) to avoid `barrierDismissible:false` stacking (Lesson 4)
@@ -1692,19 +1697,19 @@ class _DisputeResolutionRow extends StatelessWidget {
       spacing: 8,
       runSpacing: 8,
       children: [
-        // ACEITAR — accepts the contractor's justification (fine inhibited).
+        // INIBIR VIOLAÇÃO — forgives the fine; demands a written comment (5.4).
         if (showAcceptField)
           ListenableBuilder(
             listenable: acceptController,
             builder: (_, _) {
-              final canConfirm = _disputeReasonSatisfied(
+              final canConfirm = _inhibitionReasonSatisfied(
                 selectedReasonCode,
                 acceptController,
               );
               return FilledButton.icon(
                 onPressed: isLoading || !canConfirm ? null : onAcceptConfirm,
                 icon: const Icon(Icons.check_circle_outline, size: 16),
-                label: const Text('CONFIRMAR ACEITE'),
+                label: const Text('CONFIRMAR INIBIÇÃO'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VeraProbColors.success,
                   foregroundColor: VeraProbColors.background,
@@ -1720,14 +1725,14 @@ class _DisputeResolutionRow extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: isLoading ? null : onAcceptTap,
             icon: const Icon(Icons.check_circle_outline, size: 16),
-            label: const Text('ACEITAR JUSTIFICATIVA'),
+            label: const Text('INIBIR VIOLAÇÃO'),
             style: OutlinedButton.styleFrom(
               foregroundColor: VeraProbColors.success,
               side: const BorderSide(color: VeraProbColors.success),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
-        // RECUSAR — refuses the justification (fine upheld → applied, snapshot).
+        // AFIRMAR VIOLAÇÃO — upholds the fine; seals the evidence hash (5.4).
         if (showRefuseField)
           ListenableBuilder(
             listenable: refuseController,
@@ -1736,15 +1741,19 @@ class _DisputeResolutionRow extends StatelessWidget {
                 selectedReasonCode,
                 refuseController,
               );
-              return FilledButton.icon(
-                onPressed: isLoading || !canConfirm ? null : onRefuseConfirm,
-                icon: const Icon(Icons.gavel_rounded, size: 16),
-                label: const Text('CONFIRMAR RECUSA'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: VeraProbColors.error,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+              return Tooltip(
+                message:
+                    'Afirmar sela o hash da evidência (INV-21) — veredito imutável',
+                child: FilledButton.icon(
+                  onPressed: isLoading || !canConfirm ? null : onRefuseConfirm,
+                  icon: const Icon(Icons.gavel_rounded, size: 16),
+                  label: const Text('CONFIRMAR AFIRMAÇÃO'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VeraProbColors.error,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               );
@@ -1754,7 +1763,7 @@ class _DisputeResolutionRow extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: isLoading ? null : onRefuseTap,
             icon: const Icon(Icons.gavel_rounded, size: 16),
-            label: const Text('RECUSAR JUSTIFICATIVA'),
+            label: const Text('AFIRMAR VIOLAÇÃO'),
             style: OutlinedButton.styleFrom(
               foregroundColor: VeraProbColors.error,
               side: const BorderSide(color: VeraProbColors.error),
@@ -1966,6 +1975,18 @@ bool _disputeReasonSatisfied(String? code, TextEditingController controller) {
   return true;
 }
 
+/// Inibir Violação gate (Componente 5.4): inhibiting a computed penalty ALWAYS
+/// demands a written comment (>= 10 chars) on top of the structured code — a
+/// forgiven fine carries human prose on record, never a rubber-stamp. Stricter
+/// than [_disputeReasonSatisfied], which only forces prose for the `OTHER` code.
+bool _inhibitionReasonSatisfied(
+  String? code,
+  TextEditingController controller,
+) {
+  if (code == null) return false;
+  return controller.text.trim().length >= 10;
+}
+
 /// Structured reason selector for a dispute resolution arc (accept/overturn).
 ///
 /// Surfaces the [DisputeReasonCodeDropdown] (B6 taxonomy) and reveals the
@@ -1988,6 +2009,10 @@ class _DisputeReasonInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isOther = selectedCode == 'OTHER';
+    // Inibir Violação (5.4): the written comment is ALWAYS mandatory — forgiving
+    // a computed fine demands human prose. Afirmar keeps free-text only for
+    // `OTHER`, since the sealed hash is itself the upholding evidence.
+    final showFreeText = isAccept || isOther;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1995,14 +2020,37 @@ class _DisputeReasonInput extends StatelessWidget {
           selectedCode: selectedCode,
           onChanged: onCodeChanged,
           label: isAccept
-              ? 'Motivo do aceite (taxonomia)'
-              : 'Motivo da recusa (taxonomia)',
+              ? 'Motivo da inibição (taxonomia)'
+              : 'Motivo da afirmação (taxonomia)',
         ),
-        if (isOther) ...[
+        if (!isAccept) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              const Icon(
+                Icons.lock_outline,
+                size: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Afirmar sela o hash da evidência — veredito imutável (INV-21).',
+                  style: VeraProbTypography.caption.copyWith(
+                    color: VeraProbColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+        if (showFreeText) ...[
           const SizedBox(height: 10),
           _RejectReasonField(
             controller: freeTextController,
-            labelText: 'Descreva o motivo (mínimo 10 caracteres)',
+            labelText: isAccept
+                ? 'Comentário obrigatório (mínimo 10 caracteres)'
+                : 'Descreva o motivo (mínimo 10 caracteres)',
           ),
         ],
       ],
