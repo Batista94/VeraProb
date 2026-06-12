@@ -4,6 +4,7 @@ import 'package:veraprob/application/shared/idempotent_handler_mixin.dart';
 import 'package:veraprob/domain/sla_audit/contract.dart';
 import 'package:veraprob/domain/sla_audit/contract_repository.dart';
 import 'package:veraprob/domain/sla_audit/contract_events.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -28,6 +29,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
   final PlanDeclarationRepository _repository;
   final SlaAuditLedgerRepository _ledger;
   final ContractRepository _contractRepository;
+  final ContractualRuleRepository _ruleRepository;
   final OperationalZoneRepository _zoneRepository;
   final IActiveVehicleRepository _vehicleRepository;
   final ShiftProjectionService _projectionService;
@@ -39,6 +41,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
     required PlanDeclarationRepository repository,
     required SlaAuditLedgerRepository ledger,
     required ContractRepository contractRepository,
+    required ContractualRuleRepository ruleRepository,
     required OperationalZoneRepository zoneRepository,
     required IActiveVehicleRepository vehicleRepository,
     required ShiftProjectionService projectionService,
@@ -48,6 +51,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
        _repository = repository,
        _ledger = ledger,
        _contractRepository = contractRepository,
+       _ruleRepository = ruleRepository,
        _zoneRepository = zoneRepository,
        _vehicleRepository = vehicleRepository,
        _projectionService = projectionService,
@@ -93,7 +97,14 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
     DeclareContractualPlanCommand command,
   ) async {
     final contract = await _validatePreconditions(command);
-    final plan = _buildPlanFromCommand(command);
+
+    // Fetch snapshot (INV-21)
+    final snapshot = await _ruleRepository.getActiveSnapshotForContract(
+      command.organizationId,
+      command.contractId,
+    );
+
+    final plan = _buildPlanFromCommand(command, snapshot);
     final saved = await _repository.save(plan);
     await _handleContractLifecycle(command, contract);
     await _auditToLedger(command, saved);
@@ -175,7 +186,10 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
 
   /// Builds the [PlanDeclaration] aggregate, isolating the shift-patterns vs
   /// services branch. Clock-driven (INV-6).
-  PlanDeclaration _buildPlanFromCommand(DeclareContractualPlanCommand command) {
+  PlanDeclaration _buildPlanFromCommand(
+    DeclareContractualPlanCommand command,
+    RuleSnapshot snapshot,
+  ) {
     if (command.shiftPatterns.isNotEmpty) {
       return PlanDeclaration.createWithShiftPatterns(
         organizationId: command.organizationId,
@@ -184,7 +198,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
         planVersion: command.planVersion,
         originalFileHash: command.originalFileHash,
         declaredAtUtc: command.declaredAtUtc,
-        ruleSnapshot: const RuleSnapshot([]), // Default empty snapshot
+        ruleSnapshot: snapshot,
         shiftPatterns: command.shiftPatterns,
         nowUtc: _clock.nowUtc(),
       );
@@ -196,7 +210,7 @@ class DeclareContractualPlanHandler with IdempotentHandlerMixin {
       planVersion: command.planVersion,
       originalFileHash: command.originalFileHash,
       declaredAtUtc: command.declaredAtUtc,
-      ruleSnapshot: const RuleSnapshot([]), // Default empty snapshot
+      ruleSnapshot: snapshot,
       services: command.services
           .map(
             (input) => ContractualServiceExecution.create(

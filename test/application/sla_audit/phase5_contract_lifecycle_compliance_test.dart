@@ -10,6 +10,9 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
@@ -127,6 +130,7 @@ void main() {
         idempotencyStore: idempotencyStore,
       );
       planHandler = DeclareContractualPlanHandler(
+        ruleRepository: _StubRuleRepository(),
         tenantValidator: tvs,
         repository: planRepo,
         ledger: ledger,
@@ -436,4 +440,14 @@ class _StubZoneRepository implements OperationalZoneRepository {
 class _StubVehicleRepository implements IActiveVehicleRepository {
   @override
   Future<int> countActiveByOrganization(String organizationId) async => 1;
+}
+
+class _StubRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async => const RuleSnapshot([]);
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

@@ -34,6 +34,8 @@ class UpdateContractualRuleCommand {
   /// Session ID for tenant validation.
   final String sessionId;
 
+  final DateTime effectiveAtUtc;
+
   const UpdateContractualRuleCommand({
     required this.organizationId,
     required this.contractId,
@@ -43,5 +45,6 @@ class UpdateContractualRuleCommand {
     required this.evaluationOrder,
     required this.callerRole,
     required this.sessionId,
+    required this.effectiveAtUtc,
   });
 }

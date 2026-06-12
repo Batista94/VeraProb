@@ -27,6 +27,7 @@ class _FakeCommandService implements RuleStudioCommandService {
     required SlaRuleType ruleType,
     required Map<String, dynamic> newConfig,
     required int evaluationOrder,
+    required DateTime effectiveAtUtc,
   }) async {
     lastContractId = contractId;
     lastOldRuleId = oldRuleId;
@@ -35,6 +36,22 @@ class _FakeCommandService implements RuleStudioCommandService {
     lastOrder = evaluationOrder;
     return 'new-rule-uuid-1234';
   }
+
+  @override
+  Future<String> scheduleRule({
+    required String contractId,
+    required String? oldRuleId,
+    required SlaRuleType ruleType,
+    required Map<String, dynamic> newConfig,
+    required int evaluationOrder,
+    required DateTime effectiveAtUtc,
+  }) async => 'scheduled-rule-uuid';
+
+  @override
+  Future<void> activateScheduledRule({required String ruleId}) async {}
+
+  @override
+  Future<void> retireRule({required String ruleId}) async {}
 }
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
@@ -82,6 +99,7 @@ void main() {
       evaluationOrder: 1,
       callerRole: role,
       sessionId: 'session-1',
+      effectiveAtUtc: DateTime.now().toUtc(),
     );
   }
 

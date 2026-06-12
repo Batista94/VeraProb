@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
@@ -120,5 +121,45 @@ void main() {
       const snapshot = RuleSnapshot([]);
       expect(snapshot.orderedRules, isEmpty);
     });
+
+    test(
+      'INV-15: serialize(deserialize(serialize(x))) == serialize(x) for byte-by-byte stability',
+      () {
+        const snapshot = RuleSnapshot([
+          RuleSnapshotItem(
+            ruleId: '123e4567-e89b-12d3-a456-426614174000',
+            ruleType: SlaRuleType.maxToleranceDelay,
+            config: {'threshold_minutes': 15, 'allow_grace': true},
+            ruleVersion: 2,
+            evaluationOrder: 1,
+          ),
+          RuleSnapshotItem(
+            ruleId: '223e4567-e89b-12d3-a456-426614174001',
+            ruleType: SlaRuleType.maxEvidenceGap,
+            config: {'max_gap_seconds': 300},
+            ruleVersion: 1,
+            evaluationOrder: 2,
+          ),
+        ]);
+
+        // serialize(x)
+        final step1JsonList = snapshot.toJson();
+        final step1String = jsonEncode(step1JsonList);
+
+        // deserialize(serialize(x))
+        final step2DecodedList = jsonDecode(step1String) as List<dynamic>;
+        final step2Snapshot = RuleSnapshot.fromJson(step2DecodedList);
+
+        // serialize(deserialize(serialize(x)))
+        final step3JsonList = step2Snapshot.toJson();
+        final step3String = jsonEncode(step3JsonList);
+
+        // Byte-by-byte string stability
+        expect(step3String, equals(step1String));
+
+        // Structural equality check
+        expect(step2Snapshot, equals(snapshot));
+      },
+    );
   });
 }

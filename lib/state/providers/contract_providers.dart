@@ -163,6 +163,7 @@ final declareContractualPlanHandlerProvider =
         projectionService: ref.watch(shiftProjectionServiceProvider),
         clock: ref.watch(dateTimeProviderProvider),
         idempotencyStore: ref.watch(idempotencyStoreProvider),
+        ruleRepository: ref.watch(contractualRuleRepositoryProvider),
       );
     });
 

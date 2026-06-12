@@ -81,6 +81,7 @@ void main() {
       repository: repository,
       ledger: ledger,
       contractRepository: MockContractRepository(),
+      ruleRepository: MockContractualRuleRepository(),
       zoneRepository: zones ?? zoneRepository,
       vehicleRepository: InMemoryActiveVehicleRepository(
         countsByOrg: {_orgId: activeVehicleCount},

@@ -22,12 +22,12 @@ VALUES ('00000000-0000-0000-0000-0000000092c1',
 
 INSERT INTO public.contract_rule_versions
   (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
-   active_from_utc, active_to_utc)
+   active_from_utc, active_to_utc, created_at_utc)
 VALUES
   ('00000000-0000-0000-0000-0000000092d1',
    '00000000-0000-0000-0000-0000000092c1',
    'NO_SHOW_PENALTY', '{"penalty_amount_cents": 50000}'::jsonb, 1, 0,
-   '2026-01-01T00:00:00Z', NULL);
+   '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z');
 
 INSERT INTO public.sla_audit_ledger_v2
   (id, organization_id, type, contract_id, plan_version, occurred_at_utc, payload)

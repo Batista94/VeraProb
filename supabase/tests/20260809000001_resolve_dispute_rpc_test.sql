@@ -24,12 +24,12 @@ VALUES ('00000000-0000-0000-0000-0000000009c1',
 
 INSERT INTO public.contract_rule_versions
   (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
-   active_from_utc, active_to_utc)
+   active_from_utc, active_to_utc, created_at_utc)
 VALUES
   ('00000000-0000-0000-0000-0000000009d1',
    '00000000-0000-0000-0000-0000000009c1',
    'NO_SHOW_PENALTY', '{"penalty_amount_cents": 50000}'::jsonb, 1, 0,
-   '2026-01-01T00:00:00Z', NULL);
+   '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z');
 
 -- Four disputed queue entries (one per arc/exploit scenario).
 INSERT INTO public.sanction_review_queue

@@ -16,6 +16,9 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 
@@ -164,6 +167,7 @@ final class _Fixture {
     final planTvs = TenantValidationService(authRepository: planMockAuth);
 
     planHandler = DeclareContractualPlanHandler(
+      ruleRepository: _StubRuleRepository(),
       tenantValidator: planTvs,
       repository: planRepo,
       ledger: ledger,
@@ -210,6 +214,7 @@ void _scenario51(_Fixture f) {
       final p51Tvs = TenantValidationService(authRepository: p51MockAuth);
 
       f.planHandler = DeclareContractualPlanHandler(
+        ruleRepository: _StubRuleRepository(),
         tenantValidator: p51Tvs,
         repository: f.planRepo,
         ledger: f.ledger,
@@ -292,6 +297,7 @@ void _scenario51(_Fixture f) {
         final p51bTvs = TenantValidationService(authRepository: p51bMockAuth);
 
         f.planHandler = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: p51bTvs,
           repository: f.planRepo,
           ledger: f.ledger,
@@ -358,6 +364,7 @@ void _scenario52(_Fixture f) {
         final p52Tvs = TenantValidationService(authRepository: p52MockAuth);
 
         f.planHandler = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: p52Tvs,
           repository: f.planRepo,
           ledger: f.ledger,
@@ -431,6 +438,7 @@ void _scenario52(_Fixture f) {
           final p52bTvs = TenantValidationService(authRepository: p52bMockAuth);
 
           f.planHandler = DeclareContractualPlanHandler(
+            ruleRepository: _StubRuleRepository(),
             tenantValidator: p52bTvs,
             repository: f.planRepo,
             ledger: f.ledger,
@@ -526,6 +534,7 @@ void _scenario52(_Fixture f) {
           final p52cTvs = TenantValidationService(authRepository: p52cMockAuth);
 
           f.planHandler = DeclareContractualPlanHandler(
+            ruleRepository: _StubRuleRepository(),
             tenantValidator: p52cTvs,
             repository: f.planRepo,
             ledger: f.ledger,
@@ -751,6 +760,7 @@ void _scenario54(_Fixture f) {
       );
 
       f.planHandler = DeclareContractualPlanHandler(
+        ruleRepository: _StubRuleRepository(),
         tenantValidator: p54Tvs,
         repository: f.planRepo,
         ledger: f.ledger,
@@ -866,6 +876,7 @@ void _scenario54(_Fixture f) {
         );
 
         f.planHandler = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: p54bTvs,
           repository: f.planRepo,
           ledger: f.ledger,
@@ -938,6 +949,7 @@ void _scenario54(_Fixture f) {
         final p54cTvs = TenantValidationService(authRepository: p54cMockAuth);
 
         f.planHandler = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: p54cTvs,
           repository: f.planRepo,
           ledger: f.ledger,
@@ -1052,6 +1064,7 @@ void _scenario51B2B() {
             clock: clock,
           );
           final b2bPlanHandler = DeclareContractualPlanHandler(
+            ruleRepository: _StubRuleRepository(),
             tenantValidator: b2bTvs,
             repository: b2bPlanRepo,
             ledger: b2bLedger,
@@ -1180,4 +1193,14 @@ class _StubZoneRepository implements OperationalZoneRepository {
 class _StubVehicleRepository implements IActiveVehicleRepository {
   @override
   Future<int> countActiveByOrganization(String organizationId) async => 1;
+}
+
+class _StubRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async => const RuleSnapshot([]);
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

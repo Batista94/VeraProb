@@ -166,6 +166,7 @@ void main() {
     final tenantValidator = TenantValidationService(authRepository: mockAuth);
 
     declarationHandler = DeclareContractualPlanHandler(
+      ruleRepository: _StubRuleRepository(),
       tenantValidator: tenantValidator,
       repository: planRepo,
       ledger: ledgerRepo,
@@ -786,6 +787,7 @@ void main() {
         );
 
         final handlerWithNoZones = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: TenantValidationService(authRepository: mockAuthT09),
           repository: planRepo,
           ledger: ledgerRepo,
@@ -1015,4 +1017,14 @@ class _StubZoneRepository implements OperationalZoneRepository {
 
   @override
   Future<void> save(OperationalZone zone) async {}
+}
+
+class _StubRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async => const RuleSnapshot([]);
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

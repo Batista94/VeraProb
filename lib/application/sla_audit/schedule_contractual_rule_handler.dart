@@ -2,26 +2,40 @@ import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'rule_studio_command_service.dart';
-import 'update_contractual_rule_command.dart';
-import 'package:veraprob/domain/shared/integrity_exception.dart';
 
-/// Application handler for [UpdateContractualRuleCommand].
-///
-/// Transitions a contractual rule to a new version, preserving the full
-/// audit history (INV-1: immutable ledger — old version is closed, never deleted).
-///
-/// Flow:
-///   1. RBAC check ([canEditSlaRules])
-///   2. Config key validation against rule type contract
-///   3. Atomic RPC: close old version + insert new version
-///   4. Return new rule UUID
-class UpdateContractualRuleHandler {
+class ScheduleContractualRuleCommand {
+  final String organizationId;
+  final String contractId;
+  final String? oldRuleId;
+  final SlaRuleType ruleType;
+  final Map<String, dynamic> newConfig;
+  final int evaluationOrder;
+  final DateTime effectiveAtUtc;
+  final UserRole callerRole;
+  final String sessionId;
+
+  const ScheduleContractualRuleCommand({
+    required this.organizationId,
+    required this.contractId,
+    this.oldRuleId,
+    required this.ruleType,
+    required this.newConfig,
+    required this.evaluationOrder,
+    required this.effectiveAtUtc,
+    required this.callerRole,
+    required this.sessionId,
+  });
+}
+
+class ScheduleContractualRuleHandler {
   final TenantValidationService _tenantValidator;
   final RuleStudioCommandService _commandService;
   final RbacService _rbac;
 
-  UpdateContractualRuleHandler({
+  ScheduleContractualRuleHandler({
     required TenantValidationService tenantValidator,
     required RuleStudioCommandService commandService,
     required RbacService rbac,
@@ -29,38 +43,19 @@ class UpdateContractualRuleHandler {
        _commandService = commandService,
        _rbac = rbac;
 
-  /// Returns the UUID of the newly created rule version.
-  ///
-  /// Throws [DomainException] if:
-  /// - Caller lacks [UserPermission.canEditSlaRules]
-  /// - [newConfig] is missing required keys for the given [ruleType]
-  Future<String> handle(UpdateContractualRuleCommand command) async {
-    // ── Step 1: INV-1 Fail-Fast Identity Sync ────────────────────────────
+  Future<String> handle(ScheduleContractualRuleCommand command) async {
     await _tenantValidator.assertTenantMatches(
       payloadOrgId: command.organizationId,
       sessionId: command.sessionId,
     );
 
-    // 2. RBAC — before any I/O
     if (!_rbac.can(command.callerRole, UserPermission.canEditSlaRules)) {
       throw const DomainException('Unauthorized: canEditSlaRules required.');
     }
 
-    // 2. Validate config keys match engine contract (mirrors DB constraint)
     _validateConfig(command);
 
-    // INV-10 / Sprint B: Guarda de backdating no application layer
-    final now = DateTime.now().toUtc();
-    final fiveMinsAgo = now.subtract(const Duration(minutes: 5));
-    if (command.effectiveAtUtc.isBefore(fiveMinsAgo)) {
-      throw const IntegrityException(
-        'Anti-backdating violation: effective_at_utc is too far in the past',
-        field: 'effectiveAtUtc',
-      );
-    }
-
-    // 3. Atomic close + insert via RPC (atomicity guaranteed by Postgres)
-    return _commandService.updateRule(
+    return _commandService.scheduleRule(
       contractId: command.contractId,
       oldRuleId: command.oldRuleId,
       ruleType: command.ruleType,
@@ -70,7 +65,7 @@ class UpdateContractualRuleHandler {
     );
   }
 
-  void _validateConfig(UpdateContractualRuleCommand command) {
+  void _validateConfig(ScheduleContractualRuleCommand command) {
     final config = command.newConfig;
     final type = command.ruleType;
 

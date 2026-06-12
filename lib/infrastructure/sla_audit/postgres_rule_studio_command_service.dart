@@ -19,6 +19,7 @@ class PostgresRuleStudioCommandService implements RuleStudioCommandService {
     required SlaRuleType ruleType,
     required Map<String, dynamic> newConfig,
     required int evaluationOrder,
+    required DateTime effectiveAtUtc,
   }) async {
     final result = await _client.rpc(
       'update_contractual_rule',
@@ -28,9 +29,44 @@ class PostgresRuleStudioCommandService implements RuleStudioCommandService {
         'p_rule_type': ruleType.value,
         'p_new_config': newConfig,
         'p_evaluation_order': evaluationOrder,
+        'p_effective_at_utc': effectiveAtUtc.toIso8601String(),
       },
     );
 
     return result as String;
+  }
+
+  @override
+  Future<String> scheduleRule({
+    required String contractId,
+    required String? oldRuleId,
+    required SlaRuleType ruleType,
+    required Map<String, dynamic> newConfig,
+    required int evaluationOrder,
+    required DateTime effectiveAtUtc,
+  }) async {
+    final result = await _client.rpc(
+      'schedule_contractual_rule',
+      params: {
+        'p_contract_id': contractId,
+        'p_old_rule_id': oldRuleId,
+        'p_rule_type': ruleType.value,
+        'p_new_config': newConfig,
+        'p_evaluation_order': evaluationOrder,
+        'p_effective_at_utc': effectiveAtUtc.toIso8601String(),
+      },
+    );
+
+    return result as String;
+  }
+
+  @override
+  Future<void> activateScheduledRule({required String ruleId}) async {
+    await _client.rpc('activate_scheduled_rule', params: {'p_rule_id': ruleId});
+  }
+
+  @override
+  Future<void> retireRule({required String ruleId}) async {
+    await _client.rpc('retire_contractual_rule', params: {'p_rule_id': ruleId});
   }
 }

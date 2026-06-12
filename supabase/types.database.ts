@@ -284,6 +284,64 @@ export type Database = {
           },
         ];
       };
+      contract_financial_amendments: {
+        Row: {
+          amended_at_utc: string;
+          amended_by_user_id: string | null;
+          contract_id: string;
+          effective_at_utc: string;
+          financial_ceiling_cents: number | null;
+          id: string;
+          notes: string | null;
+          organization_id: string;
+          penalty_multiplier_bps: number | null;
+        };
+        Insert: {
+          amended_at_utc?: string;
+          amended_by_user_id?: string | null;
+          contract_id: string;
+          effective_at_utc: string;
+          financial_ceiling_cents?: number | null;
+          id: string;
+          notes?: string | null;
+          organization_id: string;
+          penalty_multiplier_bps?: number | null;
+        };
+        Update: {
+          amended_at_utc?: string;
+          amended_by_user_id?: string | null;
+          contract_id?: string;
+          effective_at_utc?: string;
+          financial_ceiling_cents?: number | null;
+          id?: string;
+          notes?: string | null;
+          organization_id?: string;
+          penalty_multiplier_bps?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contract_financial_amendments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_financial_amendments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_financial_amendments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contract_review_tokens: {
         Row: {
           contract_id: string;
@@ -390,8 +448,10 @@ export type Database = {
         Row: {
           active_from_utc: string;
           active_to_utc: string | null;
+          created_at_utc: string;
           evaluation_order: number;
           id: string;
+          is_scheduled: boolean;
           rule_config: Json;
           rule_set_id: string;
           rule_type: Database["public"]["Enums"]["sla_rule_type"];
@@ -400,8 +460,10 @@ export type Database = {
         Insert: {
           active_from_utc?: string;
           active_to_utc?: string | null;
+          created_at_utc?: string;
           evaluation_order: number;
           id: string;
+          is_scheduled?: boolean;
           rule_config: Json;
           rule_set_id: string;
           rule_type: Database["public"]["Enums"]["sla_rule_type"];
@@ -410,8 +472,10 @@ export type Database = {
         Update: {
           active_from_utc?: string;
           active_to_utc?: string | null;
+          created_at_utc?: string;
           evaluation_order?: number;
           id?: string;
+          is_scheduled?: boolean;
           rule_config?: Json;
           rule_set_id?: string;
           rule_type?: Database["public"]["Enums"]["sla_rule_type"];
@@ -4711,6 +4775,10 @@ export type Database = {
         Args: { p_token: string; p_user_id: string };
         Returns: undefined;
       };
+      activate_scheduled_rule: {
+        Args: { p_rule_id: string };
+        Returns: undefined;
+      };
       addauth: { Args: { "": string }; Returns: boolean };
       addgeometrycolumn:
         | {
@@ -4749,6 +4817,16 @@ export type Database = {
             };
             Returns: string;
           };
+      amend_contract_financial_terms: {
+        Args: {
+          p_contract_id: string;
+          p_effective_at_utc: string;
+          p_financial_ceiling_cents: number;
+          p_notes: string;
+          p_penalty_multiplier_bps: number;
+        };
+        Returns: string;
+      };
       approve_sanction: {
         Args: {
           p_actor_email: string;
@@ -5258,6 +5336,10 @@ export type Database = {
         Args: { p_driver_id: string; p_short_id: string };
         Returns: string;
       };
+      retire_contractual_rule: {
+        Args: { p_rule_id: string };
+        Returns: undefined;
+      };
       revoke_dispute_portal_token: {
         Args: { p_organization_id: string; p_token_id: string };
         Returns: undefined;
@@ -5265,6 +5347,17 @@ export type Database = {
       revoke_invitation: {
         Args: { p_invitation_id: string };
         Returns: undefined;
+      };
+      schedule_contractual_rule: {
+        Args: {
+          p_contract_id: string;
+          p_effective_at_utc: string;
+          p_evaluation_order: number;
+          p_new_config: Json;
+          p_old_rule_id: string;
+          p_rule_type: Database["public"]["Enums"]["sla_rule_type"];
+        };
+        Returns: string;
       };
       seal_dispute_resolution_snapshot: {
         Args: {
