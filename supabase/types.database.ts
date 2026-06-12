@@ -2233,6 +2233,7 @@ export type Database = {
           dual_control_threshold_cents: number | null;
           dual_control_ttl_hours: number;
           dwell_time_seconds: number;
+          evidence_storage_enabled: boolean;
           external_id: string | null;
           id: string;
           is_active: boolean | null;
@@ -2267,6 +2268,7 @@ export type Database = {
           dual_control_threshold_cents?: number | null;
           dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
+          evidence_storage_enabled?: boolean;
           external_id?: string | null;
           id?: string;
           is_active?: boolean | null;
@@ -2301,6 +2303,7 @@ export type Database = {
           dual_control_threshold_cents?: number | null;
           dual_control_ttl_hours?: number;
           dwell_time_seconds?: number;
+          evidence_storage_enabled?: boolean;
           external_id?: string | null;
           id?: string;
           is_active?: boolean | null;

@@ -72,6 +72,28 @@ class DisputeEvidenceUploadPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // 5.2 storage-plan gate: an org without contracted evidence storage sees a
+    // clear message, never a silent upload failure. Fail closed on load/error.
+    final storageAsync = ref.watch(evidenceStorageEnabledProvider);
+    return switch (storageAsync) {
+      AsyncData(:final value) when value => _buildEnabled(context, ref),
+      AsyncData() => const _StorageGate(
+        icon: Icons.lock_outline,
+        message:
+            'Armazenamento de evidências não está habilitado no plano desta '
+            'organização. Fale com o suporte para ativar.',
+      ),
+      AsyncLoading() => const _StorageGate.loading(),
+      AsyncError() => const _StorageGate(
+        icon: Icons.cloud_off_outlined,
+        message:
+            'Não foi possível verificar o plano de armazenamento. Tente '
+            'novamente mais tarde.',
+      ),
+    };
+  }
+
+  Widget _buildEnabled(BuildContext context, WidgetRef ref) {
     final listAsync = ref.watch(disputeEvidenceListProvider(queueEntryId));
     final uploadState = ref.watch(
       disputeEvidenceControllerProvider(queueEntryId),
@@ -249,6 +271,57 @@ class DisputeEvidenceUploadPanel extends ConsumerWidget {
     await ref
         .read(disputeEvidenceControllerProvider(queueEntryId).notifier)
         .remove(a.id);
+  }
+}
+
+/// 5.2 plan gate / status shell shown in place of the uploader when evidence
+/// storage is not confirmed enabled (disabled plan, still loading, or unknown).
+class _StorageGate extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final bool loading;
+
+  const _StorageGate({required this.icon, required this.message})
+    : loading = false;
+
+  const _StorageGate.loading()
+    : icon = Icons.hourglass_empty_outlined,
+      message = '',
+      loading = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('evidence-storage-gate'),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Row(
+        children: [
+          if (loading)
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            Icon(icon, size: 18, color: VeraProbColors.textSecondary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              loading ? 'Verificando plano de armazenamento…' : message,
+              style: const TextStyle(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

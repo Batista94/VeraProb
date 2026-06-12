@@ -6,8 +6,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/domain/sla_audit/dispute_evidence_attachment.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'admin_providers.dart';
 import 'auth_providers.dart';
 import 'shared_providers.dart';
+
+/// Componente 5.2 — Whether the current org's plan includes paid dispute-
+/// evidence storage. Derived from the tenant-readable org settings; the upload
+/// panel gates on this so an org without a contracted storage plan sees a clear
+/// message instead of a silent failure. Loading/error propagate so the panel
+/// can fail closed (no upload surface until storage is confirmed enabled).
+final evidenceStorageEnabledProvider = Provider.autoDispose<AsyncValue<bool>>((
+  ref,
+) {
+  return ref
+      .watch(orgSettingsProvider)
+      .whenData((org) => org?.evidenceStorageEnabled ?? false);
+});
 
 /// Active (non-soft-deleted) evidence attachments for a disputed sanction
 /// (Componente 4.3). Keyed by `queueEntryId`. RLS scopes the read to the org.

@@ -9,6 +9,12 @@ import 'package:veraprob/state/providers/dispute_evidence_providers.dart';
 
 const _queueEntryId = 'queue-001';
 
+/// Default: the org has a contracted storage plan, so the uploader renders.
+/// The 5.2 gate tests override this to false / loading.
+final _storageEnabled = evidenceStorageEnabledProvider.overrideWithValue(
+  const AsyncData<bool>(true),
+);
+
 DisputeEvidenceAttachment _attachment({
   required String id,
   required String fileName,
@@ -49,6 +55,7 @@ void main() {
   testWidgets('empty list shows 0/10 and empty message', (tester) async {
     await tester.pumpWidget(
       _host([
+        _storageEnabled,
         disputeEvidenceListProvider.overrideWith(
           (ref, key) async => const <DisputeEvidenceAttachment>[],
         ),
@@ -66,6 +73,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host([
+        _storageEnabled,
         disputeEvidenceListProvider.overrideWith(
           (ref, key) async => [
             _attachment(
@@ -97,6 +105,7 @@ void main() {
   testWidgets('at limit disables add button', (tester) async {
     await tester.pumpWidget(
       _host([
+        _storageEnabled,
         disputeEvidenceListProvider.overrideWith(
           (ref, key) async => List.generate(
             10,
@@ -125,6 +134,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _host([
+        _storageEnabled,
         disputeEvidenceListProvider.overrideWith(
           (ref, key) async => [
             _attachment(id: 'uuid-x', fileName: 'doc.png', sizeBytes: 1024),
@@ -143,5 +153,84 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Remover evidência?'), findsNothing);
+  });
+
+  group('Storage plan gate (Componente 5.2)', () {
+    testWidgets('disabled plan shows gate, no uploader', (tester) async {
+      await tester.pumpWidget(
+        _host([
+          evidenceStorageEnabledProvider.overrideWithValue(
+            const AsyncData<bool>(false),
+          ),
+          disputeEvidenceListProvider.overrideWith(
+            (ref, key) async => const <DisputeEvidenceAttachment>[],
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('evidence-storage-gate')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('não está habilitado no plano'),
+        findsOneWidget,
+      );
+      // The uploader (and its add button) must not be reachable.
+      expect(
+        find.byKey(const ValueKey('dispute-evidence-add-button')),
+        findsNothing,
+      );
+      expect(find.text('Anexar evidência'), findsNothing);
+    });
+
+    testWidgets('loading plan shows spinner shell, no uploader', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _host([
+          evidenceStorageEnabledProvider.overrideWithValue(
+            const AsyncLoading<bool>(),
+          ),
+          disputeEvidenceListProvider.overrideWith(
+            (ref, key) async => const <DisputeEvidenceAttachment>[],
+          ),
+        ]),
+      );
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('evidence-storage-gate')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dispute-evidence-add-button')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('unknown plan (error) fails closed to gate', (tester) async {
+      await tester.pumpWidget(
+        _host([
+          evidenceStorageEnabledProvider.overrideWithValue(
+            const AsyncError<bool>('boom', StackTrace.empty),
+          ),
+          disputeEvidenceListProvider.overrideWith(
+            (ref, key) async => const <DisputeEvidenceAttachment>[],
+          ),
+        ]),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('evidence-storage-gate')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('dispute-evidence-add-button')),
+        findsNothing,
+      );
+    });
   });
 }

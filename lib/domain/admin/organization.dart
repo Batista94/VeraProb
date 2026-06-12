@@ -37,6 +37,10 @@ class Organization extends Equatable {
   // Phase 10: email domain whitelist (SSO routing, identity injection prevention)
   final List<String> allowedDomains;
 
+  // Phase 10.6 (5.2): whether the org plan includes paid dispute-evidence
+  // storage. FALSE = upload panel renders a plan gate (no silent failure).
+  final bool evidenceStorageEnabled;
+
   const Organization({
     required this.id,
     required this.name,
@@ -57,6 +61,7 @@ class Organization extends Equatable {
     this.externalId,
     this.dwellTimeSeconds = 300,
     this.allowedDomains = const [],
+    this.evidenceStorageEnabled = false,
   });
 
   /// Retro-compatible getter: true only when status is ACTIVE.
@@ -83,6 +88,7 @@ class Organization extends Equatable {
     String? externalId,
     int? dwellTimeSeconds,
     List<String>? allowedDomains,
+    bool? evidenceStorageEnabled,
   }) {
     return Organization(
       id: id,
@@ -104,6 +110,8 @@ class Organization extends Equatable {
       externalId: externalId ?? this.externalId,
       dwellTimeSeconds: dwellTimeSeconds ?? this.dwellTimeSeconds,
       allowedDomains: allowedDomains ?? this.allowedDomains,
+      evidenceStorageEnabled:
+          evidenceStorageEnabled ?? this.evidenceStorageEnabled,
     );
   }
 
@@ -128,5 +136,6 @@ class Organization extends Equatable {
     externalId,
     dwellTimeSeconds,
     allowedDomains,
+    evidenceStorageEnabled,
   ];
 }

@@ -165,6 +165,8 @@ class PostgresOrganizationRepository
       externalId: data['external_id'] as String?,
       dwellTimeSeconds: data['dwell_time_seconds'] as int? ?? 300,
       allowedDomains: allowedDomains,
+      evidenceStorageEnabled:
+          data['evidence_storage_enabled'] as bool? ?? false,
     );
   }
 }
