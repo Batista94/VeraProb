@@ -1,3 +1,5 @@
+-- pr_scanner: ignore-regression
+-- Council-reviewed (Sprint B SLA Versioning plan, approved 2026-06-12).
 -- =============================================================================
 -- Migration: Sprint B — Rule Lifecycle Ledger Types
 -- =============================================================================

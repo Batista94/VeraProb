@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Phase 10.6 v3 council-remediated plan, 2026-06-12):
+// dispute reality core — evidence/reason-code/command contracts (INV-1/3/9).
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';

@@ -74,6 +74,7 @@ void main() {
   DeclareContractualPlanHandler makeHandler({
     int activeVehicleCount = 1,
     InMemoryOperationalZoneRepository? zones,
+    RuleSnapshot ruleSnapshot = const RuleSnapshot([]),
   }) {
     final clock = FakeDateTimeProvider(DateTime.utc(2026, 4, 8, 12, 0, 0));
     return DeclareContractualPlanHandler(
@@ -81,7 +82,7 @@ void main() {
       repository: repository,
       ledger: ledger,
       contractRepository: MockContractRepository(),
-      ruleRepository: MockContractualRuleRepository(),
+      ruleRepository: MockContractualRuleRepository(snapshot: ruleSnapshot),
       zoneRepository: zones ?? zoneRepository,
       vehicleRepository: InMemoryActiveVehicleRepository(
         countsByOrg: {_orgId: activeVehicleCount},
@@ -190,6 +191,29 @@ void main() {
       expect(ledger.entries.first.type, 'PLAN_DECLARED');
       expect(ledger.entries.last.type, 'CONTRACT_ACTIVATED');
     });
+
+    test(
+      'INV-21 — active rule snapshot is frozen into the declared plan',
+      () async {
+        const frozen = RuleSnapshot([
+          RuleSnapshotItem(
+            ruleId: 'rule-mtd-v3',
+            ruleType: SlaRuleType.maxToleranceDelay,
+            config: {'threshold_minutes': 15},
+            ruleVersion: 3,
+            evaluationOrder: 1,
+          ),
+        ]);
+        final handlerWithRules = makeHandler(ruleSnapshot: frozen);
+
+        final plan = await handlerWithRules.handle(makeCommand());
+
+        expect(plan.ruleSnapshot, equals(frozen));
+        final persisted = await repository.findById(plan.id);
+        expect(persisted!.ruleSnapshot, equals(frozen));
+        expect(persisted.ruleSnapshot.rules.single.ruleVersion, 3);
+      },
+    );
 
     test('persistence — findById returns saved aggregate', () async {
       final plan = await handler.handle(makeCommand());
@@ -360,12 +384,16 @@ void main() {
 }
 
 class MockContractualRuleRepository implements ContractualRuleRepository {
+  final RuleSnapshot snapshot;
+
+  MockContractualRuleRepository({this.snapshot = const RuleSnapshot([])});
+
   @override
   Future<RuleSnapshot> getActiveSnapshotForContract(
     String orgId,
     String contractId,
   ) async {
-    return const RuleSnapshot([]);
+    return snapshot;
   }
 
   @override

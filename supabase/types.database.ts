@@ -287,36 +287,36 @@ export type Database = {
       contract_financial_amendments: {
         Row: {
           amended_at_utc: string;
-          amended_by_user_id: string | null;
+          amended_by_user_id: string;
           contract_id: string;
           effective_at_utc: string;
           financial_ceiling_cents: number | null;
           id: string;
           notes: string | null;
           organization_id: string;
-          penalty_multiplier_bps: number | null;
+          penalty_multiplier_bps: number;
         };
         Insert: {
           amended_at_utc?: string;
-          amended_by_user_id?: string | null;
+          amended_by_user_id: string;
           contract_id: string;
           effective_at_utc: string;
           financial_ceiling_cents?: number | null;
-          id: string;
+          id?: string;
           notes?: string | null;
           organization_id: string;
-          penalty_multiplier_bps?: number | null;
+          penalty_multiplier_bps: number;
         };
         Update: {
           amended_at_utc?: string;
-          amended_by_user_id?: string | null;
+          amended_by_user_id?: string;
           contract_id?: string;
           effective_at_utc?: string;
           financial_ceiling_cents?: number | null;
           id?: string;
           notes?: string | null;
           organization_id?: string;
-          penalty_multiplier_bps?: number | null;
+          penalty_multiplier_bps?: number;
         };
         Relationships: [
           {

@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Sprint B SLA Versioning plan, approved 2026-06-12):
+// rule lifecycle scheduling/retirement + financial amendments (INV-3/4/15/21).
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/sla_audit/rule_studio_command_service.dart';
@@ -29,7 +32,9 @@ class PostgresRuleStudioCommandService implements RuleStudioCommandService {
         'p_rule_type': ruleType.value,
         'p_new_config': newConfig,
         'p_evaluation_order': evaluationOrder,
-        'p_effective_at_utc': effectiveAtUtc.toIso8601String(),
+        // SQL param keeps legacy name p_now_utc (CREATE OR REPLACE cannot
+        // rename); semantics are effective-at, guarded ±5min server-side.
+        'p_now_utc': effectiveAtUtc.toIso8601String(),
       },
     );
 

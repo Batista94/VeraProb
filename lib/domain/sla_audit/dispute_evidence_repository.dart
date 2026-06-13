@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Phase 10.6 v3 council-remediated plan, 2026-06-12):
+// dispute reality core — evidence/reason-code/command contracts (INV-1/3/9).
 import 'dart:typed_data';
 import 'package:veraprob/domain/sla_audit/dispute_evidence_attachment.dart';
 

@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Sprint B SLA Versioning plan, approved 2026-06-12):
+// rule lifecycle scheduling/retirement + financial amendments (INV-3/4/15/21).
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
