@@ -1066,7 +1066,8 @@ export type Database = {
           queue_entry_id: string;
           sha256_hash: string;
           storage_path: string;
-          uploaded_by: string;
+          submission_id: string | null;
+          uploaded_by: string | null;
           verification_status: string;
         };
         Insert: {
@@ -1081,7 +1082,8 @@ export type Database = {
           queue_entry_id: string;
           sha256_hash: string;
           storage_path: string;
-          uploaded_by: string;
+          submission_id?: string | null;
+          uploaded_by?: string | null;
           verification_status?: string;
         };
         Update: {
@@ -1096,7 +1098,8 @@ export type Database = {
           queue_entry_id?: string;
           sha256_hash?: string;
           storage_path?: string;
-          uploaded_by?: string;
+          submission_id?: string | null;
+          uploaded_by?: string | null;
           verification_status?: string;
         };
         Relationships: [
@@ -1128,6 +1131,13 @@ export type Database = {
             referencedRelation: "sanction_review_queue";
             referencedColumns: ["id"];
           },
+          {
+            foreignKeyName: "dispute_evidence_attachments_submission_id_fkey";
+            columns: ["submission_id"];
+            isOneToOne: false;
+            referencedRelation: "portal_evidence_submissions";
+            referencedColumns: ["id"];
+          },
         ];
       };
       dispute_portal_tokens: {
@@ -1139,10 +1149,12 @@ export type Database = {
           expires_at_utc: string;
           id: string;
           max_access_count: number;
+          max_submissions: number;
           organization_id: string;
           queue_entry_id: string;
           revoked_at_utc: string | null;
           token: string;
+          token_scope: string;
         };
         Insert: {
           access_count?: number;
@@ -1152,10 +1164,12 @@ export type Database = {
           expires_at_utc: string;
           id?: string;
           max_access_count?: number;
+          max_submissions?: number;
           organization_id: string;
           queue_entry_id: string;
           revoked_at_utc?: string | null;
           token?: string;
+          token_scope?: string;
         };
         Update: {
           access_count?: number;
@@ -1165,10 +1179,12 @@ export type Database = {
           expires_at_utc?: string;
           id?: string;
           max_access_count?: number;
+          max_submissions?: number;
           organization_id?: string;
           queue_entry_id?: string;
           revoked_at_utc?: string | null;
           token?: string;
+          token_scope?: string;
         };
         Relationships: [
           {
@@ -2540,6 +2556,117 @@ export type Database = {
           },
         ];
       };
+      portal_evidence_submissions: {
+        Row: {
+          audited_at: string | null;
+          audited_by: string | null;
+          deleted_at: string | null;
+          file_name: string;
+          file_size_bytes_actual: number | null;
+          file_size_bytes_declared: number;
+          finalized_at_utc: string | null;
+          id: string;
+          mime_type_declared: string;
+          mime_type_detected: string | null;
+          organization_id: string;
+          production_storage_path: string | null;
+          quarantine_storage_path: string;
+          queue_entry_id: string;
+          sha256_client: string;
+          sha256_server: string | null;
+          status: string;
+          submitted_at_utc: string;
+          submitted_via: string;
+          submitter_correlation_id: string | null;
+          submitter_ip: unknown;
+          token_id: string;
+        };
+        Insert: {
+          audited_at?: string | null;
+          audited_by?: string | null;
+          deleted_at?: string | null;
+          file_name: string;
+          file_size_bytes_actual?: number | null;
+          file_size_bytes_declared: number;
+          finalized_at_utc?: string | null;
+          id?: string;
+          mime_type_declared: string;
+          mime_type_detected?: string | null;
+          organization_id: string;
+          production_storage_path?: string | null;
+          quarantine_storage_path: string;
+          queue_entry_id: string;
+          sha256_client: string;
+          sha256_server?: string | null;
+          status?: string;
+          submitted_at_utc?: string;
+          submitted_via?: string;
+          submitter_correlation_id?: string | null;
+          submitter_ip?: unknown;
+          token_id: string;
+        };
+        Update: {
+          audited_at?: string | null;
+          audited_by?: string | null;
+          deleted_at?: string | null;
+          file_name?: string;
+          file_size_bytes_actual?: number | null;
+          file_size_bytes_declared?: number;
+          finalized_at_utc?: string | null;
+          id?: string;
+          mime_type_declared?: string;
+          mime_type_detected?: string | null;
+          organization_id?: string;
+          production_storage_path?: string | null;
+          quarantine_storage_path?: string;
+          queue_entry_id?: string;
+          sha256_client?: string;
+          sha256_server?: string | null;
+          status?: string;
+          submitted_at_utc?: string;
+          submitted_via?: string;
+          submitter_correlation_id?: string | null;
+          submitter_ip?: unknown;
+          token_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portal_evidence_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_evidence_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_evidence_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_evidence_submissions_queue_entry_id_fkey";
+            columns: ["queue_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sanction_review_queue";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_evidence_submissions_token_id_fkey";
+            columns: ["token_id"];
+            isOneToOne: false;
+            referencedRelation: "dispute_portal_tokens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       provider_api_keys: {
         Row: {
           api_key_hash: string;
@@ -2676,6 +2803,78 @@ export type Database = {
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sanction_acknowledgements: {
+        Row: {
+          acknowledged_at_utc: string;
+          acknowledged_by_user_id: string | null;
+          acknowledged_via_token_id: string | null;
+          acknowledgement_method: string;
+          id: string;
+          notes: string | null;
+          organization_id: string;
+          queue_entry_id: string;
+          snapshot_hash_acknowledged: string | null;
+        };
+        Insert: {
+          acknowledged_at_utc?: string;
+          acknowledged_by_user_id?: string | null;
+          acknowledged_via_token_id?: string | null;
+          acknowledgement_method: string;
+          id?: string;
+          notes?: string | null;
+          organization_id: string;
+          queue_entry_id: string;
+          snapshot_hash_acknowledged?: string | null;
+        };
+        Update: {
+          acknowledged_at_utc?: string;
+          acknowledged_by_user_id?: string | null;
+          acknowledged_via_token_id?: string | null;
+          acknowledgement_method?: string;
+          id?: string;
+          notes?: string | null;
+          organization_id?: string;
+          queue_entry_id?: string;
+          snapshot_hash_acknowledged?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sanction_acknowledgements_acknowledged_via_token_id_fkey";
+            columns: ["acknowledged_via_token_id"];
+            isOneToOne: false;
+            referencedRelation: "dispute_portal_tokens";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sanction_acknowledgements_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sanction_acknowledgements_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sanction_acknowledgements_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sanction_acknowledgements_queue_entry_id_fkey";
+            columns: ["queue_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sanction_review_queue";
             referencedColumns: ["id"];
           },
         ];
@@ -4775,6 +4974,19 @@ export type Database = {
         Args: { p_token: string; p_user_id: string };
         Returns: undefined;
       };
+      acknowledge_sanction_internal: {
+        Args: {
+          p_acknowledged_by: string;
+          p_notes?: string;
+          p_organization_id: string;
+          p_queue_entry_id: string;
+        };
+        Returns: string;
+      };
+      acknowledge_via_portal: {
+        Args: { p_snapshot_hash: string; p_token: string };
+        Returns: string;
+      };
       activate_scheduled_rule: {
         Args: { p_rule_id: string };
         Returns: undefined;
@@ -4850,6 +5062,15 @@ export type Database = {
           p_uploaded_by: string;
         };
         Returns: string;
+      };
+      audit_portal_submission: {
+        Args: {
+          p_audited_by: string;
+          p_decision: string;
+          p_organization_id: string;
+          p_submission_id: string;
+        };
+        Returns: undefined;
       };
       batch_update_contracts: { Args: { p_updates: Json }; Returns: Json };
       batch_update_vehicles: { Args: { p_updates: Json }; Returns: Json };
@@ -4949,6 +5170,21 @@ export type Database = {
         };
         Returns: string;
       };
+      create_portal_submission: {
+        Args: {
+          p_correlation_id?: string;
+          p_file_name: string;
+          p_file_size_bytes: number;
+          p_mime_type: string;
+          p_sha256_client: string;
+          p_submitter_ip?: string;
+          p_token: string;
+        };
+        Returns: {
+          quarantine_path: string;
+          submission_id: string;
+        }[];
+      };
       create_shadow_execution: {
         Args: {
           p_chat_id: number;
@@ -5032,6 +5268,10 @@ export type Database = {
         };
         Returns: undefined;
       };
+      fail_portal_submission: {
+        Args: { p_detail?: string; p_kind: string; p_submission_id: string };
+        Returns: undefined;
+      };
       find_execution_for_telegram: {
         Args: { p_driver_id: string; p_message_ts: number; p_org_id: string };
         Returns: string;
@@ -5060,6 +5300,17 @@ export type Database = {
           p_month: number;
           p_organization_id: string;
           p_year: number;
+        };
+        Returns: string;
+      };
+      generate_portal_submit_token: {
+        Args: {
+          p_created_by: string;
+          p_expires_hours?: number;
+          p_max_access_count?: number;
+          p_max_submissions?: number;
+          p_organization_id: string;
+          p_queue_entry_id: string;
         };
         Returns: string;
       };
@@ -5243,6 +5494,7 @@ export type Database = {
       populate_geometry_columns:
         | { Args: { tbl_oid: unknown; use_typmod?: boolean }; Returns: number }
         | { Args: { use_typmod?: boolean }; Returns: string };
+      portal_mime_ext: { Args: { p_mime: string }; Returns: string };
       postgis_constraint_dims: {
         Args: { geomcolumn: string; geomschema: string; geomtable: string };
         Returns: number;
@@ -5300,6 +5552,15 @@ export type Database = {
         Returns: undefined;
       };
       record_mfa_failure: { Args: { p_user_id: string }; Returns: Json };
+      register_portal_evidence: {
+        Args: {
+          p_file_size_bytes_actual: number;
+          p_mime_type_detected: string;
+          p_sha256_server: string;
+          p_submission_id: string;
+        };
+        Returns: string;
+      };
       reject_sanction: {
         Args: {
           p_actor_email: string;
