@@ -10,6 +10,7 @@ import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.
 import 'package:veraprob/domain/sla_audit/justification/justification_repository.dart';
 import 'package:veraprob/domain/sla_audit/plan_declaration_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_dispute_resolution_repository.dart';
+import 'package:veraprob/domain/sla_audit/sanction_acknowledgement_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
@@ -26,6 +27,7 @@ import 'in_memory_contractual_financial_snapshot_repository.dart';
 import 'in_memory_forensic_evidence_snapshot_repository.dart';
 import 'in_memory_plan_declaration_repository.dart';
 import 'in_memory_sanction_dispute_resolution_repository.dart';
+import 'in_memory_sanction_acknowledgement_command_repository.dart';
 import 'in_memory_sanction_review_command_repository.dart';
 import 'in_memory_sanction_review_queue_repository.dart';
 import 'in_memory_sla_audit_ledger_repository.dart';
@@ -41,6 +43,7 @@ import 'in_memory_idempotency_store.dart';
 import 'postgres_plan_declaration_repository.dart';
 import 'in_memory_vehicle_infraction_recurrence_repository.dart';
 import 'postgres_sanction_dispute_resolution_repository.dart';
+import 'postgres_sanction_acknowledgement_command_repository.dart';
 import 'postgres_sanction_review_command_repository.dart';
 import 'postgres_sanction_review_queue_repository.dart';
 import 'postgres_forensic_evidence_snapshot_repository.dart';
@@ -139,6 +142,21 @@ final sanctionReviewCommandRepositoryProvider =
         PersistenceMode.postgres => PostgresSanctionReviewCommandRepository(
           ref.watch(supabaseClientProvider),
         ),
+      };
+    });
+
+final sanctionAcknowledgementCommandRepositoryProvider =
+    Provider<SanctionAcknowledgementCommandRepository>((ref) {
+      return switch (ref.watch(persistenceModeProvider)) {
+        PersistenceMode.inMemory =>
+          InMemorySanctionAcknowledgementCommandRepository(
+            queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+            ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+          ),
+        PersistenceMode.postgres =>
+          PostgresSanctionAcknowledgementCommandRepository(
+            ref.watch(supabaseClientProvider),
+          ),
       };
     });
 

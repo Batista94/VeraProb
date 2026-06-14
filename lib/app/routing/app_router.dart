@@ -15,6 +15,7 @@ import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/accept_invite_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/driver_justification_page.dart';
 import 'package:veraprob/features/admin/presentation/screens/review_contract_screen.dart';
+import 'package:veraprob/features/dispute_portal/presentation/dispute_portal_page.dart';
 import 'package:veraprob/features/shared/widgets/error_boundary.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
@@ -137,6 +138,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           final token = state.uri.queryParameters['token'];
           if (token == null) return const AdminLockScreen();
           return DriverJustificationPage(token: token);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.disputePortal,
+        builder: (context, state) {
+          final token = state.uri.queryParameters['token'];
+          if (token == null) return const AdminLockScreen();
+          return ErrorBoundary(child: DisputePortalPage(token: token));
         },
       ),
 

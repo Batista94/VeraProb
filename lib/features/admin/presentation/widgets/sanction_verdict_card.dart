@@ -628,6 +628,48 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     ),
                   ),
                 )
+              else if (item.status == SanctionReviewStatus.acknowledged)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Tooltip(
+                    message:
+                        'Penalidade aceita pela transportadora (De Acordo)',
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.success.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: VeraProbColors.success.withValues(alpha: 0.4),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.verified_outlined,
+                            size: 12,
+                            color: VeraProbColors.success,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'DE ACORDO',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              color: VeraProbColors.success,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                )
               else if (isLocked)
                 Positioned(
                   top: 8,

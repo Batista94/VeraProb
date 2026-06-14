@@ -12,6 +12,10 @@ sealed class AppRoutes {
   static const String reviewContract = '/review-contract';
   static const String justify = '/justify';
 
+  /// Tokenized dispute portal for external carriers (no session). Token is a
+  /// `?token=` query param so the static path stays in [publicPaths].
+  static const String disputePortal = '/portal/dispute';
+
   // ── Admin shell ───────────────────────────────────────────
   static const String adminDashboard = '/admin/dashboard';
   static const String adminHub = '/admin/hub';
@@ -38,6 +42,7 @@ sealed class AppRoutes {
     acceptInvite,
     reviewContract,
     justify,
+    disputePortal,
   };
 }
 

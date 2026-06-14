@@ -13,6 +13,11 @@ enum SanctionReviewStatus {
   rejected,
   disputed,
   pendingPeerReview,
+
+  /// Terminal "De Acordo": the carrier (or an internal record) formally accepted
+  /// the applied penalty. No transition out (sealed by `prevent_srq_immutable_mutation`).
+  /// Drives the AR "Pending Acknowledgement" → settled signal (Sprint A, M4).
+  acknowledged,
 }
 
 /// Entity representing a pending human review of an engine-recommended sanction.
