@@ -18,6 +18,8 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/investigati
 import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
+import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
+import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
@@ -456,6 +458,10 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                             _DisputeSlaChip(dueAtUtc: item.resolutionDueAtUtc!),
                             const SizedBox(height: 12),
                           ],
+                          _PortalSubmissionsZone(
+                            organizationId: item.organizationId,
+                            queueEntryId: item.id,
+                          ),
                           _DisputeResolutionRow(
                             isLoading: isLoading,
                             showAcceptField: _showAcceptField,
@@ -490,8 +496,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         onDecline: () => _onDeclinePeerReview(context),
                       ),
                     ),
-                  if (item.status == SanctionReviewStatus.applied)
+                  if (item.status == SanctionReviewStatus.applied) ...[
                     _buildForensicEvidenceVisualizerRow(context, item),
+                    _AcknowledgeInternalRow(
+                      isLoading: isLoading,
+                      onAcknowledge: () => _onAcknowledgeInternal(context),
+                    ),
+                  ],
                 ],
               ),
               // WS-5: Severity accent — painted AFTER content so full-bleed rows
@@ -886,6 +897,90 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {
       ref.invalidate(pendingSanctionsStreamProvider);
+    }
+  }
+
+  /// Records an off-band "De Acordo" for this applied sanction (TENANT_ADMIN
+  /// documents that the carrier accepted by email/phone). Terminal + irreversible
+  /// → explicit confirmation with optional notes before the call.
+  Future<void> _onAcknowledgeInternal(BuildContext context) async {
+    // Lesson 8: capture context-bound objects before the first await.
+    final messenger = ScaffoldMessenger.of(context);
+    final userId = ref.read(currentOperatorIdProvider) ?? '';
+    final sessionId = ref.read(currentSessionIdProvider) ?? '';
+    final role = ref.read(currentUserRoleProvider);
+
+    final notesController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: VeraProbColors.surface,
+        title: const Text('Registrar De Acordo'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Confirma que a transportadora aceitou esta penalidade '
+              '(${'aceite off-band: e-mail/telefone'})? Esta ação é '
+              'definitiva e sela a sanção como "De Acordo".',
+              style: TextStyle(
+                fontSize: 13,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: notesController,
+              minLines: 2,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Observações (opcional)',
+                hintText: 'Ex.: aceite por e-mail de 12/06, ref. #4821',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.success,
+            ),
+            child: const Text('Confirmar De Acordo'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      notesController.dispose();
+      return;
+    }
+    final notes = notesController.text.trim();
+    notesController.dispose();
+
+    await ref
+        .read(sanctionActionStateProvider(widget.item.id).notifier)
+        .acknowledgeInternal(
+          queueEntryId: widget.item.id,
+          acknowledgedByUserId: userId,
+          notes: notes.isEmpty ? null : notes,
+          callerRole: role,
+          organizationId: widget.item.organizationId,
+          sessionId: sessionId,
+        );
+    final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
+    if (actionState is AsyncData) {
+      ref.invalidate(sealedSanctionsNotifierProvider);
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('De Acordo registrado e selado.')),
+        );
+      }
     }
   }
 
@@ -2254,6 +2349,288 @@ class _RetractionProvenanceZone extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Auditor review of carrier-submitted counter-evidence awaiting a verdict.
+///
+/// Lists `PENDING_AUDIT` portal submissions for this disputed sanction via the
+/// deny-all-safe `list_portal_submissions` RPC, exposing one-click ACEITAR /
+/// REJEITAR per file (`audit_portal_submission`). Hidden entirely when no portal
+/// evidence is pending — the legacy in-app dispute flow is unaffected.
+class _PortalSubmissionsZone extends ConsumerStatefulWidget {
+  final String organizationId;
+  final String queueEntryId;
+  const _PortalSubmissionsZone({
+    required this.organizationId,
+    required this.queueEntryId,
+  });
+
+  @override
+  ConsumerState<_PortalSubmissionsZone> createState() =>
+      _PortalSubmissionsZoneState();
+}
+
+class _PortalSubmissionsZoneState
+    extends ConsumerState<_PortalSubmissionsZone> {
+  String? _busySubmissionId;
+
+  ({String orgId, String queueEntryId}) get _key =>
+      (orgId: widget.organizationId, queueEntryId: widget.queueEntryId);
+
+  Future<void> _audit(String submissionId, PortalAuditDecision decision) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final auditedBy = ref.read(currentOperatorIdProvider);
+    if (auditedBy == null || auditedBy.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Sessão expirada. Faça login novamente.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
+      return;
+    }
+    setState(() => _busySubmissionId = submissionId);
+    try {
+      await ref
+          .read(portalSubmissionAuditGatewayProvider)
+          .audit(
+            organizationId: widget.organizationId,
+            submissionId: submissionId,
+            decision: decision,
+            auditedByUserId: auditedBy,
+          );
+      if (!mounted) return;
+      ref.invalidate(pendingPortalSubmissionsProvider(_key));
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            decision == PortalAuditDecision.accept
+                ? 'Evidência aceita e anexada à disputa.'
+                : 'Evidência rejeitada e removida do conjunto.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível concluir a auditoria da evidência.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _busySubmissionId = null);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(pendingPortalSubmissionsProvider(_key));
+    return switch (async) {
+      AsyncData(:final value) =>
+        value.isEmpty
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.cloud_upload_outlined,
+                          size: 13,
+                          color: VeraProbColors.primary,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'CONTRAPROVA DO PORTAL (${value.length})',
+                          style: VeraProbTypography.badge.copyWith(
+                            color: VeraProbColors.primary,
+                            fontSize: 9,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...value.map(
+                      (s) => _PortalSubmissionTile(
+                        summary: s,
+                        isBusy: _busySubmissionId == s.submissionId,
+                        anyBusy: _busySubmissionId != null,
+                        onAccept: () =>
+                            _audit(s.submissionId, PortalAuditDecision.accept),
+                        onReject: () =>
+                            _audit(s.submissionId, PortalAuditDecision.reject),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      _ => const SizedBox.shrink(),
+    };
+  }
+}
+
+class _PortalSubmissionTile extends StatelessWidget {
+  final PortalSubmissionSummary summary;
+  final bool isBusy;
+  final bool anyBusy;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  const _PortalSubmissionTile({
+    required this.summary,
+    required this.isBusy,
+    required this.anyBusy,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  String _humanSize(int? bytes) {
+    if (bytes == null) return '—';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hash = summary.sha256Server;
+    final shortHash = (hash != null && hash.length >= 12)
+        ? '${hash.substring(0, 12)}…'
+        : (hash ?? '—');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.description_outlined,
+                size: 14,
+                color: VeraProbColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  summary.fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VeraProbTypography.dataValue.copyWith(fontSize: 12),
+                ),
+              ),
+              Text(
+                _humanSize(summary.fileSizeBytesActual),
+                style: VeraProbTypography.caption.copyWith(fontSize: 10),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'SHA-256: $shortHash · ${summary.mimeTypeDetected ?? '—'}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: VeraProbTypography.caption.copyWith(
+              fontFamily: 'monospace',
+              fontSize: 10,
+              color: VeraProbColors.textDisabled,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: anyBusy ? null : onReject,
+                  icon: const Icon(Icons.close, size: 14),
+                  label: const Text('Rejeitar'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VeraProbColors.error,
+                    side: BorderSide(
+                      color: VeraProbColors.error.withValues(alpha: 0.5),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    textStyle: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: anyBusy ? null : onAccept,
+                  icon: isBusy
+                      ? const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.check, size: 14),
+                  label: const Text('Aceitar'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: VeraProbColors.success,
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    textStyle: const TextStyle(fontSize: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Registrar De Acordo" action for an `applied` sanction — documents an
+/// off-band carrier acceptance (TENANT_ADMIN-gated server-side). Hidden cost is
+/// zero for auditors: the RPC rejects non-admins with an opaque error (INV-26).
+class _AcknowledgeInternalRow extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onAcknowledge;
+  const _AcknowledgeInternalRow({
+    required this.isLoading,
+    required this.onAcknowledge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: isLoading ? null : onAcknowledge,
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.handshake_outlined, size: 16),
+              label: const Text('Registrar De Acordo'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.success,
+                side: BorderSide(
+                  color: VeraProbColors.success.withValues(alpha: 0.5),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

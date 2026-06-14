@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show listEquals, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/sla_audit/acknowledge_sanction_internal_command.dart';
+import 'package:veraprob/application/sla_audit/acknowledge_sanction_internal_handler.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/confirm_peer_review_command.dart';
@@ -287,6 +289,14 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     rbac: RbacService(),
   );
 
+  AcknowledgeSanctionInternalHandler get _acknowledgeInternalHandler =>
+      AcknowledgeSanctionInternalHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+        ackRepo: ref.watch(sanctionAcknowledgementCommandRepositoryProvider),
+        rbac: RbacService(),
+      );
+
   RejectSanctionHandler get _rejectHandler => RejectSanctionHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
@@ -469,6 +479,31 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           declinedByUserId: declinedByUserId,
           actorEmail: actorEmail,
           reason: reason,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
+
+  /// Records an off-band "De Acordo" (carrier accepted the penalty via
+  /// email/phone) for an `applied` sanction. TENANT_ADMIN-only; flips the entry
+  /// to the terminal `acknowledged` status server-side.
+  Future<void> acknowledgeInternal({
+    required String queueEntryId,
+    required String acknowledgedByUserId,
+    String? notes,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _acknowledgeInternalHandler.handle(
+        AcknowledgeSanctionInternalCommand(
+          queueEntryId: queueEntryId,
+          acknowledgedByUserId: acknowledgedByUserId,
+          notes: notes,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,

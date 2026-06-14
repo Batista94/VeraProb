@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression — Sprint A (Portal + De Acordo), council-approved
+// plan `convoque-o-conselho-de-linear-diffie`: adds the terminal `acknowledged`
+// status. Append-only enum extension; no existing state semantics altered.
 import 'package:equatable/equatable.dart';
 
 import 'verdict_evidence.dart';
