@@ -2,13 +2,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/rule_version_history_entry.dart';
 import 'package:veraprob/application/sla_audit/rule_studio_command_service.dart';
+import 'package:veraprob/application/sla_audit/retire_contractual_rule_handler.dart';
+import 'package:veraprob/application/sla_audit/schedule_contractual_rule_handler.dart';
 import 'package:veraprob/application/sla_audit/update_contractual_rule_handler.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_studio_command_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_rule_version_query_service.dart';
 import 'package:veraprob/state/provider_timeout.dart';
+import 'auth_providers.dart';
 import 'contract_providers.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
@@ -34,6 +39,99 @@ final updateContractualRuleHandlerProvider =
         rbac: RbacService(),
       );
     });
+
+final scheduleContractualRuleHandlerProvider =
+    Provider<ScheduleContractualRuleHandler>((ref) {
+      return ScheduleContractualRuleHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        commandService: ref.watch(ruleStudioCommandServiceProvider),
+        rbac: RbacService(),
+      );
+    });
+
+final retireContractualRuleHandlerProvider =
+    Provider<RetireContractualRuleHandler>((ref) {
+      return RetireContractualRuleHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        commandService: ref.watch(ruleStudioCommandServiceProvider),
+        rbac: RbacService(),
+      );
+    });
+
+// ── Lifecycle command wrappers (INV-13) ────────────────────────────────────────
+// Convert any thrown exception into a human-readable message so features never
+// import from the domain layer. `null` is the ONLY success signal.
+
+/// Schedules a future rule version. Org/role/session are read from the canonical
+/// providers here (INV-1). Returns `null` on success, else an error message.
+Future<String?> scheduleContractualRule(
+  WidgetRef ref, {
+  required String contractId,
+  String? oldRuleId,
+  required SlaRuleType ruleType,
+  required Map<String, dynamic> newConfig,
+  required int evaluationOrder,
+  required DateTime effectiveAtUtc,
+}) async {
+  final organizationId = ref.read(currentOrganizationIdProvider);
+  final sessionId = ref.read(currentSessionIdProvider);
+  if (organizationId == null || sessionId == null) {
+    return 'Sessão expirada. Faça login novamente.';
+  }
+  try {
+    await ref
+        .read(scheduleContractualRuleHandlerProvider)
+        .handle(
+          ScheduleContractualRuleCommand(
+            organizationId: organizationId,
+            contractId: contractId,
+            oldRuleId: oldRuleId,
+            ruleType: ruleType,
+            newConfig: newConfig,
+            evaluationOrder: evaluationOrder,
+            effectiveAtUtc: effectiveAtUtc,
+            callerRole: ref.read(currentUserRoleProvider),
+            sessionId: sessionId,
+          ),
+        );
+    return null;
+  } on DomainException catch (e) {
+    return e.message;
+  } on IntegrityException catch (e) {
+    return e.message;
+  } catch (_) {
+    return 'Não foi possível agendar a nova versão da regra.';
+  }
+}
+
+/// Retires (closes) a rule version. Returns `null` on success, else a message.
+Future<String?> retireContractualRule(
+  WidgetRef ref, {
+  required String ruleId,
+}) async {
+  final organizationId = ref.read(currentOrganizationIdProvider);
+  final sessionId = ref.read(currentSessionIdProvider);
+  if (organizationId == null || sessionId == null) {
+    return 'Sessão expirada. Faça login novamente.';
+  }
+  try {
+    await ref
+        .read(retireContractualRuleHandlerProvider)
+        .handle(
+          RetireContractualRuleCommand(
+            organizationId: organizationId,
+            ruleId: ruleId,
+            callerRole: ref.read(currentUserRoleProvider),
+            sessionId: sessionId,
+          ),
+        );
+    return null;
+  } on DomainException catch (e) {
+    return e.message;
+  } catch (_) {
+    return 'Não foi possível aposentar a regra.';
+  }
+}
 
 // ── Query Providers ───────────────────────────────────────────────────────────
 

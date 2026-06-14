@@ -78,6 +78,11 @@ class AdminHubScreen extends ConsumerWidget {
             icon: Icons.summarize_outlined,
             destination: AdminNav.billingReports,
           ),
+          _HubItem(
+            label: 'Risco da Frota',
+            icon: Icons.insights_outlined,
+            routePath: AppRoutes.fleetRiskAnalytics,
+          ),
         ],
       ),
       _HubGroup(
@@ -137,10 +142,7 @@ class AdminHubScreen extends ConsumerWidget {
                 childAspectRatio: 2.6,
                 children: [
                   for (final item in group.items)
-                    _HubCard(
-                      item: item,
-                      onTap: () => context.go(item.destination.path),
-                    ),
+                    _HubCard(item: item, onTap: () => context.go(item.path)),
                 ],
               );
             },
@@ -258,12 +260,26 @@ class _HubGroup {
 class _HubItem {
   final String label;
   final IconData icon;
-  final AdminNav destination;
+
+  /// Target sidebar destination, when the card maps to an [AdminNav] branch.
+  final AdminNav? destination;
+
+  /// Explicit route path, for cards that target a nested route with no
+  /// [AdminNav] of its own (e.g. the Fleet Risk analytics dashboard).
+  final String? routePath;
+
   const _HubItem({
     required this.label,
     required this.icon,
-    required this.destination,
-  });
+    this.destination,
+    this.routePath,
+  }) : assert(
+         destination != null || routePath != null,
+         'A hub item needs either a destination or a routePath.',
+       );
+
+  /// Resolved navigation target.
+  String get path => routePath ?? destination!.path;
 }
 
 class _HubOnboardingBanner extends ConsumerWidget {

@@ -35,6 +35,15 @@ sealed class AppRoutes {
   static String superAdminTenantDetail(String tenantId) =>
       '/super-admin/tenants/$tenantId';
 
+  /// Rule Studio for a contract. Nested under the contracts admin branch so the
+  /// shell + sidebar selection are preserved. `:contractId` is a contract UUID.
+  static String contractRules(String contractId) =>
+      '/admin/hub/contracts/$contractId/rules';
+
+  /// Fleet Risk analytics dashboard (carrier ranking + risk thermometer).
+  /// Nested under the Administração hub branch so the shell is preserved.
+  static const String fleetRiskAnalytics = '/admin/hub/fleet-risk';
+
   /// Routes reachable without an authenticated session. The router redirect
   /// guard bounces every other path to [login] when there is no session.
   static const Set<String> publicPaths = {

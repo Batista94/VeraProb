@@ -50,7 +50,7 @@ class _MockHttpOverrides extends HttpOverrides {
 
 class _MockSealedNotifier extends SealedSanctionsNotifier {
   final SealedSanctionsState mockState;
-  _MockSealedNotifier(this.mockState);
+  _MockSealedNotifier(this.mockState) : super(TerminalLane.verdicts);
 
   @override
   SealedSanctionsState build() => mockState;
@@ -71,8 +71,8 @@ Widget _buildScreen({List<Override> extraOverrides = const []}) {
   return ProviderScope(
     overrides: [
       pendingSanctionsStreamProvider.overrideWith((ref) => Stream.value([])),
-      sealedSanctionsNotifierProvider.overrideWith(
-        () => _MockSealedNotifier(mockSealedState),
+      sealedSanctionsNotifierProvider.overrideWith2(
+        (_) => _MockSealedNotifier(mockSealedState),
       ),
       disputedSanctionsStreamProvider.overrideWith((ref) => Stream.value([])),
       ...extraOverrides,
@@ -133,6 +133,33 @@ void main() {
         expect(find.textContaining('Período:'), findsOneWidget);
         expect(
           find.text('Nenhum veredito selado encontrado neste período.'),
+          findsOneWidget,
+        );
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'toggling to De Acordo shows DateFilterBar and acknowledged empty state',
+      (tester) async {
+        tester.view.physicalSize = const Size(1200, 800);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(_buildScreen());
+        await tester.pumpAndSettle();
+
+        final deAcordoTab = find.text('De Acordo');
+        expect(deAcordoTab, findsOneWidget);
+        await tester.ensureVisible(deAcordoTab);
+        await tester.tap(deAcordoTab);
+        await tester.pumpAndSettle();
+
+        // Same paginated terminal lane → date bar renders, with the
+        // acknowledged-specific empty message (TerminalLane.acknowledged).
+        expect(find.textContaining('Período:'), findsOneWidget);
+        expect(
+          find.text('Nenhuma penalidade em "De Acordo" neste período.'),
           findsOneWidget,
         );
 

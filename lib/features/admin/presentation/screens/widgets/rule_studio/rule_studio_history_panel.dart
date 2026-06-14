@@ -139,7 +139,9 @@ class _HistoryRow extends StatelessWidget {
             height: 6,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: entry.isActive
+              color: entry.isScheduled
+                  ? VeraProbColors.warning
+                  : entry.isActive
                   ? VeraProbColors.onTime
                   : VeraProbColors.textDisabled,
             ),
@@ -160,7 +162,15 @@ class _HistoryRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    if (entry.isActive)
+                    if (entry.isScheduled)
+                      const Text(
+                        '(agendada)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: VeraProbColors.warning,
+                        ),
+                      )
+                    else if (entry.isActive)
                       const Text(
                         '(ativa)',
                         style: TextStyle(
@@ -194,9 +204,10 @@ class _HistoryRow extends StatelessWidget {
 
   String _formatDateRange(RuleVersionHistoryEntry e) {
     final from = _fmtDate(e.activeFromUtc);
+    if (e.isScheduled) return 'Agenda para $from';
     if (e.isActive) return 'Desde $from';
-    final to = _fmtDate(e.activeToUtc!);
-    return '$from → $to';
+    final to = e.activeToUtc;
+    return to == null ? 'Desde $from' : '$from → ${_fmtDate(to)}';
   }
 
   String _fmtDate(DateTime d) =>

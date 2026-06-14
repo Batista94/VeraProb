@@ -515,7 +515,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
 
 // ── Filter and Sealed Sanctions Pagination (Enterprise Hardening) ───────────
 
-enum AuditorQueueFilter { pending, disputed, sealed }
+enum AuditorQueueFilter { pending, disputed, sealed, acknowledged }
 
 class AuditorQueueFilterNotifier extends Notifier<AuditorQueueFilter> {
   @override
@@ -578,7 +578,26 @@ class SealedSanctionsState {
   }
 }
 
+/// Terminal sanction lanes — both append-only end states that grow unbounded,
+/// so each is paginated + date-filtered (never a live realtime stream).
+/// [statuses] maps a lane to the `status` values it surfaces.
+enum TerminalLane {
+  /// Sealed verdicts: `applied` (fine upheld) + `rejected` (fine refused).
+  verdicts(['applied', 'rejected']),
+
+  /// "De Acordo": carrier-acknowledged penalties (off-band acceptance).
+  acknowledged(['acknowledged']);
+
+  const TerminalLane(this.statuses);
+
+  final List<String> statuses;
+}
+
 class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
+  SealedSanctionsNotifier(this.lane);
+
+  final TerminalLane lane;
+
   static const int _pageSize = 20;
 
   @override
@@ -626,7 +645,7 @@ class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
           .from('sanction_review_queue')
           .select()
           .eq('organization_id', orgId)
-          .inFilter('status', const ['applied', 'rejected'])
+          .inFilter('status', lane.statuses)
           .gte('created_at', state.startDate.toIso8601String())
           .lte('created_at', state.endDate.toIso8601String())
           .order('created_at', ascending: false)
@@ -651,8 +670,8 @@ class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
   }
 }
 
-final sealedSanctionsNotifierProvider =
-    NotifierProvider.autoDispose<SealedSanctionsNotifier, SealedSanctionsState>(
+final sealedSanctionsNotifierProvider = NotifierProvider.autoDispose
+    .family<SealedSanctionsNotifier, SealedSanctionsState, TerminalLane>(
       SealedSanctionsNotifier.new,
     );
 

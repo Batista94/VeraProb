@@ -975,7 +975,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         );
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {
-      ref.invalidate(sealedSanctionsNotifierProvider);
+      // Item leaves the verdicts lane (`applied`) and enters the "De Acordo"
+      // lane (`acknowledged`) — refresh both terminal lanes.
+      ref.invalidate(sealedSanctionsNotifierProvider(TerminalLane.verdicts));
+      ref.invalidate(
+        sealedSanctionsNotifierProvider(TerminalLane.acknowledged),
+      );
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(content: Text('De Acordo registrado e selado.')),
@@ -2476,6 +2481,50 @@ class _PortalSubmissionsZoneState
   }
 }
 
+/// Provenance marker: this evidence arrived via the external dispute portal
+/// (anon submitter), not an internal auditor upload. Forensic chain-of-custody
+/// demands the origin be visible at a glance (INV-23).
+class _PortalProvenanceBadge extends StatelessWidget {
+  const _PortalProvenanceBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: 'Origem: Portal de Contestação (submissão externa)',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+        decoration: BoxDecoration(
+          color: VeraProbColors.primary.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(
+            color: VeraProbColors.primary.withValues(alpha: 0.3),
+            width: 0.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.cloud_done_outlined,
+              size: 10,
+              color: VeraProbColors.primary,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              'PORTAL',
+              style: VeraProbTypography.badge.copyWith(
+                color: VeraProbColors.primary,
+                fontSize: 8,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PortalSubmissionTile extends StatelessWidget {
   final PortalSubmissionSummary summary;
   final bool isBusy;
@@ -2517,11 +2566,7 @@ class _PortalSubmissionTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.description_outlined,
-                size: 14,
-                color: VeraProbColors.textSecondary,
-              ),
+              const _PortalProvenanceBadge(),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -2531,6 +2576,7 @@ class _PortalSubmissionTile extends StatelessWidget {
                   style: VeraProbTypography.dataValue.copyWith(fontSize: 12),
                 ),
               ),
+              const SizedBox(width: 6),
               Text(
                 _humanSize(summary.fileSizeBytesActual),
                 style: VeraProbTypography.caption.copyWith(fontSize: 10),

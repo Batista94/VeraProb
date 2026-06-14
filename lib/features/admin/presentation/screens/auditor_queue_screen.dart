@@ -191,20 +191,28 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
         ),
       };
     } else {
-      final sealedState = ref.watch(sealedSanctionsNotifierProvider);
+      final lane = filter == AuditorQueueFilter.acknowledged
+          ? TerminalLane.acknowledged
+          : TerminalLane.verdicts;
+      final sealedState = ref.watch(sealedSanctionsNotifierProvider(lane));
+      final emptyMessage = lane == TerminalLane.acknowledged
+          ? 'Nenhuma penalidade em "De Acordo" neste período.'
+          : 'Nenhum veredito selado encontrado neste período.';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _DateFilterBar(),
+          _DateFilterBar(lane: lane),
           const SizedBox(height: 12),
           Expanded(
             child: sealedState.items.isEmpty && !sealedState.isLoading
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
+                      padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Text(
-                        'Nenhum veredito selado encontrado neste período.',
-                        style: TextStyle(color: VeraProbColors.textSecondary),
+                        emptyMessage,
+                        style: const TextStyle(
+                          color: VeraProbColors.textSecondary,
+                        ),
                       ),
                     ),
                   )
@@ -223,8 +231,9 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
                                 : OutlinedButton(
                                     onPressed: () => ref
                                         .read(
-                                          sealedSanctionsNotifierProvider
-                                              .notifier,
+                                          sealedSanctionsNotifierProvider(
+                                            lane,
+                                          ).notifier,
                                         )
                                         .fetchNextPage(),
                                     child: const Text('CARREGAR MAIS'),
@@ -522,6 +531,16 @@ class _Header extends ConsumerWidget {
                           : const Text('Concluídos'),
                       icon: const Icon(Icons.verified_user_outlined, size: 14),
                     ),
+                    ButtonSegment<AuditorQueueFilter>(
+                      value: AuditorQueueFilter.acknowledged,
+                      label: isNarrow
+                          ? const Tooltip(
+                              message: 'De Acordo',
+                              child: SizedBox.shrink(),
+                            )
+                          : const Text('De Acordo'),
+                      icon: const Icon(Icons.handshake_outlined, size: 14),
+                    ),
                   ],
                   selected: {filter},
                   onSelectionChanged: (newSelection) {
@@ -618,11 +637,12 @@ class _EmptyState extends StatelessWidget {
 // ── Date Filter Bar ───────────────────────────────────────────────────────────
 
 class _DateFilterBar extends ConsumerWidget {
-  const _DateFilterBar();
+  final TerminalLane lane;
+  const _DateFilterBar({required this.lane});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(sealedSanctionsNotifierProvider);
+    final state = ref.watch(sealedSanctionsNotifierProvider(lane));
     String format(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -659,7 +679,7 @@ class _DateFilterBar extends ConsumerWidget {
               );
               if (picked != null) {
                 await ref
-                    .read(sealedSanctionsNotifierProvider.notifier)
+                    .read(sealedSanctionsNotifierProvider(lane).notifier)
                     .updateDateFilter(picked.start, picked.end);
               }
             },

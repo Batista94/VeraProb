@@ -57,6 +57,7 @@ const _orgScopedProviders = <String, _OrgIdSource>{
 /// These are acceptable if the doc comment documents INV-1 compliance.
 const _familyParameterProviders = <String>[
   'lib/state/providers/heartbeat_monitor_providers.dart',
+  'lib/state/providers/dispute_portal_providers.dart',
 ];
 
 /// Provider files where notifier methods receive `organizationId` as a

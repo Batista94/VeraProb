@@ -25,6 +25,8 @@ import 'package:veraprob/features/admin/presentation/drivers_screen.dart';
 import 'package:veraprob/features/admin/presentation/timecard_reports_screen.dart';
 import 'package:veraprob/features/admin/presentation/command_center/screens/operational_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/contracts_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/fleet_risk_analytics_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/rule_studio_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_financial_impact_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/operational_zones_screen.dart';
@@ -165,10 +167,43 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             AdminNav.operationalAudit,
             const OperationalAuditScreen(),
           ),
-          _adminBranch(AdminNav.adminHub, const AdminHubScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AdminNav.adminHub.path,
+                builder: (context, state) => const AdminHubScreen(),
+                routes: [
+                  // `/admin/hub/fleet-risk` — Fleet Risk analytics dashboard,
+                  // shell-preserving so the Administração pillar stays selected.
+                  GoRoute(
+                    path: 'fleet-risk',
+                    builder: (context, state) =>
+                        const FleetRiskAnalyticsScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
           _adminBranch(AdminNav.drivers, const DriversScreen()),
           _adminBranch(AdminNav.timecards, const TimecardReportsScreen()),
-          _adminBranch(AdminNav.contracts, const ContractsScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AdminNav.contracts.path,
+                builder: (context, state) => const ContractsScreen(),
+                routes: [
+                  // `/admin/hub/contracts/:contractId/rules` — Rule Studio,
+                  // shell-preserving so the sidebar selection stays on Contracts.
+                  GoRoute(
+                    path: ':contractId/rules',
+                    builder: (context, state) => RuleStudioScreen(
+                      contractId: state.pathParameters['contractId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
           _adminBranch(AdminNav.slaAudit, const SlaAuditScreen()),
           _adminBranch(AdminNav.zones, const OperationalZonesScreen()),
           _adminBranch(

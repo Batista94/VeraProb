@@ -12,6 +12,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_contract_approval_com
 import 'package:veraprob/infrastructure/sla_audit/postgres_contract_review_token_query_service.dart';
 import 'package:veraprob/application/sla_audit/declare_contractual_plan_handler.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
+import 'package:veraprob/application/sla_audit/projections/contract_financial_amendment_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
@@ -288,3 +289,38 @@ final contractorNamesProvider = FutureProvider<List<String>>((ref) async {
   names.sort();
   return names;
 });
+
+/// Append-only financial amendment history for a contract, newest-effective
+/// first. Drives the amendments timeline in the contract detail (INV-3 history).
+///
+/// INV-1: `organizationId` is sourced from `currentOrganizationIdProvider` and
+/// the `contract_financial_amendments` RLS policy re-scopes the read to the
+/// caller's org server-side (defense in depth). Returns `[]` when there is no
+/// tenant context (e.g. super admin).
+final contractFinancialAmendmentsProvider = FutureProvider.autoDispose
+    .family<List<ContractFinancialAmendmentView>, String>((ref, contractId) {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      final client = ref.watch(supabaseClientProvider);
+
+      Future<List<ContractFinancialAmendmentView>> fetch() async {
+        if (organizationId == null) return const [];
+        final rows = await client
+            .from('contract_financial_amendments')
+            .select(
+              'id, financial_ceiling_cents, penalty_multiplier_bps, '
+              'effective_at_utc, amended_at_utc, notes',
+            )
+            .eq('organization_id', organizationId)
+            .eq('contract_id', contractId)
+            .order('effective_at_utc', ascending: false);
+        return (rows as List)
+            .map(
+              (r) => ContractFinancialAmendmentView.fromJson(
+                r as Map<String, dynamic>,
+              ),
+            )
+            .toList();
+      }
+
+      return fetch().withProviderTimeout();
+    });

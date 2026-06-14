@@ -23,8 +23,13 @@ final portalSubmissionAuditGatewayProvider =
     });
 
 /// PENDING_AUDIT submissions for a given queue entry. Family keyed by
-/// `'$organizationId|$queueEntryId'`. autoDispose so the panel re-queries fresh
+/// `({orgId, queueEntryId})`. autoDispose so the panel re-queries fresh
 /// each time a disputed card is expanded.
+///
+/// INV-1: `orgId` is a family parameter — the calling widget MUST source it
+/// from `currentOrganizationIdProvider`. It is never hardcoded here, and the
+/// SECURITY DEFINER RPC re-validates the JWT org server-side (INV-22/26),
+/// returning 0 rows on any mismatch.
 final pendingPortalSubmissionsProvider = FutureProvider.autoDispose
     .family<
       List<PortalSubmissionSummary>,
