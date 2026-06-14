@@ -47,18 +47,18 @@
 - [x] **[Comp 3] Trilha de "quem cancelou":** No retract, `disputed_at`/`disputed_by` selados no open (INV-15) e NUNCA limpos (INV-23) — provenance sobrevive ao retract. Exposto na timeline do card + `RetractionProvenance` widget.
 - [x] **[Comp 3] SLA-timer de disputa (aging):** Prazo de resolução em dias úteis (`resolution_due_at`) com calendário de feriados por org (`organization_holidays`). `DisputeSlaChip` (countdown/overdue) no card. RPC `dispute_open` semeia o prazo.
 - [x] **[Comp 5.3] Forensic Dispute Portal (ReadOnly):** Tela externa tokenizada (link temporário TTL) para transportadores verem evidências sem login no core. Tokens (`dispute_portal_tokens`) + RPC `read_dispute_portal` + tipos de ledger de portal. (Stub ReadOnly; submissão de contraprova = backlog 10.7.)
-- [ ] **[BIZ] Forensic Dispute Portal (submissão):** Interface externa para carriers submeterem contraprovas digitais (além do ReadOnly entregue).
+- [x] **[BIZ] Forensic Dispute Portal (submissão):** Interface externa para carriers submeterem contraprovas digitais (além do ReadOnly entregue). *(Sprint A — pre-signed URL + quarentena + SHA-256 server-side + painel auditor PENDING_AUDIT.)*
 - [x] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
-- [ ] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador.
-- [ ] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows.
-- [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput.
+- [x] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador. *(Sprint C — `get_fleet_risk_summary` RPC; risk_bps server-side byte-idêntico ao `SlaBreachRiskCalculator`, INV-15; substitui o loop Dart em `atRiskSlaCountProvider`.)*
+- [x] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows. *(Sprint B — schedule/activate/retire RPCs, anti-backdating 2-camadas, amendments financeiros append-only, snapshot INV-21.)*
+- [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput. *(DIFERIDO pós-first-tenant — precisa de volume real de fila; 10.10 bulk-resolve é a maior alavanca para a mesma persona.)*
 - [x] **[Comp 5.4 · BIZ] Human Verdict Affirmation:** Botões `AFIRMAR VIOLAÇÃO` (sela hash) / `INIBIR VIOLAÇÃO` (comentário obrigatório) + fluxo de confirmação (`CONFIRMAR AFIRMAÇÃO`/`CONFIRMAR INIBIÇÃO`/`CANCELAR SOLICITAÇÃO`) direto no `SanctionVerdictCard`. Cobertura de widget 43 testes.
 - [x] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
 - [x] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
-- [ ] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual.
-- [ ] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures.
-- [ ] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles.
-- [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance.
+- [x] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual. *(Sprint C — `mv_carrier_performance` MV + pg_cron horário + `get_carrier_performance_ranking` RPC SECURITY DEFINER; `CarrierRankTable`.)*
+- [ ] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures. *(DIFERIDO — completar WS-9 Signal Integrity primeiro; reusa o scoring de confiança.)*
+- [x] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles. *(Sprint A — `acknowledge_via_portal` hash-bound + `acknowledge_sanction_internal`; status terminal `acknowledged`; fato ledger `SANCTION_ACKNOWLEDGED`.)*
+- [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 - [ ] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
 - [ ] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
 
