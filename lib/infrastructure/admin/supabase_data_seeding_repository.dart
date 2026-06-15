@@ -357,10 +357,17 @@ class SupabaseDataSeedingRepository
   @override
   Future<void> seedActiveSanctions(String organizationId) async {
     Map<String, dynamic>? contract;
+    Map<String, dynamic>? driver;
     try {
       contract = await _supabase
           .from('contracts')
           .select()
+          .eq('organization_id', organizationId)
+          .limit(1)
+          .maybeSingle();
+      driver = await _supabase
+          .from('drivers')
+          .select('id, full_name')
           .eq('organization_id', organizationId)
           .limit(1)
           .maybeSingle();
@@ -403,7 +410,15 @@ class SupabaseDataSeedingRepository
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
 
-    // Seed active operational alerts
+    // Seed active operational alerts — driver attribution required for all
+    // driver-bound types; TELEGRAM_ORPHAN is exempt (orphan by definition).
+    final driverContext = driver != null
+        ? {
+            'driver_id': driver['id'] as String,
+            'driver_name': driver['full_name'] as String,
+          }
+        : <String, dynamic>{};
+
     final alerts = [
       {
         'organization_id': organizationId,
@@ -418,6 +433,7 @@ class SupabaseDataSeedingRepository
         'context': {
           'message':
               'Veículo planejado não compareceu ao ponto inicial dentro da janela de tolerância.',
+          ...driverContext,
         },
       },
       {
@@ -433,6 +449,7 @@ class SupabaseDataSeedingRepository
         'context': {
           'message':
               'Desvio de rota crítica detectado no trecho da Rodovia dos Bandeirantes.',
+          ...driverContext,
         },
       },
       {
@@ -447,6 +464,7 @@ class SupabaseDataSeedingRepository
             .toIso8601String(),
         'context': {
           'message': 'Ausência de pings de telemetria por mais de 5 minutos.',
+          ...driverContext,
         },
       },
       {
@@ -462,6 +480,7 @@ class SupabaseDataSeedingRepository
         'context': {
           'message':
               'Evidência enviada via Telegram pendente de vinculação com viagem ativa.',
+          // TELEGRAM_ORPHAN: exempt from driver attribution (unlinked by definition)
         },
       },
       {
@@ -478,6 +497,7 @@ class SupabaseDataSeedingRepository
           'message':
               'Suspeita de adulteração de relógio do dispositivo de telemetria.',
           'evidence_id': const Uuid().v4(),
+          ...driverContext,
         },
       },
     ];

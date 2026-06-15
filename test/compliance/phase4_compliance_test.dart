@@ -41,6 +41,7 @@ void main() {
       startLatitude: geoLat,
       startLongitude: geoLng,
       startRadiusMeters: geoRadius,
+      boundOperatorId: 'driver-compliance-test',
       contractualValue: const Money(15000),
       noShowPenaltyBps: 15000,
       windowStartUtc: DateTime.utc(2026, 3, 1, 6, 0),
@@ -385,6 +386,7 @@ void main() {
         state: noShowState,
         decisions: const [],
         evaluatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
+        driverId: 'driver-compliance-test',
       );
       expect(noShowAlert, isNotNull);
       expect(noShowAlert!.alertType, equals('NO_SHOW'));
@@ -415,6 +417,7 @@ void main() {
         state: gapState,
         decisions: const [],
         evaluatedAtUtc: DateTime.utc(2026, 3, 1, 8, 0),
+        driverId: 'driver-compliance-test',
       );
       expect(gapAlert, isNotNull);
       expect(gapAlert!.alertType, equals('EVIDENCE_GAP'));

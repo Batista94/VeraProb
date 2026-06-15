@@ -339,6 +339,7 @@ class PostgresContractualExecutionStateRepository
           ? DateTime.parse(data['finalized_at_utc'] as String)
           : null,
       boundVehicleId: data['bound_vehicle_id'] as String?,
+      boundOperatorId: data['bound_operator_id'] as String?,
       bindingTimestampUtc: data['binding_timestamp_utc'] != null
           ? DateTime.parse(data['binding_timestamp_utc'] as String)
           : null,

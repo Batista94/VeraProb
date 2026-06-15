@@ -38,9 +38,10 @@ class TelemetrySyncMap extends ConsumerStatefulWidget {
 }
 
 class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final MapController _mapController = MapController();
-  late final AnimationController _animController;
+  late final AnimationController _flightController;
+  late final AnimationController _pulseController;
 
   /// Current focus state to render markers/circles.
   SanctionMapFocus? _currentFocus;
@@ -59,18 +60,24 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(
+    _flightController = AnimationController(
       vsync: this,
       duration: _flightDuration,
     );
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+
     _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _animController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _flightController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -82,11 +89,11 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
     final latLngTween = LatLngTween(begin: startCenter, end: target);
     final zoomTween = Tween<double>(begin: startZoom, end: targetZoom);
 
-    _animController.reset();
+    _flightController.reset();
 
     late final Animation<double> curved;
     curved = CurvedAnimation(
-      parent: _animController,
+      parent: _flightController,
       curve: Curves.easeInOutCubic,
     );
 
@@ -96,9 +103,9 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
       _mapController.move(center, zoom);
     }
 
-    _animController.addListener(listener);
-    _animController.forward().whenComplete(() {
-      _animController.removeListener(listener);
+    _flightController.addListener(listener);
+    _flightController.forward().whenComplete(() {
+      _flightController.removeListener(listener);
     });
   }
 
@@ -266,10 +273,6 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
       child: AnimatedBuilder(
         animation: _pulseAnimation,
         builder: (context, child) {
-          // Continuously pulse when focused
-          if (!_animController.isAnimating) {
-            _animController.repeat(reverse: true);
-          }
           final opacity = _pulseAnimation.value;
           return Container(
             decoration: BoxDecoration(

@@ -1,3 +1,4 @@
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -9,6 +10,17 @@ import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 /// exclusively from the ContractualEvaluationEngine pipeline.
 class AlertDerivationService {
   AlertDerivationService._();
+
+  // Alert types that require driver attribution (INV-18: Zero-Trust telemetry).
+  // TELEGRAM_ORPHAN is exempt: orphan = message not yet linked to any driver.
+  static const _driverBoundTypes = {
+    'NO_SHOW',
+    'EVIDENCE_GAP',
+    'PENALTY_APPLIED',
+    'DEVIATION',
+    'SLA_BREACH',
+    'POTENTIAL_TIME_FRAUD',
+  };
 
   /// Derives an [OperationalAlert] from an execution state transition.
   ///
@@ -39,6 +51,7 @@ class AlertDerivationService {
           triggeringEventId: triggeringEventId,
           traceId: traceId,
           context: _buildContext(
+            alertType: 'NO_SHOW',
             base: {
               'window_start': state.windowStartUtc.toIso8601String(),
               'window_end': state.windowEndUtc.toIso8601String(),
@@ -61,6 +74,7 @@ class AlertDerivationService {
           triggeringEventId: triggeringEventId,
           traceId: traceId,
           context: _buildContext(
+            alertType: 'EVIDENCE_GAP',
             base: {
               'window_start': state.windowStartUtc.toIso8601String(),
               'window_end': state.windowEndUtc.toIso8601String(),
@@ -96,6 +110,7 @@ class AlertDerivationService {
           triggeringEventId: triggeringEventId,
           traceId: traceId,
           context: _buildContext(
+            alertType: 'PENALTY_APPLIED',
             base: {
               'total_penalty_cents': totalPenaltyCents,
               'penalty_decisions': decisions
@@ -122,12 +137,22 @@ class AlertDerivationService {
     }
   }
 
-  /// Merges driver enrichment into the alert context when available.
+  /// Merges driver enrichment into the alert context.
+  ///
+  /// Throws [IntegrityException] when [alertType] is driver-bound (INV-18)
+  /// and [driverId] is not supplied.
   static Map<String, dynamic> _buildContext({
     required Map<String, dynamic> base,
+    required String alertType,
     String? driverId,
     String? driverName,
   }) {
+    if (_driverBoundTypes.contains(alertType) && driverId == null) {
+      throw IntegrityException(
+        'Alert type $alertType requires driver attribution (INV-18)',
+        field: 'driver_id',
+      );
+    }
     return {...base, 'driver_id': ?driverId, 'driver_name': ?driverName};
   }
 }
