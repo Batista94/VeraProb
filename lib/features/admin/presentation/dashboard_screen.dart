@@ -219,6 +219,7 @@ class _DevSeedButton extends ConsumerWidget {
     if (organizationId == null) return;
     try {
       final repository = ref.read(dataSeedingRepositoryProvider);
+      await repository.seedCsvData(organizationId);
       await repository.seedDrivers(organizationId);
       await repository.seedRoutes(organizationId);
       await repository.seedHistoricalData(organizationId);

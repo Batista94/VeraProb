@@ -719,4 +719,164 @@ class SupabaseDataSeedingRepository
       } catch (_) {}
     }
   }
+
+  @override
+  Future<void> seedCsvData(String organizationId) async {
+    // 1. Seed Contractors
+    final contractorsData = [
+      {
+        'name': 'Alpha Logistica Ltda',
+        'tax_id': '12345678000195',
+        'primary_email': 'contato@alphalog.com',
+        'contact_name': 'Joao Silva',
+      },
+      {
+        'name': 'Beta Transportes S.A.',
+        'tax_id': '98765432000198',
+        'primary_email': 'financeiro@betatransp.com',
+        'contact_name': 'Maria Santos',
+      },
+      {
+        'name': 'Gamma Distribuicao Ltda',
+        'tax_id': '45678901000175',
+        'primary_email': 'contato@gammadist.com',
+        'contact_name': 'Pedro Oliveira',
+      },
+    ];
+
+    final Map<String, String> contractorIdsByName = {};
+
+    for (var c in contractorsData) {
+      try {
+        final exists = await _supabase
+            .from('contractors')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('name', c['name'] as String)
+            .maybeSingle();
+
+        String contractorId;
+        if (exists == null) {
+          contractorId = const Uuid().v4();
+          await _supabase.from('contractors').insert({
+            'id': contractorId,
+            'organization_id': organizationId,
+            'name': c['name'] as String,
+            'tax_id': c['tax_id'] as String,
+            'primary_email': c['primary_email'] as String,
+            'contact_name': c['contact_name'] as String,
+          });
+        } else {
+          contractorId = exists['id'] as String;
+        }
+        contractorIdsByName[c['name'] as String] = contractorId;
+      } on PostgrestException catch (e) {
+        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+      }
+    }
+
+    // 2. Seed Operational Zones
+    final zonesData = [
+      {
+        'name': 'Zona Central',
+        'latitude': -23.55052,
+        'longitude': -46.633308,
+        'radius_meters': 500,
+      },
+      {
+        'name': 'Zona Norte',
+        'latitude': -23.50000,
+        'longitude': -46.600000,
+        'radius_meters': 1000,
+      },
+      {
+        'name': 'Zona Sul',
+        'latitude': -23.60000,
+        'longitude': -46.650000,
+        'radius_meters': 800,
+      },
+    ];
+
+    for (var z in zonesData) {
+      try {
+        final exists = await _supabase
+            .from('operational_zones')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('name', z['name'] as String)
+            .maybeSingle();
+
+        if (exists == null) {
+          await _supabase.from('operational_zones').insert({
+            'organization_id': organizationId,
+            'name': z['name'] as String,
+            'latitude':
+                z['latitude'] as double, // Physical Metric - Double Required
+            'longitude':
+                z['longitude'] as double, // Physical Metric - Double Required
+            'radius_meters': z['radius_meters'] as int,
+          });
+        }
+      } on PostgrestException catch (e) {
+        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+      }
+    }
+
+    // 3. Seed Contracts (SLA Models)
+    final contractsData = [
+      {
+        'name': 'CONTR_001',
+        'contractor_name': 'Alpha Logistica Ltda',
+        'description': 'Contrato Alpha Valido',
+        'valid_from_utc': '2026-06-01T00:00:00Z',
+        'valid_until_utc': '2027-06-01T00:00:00Z',
+        'financial_ceiling_cents': 500000,
+      },
+      {
+        'name': 'CONTR_002',
+        'contractor_name': 'Beta Transportes S.A.',
+        'description': 'Contrato Beta Valido',
+        'valid_from_utc': '2026-06-01T00:00:00Z',
+        'valid_until_utc': '2027-06-01T00:00:00Z',
+        'financial_ceiling_cents': 500000,
+      },
+      {
+        'name': 'CONTR_003',
+        'contractor_name': 'Gamma Distribuicao Ltda',
+        'description': 'Contrato Gamma Valido',
+        'valid_from_utc': '2026-06-01T00:00:00Z',
+        'valid_until_utc': '2027-06-01T00:00:00Z',
+        'financial_ceiling_cents': 500000,
+      },
+    ];
+
+    for (var c in contractsData) {
+      try {
+        final exists = await _supabase
+            .from('contracts')
+            .select('id')
+            .eq('organization_id', organizationId)
+            .eq('name', c['name'] as String)
+            .maybeSingle();
+
+        if (exists == null) {
+          final contractorId = contractorIdsByName[c['contractor_name']!];
+          await _supabase.from('contracts').insert({
+            'organization_id': organizationId,
+            'name': c['name'] as String,
+            'contractor_name': c['contractor_name'] as String,
+            'contractor_id': contractorId,
+            'description': c['description'] as String?,
+            'valid_from_utc': c['valid_from_utc'] as String,
+            'valid_until_utc': c['valid_until_utc'] as String,
+            'status': 'active',
+            'financial_ceiling_cents': c['financial_ceiling_cents'] as int,
+            'penalty_multiplier': 1.0, // Physical Metric - Double Required
+          });
+        }
+      } on PostgrestException catch (e) {
+        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+      }
+    }
+  }
 }
