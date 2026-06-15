@@ -80,7 +80,12 @@ async function failSubmission(
   if (error) console.error("[portal-finalize-upload] fail rpc error:", error.message);
 }
 
-Deno.serve(async (req: Request): Promise<Response> => {
+// Exported for unit testing with an injected SupabaseClient. Production wiring
+// (Deno.serve) lives behind the import.meta.main guard at the bottom of the file.
+export async function handler(
+  req: Request,
+  injectedSupabase?: SupabaseClient,
+): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -108,7 +113,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return sovereigntyErrorResponse();
   }
 
-  const supabase = createClient(
+  const supabase = injectedSupabase ?? createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -194,4 +199,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error("[portal-finalize-upload] unexpected:", e);
     return sovereigntyErrorResponse();
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}

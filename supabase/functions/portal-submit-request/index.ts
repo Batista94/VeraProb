@@ -30,7 +30,7 @@
  * Invariants: INV-1, INV-9, INV-18, INV-22, INV-26.
  */
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
 const QUARANTINE_BUCKET = "dispute-evidence-portal";
@@ -70,7 +70,12 @@ async function withFloor(start: number, res: Response): Promise<Response> {
   return res;
 }
 
-Deno.serve(async (req: Request): Promise<Response> => {
+// Exported for unit testing with an injected SupabaseClient. Production wiring
+// (Deno.serve) lives behind the import.meta.main guard at the bottom of the file.
+export async function handler(
+  req: Request,
+  injectedSupabase?: SupabaseClient,
+): Promise<Response> {
   const start = Date.now();
 
   if (req.method === "OPTIONS") {
@@ -128,7 +133,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return withFloor(start, Response.json({ error: "Invalid submitterReference" }, { status: 400 }));
   }
 
-  const supabase = createClient(
+  const supabase = injectedSupabase ?? createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
@@ -176,4 +181,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error("[portal-submit-request] unexpected:", e);
     return withFloor(start, sovereigntyErrorResponse());
   }
-});
+}
+
+if (import.meta.main) {
+  Deno.serve(handler);
+}
