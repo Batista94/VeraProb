@@ -7,7 +7,7 @@
         "npx -y @playwright/mcp@latest"
       ],
       "env": {},
-      "disabled": true,
+      "disabled": false,
       "autoApprove": [
         "browser_navigate",
         "browser_snapshot",
