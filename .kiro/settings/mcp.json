@@ -4,7 +4,9 @@
       "command": "cmd",
       "args": [
         "/c",
-        "npx -y @playwright/mcp@latest"
+        "npx -y @playwright/mcp@latest",
+        "--browser",
+        "chrome"
       ],
       "env": {},
       "disabled": false,
@@ -16,12 +18,14 @@
         "browser_close",
         "browser_take_screenshot",
         "browser_console_messages",
-        "browser_resize"
-      ],
-      "disabledTools": [
+        "browser_resize",
+        "browser_click",
+        "browser_type",
         "browser_file_upload",
-        "browser_take_screenshot"
-      ]
+        "browser_select_option",
+        "browser_press_key"
+      ],
+      "disabledTools": []
     },
     "postgres": {
       "command": "cmd",
