@@ -11,6 +11,9 @@ import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.d
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 /// Tier-1 OCC dashboard: an asymmetric Bento grid prioritising actionable
 /// financial signal over decoration. Left pane = financial KPIs (1-tap
@@ -225,6 +228,13 @@ class _DevSeedButton extends ConsumerWidget {
       await repository.seedHistoricalData(organizationId);
       await repository.seedActiveSanctions(organizationId);
       await repository.seedPhase9(organizationId);
+
+      // Invalidate cached providers so the onboarding checklist updates
+      ref.invalidate(contractorListProvider);
+      ref.invalidate(operationalZonesProvider);
+      ref.invalidate(contractListProvider);
+      ref.invalidate(slaTemplatesProvider);
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Dados de teste inseridos.')),
