@@ -145,10 +145,9 @@ class SupabaseDataSeedingRepository
 
     // 2. Clear previous historical test data
     try {
-      await _supabase
-          .from('trips_audit')
-          .delete()
-          .eq('source_type', 'history_seed');
+      // trips_audit is append-only (no DELETE policy per INV-3/INV-22 hardening).
+      // We skip deletion to prevent 42501 insufficient_privilege.
+      // Duplicate trips in dev are acceptable.
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
@@ -206,7 +205,7 @@ class SupabaseDataSeedingRepository
         await _supabase.from('sla_audit_ledger_v2').insert({
           'organization_id': organizationId,
           'occurred_at_utc': endTime.toIso8601String(),
-          'type': 'TRIP_VERDICT',
+          'type': 'VERDICT_SEALED',
           'set_id': tripId,
           'operator_id': 'system_seeder',
           'new_value': scenario['penalty'] == 0 ? 'COMPLIANT' : 'NON_COMPLIANT',
@@ -318,7 +317,9 @@ class SupabaseDataSeedingRepository
         'payload_hash': 'hash-${now.millisecondsSinceEpoch}',
       });
     } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+      if (e.code != '42501') {
+        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+      }
     }
 
     final points = [
@@ -346,7 +347,9 @@ class SupabaseDataSeedingRepository
           'integrity_flag': 'OK',
         });
       } on PostgrestException catch (e) {
-        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        if (e.code != '42501') {
+          throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        }
       }
     }
   }
@@ -519,12 +522,17 @@ class SupabaseDataSeedingRepository
         final exists = await _supabase
             .from('contractors')
             .select()
-            .eq('cnpj', c['cnpj']!)
+            .eq('tax_id', c['cnpj']!)
             .maybeSingle();
         if (exists == null) {
-          final payload = Map<String, dynamic>.from(c);
-          payload['organization_id'] = organizationId;
-          payload['status'] = 'active';
+          final payload = {
+            'organization_id': organizationId,
+            'name': c['name'],
+            'tax_id': c['cnpj'],
+            'primary_email':
+                'contact@${c['name'].toString().toLowerCase().replaceAll(RegExp(r'\s+'), '')}.com',
+            'contact_name': 'Contato ${c['name']}',
+          };
           await _supabase.from('contractors').insert(payload);
         }
       } on PostgrestException catch (e) {
@@ -626,7 +634,9 @@ class SupabaseDataSeedingRepository
           'integrity_flag': 'OK',
         });
       } on PostgrestException catch (e) {
-        throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        if (e.code != '42501') {
+          throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
+        }
       }
     }
   }
