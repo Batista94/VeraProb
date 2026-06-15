@@ -15,6 +15,7 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_rule_version_query_se
 import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
+import 'shared_providers.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ final updateContractualRuleHandlerProvider =
         tenantValidator: ref.watch(tenantValidationServiceProvider),
         commandService: ref.watch(ruleStudioCommandServiceProvider),
         rbac: RbacService(),
+        clock: ref.watch(dateTimeProviderProvider),
       );
     });
 

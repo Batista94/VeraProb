@@ -4,6 +4,7 @@
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/i_contract_financial_amendment_repository.dart';
@@ -35,14 +36,17 @@ class AmendContractFinancialTermsHandler {
   final TenantValidationService _tenantValidator;
   final IContractFinancialAmendmentRepository _repository;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   AmendContractFinancialTermsHandler({
     required TenantValidationService tenantValidator,
     required IContractFinancialAmendmentRepository repository,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _tenantValidator = tenantValidator,
        _repository = repository,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   Future<void> handle(AmendContractFinancialTermsCommand command) async {
     await _tenantValidator.assertTenantMatches(
@@ -54,7 +58,7 @@ class AmendContractFinancialTermsHandler {
       throw const DomainException('Unauthorized: canEditSlaRules required.');
     }
 
-    final now = DateTime.now().toUtc();
+    final now = _clock.nowUtc();
     final fiveMinsAgo = now.subtract(const Duration(minutes: 5));
     if (command.effectiveAtUtc.isBefore(fiveMinsAgo)) {
       throw const IntegrityException(

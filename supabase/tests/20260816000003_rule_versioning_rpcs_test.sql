@@ -6,7 +6,7 @@
 -- =============================================================================
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
-SELECT plan(35);
+SELECT plan(49);
 
 -- ── Seed (as postgres: bypass RLS) ───────────────────────────────────────────
 INSERT INTO public.organizations (id, name, status) VALUES
@@ -27,6 +27,42 @@ SELECT has_function('public', 'schedule_contractual_rule', ARRAY['uuid', 'uuid',
 SELECT has_function('public', 'activate_scheduled_rule', ARRAY['uuid']);
 SELECT has_function('public', 'retire_contractual_rule', ARRAY['uuid']);
 SELECT has_function('public', 'amend_contract_financial_terms', ARRAY['uuid', 'bigint', 'integer', 'timestamp with time zone', 'text']);
+
+-- ── 6-15. Grant regression guards (INV-REVOKE-FROM-PUBLIC) ──────────────────
+SELECT ok(has_function_privilege('authenticated',
+  'public.update_contractual_rule(uuid, uuid, sla_rule_type, jsonb, integer, timestamp with time zone)',
+  'EXECUTE'), 'authenticated EXECUTE update_contractual_rule');
+SELECT ok(has_function_privilege('service_role',
+  'public.update_contractual_rule(uuid, uuid, sla_rule_type, jsonb, integer, timestamp with time zone)',
+  'EXECUTE'), 'service_role EXECUTE update_contractual_rule');
+
+SELECT ok(has_function_privilege('authenticated',
+  'public.schedule_contractual_rule(uuid, uuid, sla_rule_type, jsonb, integer, timestamp with time zone)',
+  'EXECUTE'), 'authenticated EXECUTE schedule_contractual_rule');
+SELECT ok(has_function_privilege('service_role',
+  'public.schedule_contractual_rule(uuid, uuid, sla_rule_type, jsonb, integer, timestamp with time zone)',
+  'EXECUTE'), 'service_role EXECUTE schedule_contractual_rule');
+
+SELECT ok(has_function_privilege('authenticated',
+  'public.activate_scheduled_rule(uuid)',
+  'EXECUTE'), 'authenticated EXECUTE activate_scheduled_rule');
+SELECT ok(has_function_privilege('service_role',
+  'public.activate_scheduled_rule(uuid)',
+  'EXECUTE'), 'service_role EXECUTE activate_scheduled_rule');
+
+SELECT ok(has_function_privilege('authenticated',
+  'public.retire_contractual_rule(uuid)',
+  'EXECUTE'), 'authenticated EXECUTE retire_contractual_rule');
+SELECT ok(has_function_privilege('service_role',
+  'public.retire_contractual_rule(uuid)',
+  'EXECUTE'), 'service_role EXECUTE retire_contractual_rule');
+
+SELECT ok(has_function_privilege('authenticated',
+  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text)',
+  'EXECUTE'), 'authenticated EXECUTE amend_contract_financial_terms');
+SELECT ok(has_function_privilege('service_role',
+  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text)',
+  'EXECUTE'), 'service_role EXECUTE amend_contract_financial_terms');
 
 -- ── Org A TENANT_ADMIN context ───────────────────────────────────────────────
 SET LOCAL ROLE authenticated;
@@ -224,6 +260,47 @@ SELECT throws_ok(
        now() + INTERVAL '1 day') $$,
   'P0001', NULL,
   'Org B schedule em contrato da Org A -> rejeitado'
+);
+
+-- ── Cross-org activate (INV-22/26) ───────────────────────────────────────────
+SET LOCAL request.jwt.claims =
+  '{"role":"authenticated","sub":"aaaa0000-0000-4000-8000-0000000000ad","organization_id":"aaaa0000-0000-4000-8000-00000000000a","app_metadata":{"org_id":"aaaa0000-0000-4000-8000-00000000000a","role":"TENANT_ADMIN"}}';
+
+CREATE TEMP TABLE tt_sched_activate AS
+SELECT public.schedule_contractual_rule(
+  'aaaa0000-0000-4000-8000-0000000000ca', NULL,
+  'MAX_TOLERANCE_DELAY', '{"threshold_minutes": 20}', 1,
+  now() + INTERVAL '7 days'
+) AS id;
+
+SELECT ok(
+  (SELECT id FROM tt_sched_activate) IS NOT NULL,
+  'Org A scheduled rule criada para teste cross-org activate'
+);
+
+SET LOCAL request.jwt.claims =
+  '{"role":"authenticated","sub":"bbbb0000-0000-4000-8000-0000000000bd","organization_id":"bbbb0000-0000-4000-8000-00000000000b","app_metadata":{"org_id":"bbbb0000-0000-4000-8000-00000000000b","role":"TENANT_ADMIN"}}';
+
+SELECT throws_ok(
+  $$ SELECT public.activate_scheduled_rule((SELECT id FROM tt_sched_activate)) $$,
+  'P0001', 'Scheduled rule not found or unauthorized',
+  'Org B activate em scheduled rule da Org A -> rejeitado (anti-oracle)'
+);
+
+RESET ROLE;
+SELECT ok(
+  (SELECT is_scheduled FROM public.contract_rule_versions
+   WHERE id = (SELECT id FROM tt_sched_activate)),
+  'scheduled rule da Org A INTACTA apos tentativa cross-org activate'
+);
+
+SELECT ok(
+  NOT EXISTS (
+    SELECT 1 FROM public.sla_audit_ledger_v2
+    WHERE type = 'RULE_ACTIVATED'
+      AND (payload ->> 'rule_id')::uuid = (SELECT id FROM tt_sched_activate)
+  ),
+  'nenhum fato RULE_ACTIVATED selado apos tentativa cross-org (validate-before-write)'
 );
 
 -- ── 28. RBAC: OPERATOR bloqueado ─────────────────────────────────────────────

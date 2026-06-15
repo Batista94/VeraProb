@@ -10,6 +10,7 @@ import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/contract_financial_amendment.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/i_contract_financial_amendment_repository.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 class _FakeAmendmentRepository
     implements IContractFinancialAmendmentRepository {
@@ -46,14 +47,17 @@ void main() {
   late MockAuthRepository mockAuthRepo;
   late _FakeAmendmentRepository fakeRepo;
   late AmendContractFinancialTermsHandler handler;
+  late FakeDateTimeProvider fakeClock;
 
   setUp(() {
     mockAuthRepo = MockAuthRepository();
     fakeRepo = _FakeAmendmentRepository();
+    fakeClock = FakeDateTimeProvider(DateTime.utc(2026, 8, 16, 12, 0, 0));
     handler = AmendContractFinancialTermsHandler(
       tenantValidator: TenantValidationService(authRepository: mockAuthRepo),
       repository: fakeRepo,
       rbac: RbacService(),
+      clock: fakeClock,
     );
     when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
       (_) async => const domain.AuthUser(
@@ -75,7 +79,7 @@ void main() {
       contractId: 'contract-1',
       financialCeilingCents: ceilingCents,
       penaltyMultiplierBps: bps,
-      effectiveAtUtc: effectiveAtUtc ?? DateTime.now().toUtc(),
+      effectiveAtUtc: effectiveAtUtc ?? fakeClock.nowUtc(),
       notes: 'Renegociacao anual',
       callerRole: role,
       sessionId: 'session-1',
@@ -117,7 +121,7 @@ void main() {
     });
 
     test('admin amends terms — all fields forwarded (INV-4 bps INT)', () async {
-      final effective = DateTime.now().toUtc();
+      final effective = fakeClock.nowUtc();
       await handler.handle(cmd(effectiveAtUtc: effective));
 
       expect(fakeRepo.lastContractId, 'contract-1');
@@ -132,5 +136,20 @@ void main() {
       expect(fakeRepo.lastCeilingCents, isNull);
       expect(fakeRepo.lastBps, 15000);
     });
+
+    // ── INV-6 anti-backdating guard ───────────────────────────
+
+    test(
+      'effectiveAtUtc more than 5 min in past throws IntegrityException',
+      () async {
+        await expectLater(
+          handler.handle(
+            cmd(effectiveAtUtc: DateTime.utc(2026, 8, 16, 11, 49, 0)),
+          ),
+          throwsA(isA<IntegrityException>()),
+        );
+        expect(fakeRepo.lastContractId, isNull);
+      },
+    );
   });
 }

@@ -8,8 +8,10 @@ import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
+import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
 
 // ── Fake command service ─────────────────────────────────────────────────────
 
@@ -65,15 +67,18 @@ void main() {
   late TenantValidationService tenantValidator;
   late _FakeCommandService fakeService;
   late UpdateContractualRuleHandler handler;
+  late FakeDateTimeProvider fakeClock;
 
   setUp(() {
     mockAuthRepo = MockAuthRepository();
     tenantValidator = TenantValidationService(authRepository: mockAuthRepo);
     fakeService = _FakeCommandService();
+    fakeClock = FakeDateTimeProvider(DateTime.utc(2026, 8, 16, 12, 0, 0));
     handler = UpdateContractualRuleHandler(
       tenantValidator: tenantValidator,
       commandService: fakeService,
       rbac: RbacService(),
+      clock: fakeClock,
     );
     when(() => mockAuthRepo.getUserBySessionId(any())).thenAnswer(
       (_) async => const domain.AuthUser(
@@ -99,7 +104,7 @@ void main() {
       evaluationOrder: 1,
       callerRole: role,
       sessionId: 'session-1',
-      effectiveAtUtc: DateTime.now().toUtc(),
+      effectiveAtUtc: fakeClock.nowUtc(),
     );
   }
 
@@ -197,5 +202,28 @@ void main() {
       );
       expect(newId, isNotEmpty);
     });
+
+    // ── INV-6 anti-backdating guard ───────────────────────────
+
+    test(
+      'effectiveAtUtc more than 5 min in past throws IntegrityException',
+      () async {
+        final command = UpdateContractualRuleCommand(
+          organizationId: 'org-1',
+          contractId: 'contract-1',
+          oldRuleId: null,
+          ruleType: SlaRuleType.minGeofenceCoverage,
+          newConfig: const {'min_dwell_seconds': 45},
+          evaluationOrder: 1,
+          callerRole: UserRole.admin,
+          sessionId: 'session-1',
+          effectiveAtUtc: DateTime.utc(2026, 8, 16, 11, 49, 0),
+        );
+        await expectLater(
+          handler.handle(command),
+          throwsA(isA<IntegrityException>()),
+        );
+      },
+    );
   });
 }
