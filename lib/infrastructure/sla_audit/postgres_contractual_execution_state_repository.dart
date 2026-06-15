@@ -76,6 +76,7 @@ class PostgresContractualExecutionStateRepository
         final hasDataChanged =
             hasStatusChanged ||
             existingData['bound_vehicle_id'] != state.boundVehicleId ||
+            existingData['bound_operator_id'] != state.boundOperatorId ||
             existingData['finalized_at_utc'] !=
                 state.finalizedAtUtc?.toIso8601String();
 
@@ -279,6 +280,7 @@ class PostgresContractualExecutionStateRepository
       'metadata': {
         'last_evaluated_at_utc': state.lastEvaluatedAtUtc.toIso8601String(),
         'bound_vehicle_id': state.boundVehicleId,
+        'bound_operator_id': state.boundOperatorId,
         'finalized_at_utc': state.finalizedAtUtc?.toIso8601String(),
       },
     });
@@ -301,6 +303,7 @@ class PostgresContractualExecutionStateRepository
       'window_end_utc': state.windowEndUtc.toIso8601String(),
       'status': state.status.name,
       'bound_vehicle_id': state.boundVehicleId,
+      'bound_operator_id': state.boundOperatorId,
       'binding_timestamp_utc': state.bindingTimestampUtc?.toIso8601String(),
       'binding_latitude': state.bindingLatitude,
       'binding_longitude': state.bindingLongitude,
