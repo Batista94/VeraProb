@@ -7,7 +7,8 @@ import 'package:veraprob/application/dispute_portal/portal_submission_audit_gate
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
 import 'package:veraprob/infrastructure/dispute_portal/chunked_file_hasher.dart';
-import 'package:veraprob/infrastructure/dispute_portal/web_worker_file_hasher.dart';
+import 'package:veraprob/infrastructure/dispute_portal/web_worker_file_hasher_stub.dart'
+    if (dart.library.js_interop) 'package:veraprob/infrastructure/dispute_portal/web_worker_file_hasher.dart';
 import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_dispute_gateway.dart';
 import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_submission_audit_gateway.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
