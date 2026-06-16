@@ -20,7 +20,9 @@
 
 **Selector legend** (literal labels verified against source — use exact text):
 - Login: `TextField` "E-mail Corporativo", `TextField` "Senha de Acesso", `ElevatedButton` **ACESSAR SISTEMA**.
-- Auditor card actions: **SELAR VEREDITO**, **RECUSAR VEREDITO**, **SOLICITAR PROVA FORENSE**, **RECUSAR REVISÃO**.
+- Auditor card actions (pending): **SELAR VEREDITO**, **RECUSAR VEREDITO** (→ **CONFIRMAR RECUSA**), **SOLICITAR PROVA FORENSE**.
+- Auditor card actions (disputed): **GERAR LINK DE DISPUTA**, **ANULAR MULTA** (→ **CONFIRMAR ANULAÇÃO**, perdoa a multa), **MANTER MULTA** (→ **CONFIRMAR MANUTENÇÃO**, mantém/sela a multa), **CANCELAR SOLICITAÇÃO** (retrata).
+- Reason-code taxonomy: dropdown `dispute-reason-code-dropdown` (ex.: "Falha de Sensor", "Outro (ver comentário)"). Mandatory on RECUSAR / ANULAR / MANTER.
 - Portal: **Selecionar e enviar**, **Confirmar De Acordo**.
 - Rule Studio: **Agendar**, **Aposentar**.
 
@@ -85,14 +87,25 @@
 **Expected:** card leaves Pendentes; appears under **Concluídos** segment. Append-only ledger entry sealed (no UPDATE). Snackbar success in domain language.
 
 ### TC-3.2 — Reject verdict (RECUSAR)
-1. On a pending card, click **RECUSAR VEREDITO**, confirm.
+1. On a pending card, click **RECUSAR VEREDITO**.
+2. The reason zone reveals the `dispute-reason-code-dropdown` + a free-text note field. **CONFIRMAR RECUSA** stays disabled until a structured reason code is selected AND the note is ≥10 chars (BUG-01: a missing code is what caused the PGRST202 — the code is now mandatory client- and server-side).
+3. Select a reason (e.g. "Falha de Sensor"), type a note ≥10 chars, click **CONFIRMAR RECUSA**.
 
-**Expected:** removed from Pendentes; not penalized. No raw error.
+**Expected:** removed from Pendentes; not penalized; `VERDICT_REFUSED` ledger fact embeds the `reason_code`. No raw error, no PGRST202.
+
+**Error path:** selecting no reason code, or a note <10 chars, keeps **CONFIRMAR RECUSA** disabled (no submission attempt).
 
 ### TC-3.3 — Request forensic proof → moves to dispute
 1. On a pending card, click **SOLICITAR PROVA FORENSE**, confirm.
 
-**Expected:** card moves to **Aguardando Evidência (n)** lane (disputed). An SLA resolution timer/due date is set. This produces the carrier portal token used in §4.
+**Expected:** card moves to **Aguardando Evidência (n)** lane (disputed). An SLA resolution timer/due date is set.
+
+### TC-3.3b — Generate the carrier portal link (GERAR LINK DE DISPUTA)
+1. On the disputed card (Aguardando Evidência), click **GERAR LINK DE DISPUTA**.
+
+**Expected:** a copyable URL `…/portal/dispute?token=<uuid>` appears (key `dispute-portal-url`) with a copy button + snackbar **"Link de disputa gerado."** A `DISPUTE_PORTAL_TOKEN_GENERATED` ledger fact is appended. This is the token used in §4 (BUG-02: before this wiring `dispute_portal_tokens` was always empty and the carrier never got a link).
+
+**Error path:** entry not contested → opaque domain message (no 42501/SQL leak).
 
 ### TC-3.4 — Overdue dispute drill-down
 1. Switch to **Aguardando Evidência**. If a `SlaBreachBadge` indicates overdue, click it.
@@ -103,7 +116,7 @@
 
 ## 4. Carrier Dispute Portal (public, tokenized — no session)
 
-> Reached at `/portal/dispute?token=<uuid>`. Open in a **logged-out** browser/incognito to prove no session is required.
+> Reached at `/portal/dispute?token=<uuid>` — the token minted by the auditor in TC-3.3b. Open in a **logged-out** browser/incognito to prove no session is required.
 
 ### TC-4.1 — Invalid / missing token
 1. Open `/portal/dispute` (no `?token=`).
@@ -157,10 +170,16 @@ All must be opaque domain messages — never a raw infra/DB error.
 
 **Expected:** the disputed card now reflects the carrier's submitted evidence (from TC-4.2), pending auditor decision.
 
-### TC-5.2 — Accept / reject the dispute
-1. Open the card, apply the verdict (seal or reject per available action; **RECUSAR REVISÃO** where shown).
+### TC-5.2 — Resolve the dispute (ANULAR MULTA / MANTER MULTA / CANCELAR)
+1. Open the disputed card. Three resolution arcs are available:
+   - **ANULAR MULTA** → **CONFIRMAR ANULAÇÃO**: forgives the fine (`disputed → rejected`). Requires a structured reason code **and** a written comment ≥10 chars.
+   - **MANTER MULTA** → **CONFIRMAR MANUTENÇÃO**: upholds + seals the fine (`disputed → applied`, INV-21). Requires a reason code (free-text only for "Outro").
+   - **CANCELAR SOLICITAÇÃO**: retracts back to Pendentes (no reason).
+2. Pick an arc, fill the reason-code dropdown (+ comment where required), confirm.
 
-**Expected:** terminal state recorded; card moves to **Concluídos**. A reject requires a valid reason — empty/invalid reason must be blocked with a domain message (not a 42501/SQL leak).
+**Expected:** terminal state recorded; card moves to **Concluídos** (or back to Pendentes for cancel). The confirm button stays disabled until the mandatory reason code (and comment, for ANULAR) is provided — an empty/invalid reason is blocked client-side and would otherwise be rejected server-side with a domain message (never a 42501/SQL leak).
+
+> **Naming note:** the buttons formerly read "INIBIR VIOLAÇÃO" / "AFIRMAR VIOLAÇÃO" — renamed to **ANULAR MULTA** / **MANTER MULTA** for clarity (action stated in financial outcome terms).
 
 ### TC-5.3 — "De Acordo" lane
 1. Switch to the **De Acordo** segment.

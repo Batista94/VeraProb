@@ -9,6 +9,10 @@ class RejectSanctionCommand {
   final String rejectedByUserId;
   final String actorEmail;
   final String rejectionReason;
+
+  /// Structured reason code from the closed `dispute_reason_codes` taxonomy.
+  /// Mandatory: the `reject_sanction` RPC fails closed on an unknown/empty code.
+  final String reasonCode;
   final UserRole callerRole;
   final String organizationId;
 
@@ -20,6 +24,7 @@ class RejectSanctionCommand {
     required this.rejectedByUserId,
     required this.actorEmail,
     required this.rejectionReason,
+    required this.reasonCode,
     required this.callerRole,
     required this.organizationId,
     required this.sessionId,

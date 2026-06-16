@@ -60,6 +60,7 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   }) async {
     try {
@@ -71,6 +72,7 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
           'p_reviewed_by_user_id': reviewedByUserId,
           'p_actor_email': actorEmail,
           'p_rejection_reason': rejectionReason,
+          'p_reason_code': reasonCode,
           'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
         },
       );
@@ -155,6 +157,27 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
       return DisputeSanctionResult.fromJson(result);
     } on PostgrestException catch (e) {
       throw _mapError(e, queueEntryId, 'dispute_sanction');
+    }
+  }
+
+  @override
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    try {
+      final token = await client.rpc<String>(
+        'generate_dispute_portal_token',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_created_by': createdByUserId,
+        },
+      );
+      return token;
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'generate_dispute_portal_token');
     }
   }
 

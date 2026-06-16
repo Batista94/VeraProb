@@ -10,6 +10,8 @@ import 'package:veraprob/domain/sla_audit/sanction_review_result.dart';
 class _FakeReview implements SanctionReviewCommandRepository {
   final Map<String, String> _status = {};
   String? lastRejectReason;
+  String? lastRejectReasonCode;
+  String? lastPortalQueueEntryId;
 
   SanctionReviewResult _seal(String id, String status) {
     if (_status.containsKey(id)) {
@@ -41,9 +43,11 @@ class _FakeReview implements SanctionReviewCommandRepository {
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   }) async {
     lastRejectReason = rejectionReason;
+    lastRejectReasonCode = reasonCode;
     return _seal(queueEntryId, 'rejected');
   }
 
@@ -81,6 +85,16 @@ class _FakeReview implements SanctionReviewCommandRepository {
     finalQueueStatus: 'disputed',
     resolutionDueAtUtc: occurredAtUtc.add(const Duration(days: 5)),
   );
+
+  @override
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    lastPortalQueueEntryId = queueEntryId;
+    return 'token-$queueEntryId';
+  }
 }
 
 void main() {
@@ -99,7 +113,7 @@ void main() {
       expect(r.finalQueueStatus, 'applied');
     });
 
-    test('reject carries the mandatory rejection reason', () async {
+    test('reject carries the mandatory reason + structured code', () async {
       final repo = _FakeReview();
       await repo.rejectSanction(
         organizationId: 'org-1',
@@ -107,9 +121,22 @@ void main() {
         reviewedByUserId: 'u-1',
         actorEmail: 'a@x.com',
         rejectionReason: 'evidência insuficiente',
+        reasonCode: 'SENSOR_FAULT',
         occurredAtUtc: now,
       );
       expect(repo.lastRejectReason, 'evidência insuficiente');
+      expect(repo.lastRejectReasonCode, 'SENSOR_FAULT');
+    });
+
+    test('generateDisputePortalToken returns a token for the entry', () async {
+      final repo = _FakeReview();
+      final token = await repo.generateDisputePortalToken(
+        organizationId: 'org-1',
+        queueEntryId: 'q-1',
+        createdByUserId: 'u-1',
+      );
+      expect(token, 'token-q-1');
+      expect(repo.lastPortalQueueEntryId, 'q-1');
     });
 
     test('dispute seals disputed + an SLA deadline (INV-15)', () async {

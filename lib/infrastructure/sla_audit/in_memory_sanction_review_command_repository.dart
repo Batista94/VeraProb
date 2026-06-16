@@ -158,11 +158,13 @@ class InMemorySanctionReviewCommandRepository
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   }) async {
     final reason = rejectionReason.trim();
-    if (reason.isEmpty) {
-      // Mirrors the RPC's fail-closed empty-reason guard (opaque, INV-26).
+    if (reason.isEmpty || reasonCode.trim().isEmpty) {
+      // Mirrors the RPC's fail-closed empty-reason / empty-code guard
+      // (opaque, INV-26).
       throw SovereigntyViolationException(
         payloadOrgId: organizationId,
         jwtOrgId: organizationId,
@@ -198,6 +200,7 @@ class InMemorySanctionReviewCommandRepository
           'rejected_by_user_id': reviewedByUserId,
           'actor_email': actorEmail,
           'rejection_reason': reason,
+          'reason_code': reasonCode.trim(),
           'verdict_evidence': entry.verdictEvidence.toJson(),
         },
       ),
@@ -323,6 +326,62 @@ class InMemorySanctionReviewCommandRepository
       ledgerEntryId: ledgerEntryId,
       finalQueueStatus: origin.dbValue,
     );
+  }
+
+  @override
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    final entry = await _queue.findById(
+      queueEntryId,
+      organizationId: organizationId,
+    );
+    if (entry == null) {
+      // Anti-oracle (INV-26): not-found and wrong-org are indistinguishable.
+      throw SovereigntyViolationException(
+        payloadOrgId: organizationId,
+        jwtOrgId: organizationId,
+        message: 'Dispute portal token rejected.',
+      );
+    }
+    if (entry.status != SanctionReviewStatus.disputed &&
+        entry.status != SanctionReviewStatus.applied) {
+      throw IdempotencyProcessingException(
+        idempotencyKey: queueEntryId,
+        commandPath: 'generate_dispute_portal_token',
+        message: 'A portal link can only be issued for a contested sanction.',
+      );
+    }
+
+    final token = _nextPortalToken();
+    await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: 'DISPUTE_PORTAL_TOKEN_GENERATED',
+        operatorId: createdByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: DateTime.now().toUtc(),
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'created_by_user_id': createdByUserId,
+          'token': token,
+        },
+      ),
+    );
+    return token;
+  }
+
+  int _portalTokenSeq = 0;
+
+  /// Deterministic UUID-shaped token for in-memory mode (tests). Monotonic so
+  /// repeated generations never collide, mirroring the DB's UNIQUE token.
+  String _nextPortalToken() {
+    final seq = (++_portalTokenSeq).toRadixString(16).padLeft(12, '0');
+    return '00000000-0000-4000-8000-$seq';
   }
 
   bool _exceedsThreshold(SanctionReviewQueueEntry entry) {

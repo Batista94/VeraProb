@@ -20,6 +20,7 @@ import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geoc
 import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/state/providers/dispute_portal_token_providers.dart';
 import 'package:veraprob/state/providers/dispute_reason_code_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -95,6 +96,28 @@ const _testReasonCodes = <DisputeReasonCode>[
   ),
 ];
 
+class _MockPortalTokenNotifier extends DisputePortalTokenNotifier {
+  _MockPortalTokenNotifier() : super('test-id-001');
+
+  int generateCalls = 0;
+
+  @override
+  AsyncValue<String?> build() => const AsyncData(null);
+
+  @override
+  Future<String?> generate({
+    required String createdByUserId,
+    required String actorEmail,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    generateCalls++;
+    state = const AsyncData('tok-abc-123');
+    return 'tok-abc-123';
+  }
+}
+
 class _LoadingActionNotifier extends SanctionActionNotifier {
   _LoadingActionNotifier() : super('test-id');
 
@@ -153,17 +176,21 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
     state = const AsyncData(null);
   }
 
+  String? lastRejectReasonCode;
+
   @override
   Future<void> reject({
     required String queueEntryId,
     required String rejectedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
   }) async {
     rejectCalls++;
+    lastRejectReasonCode = reasonCode;
     state = const AsyncData(null);
   }
 }
@@ -641,7 +668,7 @@ void main() {
   });
 
   group('SanctionVerdictCard — Audit: Reject Justification', () {
-    testWidgets('tapping RECUSAR reveals rejection reason field', (
+    testWidgets('tapping RECUSAR reveals reason-code dropdown + note field', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -650,17 +677,26 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      expect(find.byType(TextField), findsNothing);
+      expect(
+        find.byKey(const ValueKey('dispute-reason-code-dropdown')),
+        findsNothing,
+      );
 
       await tester.tap(find.text('RECUSAR VEREDITO'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(TextField), findsOneWidget);
+      // BUG-01: refusing now demands a structured reason code (taxonomy) on top
+      // of the free-text note — the dropdown + note field both appear.
+      expect(
+        find.byKey(const ValueKey('dispute-reason-code-dropdown')),
+        findsOneWidget,
+      );
+      expect(find.byType(TextField), findsWidgets);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('CONFIRMAR RECUSA disabled when reason < 10 chars', (
+    testWidgets('CONFIRMAR RECUSA disabled without a reason code (BUG-01)', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -672,20 +708,56 @@ void main() {
       await tester.tap(find.text('RECUSAR VEREDITO'));
       await tester.pump();
 
-      await tester.enterText(find.byType(TextField), 'short');
+      FilledButton confirmBtn() => tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR RECUSA'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
+      );
+
+      // A full note WITHOUT a code is not enough — code is mandatory.
+      await tester.enterText(
+        find.byType(TextField).last,
+        'Justificativa forense detalhada',
+      );
+      await tester.pump();
+      expect(confirmBtn().onPressed, isNull);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+
+    testWidgets('CONFIRMAR RECUSA disabled when note < 10 chars', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+
+      await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      final btnFinder = find.ancestor(
-        of: find.text('CONFIRMAR RECUSA'),
-        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      await tester.tap(find.text('RECUSAR VEREDITO'));
+      await tester.pumpAndSettle();
+
+      await _selectReasonCode(tester, 'Falha de Sensor');
+      await tester.enterText(find.byType(TextField).last, 'short');
+      await tester.pump();
+
+      final btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR RECUSA'),
+              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            )
+            .first,
       );
-      final btn = tester.widget<FilledButton>(btnFinder.first);
       expect(btn.onPressed, isNull);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('CONFIRMAR RECUSA enabled when reason >= 10 chars', (
+    testWidgets('CONFIRMAR RECUSA enabled with code + note >= 10 chars', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -696,10 +768,11 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('RECUSAR VEREDITO'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
+      await _selectReasonCode(tester, 'Falha de Sensor');
       await tester.enterText(
-        find.byType(TextField),
+        find.byType(TextField).last,
         'Justificativa forense detalhada',
       );
       await tester.pump();
@@ -714,6 +787,7 @@ void main() {
       await tester.tap(btnFinder.first);
       await tester.pump();
       expect(notifier.rejectCalls, 1);
+      expect(notifier.lastRejectReasonCode, 'SENSOR_FAULT');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -770,9 +844,11 @@ void main() {
       await tester.pump();
 
       expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
-      expect(find.text('INIBIR VIOLAÇÃO'), findsOneWidget);
-      expect(find.text('AFIRMAR VIOLAÇÃO'), findsOneWidget);
+      expect(find.text('ANULAR MULTA'), findsOneWidget);
+      expect(find.text('MANTER MULTA'), findsOneWidget);
       expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
+      // BUG-02: the auditor can mint a carrier portal link from a disputed card.
+      expect(find.text('GERAR LINK DE DISPUTA'), findsOneWidget);
       // Pending-only controls must NOT leak into a disputed card.
       expect(find.text('SELAR VEREDITO'), findsNothing);
       expect(find.text('RECUSAR VEREDITO'), findsNothing);
@@ -784,7 +860,7 @@ void main() {
     });
 
     testWidgets(
-      'INIBIR: confirm requires reason code AND a mandatory comment (5.4)',
+      'ANULAR MULTA: confirm requires reason code AND a mandatory comment (5.4)',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
         tester.view.devicePixelRatio = 1.0;
@@ -799,7 +875,7 @@ void main() {
         await tester.pump();
 
         // Reveal the reason-code dropdown + mandatory comment field.
-        await tester.tap(find.text('INIBIR VIOLAÇÃO'));
+        await tester.tap(find.text('ANULAR MULTA'));
         await tester.pumpAndSettle();
         expect(
           find.byKey(const ValueKey('dispute-reason-code-dropdown')),
@@ -809,7 +885,7 @@ void main() {
         FilledButton inhibitBtn() => tester.widget<FilledButton>(
           find
               .ancestor(
-                of: find.text('CONFIRMAR INIBIÇÃO'),
+                of: find.text('CONFIRMAR ANULAÇÃO'),
                 matching: find.byWidgetPredicate((w) => w is FilledButton),
               )
               .first,
@@ -835,7 +911,7 @@ void main() {
         await tester.pump();
         expect(inhibitBtn().onPressed, isNotNull);
 
-        await tester.tap(find.text('CONFIRMAR INIBIÇÃO'));
+        await tester.tap(find.text('CONFIRMAR ANULAÇÃO'));
         await tester.pump();
         expect(notifier.resolveDisputeCalls, 1);
         expect(notifier.lastResolution, DisputeResolution.accept);
@@ -849,59 +925,60 @@ void main() {
       },
     );
 
-    testWidgets('AFIRMAR: OTHER code reveals free-text gated at 10 chars', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets(
+      'MANTER MULTA: OTHER code reveals free-text gated at 10 chars',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
 
-      final notifier = _MockSanctionActionNotifier();
-      await tester.pumpWidget(
-        _buildCard(
-          _makeItem(status: SanctionReviewStatus.disputed),
-          notifier: notifier,
-        ),
-      );
-      await tester.pump();
+        final notifier = _MockSanctionActionNotifier();
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(status: SanctionReviewStatus.disputed),
+            notifier: notifier,
+          ),
+        );
+        await tester.pump();
 
-      await tester.tap(find.text('AFIRMAR VIOLAÇÃO'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('MANTER MULTA'));
+        await tester.pumpAndSettle();
 
-      await _selectReasonCode(tester, 'Outro (ver comentário)');
+        await _selectReasonCode(tester, 'Outro (ver comentário)');
 
-      // Free-text field now present (in addition to the dropdown's field).
-      final freeText = find.byType(TextField).last;
-      FilledButton affirmBtn() => tester.widget<FilledButton>(
-        find
-            .ancestor(
-              of: find.text('CONFIRMAR AFIRMAÇÃO'),
-              matching: find.byWidgetPredicate((w) => w is FilledButton),
-            )
-            .first,
-      );
+        // Free-text field now present (in addition to the dropdown's field).
+        final freeText = find.byType(TextField).last;
+        FilledButton affirmBtn() => tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('CONFIRMAR MANUTENÇÃO'),
+                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              )
+              .first,
+        );
 
-      // < 10 chars → disabled.
-      await tester.enterText(freeText, 'curto');
-      await tester.pump();
-      expect(affirmBtn().onPressed, isNull);
+        // < 10 chars → disabled.
+        await tester.enterText(freeText, 'curto');
+        await tester.pump();
+        expect(affirmBtn().onPressed, isNull);
 
-      // >= 10 chars → enabled, fires overturn with OTHER + description.
-      await tester.enterText(freeText, 'Descrição detalhada do motivo.');
-      await tester.pump();
-      expect(affirmBtn().onPressed, isNotNull);
+        // >= 10 chars → enabled, fires overturn with OTHER + description.
+        await tester.enterText(freeText, 'Descrição detalhada do motivo.');
+        await tester.pump();
+        expect(affirmBtn().onPressed, isNotNull);
 
-      await tester.tap(find.text('CONFIRMAR AFIRMAÇÃO'));
-      await tester.pump();
-      expect(notifier.resolveDisputeCalls, 1);
-      expect(notifier.lastResolution, DisputeResolution.overturn);
-      expect(notifier.lastReasonCode, 'OTHER');
-      expect(notifier.lastResolutionReason, 'Descrição detalhada do motivo.');
+        await tester.tap(find.text('CONFIRMAR MANUTENÇÃO'));
+        await tester.pump();
+        expect(notifier.resolveDisputeCalls, 1);
+        expect(notifier.lastResolution, DisputeResolution.overturn);
+        expect(notifier.lastReasonCode, 'OTHER');
+        expect(notifier.lastResolutionReason, 'Descrição detalhada do motivo.');
 
-      addTearDown(tester.view.resetPhysicalSize);
-    });
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
 
     testWidgets(
-      'AFIRMAR: named code fires overturn without a comment; seals hash cue',
+      'MANTER MULTA: named code fires overturn without a comment; seals hash cue',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1400);
         tester.view.devicePixelRatio = 1.0;
@@ -918,7 +995,7 @@ void main() {
         // Hash-seal cue is hidden until the affirm arc is opened.
         expect(find.textContaining('sela o hash'), findsNothing);
 
-        await tester.tap(find.text('AFIRMAR VIOLAÇÃO'));
+        await tester.tap(find.text('MANTER MULTA'));
         await tester.pumpAndSettle();
 
         // 5.4: affirming surfaces the immutable-seal cue (INV-21).
@@ -927,7 +1004,7 @@ void main() {
         // Named code alone enables affirm — the sealed hash is the evidence.
         await _selectReasonCode(tester, 'Falha de Sensor');
 
-        await tester.tap(find.text('CONFIRMAR AFIRMAÇÃO'));
+        await tester.tap(find.text('CONFIRMAR MANUTENÇÃO'));
         await tester.pump();
 
         expect(notifier.resolveDisputeCalls, 1);
@@ -964,6 +1041,86 @@ void main() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'GERAR LINK DE DISPUTA mints a token and shows a copyable URL (BUG-02)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.disputed);
+        final portal = _MockPortalTokenNotifier();
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._baseOverrides(
+                item: item,
+                notifier: _MockSanctionActionNotifier(),
+              ),
+              disputePortalTokenProvider.overrideWith2((_) => portal),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // URL is hidden until a token is minted.
+        expect(find.byKey(const ValueKey('dispute-portal-url')), findsNothing);
+
+        await tester.tap(find.text('GERAR LINK DE DISPUTA'));
+        await tester.pump();
+
+        expect(portal.generateCalls, 1);
+        final url = find.byKey(const ValueKey('dispute-portal-url'));
+        expect(url, findsOneWidget);
+        expect(
+          tester.widget<SelectableText>(url).data,
+          contains('/portal/dispute?token=tok-abc-123'),
+        );
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'BUG-03: tall disputed card scrolls so action buttons stay reachable',
+      (tester) async {
+        // A short viewport that the card content exceeds. Before the fix the
+        // action row fell below the fold with no way to reach it.
+        tester.view.physicalSize = const Size(420, 600);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.disputed);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+            ),
+            child: MaterialApp(
+              home: Scaffold(body: SanctionVerdictCard(item: item)),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // The action buttons exist in the tree and can be scrolled into view via
+        // the card's internal SingleChildScrollView — no off-screen exception.
+        final action = find.text('MANTER MULTA');
+        expect(action, findsOneWidget);
+        await tester.ensureVisible(action);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — Async State Visibility (INV-10)', () {
@@ -1134,6 +1291,52 @@ void _sealedEvidenceAndStyleTests() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'focused card border matches the severity accent, never a contrasting hue',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.disputed);
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: _baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+            ),
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        Color outerBorderColor() {
+          final container = tester.widget<AnimatedContainer>(
+            find.byType(AnimatedContainer).first,
+          );
+          return (container.decoration as BoxDecoration).border!.top.color;
+        }
+
+        // Focus the card (WS-5 map sync) by tapping its clause badge.
+        await tester.tap(find.text('ATR-01'));
+        await tester.pump();
+
+        // The full border must adopt the SAME severity color as the left accent
+        // (amber for disputed) — not the teal `primary` (the green-around-orange
+        // regression).
+        expect(outerBorderColor(), VeraProbColors.warning);
+        expect(outerBorderColor(), accentColor(tester));
+        expect(outerBorderColor(), isNot(VeraProbColors.primary));
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — Asset/Operator identity (INV-14)', () {

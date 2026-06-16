@@ -34,12 +34,15 @@ abstract class SanctionReviewCommandRepository {
   /// Refuses a recommended sanction (`pending → rejected`, `VERDICT_REFUSED`).
   ///
   /// [rejectionReason] is mandatory; the RPC fails closed on an empty reason.
+  /// [reasonCode] is a mandatory key from the closed `dispute_reason_codes`
+  /// taxonomy; the RPC fails closed on an unknown/inactive code.
   Future<SanctionReviewResult> rejectSanction({
     required String organizationId,
     required String queueEntryId,
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   });
 
@@ -82,5 +85,18 @@ abstract class SanctionReviewCommandRepository {
     required String disputedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+  });
+
+  /// Mints a single-use, TTL-bounded carrier portal token for a contested
+  /// sanction, backed by the `generate_dispute_portal_token` SECURITY DEFINER
+  /// RPC. The entry must belong to [organizationId] and be `disputed`/`applied`;
+  /// the RPC appends a `DISPUTE_PORTAL_TOKEN_GENERATED` ledger fact.
+  ///
+  /// Returns the opaque UUID token; the caller builds the portal URL
+  /// (`/portal/dispute?token=<uuid>`) and hands it to the carrier.
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
   });
 }
