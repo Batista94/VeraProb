@@ -884,6 +884,12 @@ void main() {
     });
   });
 
+  _resolutionSealAndA11yTests();
+
+  _sealedEvidenceAndStyleTests();
+}
+
+void _resolutionSealAndA11yTests() {
   group('SanctionVerdictCard — Forensic Seal (INV-9/INV-21)', () {
     testWidgets('renders SHA-256 hash prefix in seal row', (tester) async {
       tester.view.physicalSize = const Size(800, 1400);

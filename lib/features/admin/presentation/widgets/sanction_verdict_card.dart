@@ -205,17 +205,15 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _buildStatusRibbon(item, isLocked),
+                    _buildIdentityStrip(item: item),
+                    const SizedBox(height: 8),
                     Flexible(
                       child: SingleChildScrollView(
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // ── Zona 1: Identity Strip ─────────────────────────────────────
-                            _buildIdentityStrip(item: item),
-
-                            const SizedBox(height: 12),
-
                             // ── Zona 2: Financial Hero ─────────────────────────────────────
                             _buildFinancialHero(
                               item: item,
@@ -524,213 +522,103 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   decoration: BoxDecoration(color: leftBorderColor),
                 ),
               ),
-              // ── LOCKED overlay badge (INV-7: Immutability) ──────────
-              if (item.status == SanctionReviewStatus.disputed)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Tooltip(
-                    message: 'Evidência submetida. Resolva abaixo.',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.warning.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.hourglass_empty_outlined,
-                            size: 12,
-                            color: VeraProbColors.warning,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'AGUARDANDO EVIDÊNCIA',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: VeraProbColors.warning,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (item.status == SanctionReviewStatus.pendingPeerReview)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Tooltip(
-                    message:
-                        'Veredito de alto valor — requer um segundo auditor',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: VeraProbColors.primary.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.groups_2_outlined,
-                            size: 12,
-                            color: VeraProbColors.primary,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'AGUARDANDO 2º AUDITOR',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: VeraProbColors.primary,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (item.status == SanctionReviewStatus.rejected)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Tooltip(
-                    message: 'Sanção recusada — multa não aplicada',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.error.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: VeraProbColors.error.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.block_rounded,
-                            size: 12,
-                            color: VeraProbColors.error,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'VEREDITO RECUSADO',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: VeraProbColors.error,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (item.status == SanctionReviewStatus.acknowledged)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Tooltip(
-                    message:
-                        'Penalidade aceita pela transportadora (De Acordo)',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.success.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: VeraProbColors.success.withValues(alpha: 0.4),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.verified_outlined,
-                            size: 12,
-                            color: VeraProbColors.success,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'DE ACORDO',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: VeraProbColors.success,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              else if (isLocked)
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Tooltip(
-                    message: 'Veredito selado — Imutável (INV-7)',
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: VeraProbColors.textDisabled.withValues(
-                          alpha: 0.2,
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.lock,
-                            size: 12,
-                            color: VeraProbColors.textDisabled,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'SELADO',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
-                              color: VeraProbColors.textDisabled,
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// In-flow status ribbon (formerly a floating `Positioned` overlay).
+  ///
+  /// Rendering it inside the scroll view fixes two defects at once: the badge
+  /// no longer slides over the body on scroll, and it no longer covers the
+  /// always-visible dossier button in the header. Returns an empty box for a
+  /// plain pending card (severity is already carried by the left accent).
+  Widget _buildStatusRibbon(SanctionQueueItemView item, bool isLocked) {
+    final cfg = switch (item.status) {
+      SanctionReviewStatus.disputed => (
+        color: VeraProbColors.warning,
+        icon: Icons.hourglass_empty_outlined,
+        label: 'AGUARDANDO EVIDÊNCIA',
+        tooltip: 'Evidência submetida. Resolva abaixo.',
+        fill: 0.2,
+        bordered: false,
+      ),
+      SanctionReviewStatus.pendingPeerReview => (
+        color: VeraProbColors.primary,
+        icon: Icons.groups_2_outlined,
+        label: 'AGUARDANDO 2º AUDITOR',
+        tooltip: 'Veredito de alto valor — requer um segundo auditor',
+        fill: 0.15,
+        bordered: true,
+      ),
+      SanctionReviewStatus.rejected => (
+        color: VeraProbColors.error,
+        icon: Icons.block_rounded,
+        label: 'VEREDITO RECUSADO',
+        tooltip: 'Sanção recusada — multa não aplicada',
+        fill: 0.12,
+        bordered: true,
+      ),
+      SanctionReviewStatus.acknowledged => (
+        color: VeraProbColors.success,
+        icon: Icons.verified_outlined,
+        label: 'DE ACORDO',
+        tooltip: 'Penalidade aceita pela transportadora (De Acordo)',
+        fill: 0.15,
+        bordered: true,
+      ),
+      _ =>
+        isLocked
+            ? (
+                color: VeraProbColors.textDisabled,
+                icon: Icons.lock,
+                label: 'SELADO',
+                tooltip: 'Veredito selado — Imutável (INV-7)',
+                fill: 0.2,
+                bordered: false,
+              )
+            : null,
+    };
+
+    if (cfg == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 16, 0),
+      child: Row(
+        children: [
+          const Spacer(),
+          Tooltip(
+            message: cfg.tooltip,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: cfg.color.withValues(alpha: cfg.fill),
+                borderRadius: BorderRadius.circular(4),
+                border: cfg.bordered
+                    ? Border.all(color: cfg.color.withValues(alpha: 0.4))
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(cfg.icon, size: 12, color: cfg.color),
+                  const SizedBox(width: 4),
+                  Text(
+                    cfg.label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: cfg.color,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1392,11 +1280,31 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     }
   }
 
+  /// One-Click Dossier (INV-21): the export button is always live, but the PDF
+  /// it produces mirrors the EXACT queue state. Terminal verdicts emit a sealed
+  /// certificate; everything else emits a watermarked preliminary working copy.
+  static bool _isSealedVerdict(SanctionReviewStatus status) =>
+      status == SanctionReviewStatus.applied ||
+      status == SanctionReviewStatus.rejected ||
+      status == SanctionReviewStatus.acknowledged;
+
   Future<void> _onDownloadDossier() async {
     final item = widget.item;
     final evidence = item.verdictEvidence;
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+    final sealed = _isSealedVerdict(item.status);
+    final outcomeLabel = switch (item.status) {
+      SanctionReviewStatus.applied => 'INFRAÇÃO CONFIRMADA',
+      SanctionReviewStatus.rejected => 'INFRAÇÃO ANULADA',
+      SanctionReviewStatus.acknowledged =>
+        'DE ACORDO (ACEITE DO TRANSPORTADOR)',
+      _ => null,
+    };
+    final auditorNote = item.status == SanctionReviewStatus.rejected
+        ? item.rejectionReason?.trim()
+        : null;
 
     final entry = SlaLedgerEntry(
       eventId: item.ledgerEntryId,
@@ -1416,6 +1324,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       savingsCents: evidence.fineCents.cents,
       mapLat: evidence.primaryEvidenceLat,
       mapLng: evidence.primaryEvidenceLng,
+      sealedVerdict: sealed,
+      verdictOutcomeLabel: outcomeLabel,
+      auditorNote: (auditorNote != null && auditorNote.isNotEmpty)
+          ? auditorNote
+          : null,
+      verdictSealHash: sealed ? evidence.evidenceHash : null,
     );
 
     setState(() {
@@ -1426,8 +1340,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     try {
       final handler = ref.read(generateForensicDossierHandlerProvider);
       final bytes = await handler.handle(command);
+      final prefix = sealed ? 'dossie_selado' : 'dossie_preliminar';
       final name =
-          'dossie_forense_'
+          '${prefix}_'
           '${item.ledgerEntryId.substring(0, 8)}_'
           '${DateTime.now().toUtc().millisecondsSinceEpoch}';
       await FileSaver.instance.saveFile(
@@ -1438,7 +1353,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dossiê forense baixado com sucesso.')),
+        SnackBar(
+          content: Text(
+            sealed
+                ? 'Dossiê selado (VEREDITO SELADO) baixado com sucesso.'
+                : 'Dossiê preliminar baixado — marca d\'água "PRELIMINAR".',
+          ),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
