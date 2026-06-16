@@ -12,8 +12,8 @@
 |------|-------|
 | Stack up | `supabase start` + `make run` (web, Wasm/CanvasKit) |
 | App URL | `http://localhost:<flutter-web-port>` |
-| Org A admin | `admin-a@veraprob.dev` / `veraprob123!` |
-| Org B admin | `admin-b@veraprob.dev` / `veraprob123!` (cross-tenant isolation only) |
+| Org A admin | `admin-a@veraprob.dev` / `123456` |
+| Org B admin | `admin-b@veraprob.dev` / `123456` (cross-tenant isolation only) |
 | MFA | Tenant admins = no MFA. Super-admin only (out of scope here). |
 | Debug build | Required — the **Gerar Sanção de Teste** button (`Icons.science_outlined`) renders only in `kDebugMode`. |
 | Reset between runs | `make setup` (db reset + seeds) for a clean ledger. |
