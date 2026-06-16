@@ -23,8 +23,15 @@
  *   - Best-effort 3 req/min/IP throttle (the hard guarantee is the DB per-token cap).
  *   - SUPABASE_SERVICE_ROLE_KEY is a Deno secret — never in the client bundle.
  *
- * Request:  { token, fileName, mimeType, fileSizeBytes, sha256Client, submitterReference? }
- * Response: { submissionId, signedUrl }
+ * Request (file path):     { token, fileName, mimeType, fileSizeBytes, sha256Client, justification, submitterReference? }
+ * Request (file-optional):  { token, justification }  (no fileName/mimeType/sha256Client)
+ * Response (file path):     { submissionId, signedUrl }
+ * Response (file-optional): { justificationSubmissionId }
+ *
+ * Justification is mandatory (testimony, equal legal weight to the file). It is
+ * validated defense-in-depth here (mirrors the DB CHECK + RPC) and stored RAW —
+ * NEVER HTML-encoded at ingest (that would corrupt the combined seal, INV-9).
+ * Escaping is a render/export concern.
  *
  * Council: Architect ✅ · Senior ✅ · QA-Security ✅ · Business ✅ · Lead ✅
  * Invariants: INV-1, INV-9, INV-18, INV-22, INV-26.
@@ -38,9 +45,27 @@ const MAX_BYTES = 10485760;
 const RESPONSE_FLOOR_MS = 80;
 const RATE_LIMIT = 3;
 const RATE_WINDOW_MS = 60_000;
+const JUSTIFICATION_MIN = 10;
+const JUSTIFICATION_MAX = 4000;
+// C0/C1 control chars except TAB (\x09) / LF (\x0A) / CR (\x0D).
+const CONTROL_CHAR_RE = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SHA256_RE = /^[a-f0-9]{64}$/;
+
+/**
+ * Defense-in-depth justification validation (mirrors the DB CHECK + RPC).
+ * Uses code-point length ([...j].length), NOT .length, so multibyte/surrogate
+ * characters are counted as the DB's char_length() counts them.
+ */
+function justificationInvalid(value: unknown): boolean {
+  if (typeof value !== "string") return true;
+  const codePoints = [...value].length;
+  if (codePoints > JUSTIFICATION_MAX) return true;
+  if ([...value.trim()].length < JUSTIFICATION_MIN) return true;
+  if (CONTROL_CHAR_RE.test(value)) return true;
+  return false;
+}
 const ALLOWED_MIME = new Set([
   "image/jpeg",
   "image/png",
@@ -109,11 +134,52 @@ export async function handler(
   const mimeType = body.mimeType;
   const fileSizeBytes = body.fileSizeBytes;
   const sha256Client = body.sha256Client;
+  const justification = body.justification;
   const submitterReference = body.submitterReference;
 
   if (typeof token !== "string" || !UUID_RE.test(token)) {
     return withFloor(start, sovereigntyErrorResponse());
   }
+  // Justification is mandatory on BOTH paths (testimony). Generic 400 (no oracle).
+  if (justificationInvalid(justification)) {
+    return withFloor(start, Response.json({ error: "Invalid justification" }, { status: 400 }));
+  }
+  if (submitterReference !== undefined && typeof submitterReference !== "string") {
+    return withFloor(start, Response.json({ error: "Invalid submitterReference" }, { status: 400 }));
+  }
+
+  // File-optional (anexo opcional): no file fields → justification-only contest.
+  const hasFile = fileName !== undefined || mimeType !== undefined ||
+    fileSizeBytes !== undefined || sha256Client !== undefined;
+
+  const supabase = injectedSupabase ?? createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  // ── File-optional branch: justification-only, no signed URL ─────────────────
+  if (!hasFile) {
+    try {
+      const { data, error } = await supabase.rpc("submit_portal_justification_only", {
+        p_token: token,
+        p_justification: justification,
+      });
+      // 42501 and any failure → identical 404 (INV-26).
+      if (error || !data) {
+        if (error) console.error("[portal-submit-request] justification rpc error:", error.message);
+        return withFloor(start, sovereigntyErrorResponse());
+      }
+      return withFloor(
+        start,
+        Response.json({ justificationSubmissionId: data as string }, { status: 200 }),
+      );
+    } catch (e) {
+      console.error("[portal-submit-request] justification unexpected:", e);
+      return withFloor(start, sovereigntyErrorResponse());
+    }
+  }
+
+  // ── File path: validate file metadata before minting a quarantine row ───────
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 255) {
     return withFloor(start, Response.json({ error: "Invalid fileName" }, { status: 400 }));
   }
@@ -129,14 +195,6 @@ export async function handler(
   if (typeof sha256Client !== "string" || !SHA256_RE.test(sha256Client)) {
     return withFloor(start, Response.json({ error: "Invalid sha256Client" }, { status: 400 }));
   }
-  if (submitterReference !== undefined && typeof submitterReference !== "string") {
-    return withFloor(start, Response.json({ error: "Invalid submitterReference" }, { status: 400 }));
-  }
-
-  const supabase = injectedSupabase ?? createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   try {
     // ── Mint quarantine row (scope/state/cap enforced inside the RPC) ─────────
@@ -146,6 +204,7 @@ export async function handler(
       p_mime_type: mimeType,
       p_file_size_bytes: fileSizeBytes,
       p_sha256_client: sha256Client,
+      p_justification: justification,
       p_submitter_ip: ip === "unknown" ? null : ip,
       p_correlation_id: typeof submitterReference === "string" ? submitterReference : null,
     });

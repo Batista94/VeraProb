@@ -520,7 +520,9 @@ class PostgresTestConfig {
 
   /// Builds a valid 8-char binding token code from [seed].
   static String fakeTokenCode(String seed) {
-    const alphabet = 'ABCDEFGHJKMNP' 'QRSTUVWXYZ23456789';
+    const alphabet =
+        'ABCDEFGHJKMNP'
+        'QRSTUVWXYZ23456789';
     // FNV-1a 64-bit for collision-free distribution (hashCode collides).
     final bytes = utf8.encode(seed);
     var h = 0xcbf29ce484222325;

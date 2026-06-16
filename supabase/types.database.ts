@@ -1064,6 +1064,7 @@ export type Database = {
           mime_type: string;
           organization_id: string;
           queue_entry_id: string;
+          sha256_combined_seal: string | null;
           sha256_hash: string;
           storage_path: string;
           submission_id: string | null;
@@ -1080,6 +1081,7 @@ export type Database = {
           mime_type: string;
           organization_id: string;
           queue_entry_id: string;
+          sha256_combined_seal?: string | null;
           sha256_hash: string;
           storage_path: string;
           submission_id?: string | null;
@@ -1096,6 +1098,7 @@ export type Database = {
           mime_type?: string;
           organization_id?: string;
           queue_entry_id?: string;
+          sha256_combined_seal?: string | null;
           sha256_hash?: string;
           storage_path?: string;
           submission_id?: string | null;
@@ -2566,6 +2569,7 @@ export type Database = {
           file_size_bytes_declared: number;
           finalized_at_utc: string | null;
           id: string;
+          justification_text: string | null;
           mime_type_declared: string;
           mime_type_detected: string | null;
           organization_id: string;
@@ -2590,6 +2594,7 @@ export type Database = {
           file_size_bytes_declared: number;
           finalized_at_utc?: string | null;
           id?: string;
+          justification_text?: string | null;
           mime_type_declared: string;
           mime_type_detected?: string | null;
           organization_id: string;
@@ -2614,6 +2619,7 @@ export type Database = {
           file_size_bytes_declared?: number;
           finalized_at_utc?: string | null;
           id?: string;
+          justification_text?: string | null;
           mime_type_declared?: string;
           mime_type_detected?: string | null;
           organization_id?: string;
@@ -2660,6 +2666,87 @@ export type Database = {
           },
           {
             foreignKeyName: "portal_evidence_submissions_token_id_fkey";
+            columns: ["token_id"];
+            isOneToOne: false;
+            referencedRelation: "dispute_portal_tokens";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      portal_justification_submissions: {
+        Row: {
+          deleted_at: string | null;
+          id: string;
+          justification_text: string;
+          organization_id: string;
+          queue_entry_id: string;
+          sha256_justification_seal: string;
+          status: string;
+          submitted_at_utc: string;
+          submitted_via: string;
+          submitter_correlation_id: string | null;
+          submitter_ip: unknown;
+          token_id: string;
+        };
+        Insert: {
+          deleted_at?: string | null;
+          id?: string;
+          justification_text: string;
+          organization_id: string;
+          queue_entry_id: string;
+          sha256_justification_seal: string;
+          status?: string;
+          submitted_at_utc?: string;
+          submitted_via?: string;
+          submitter_correlation_id?: string | null;
+          submitter_ip?: unknown;
+          token_id: string;
+        };
+        Update: {
+          deleted_at?: string | null;
+          id?: string;
+          justification_text?: string;
+          organization_id?: string;
+          queue_entry_id?: string;
+          sha256_justification_seal?: string;
+          status?: string;
+          submitted_at_utc?: string;
+          submitted_via?: string;
+          submitter_correlation_id?: string | null;
+          submitter_ip?: unknown;
+          token_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "portal_justification_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_justification_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_justification_submissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_justification_submissions_queue_entry_id_fkey";
+            columns: ["queue_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sanction_review_queue";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "portal_justification_submissions_token_id_fkey";
             columns: ["token_id"];
             isOneToOne: false;
             referencedRelation: "dispute_portal_tokens";
@@ -5193,6 +5280,7 @@ export type Database = {
           p_correlation_id?: string;
           p_file_name: string;
           p_file_size_bytes: number;
+          p_justification: string;
           p_mime_type: string;
           p_sha256_client: string;
           p_submitter_ip?: string;
@@ -5526,6 +5614,16 @@ export type Database = {
         Returns: undefined;
       };
       jsonb_canonical_text: { Args: { p_input: Json }; Returns: string };
+      list_portal_justification_submissions: {
+        Args: { p_organization_id: string; p_queue_entry_id: string };
+        Returns: {
+          justification_submission_id: string;
+          justification_text: string;
+          sha256_justification_seal: string;
+          status: string;
+          submitted_at_utc: string;
+        }[];
+      };
       list_portal_submissions: {
         Args: { p_organization_id: string; p_queue_entry_id: string };
         Returns: {
@@ -6361,6 +6459,10 @@ export type Database = {
             };
             Returns: undefined;
           };
+      submit_portal_justification_only: {
+        Args: { p_justification: string; p_token: string };
+        Returns: string;
+      };
       super_admin_add_org_admin:
         | {
             Args: {

@@ -100,7 +100,8 @@ DO $$
 DECLARE r RECORD;
 BEGIN
   SELECT * INTO r FROM public.create_portal_submission(
-    '00000000-0000-0000-0000-0000dad57001', 'p1.pdf','application/pdf',2048,repeat('1',64));
+    '00000000-0000-0000-0000-0000dad57001', 'p1.pdf','application/pdf',2048,repeat('1',64),
+    'Justificativa de contestacao da submissao um.');
   PERFORM set_config('t.sub1', r.submission_id::text, true);
   PERFORM set_config('t.path1', r.quarantine_path, true);
 END $$;
@@ -112,17 +113,20 @@ SELECT ok(
 -- CS3: read-scoped token rejected on submit endpoint (42501, anti-oracle)
 SELECT throws_ok(
   $$ SELECT public.create_portal_submission(
-       '00000000-0000-0000-0000-0000dad57004','x.pdf','application/pdf',2048,repeat('2',64)) $$,
+       '00000000-0000-0000-0000-0000dad57004','x.pdf','application/pdf',2048,repeat('2',64),
+       'Justificativa valida mas token de leitura.') $$,
   '42501', NULL, 'CS3: read token rejected on submit (scope enforced)');
 
 -- CS4: per-token cap (max_submissions=1) — first ok, second rejected
 SELECT lives_ok(
   $$ SELECT public.create_portal_submission(
-       '00000000-0000-0000-0000-0000dad57003','c1.pdf','application/pdf',2048,repeat('3',64)) $$,
+       '00000000-0000-0000-0000-0000dad57003','c1.pdf','application/pdf',2048,repeat('3',64),
+       'Justificativa da primeira submissao do token cap.') $$,
   'CS4a: cap token first submission ok');
 SELECT throws_ok(
   $$ SELECT public.create_portal_submission(
-       '00000000-0000-0000-0000-0000dad57003','c2.pdf','application/pdf',2048,repeat('4',64)) $$,
+       '00000000-0000-0000-0000-0000dad57003','c2.pdf','application/pdf',2048,repeat('4',64),
+       'Justificativa da segunda submissao que excede o cap.') $$,
   '42501', NULL, 'CS4b: per-token submission cap enforced');
 
 -- Second main-flow submission (for fail path) + third (for audit reject).
@@ -130,10 +134,12 @@ DO $$
 DECLARE r RECORD;
 BEGIN
   SELECT * INTO r FROM public.create_portal_submission(
-    '00000000-0000-0000-0000-0000dad57001','p2.pdf','application/pdf',2048,repeat('5',64));
+    '00000000-0000-0000-0000-0000dad57001','p2.pdf','application/pdf',2048,repeat('5',64),
+    'Justificativa de contestacao da submissao dois.');
   PERFORM set_config('t.sub2', r.submission_id::text, true);
   SELECT * INTO r FROM public.create_portal_submission(
-    '00000000-0000-0000-0000-0000dad57001','p3.pdf','application/pdf',2048,repeat('6',64));
+    '00000000-0000-0000-0000-0000dad57001','p3.pdf','application/pdf',2048,repeat('6',64),
+    'Justificativa de contestacao da submissao tres.');
   PERFORM set_config('t.sub3', r.submission_id::text, true);
 END $$;
 
@@ -282,9 +288,9 @@ RESET ROLE;
 -- =============================================================================
 SELECT ok(
   has_function_privilege('service_role',
-    'public.create_portal_submission(uuid,text,text,bigint,text,text,text)','EXECUTE')
+    'public.create_portal_submission(uuid,text,text,bigint,text,text,text,text)','EXECUTE')
   AND NOT has_function_privilege('authenticated',
-    'public.create_portal_submission(uuid,text,text,bigint,text,text,text)','EXECUTE'),
+    'public.create_portal_submission(uuid,text,text,bigint,text,text,text,text)','EXECUTE'),
   'GR1: create_portal_submission is service_role-only');
 SELECT ok(
   has_function_privilege('anon','public.acknowledge_via_portal(uuid,text)','EXECUTE')

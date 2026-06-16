@@ -147,6 +147,8 @@ void main() async {
                   'p_mime_type': 'application/pdf',
                   'p_file_size_bytes': 1024,
                   'p_sha256_client': 'a' * 64,
+                  'p_justification':
+                      'Justificativa de contestacao para o teste de concorrencia.',
                 },
               )
               .then<Object>((r) => r)
@@ -204,6 +206,8 @@ void main() async {
               'p_mime_type': 'image/png',
               'p_file_size_bytes': 2048,
               'p_sha256_client': 'e' * 64,
+              'p_justification':
+                  'Justificativa de contestacao para o teste de idempotencia.',
             },
           );
           final submissionId =
