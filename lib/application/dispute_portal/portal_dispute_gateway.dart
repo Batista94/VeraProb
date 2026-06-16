@@ -1,6 +1,6 @@
-import 'dart:typed_data';
-
+import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/application/dispute_portal/staged_file.dart';
 
 /// Port (INV-13) for the external, tokenized dispute portal. Implemented in
 /// infrastructure over the anon Supabase client + the two portal edge functions.
@@ -10,6 +10,10 @@ abstract class PortalDisputeGateway {
   /// Reads the sealed dispute snapshot for [token]. Throws
   /// [PortalDisputeException] on an invalid/expired/revoked token (404 parity).
   Future<PortalSnapshot> read(String token);
+
+  /// Reads the read-model projection containing only safe, generic transport
+  /// data for the dispute.
+  Future<InfractionContextProjection> readInfractionContext(String token);
 
   /// Records the carrier "De Acordo" for the served [snapshotHash]. Throws
   /// [PortalDisputeException] if the hash was not the one served (INV-9) or the
@@ -24,8 +28,8 @@ abstract class PortalDisputeGateway {
   /// verification, INV-9). Returns the verification outcome.
   Future<PortalSubmissionOutcome> submitEvidence({
     required String token,
-    required String fileName,
-    required String mimeType,
-    required Uint8List bytes,
+    required String justification,
+    StagedFile? file,
+    required String? sha256Client,
   });
 }

@@ -1,11 +1,11 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/application/dispute_portal/staged_file.dart';
 import 'package:veraprob/features/dispute_portal/presentation/dispute_portal_page.dart';
 import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 
@@ -33,11 +33,18 @@ class _FakeGateway implements PortalDisputeGateway {
   }
 
   @override
+  Future<InfractionContextProjection> readInfractionContext(
+    String token,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<PortalSubmissionOutcome> submitEvidence({
     required String token,
-    required String fileName,
-    required String mimeType,
-    required Uint8List bytes,
+    required String justification,
+    StagedFile? file,
+    required String? sha256Client,
   }) async => PortalSubmissionOutcome.pendingAudit;
 }
 

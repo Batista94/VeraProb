@@ -1,165 +1,25 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/application/dispute_portal/portal_dispute_submission_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 
+import 'package:veraprob/features/dispute_portal/presentation/widgets/portal_header.dart';
+import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_context_card.dart';
+import 'package:veraprob/features/dispute_portal/presentation/widgets/evidence_dropzone.dart';
+import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_action_footer.dart';
+
 /// Public, tokenized dispute portal for an external carrier (no Supabase auth).
-///
-/// Reached via `/portal/dispute?token=<uuid>`. Three branches driven by the
-/// served snapshot status:
-///   • always — review the sealed evidence the system holds;
-///   • `disputed` — submit counter-evidence (browser → quarantine → finalize);
-///   • `applied`  — "De Acordo": accept the penalty (hash-bound, INV-9).
-///
-/// Lesson 8: the ScaffoldMessenger is captured before the first `await`, and an
-/// `_isSaving` guard prevents the ClickDebouncer double-tap loop (CT02).
-class DisputePortalPage extends ConsumerStatefulWidget {
+class DisputePortalPage extends ConsumerWidget {
   final String token;
   const DisputePortalPage({super.key, required this.token});
 
   @override
-  ConsumerState<DisputePortalPage> createState() => _DisputePortalPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pageDataAsync = ref.watch(portalPageDataProvider(token));
 
-class _DisputePortalPageState extends ConsumerState<DisputePortalPage> {
-  static const int _kMaxBytes = 10 * 1024 * 1024;
-  static const Map<String, String> _allowedExtensions = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'pdf': 'application/pdf',
-    'heic': 'image/heic',
-    'heif': 'image/heif',
-    'webp': 'image/webp',
-  };
-
-  PortalSnapshot? _snapshot;
-  bool _loading = true;
-  bool _isSaving = false;
-  bool _acknowledged = false;
-  String? _errorMessage;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final snap = await ref
-          .read(portalDisputeGatewayProvider)
-          .read(widget.token);
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _snapshot = snap;
-      });
-    } on PortalDisputeException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _errorMessage = e.message;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _errorMessage = 'Link inválido ou expirado.';
-      });
-    }
-  }
-
-  Future<void> _submitCounterEvidence() async {
-    if (_isSaving) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final gateway = ref.read(portalDisputeGatewayProvider);
-
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: _allowedExtensions.keys.toList(),
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-    final file = result.files.first;
-    final bytes = file.bytes;
-    final mime = _allowedExtensions[(file.extension ?? '').toLowerCase()];
-
-    if (mime == null) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Tipo não permitido. Use JPG, PNG, PDF, HEIC ou WEBP.'),
-        ),
-      );
-      return;
-    }
-    if (bytes == null || bytes.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Arquivo vazio ou ilegível.')),
-      );
-      return;
-    }
-    if (bytes.length > _kMaxBytes) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Arquivo excede 10 MB.')),
-      );
-      return;
-    }
-
-    setState(() => _isSaving = true);
-    try {
-      final outcome = await gateway.submitEvidence(
-        token: widget.token,
-        fileName: file.name,
-        mimeType: mime,
-        bytes: bytes,
-      );
-      if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text(_outcomeMessage(outcome))));
-      if (outcome == PortalSubmissionOutcome.pendingAudit) {
-        await _load();
-      }
-    } on PortalDisputeException catch (e) {
-      if (mounted) messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  Future<void> _acknowledge() async {
-    if (_isSaving || _snapshot == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    final gateway = ref.read(portalDisputeGatewayProvider);
-    setState(() => _isSaving = true);
-    try {
-      await gateway.acknowledge(
-        token: widget.token,
-        snapshotHash: _snapshot!.snapshotHash,
-      );
-      if (!mounted) return;
-      setState(() => _acknowledged = true);
-    } on PortalDisputeException catch (e) {
-      if (mounted) messenger.showSnackBar(SnackBar(content: Text(e.message)));
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
-    }
-  }
-
-  static String _outcomeMessage(PortalSubmissionOutcome o) => switch (o) {
-    PortalSubmissionOutcome.pendingAudit =>
-      'Contraprova enviada. Aguardando análise do auditor.',
-    PortalSubmissionOutcome.hashMismatch =>
-      'O arquivo foi alterado durante o envio. Tente novamente.',
-    PortalSubmissionOutcome.mimeMismatch =>
-      'O conteúdo do arquivo não corresponde ao tipo informado.',
-    PortalSubmissionOutcome.rejected => 'Arquivo recusado.',
-  };
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VeraProbColors.background,
       body: Center(
@@ -168,7 +28,17 @@ class _DisputePortalPageState extends ConsumerState<DisputePortalPage> {
             constraints: const BoxConstraints(maxWidth: 640),
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: _buildBody(),
+              child: pageDataAsync.when(
+                data: (data) => _buildLoaded(context, ref, data),
+                loading: () => const _LoadingView(),
+                error: (err, _) {
+                  String msg = 'Link inválido ou expirado.';
+                  if (err is PortalDisputeException) {
+                    msg = err.message;
+                  }
+                  return _ErrorView(message: msg);
+                },
+              ),
             ),
           ),
         ),
@@ -176,279 +46,146 @@ class _DisputePortalPageState extends ConsumerState<DisputePortalPage> {
     );
   }
 
-  Widget _buildBody() {
-    if (_loading) {
-      return const Column(
-        mainAxisSize: MainAxisSize.min,
+  Widget _buildLoaded(
+    BuildContext context,
+    WidgetRef ref,
+    PortalPageData data,
+  ) {
+    final submissionState = ref.watch(portalDisputeSubmissionNotifierProvider);
+    final notifier = ref.read(portalDisputeSubmissionNotifierProvider.notifier);
+
+    // If successfully submitted this session:
+    if (submissionState is PortalSubmissionSuccess) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text(
-            'Validando link...',
-            style: TextStyle(color: VeraProbColors.textSecondary),
+          PortalHeader(
+            orgDisplayName: data.contextData.orgDisplayName,
+            orgCnpj: data.contextData.orgCnpj,
+          ),
+          const SizedBox(height: VeraProbSpacing.lg),
+          _PortalCard(
+            icon: Icons.check_circle_outline,
+            color: VeraProbColors.success,
+            title: 'Contestação Enviada',
+            message:
+                'Sua contestação foi registrada com sucesso.\nProtocolo: ${submissionState.protocol}',
           ),
         ],
       );
     }
-    if (_errorMessage != null) {
-      return _PortalCard(
-        icon: Icons.error_outline,
-        color: VeraProbColors.error,
-        title: 'Link Inválido',
-        message: _errorMessage!,
-      );
-    }
-    if (_acknowledged) {
-      return const _PortalCard(
-        icon: Icons.verified_outlined,
-        color: VeraProbColors.success,
-        title: 'Penalidade Aceita',
-        message:
-            'Seu aceite foi registrado de forma definitiva e auditável. '
-            'Obrigado.',
-      );
-    }
-    final snap = _snapshot;
-    if (snap == null) return const SizedBox.shrink();
-    return _LoadedView(
-      snapshot: snap,
-      isSaving: _isSaving,
-      onSubmit: _submitCounterEvidence,
-      onAcknowledge: _acknowledge,
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        PortalHeader(
+          orgDisplayName: data.contextData.orgDisplayName,
+          orgCnpj: data.contextData.orgCnpj,
+        ),
+        const SizedBox(height: VeraProbSpacing.lg),
+        DisputeContextCard(contextData: data.contextData),
+        const SizedBox(height: VeraProbSpacing.lg),
+
+        if (submissionState is PortalSubmissionError)
+          Container(
+            margin: const EdgeInsets.only(bottom: VeraProbSpacing.lg),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: VeraProbColors.error.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: VeraProbColors.error.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: VeraProbColors.error),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    submissionState.errorMessage,
+                    style: VeraProbTypography.bodyMedium.copyWith(
+                      color: VeraProbColors.error,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        if (data.snapshot.isDisputed) ...[
+          EvidenceDropzone(
+            state: submissionState,
+            onFileStaged: notifier.stageFile,
+            onFileCleared: notifier.clearFile,
+          ),
+          const SizedBox(height: VeraProbSpacing.lg),
+          DisputeActionFooter(
+            state: submissionState,
+            onJustificationChanged: notifier.setJustification,
+            onSubmit: () => notifier.submit(token),
+            onAcknowledge: () async {
+              try {
+                await ref
+                    .read(portalDisputeGatewayProvider)
+                    .acknowledge(
+                      token: token,
+                      snapshotHash: data.snapshot.snapshotHash,
+                    );
+                ref.invalidate(portalPageDataProvider(token));
+              } on PortalDisputeException catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text(e.message)));
+                }
+              }
+            },
+          ),
+        ] else if (data.snapshot.isApplied) ...[
+          const _PortalCard(
+            icon: Icons.verified_outlined,
+            color: VeraProbColors.success,
+            title: 'Penalidade Aceita',
+            message:
+                'Seu aceite foi registrado de forma definitiva e auditável. Obrigado.',
+          ),
+        ],
+      ],
     );
   }
 }
 
-class _LoadedView extends StatelessWidget {
-  final PortalSnapshot snapshot;
-  final bool isSaving;
-  final VoidCallback onSubmit;
-  final VoidCallback onAcknowledge;
-
-  const _LoadedView({
-    required this.snapshot,
-    required this.isSaving,
-    required this.onSubmit,
-    required this.onAcknowledge,
-  });
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            const Icon(Icons.gavel_outlined, color: VeraProbColors.primary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'Portal de Disputa',
-                style: VeraProbTypography.sectionTitle,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _VerdictSummary(snapshot: snapshot),
-        const SizedBox(height: 16),
-        _EvidenceList(items: snapshot.evidence),
-        const SizedBox(height: 24),
-        if (snapshot.isDisputed)
-          _SubmitBranch(isSaving: isSaving, onSubmit: onSubmit),
-        if (snapshot.isApplied)
-          _DeAcordoBranch(
-            snapshot: snapshot,
-            isSaving: isSaving,
-            onAcknowledge: onAcknowledge,
-          ),
-      ],
-    );
-  }
-}
-
-class _VerdictSummary extends StatelessWidget {
-  final PortalSnapshot snapshot;
-  const _VerdictSummary({required this.snapshot});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: VeraProbColors.primary.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            snapshot.ruleType ?? 'Ocorrência',
-            style: VeraProbTypography.sectionTitle,
-          ),
-          if (snapshot.description != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              snapshot.description!,
-              style: const TextStyle(color: VeraProbColors.textSecondary),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _EvidenceList extends StatelessWidget {
-  final List<PortalEvidenceItem> items;
-  const _EvidenceList({required this.items});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+        CircularProgressIndicator(),
+        SizedBox(height: 16),
         Text(
-          'Evidências (${items.length})',
-          style: const TextStyle(
-            color: VeraProbColors.textSecondary,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 8),
-        if (items.isEmpty)
-          const Text(
-            'Nenhuma evidência anexada.',
-            style: TextStyle(color: VeraProbColors.textSecondary),
-          )
-        else
-          ...items.map(
-            (e) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(
-                Icons.description_outlined,
-                color: VeraProbColors.primary,
-              ),
-              title: Text(
-                e.fileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                'SHA-256 ${e.sha256Hash.substring(0, e.sha256Hash.length >= 12 ? 12 : e.sha256Hash.length)}…',
-                style: const TextStyle(color: VeraProbColors.textSecondary),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _SubmitBranch extends StatelessWidget {
-  final bool isSaving;
-  final VoidCallback onSubmit;
-  const _SubmitBranch({required this.isSaving, required this.onSubmit});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Contestar — enviar contraprova',
-          style: VeraProbTypography.sectionTitle,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Envie um documento (JPG, PNG, PDF, HEIC ou WEBP, até 10 MB). '
-          'O arquivo é verificado criptograficamente no servidor.',
+          'Validando link...',
           style: TextStyle(color: VeraProbColors.textSecondary),
         ),
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          onPressed: isSaving ? null : onSubmit,
-          icon: isSaving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.upload_file_outlined),
-          label: Text(isSaving ? 'Enviando...' : 'Selecionar e enviar'),
-        ),
       ],
     );
   }
 }
 
-class _DeAcordoBranch extends StatelessWidget {
-  final PortalSnapshot snapshot;
-  final bool isSaving;
-  final VoidCallback onAcknowledge;
-
-  const _DeAcordoBranch({
-    required this.snapshot,
-    required this.isSaving,
-    required this.onAcknowledge,
-  });
+class _ErrorView extends StatelessWidget {
+  final String message;
+  const _ErrorView({required this.message});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: VeraProbColors.success.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'De Acordo — aceitar penalidade',
-            style: VeraProbTypography.sectionTitle,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Ao confirmar, você aceita formalmente a penalidade conforme '
-            'apresentada acima. O aceite é definitivo e auditável.',
-            style: TextStyle(color: VeraProbColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
-            'Hash do registro: ${snapshot.snapshotHash}',
-            style: const TextStyle(
-              color: VeraProbColors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(
-              backgroundColor: VeraProbColors.success,
-            ),
-            onPressed: isSaving ? null : onAcknowledge,
-            icon: isSaving
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.check_circle_outline),
-            label: Text(isSaving ? 'Registrando...' : 'Confirmar De Acordo'),
-          ),
-        ],
-      ),
+    return _PortalCard(
+      icon: Icons.error_outline,
+      color: VeraProbColors.error,
+      title: 'Link Inválido',
+      message: message,
     );
   }
 }

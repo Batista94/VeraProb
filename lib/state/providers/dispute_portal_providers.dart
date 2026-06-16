@@ -1,10 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/dispute_portal/i_file_hasher.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
 import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
+import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
+import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/infrastructure/dispute_portal/chunked_file_hasher.dart';
 import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_dispute_gateway.dart';
 import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_submission_audit_gateway.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+
+final fileHasherProvider = Provider<IFileHasher>((ref) {
+  return const ChunkedFileHasher();
+});
 
 /// Anon-side gateway for the external dispute portal. Overridable in tests via
 /// `portalDisputeGatewayProvider.overrideWithValue(fake)`.
@@ -12,6 +20,28 @@ final portalDisputeGatewayProvider = Provider<PortalDisputeGateway>((ref) {
   final client = ref.watch(supabaseClientProvider);
   return SupabasePortalDisputeGateway(client);
 });
+
+typedef PortalPageData = ({
+  PortalSnapshot snapshot,
+  InfractionContextProjection contextData,
+});
+
+/// Fetches both the snapshot and the immutable context data required by the portal page.
+final portalPageDataProvider = FutureProvider.autoDispose
+    .family<PortalPageData, String>((ref, token) async {
+      final gateway = ref.watch(portalDisputeGatewayProvider);
+
+      // Concurrently fetch both (Fail-Fast: if either fails, the Future fails).
+      final results = await Future.wait([
+        gateway.read(token),
+        gateway.readInfractionContext(token),
+      ]);
+
+      return (
+        snapshot: results[0] as PortalSnapshot,
+        contextData: results[1] as InfractionContextProjection,
+      );
+    });
 
 /// Authenticated auditor gateway for reviewing PENDING_AUDIT portal submissions
 /// (`list_portal_submissions` + `audit_portal_submission`). JWT-bound; the org +

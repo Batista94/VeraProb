@@ -1,8 +1,8 @@
-import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/application/dispute_portal/staged_file.dart';
 
 class _FakeGateway implements PortalDisputeGateway {
   final PortalSnapshot? snapshot;
@@ -32,11 +32,18 @@ class _FakeGateway implements PortalDisputeGateway {
   }
 
   @override
+  Future<InfractionContextProjection> readInfractionContext(
+    String token,
+  ) async {
+    throw UnimplementedError();
+  }
+
+  @override
   Future<PortalSubmissionOutcome> submitEvidence({
     required String token,
-    required String fileName,
-    required String mimeType,
-    required Uint8List bytes,
+    required String justification,
+    StagedFile? file,
+    required String? sha256Client,
   }) async {
     return outcome;
   }
@@ -78,9 +85,8 @@ void main() {
       final g = _FakeGateway(outcome: PortalSubmissionOutcome.mimeMismatch);
       final o = await g.submitEvidence(
         token: 'tok',
-        fileName: 'f.pdf',
-        mimeType: 'application/pdf',
-        bytes: Uint8List.fromList([1, 2, 3]),
+        justification: 'justificativa',
+        sha256Client: 'a' * 64,
       );
       expect(o, PortalSubmissionOutcome.mimeMismatch);
     });
