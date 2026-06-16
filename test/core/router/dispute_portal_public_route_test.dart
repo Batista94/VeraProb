@@ -16,7 +16,7 @@ import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 class _FakeGateway implements PortalDisputeGateway {
   @override
   Future<PortalSnapshot> read(String token) async => PortalSnapshot(
-    status: 'applied',
+    status: 'disputed',
     disputedAtUtc: null,
     resolutionDueAtUtc: null,
     ruleType: 'MAX_TOLERANCE_DELAY',
@@ -34,9 +34,16 @@ class _FakeGateway implements PortalDisputeGateway {
   @override
   Future<InfractionContextProjection> readInfractionContext(
     String token,
-  ) async {
-    throw UnimplementedError();
-  }
+  ) async => InfractionContextProjection(
+    assetIdentifier: 'ABC-1234',
+    penaltyValueCents: 15000,
+    occurredAtUtc: DateTime.now().toUtc(),
+    locationLabel: 'São Paulo, SP',
+    recordId: 'rec-123',
+    orgDisplayName: 'Transportadora ABC',
+    orgCnpj: '12.345.678/0001-99',
+    orgLogoUrl: '',
+  );
 
   @override
   Future<PortalSubmissionOutcome> submitEvidence({
@@ -96,7 +103,7 @@ void main() {
     // Reached the portal, NOT bounced to login.
     expect(find.text('LOGIN'), findsNothing);
     expect(find.byType(DisputePortalPage), findsOneWidget);
-    expect(find.text('De Acordo — aceitar penalidade'), findsOneWidget);
+    expect(find.text('De Acordo — Aceitar'), findsOneWidget);
   });
 
   test('disputePortal is registered as a public (anon) path', () {

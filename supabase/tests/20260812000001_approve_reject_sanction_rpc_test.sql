@@ -42,7 +42,7 @@ VALUES
 -- 1. approve_sanction exists with the expected signature.
 SELECT has_function(
   'public', 'approve_sanction',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'timestamp with time zone'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'timestamp with time zone', 'text', 'text'],
   'approve_sanction exists with the expected signature'
 );
 
@@ -70,7 +70,7 @@ SELECT is(
 -- 5. authenticated may execute approve.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'authenticated may execute approve_sanction'
 );
@@ -78,7 +78,7 @@ SELECT ok(
 -- 6. anon may NOT execute approve (Max hardening).
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'anon may NOT execute approve_sanction'
 );
@@ -86,7 +86,7 @@ SELECT ok(
 -- 7. service_role may NOT execute approve (no Data-API bypass path).
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'service_role may NOT execute approve_sanction'
 );

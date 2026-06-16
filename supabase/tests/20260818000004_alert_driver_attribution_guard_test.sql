@@ -58,7 +58,7 @@ SELECT lives_ok(
 );
 
 -- T3: driver_id empty string → constraint violation (23514)
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -66,12 +66,13 @@ SELECT throws_like(
            '{"driver_id": ""}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T3: empty driver_id blocked by constraint (23514)'
 );
 
 -- T4: driver_id JSON null → constraint violation
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -79,12 +80,13 @@ SELECT throws_like(
            '{"driver_id": null}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T4: null JSON driver_id blocked by constraint (23514)'
 );
 
 -- T5: missing driver_id key entirely → constraint violation
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -92,7 +94,8 @@ SELECT throws_like(
            '{"total_penalty_cents": 1500}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T5: missing driver_id key blocked by constraint (23514)'
 );
 
@@ -121,7 +124,7 @@ SELECT lives_ok(
 );
 
 -- T8-T13: all six driver-bound types blocked without driver_id
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -129,11 +132,12 @@ SELECT throws_like(
            '{"rule_id": "r1"}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T8: DEVIATION without driver_id blocked'
 );
 
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -141,11 +145,12 @@ SELECT throws_like(
            '{}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T9: SLA_BREACH without driver_id blocked'
 );
 
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -153,11 +158,12 @@ SELECT throws_like(
            '{}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T10: POTENTIAL_TIME_FRAUD without driver_id blocked'
 );
 
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -165,11 +171,12 @@ SELECT throws_like(
            '{}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T11: NO_SHOW without driver_id blocked'
 );
 
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -177,11 +184,12 @@ SELECT throws_like(
            '{}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T12: EVIDENCE_GAP without driver_id blocked'
 );
 
-SELECT throws_like(
+SELECT throws_ok(
   $sql$
     INSERT INTO public.operational_alerts
       (organization_id, contract_id, entity_id, alert_type, severity, triggered_at_utc, context)
@@ -189,7 +197,8 @@ SELECT throws_like(
            '{}'::jsonb
     FROM   _t_ids
   $sql$,
-  '%23514%',
+  '23514',
+  NULL,
   'T13: PENALTY_APPLIED without driver_id blocked'
 );
 

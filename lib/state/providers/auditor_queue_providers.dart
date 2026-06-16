@@ -397,6 +397,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     await guardedAction(
       () => _approveHandler.handle(
@@ -407,6 +409,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,
+          reasonCode: reasonCode,
+          reviewerReason: reviewerReason,
         ),
       ),
     );

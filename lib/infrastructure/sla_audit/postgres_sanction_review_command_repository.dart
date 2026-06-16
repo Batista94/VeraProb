@@ -35,6 +35,8 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     try {
       final result = await client.rpc<Map<String, dynamic>>(
@@ -45,6 +47,8 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
           'p_reviewed_by_user_id': reviewedByUserId,
           'p_actor_email': actorEmail,
           'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+          'p_reason_code': reasonCode,
+          'p_reviewer_reason': reviewerReason,
         },
       );
       return SanctionReviewResult.fromJson(result);

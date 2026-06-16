@@ -27,6 +27,9 @@ class _FakeReview implements SanctionReviewCommandRepository {
     );
   }
 
+  String? lastApproveReasonCode;
+  String? lastApproveReviewerReason;
+
   @override
   Future<SanctionReviewResult> approveSanction({
     required String organizationId,
@@ -34,7 +37,13 @@ class _FakeReview implements SanctionReviewCommandRepository {
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
-  }) async => _seal(queueEntryId, 'applied');
+    String? reasonCode,
+    String? reviewerReason,
+  }) async {
+    lastApproveReasonCode = reasonCode;
+    lastApproveReviewerReason = reviewerReason;
+    return _seal(queueEntryId, 'applied');
+  }
 
   @override
   Future<SanctionReviewResult> rejectSanction({
@@ -101,7 +110,7 @@ void main() {
   final now = DateTime.utc(2026, 6, 1);
 
   group('SanctionReviewCommandRepository (port contract)', () {
-    test('approve seals to applied', () async {
+    test('approve seals to applied and carries the optional reason', () async {
       final repo = _FakeReview();
       final r = await repo.approveSanction(
         organizationId: 'org-1',
@@ -109,8 +118,12 @@ void main() {
         reviewedByUserId: 'u-1',
         actorEmail: 'a@x.com',
         occurredAtUtc: now,
+        reasonCode: 'SENSOR_FAULT',
+        reviewerReason: 'Laudo técnico anexado.',
       );
       expect(r.finalQueueStatus, 'applied');
+      expect(repo.lastApproveReasonCode, 'SENSOR_FAULT');
+      expect(repo.lastApproveReviewerReason, 'Laudo técnico anexado.');
     });
 
     test('reject carries the mandatory reason + structured code', () async {

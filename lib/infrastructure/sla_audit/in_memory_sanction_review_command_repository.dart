@@ -56,6 +56,8 @@ class InMemorySanctionReviewCommandRepository
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     final entry = await _lockPending(organizationId, queueEntryId);
 
@@ -71,6 +73,8 @@ class InMemorySanctionReviewCommandRepository
       );
     }
 
+    final trimmedCode = reasonCode?.trim();
+    final trimmedReason = reviewerReason?.trim();
     final ledgerEntryId = await _ledger.append(
       SlaLedgerEntry(
         organizationId: organizationId,
@@ -84,6 +88,12 @@ class InMemorySanctionReviewCommandRepository
           'queue_entry_id': queueEntryId,
           'approved_by_user_id': reviewedByUserId,
           'actor_email': actorEmail,
+          'reason_code': (trimmedCode == null || trimmedCode.isEmpty)
+              ? null
+              : trimmedCode,
+          'reviewer_reason': (trimmedReason == null || trimmedReason.isEmpty)
+              ? null
+              : trimmedReason,
           'verdict_evidence': entry.verdictEvidence.toJson(),
         },
       ),

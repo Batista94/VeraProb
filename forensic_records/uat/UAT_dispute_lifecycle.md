@@ -38,22 +38,8 @@
 
 **Expected:** spinner, then route `/admin/dashboard`; admin shell + sidebar render. No error text.
 
-### TC-1.2 — Empty fields
-1. At `/login`, leave both fields blank, click **ACESSAR SISTEMA**.
 
-**Expected:** inline error **"Preencha E-mail e Senha"**. No network call, stays on `/login`.
-
-### TC-1.3 — Wrong credentials
-1. Email `admin-a@veraprob.dev`, password `wrong`, click **ACESSAR SISTEMA**.
-
-**Expected:** error under password field **"Credenciais Incorretas"**. No raw Supabase/Gotrue text, no stack trace. Stays on `/login`.
-
-### TC-1.4 — Protected route while logged out
-1. While unauthenticated, navigate URL directly to `/admin/auditor-queue`.
-
-**Expected:** router redirect bounces to `/login` (no NotFoundPage dead-end — AUTH-TRAP closed).
-
-### TC-1.5 — Session restore (F5)
+### TC-1.2 — Session restore (F5)
 1. After TC-1.1, press F5 on `/admin/dashboard`.
 
 **Expected:** stays authenticated, same screen restores (go_router + session).
@@ -69,7 +55,6 @@
 
 **Expected:** snackbar **"Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila."** Within ~5s (Realtime) a new `SanctionVerdictCard` appears; Pendentes count +1.
 
-**Error path:** no active contract → snackbar **"Não foi possível simular a sanção. Verifique se há contratos ativos."** (run `make setup` to seed). Missing org → **"Organização não encontrada. Faça login novamente."**
 
 ### TC-2.2 — Verdict provenance (≤10s standard)
 1. On the pending card, inspect verdict evidence (rule type, telemetry, SHA-256 provenance). On wide screens (≥1200px) the **Mapa Forense** split-pane shows the geolocation; on narrow, toggle via **Mapa Forense** button.

@@ -9,6 +9,7 @@ import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_v
 import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/dispute_reason_code.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
@@ -16,6 +17,7 @@ import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/widgets/sentence_panel_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
@@ -129,8 +131,37 @@ class _ErrorActionNotifier extends SanctionActionNotifier {
   _ErrorActionNotifier() : super('test-id');
 
   @override
-  AsyncValue<void> build() =>
-      const AsyncError('mock approve failure', StackTrace.empty);
+  AsyncValue<void> build() => const AsyncError(
+    IntegrityException('Falha simulada ao selar o veredito'),
+    StackTrace.empty,
+  );
+}
+
+/// Simulates a transport/domain failure surfaced by the guarded notifier:
+/// `resolveDispute` resolves to `AsyncError` (never throws), exactly like the
+/// real `guardedAction`. The card must rethrow it so the SentencePanelModal
+/// stays open and keeps the auditor's input.
+class _FailingDisputeNotifier extends SanctionActionNotifier {
+  _FailingDisputeNotifier() : super('test-id');
+
+  @override
+  Future<void> resolveDispute({
+    required String queueEntryId,
+    required DisputeResolution resolution,
+    required String resolvedByUserId,
+    required String actorEmail,
+    String? resolutionReason,
+    String? reasonCode,
+    List<String> evidenceIds = const [],
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    state = const AsyncError(
+      IntegrityException('Conexão perdida durante o envio'),
+      StackTrace.empty,
+    );
+  }
 }
 
 class _MockSanctionActionNotifier extends SanctionActionNotifier {
@@ -142,6 +173,8 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
   DisputeResolution? lastResolution;
   String? lastResolutionReason;
   String? lastReasonCode;
+  String? lastApproveReasonCode;
+  String? lastApproveReviewerReason;
 
   @override
   Future<void> resolveDispute({
@@ -171,8 +204,12 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     approveCalls++;
+    lastApproveReasonCode = reasonCode;
+    lastApproveReviewerReason = reviewerReason;
     state = const AsyncData(null);
   }
 
@@ -322,7 +359,7 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('shows SELAR and RECUSAR buttons for pending status', (
+    testWidgets('shows CONFIRMAR and ANULAR buttons for pending status', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1200);
@@ -331,8 +368,8 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      expect(find.text('SELAR VEREDITO'), findsOneWidget);
-      expect(find.text('RECUSAR VEREDITO'), findsOneWidget);
+      expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
+      expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -433,9 +470,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELAR VEREDITO'), findsNothing);
-      expect(find.text('RECUSAR VEREDITO'), findsNothing);
-      expect(find.text('SOLICITAR PROVA FORENSE'), findsNothing);
+      expect(find.text('CONFIRMAR INFRAÇÃO'), findsNothing);
+      expect(find.text('ANULAR INFRAÇÃO'), findsNothing);
+      expect(find.text('SOLICITAR DEFESA'), findsNothing);
 
       final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
       expect(opacity.opacity, closeTo(0.6, 0.001));
@@ -495,14 +532,29 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text('SELAR VEREDITO'));
+        await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
         await tester.pumpAndSettle();
+
+        await _selectReasonCode(tester, 'Falha de Sensor');
+        await tester.tap(
+          find.descendant(
+            of: find.byType(SentencePanelModal),
+            matching: find.text('CONFIRMAR INFRAÇÃO'),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         expect(find.byType(AlertDialog), findsOneWidget);
         expect(find.textContaining('Integridade Baixa'), findsOneWidget);
         expect(find.text('Confirmar Selamento'), findsOneWidget);
 
-        await tester.tap(find.text('Cancelar'));
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AlertDialog),
+            matching: find.text('Cancelar'),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(AlertDialog), findsNothing);
@@ -519,12 +571,27 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem(confidenceScore: 69)));
       await tester.pump();
 
-      await tester.tap(find.text('SELAR VEREDITO'));
+      await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
       await tester.pumpAndSettle();
+
+      await _selectReasonCode(tester, 'Falha de Sensor');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SentencePanelModal),
+          matching: find.text('CONFIRMAR INFRAÇÃO'),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
       expect(find.byType(AlertDialog), findsOneWidget);
 
-      await tester.tap(find.text('Cancelar'));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.text('Cancelar'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       addTearDown(tester.view.resetPhysicalSize);
@@ -542,11 +609,23 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('SELAR VEREDITO'));
+      await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
+      await tester.pumpAndSettle();
+
+      await _selectReasonCode(tester, 'Falha de Sensor');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SentencePanelModal),
+          matching: find.text('CONFIRMAR INFRAÇÃO'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
       expect(notifier.approveCalls, 1);
+      // Reason code is now threaded into approve (persisted server-side), not
+      // discarded.
+      expect(notifier.lastApproveReasonCode, 'SENSOR_FAULT');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -563,11 +642,23 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('SELAR VEREDITO'));
+      await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
+      await tester.pumpAndSettle();
+
+      await _selectReasonCode(tester, 'Falha de Sensor');
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SentencePanelModal),
+          matching: find.text('CONFIRMAR INFRAÇÃO'),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsNothing);
       expect(notifier.approveCalls, 1);
+      // Reason code is now threaded into approve (persisted server-side), not
+      // discarded.
+      expect(notifier.lastApproveReasonCode, 'SENSOR_FAULT');
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -682,11 +773,9 @@ void main() {
         findsNothing,
       );
 
-      await tester.tap(find.text('RECUSAR VEREDITO'));
+      await tester.tap(find.text('ANULAR INFRAÇÃO'));
       await tester.pumpAndSettle();
 
-      // BUG-01: refusing now demands a structured reason code (taxonomy) on top
-      // of the free-text note — the dropdown + note field both appear.
       expect(
         find.byKey(const ValueKey('dispute-reason-code-dropdown')),
         findsOneWidget,
@@ -705,21 +794,20 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      await tester.tap(find.text('RECUSAR VEREDITO'));
-      await tester.pump();
+      await tester.tap(find.text('ANULAR INFRAÇÃO'));
+      await tester.pumpAndSettle();
 
       FilledButton confirmBtn() => tester.widget<FilledButton>(
         find
-            .ancestor(
-              of: find.text('CONFIRMAR RECUSA'),
-              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            .descendant(
+              of: find.byType(SentencePanelModal),
+              matching: find.byType(FilledButton),
             )
             .first,
       );
 
-      // A full note WITHOUT a code is not enough — code is mandatory.
       await tester.enterText(
-        find.byType(TextField).last,
+        find.byKey(const ValueKey('sentence-comment-field')),
         'Justificativa forense detalhada',
       );
       await tester.pump();
@@ -737,18 +825,21 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      await tester.tap(find.text('RECUSAR VEREDITO'));
+      await tester.tap(find.text('ANULAR INFRAÇÃO'));
       await tester.pumpAndSettle();
 
       await _selectReasonCode(tester, 'Falha de Sensor');
-      await tester.enterText(find.byType(TextField).last, 'short');
+      await tester.enterText(
+        find.byKey(const ValueKey('sentence-comment-field')),
+        'short',
+      );
       await tester.pump();
 
       final btn = tester.widget<FilledButton>(
         find
-            .ancestor(
-              of: find.text('CONFIRMAR RECUSA'),
-              matching: find.byWidgetPredicate((w) => w is FilledButton),
+            .descendant(
+              of: find.byType(SentencePanelModal),
+              matching: find.byType(FilledButton),
             )
             .first,
       );
@@ -767,25 +858,25 @@ void main() {
       await tester.pumpWidget(_buildCard(_makeItem(), notifier: notifier));
       await tester.pump();
 
-      await tester.tap(find.text('RECUSAR VEREDITO'));
+      await tester.tap(find.text('ANULAR INFRAÇÃO'));
       await tester.pumpAndSettle();
 
       await _selectReasonCode(tester, 'Falha de Sensor');
       await tester.enterText(
-        find.byType(TextField).last,
+        find.byKey(const ValueKey('sentence-comment-field')),
         'Justificativa forense detalhada',
       );
       await tester.pump();
 
-      final btnFinder = find.ancestor(
-        of: find.text('CONFIRMAR RECUSA'),
-        matching: find.byWidgetPredicate((w) => w is FilledButton),
+      final btnFinder = find.descendant(
+        of: find.byType(SentencePanelModal),
+        matching: find.byType(FilledButton),
       );
       final btn = tester.widget<FilledButton>(btnFinder.first);
       expect(btn.onPressed, isNotNull);
 
       await tester.tap(btnFinder.first);
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(notifier.rejectCalls, 1);
       expect(notifier.lastRejectReasonCode, 'SENSOR_FAULT');
 
@@ -844,14 +935,13 @@ void main() {
       await tester.pump();
 
       expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
-      expect(find.text('ANULAR MULTA'), findsOneWidget);
-      expect(find.text('MANTER MULTA'), findsOneWidget);
+      expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
+      expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
       expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
       // BUG-02: the auditor can mint a carrier portal link from a disputed card.
       expect(find.text('GERAR LINK DE DISPUTA'), findsOneWidget);
-      // Pending-only controls must NOT leak into a disputed card.
-      expect(find.text('SELAR VEREDITO'), findsNothing);
-      expect(find.text('RECUSAR VEREDITO'), findsNothing);
+      // Pending-only control must NOT leak into a disputed card.
+      expect(find.text('SOLICITAR DEFESA'), findsNothing);
 
       final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
       expect(opacity.opacity, closeTo(1.0, 0.001));
@@ -875,7 +965,7 @@ void main() {
         await tester.pump();
 
         // Reveal the reason-code dropdown + mandatory comment field.
-        await tester.tap(find.text('ANULAR MULTA'));
+        await tester.tap(find.text('ANULAR INFRAÇÃO'));
         await tester.pumpAndSettle();
         expect(
           find.byKey(const ValueKey('dispute-reason-code-dropdown')),
@@ -884,9 +974,9 @@ void main() {
 
         FilledButton inhibitBtn() => tester.widget<FilledButton>(
           find
-              .ancestor(
-                of: find.text('CONFIRMAR ANULAÇÃO'),
-                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
               )
               .first,
         );
@@ -899,20 +989,30 @@ void main() {
         expect(inhibitBtn().onPressed, isNull);
 
         // Comment < 10 chars → still disabled.
-        await tester.enterText(find.byType(TextField).last, 'curto');
+        await tester.enterText(
+          find.byKey(const ValueKey('sentence-comment-field')),
+          'curto',
+        );
         await tester.pump();
         expect(inhibitBtn().onPressed, isNull);
 
         // Named code + comment >= 10 → enabled; fires accept with code + prose.
         await tester.enterText(
-          find.byType(TextField).last,
+          find.byKey(const ValueKey('sentence-comment-field')),
           'Sensor com falha comprovada em laudo.',
         );
         await tester.pump();
         expect(inhibitBtn().onPressed, isNotNull);
 
-        await tester.tap(find.text('CONFIRMAR ANULAÇÃO'));
-        await tester.pump();
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
         expect(notifier.resolveDisputeCalls, 1);
         expect(notifier.lastResolution, DisputeResolution.accept);
         expect(notifier.lastReasonCode, 'SENSOR_FAULT');
@@ -940,18 +1040,18 @@ void main() {
         );
         await tester.pump();
 
-        await tester.tap(find.text('MANTER MULTA'));
+        await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
         await tester.pumpAndSettle();
 
         await _selectReasonCode(tester, 'Outro (ver comentário)');
 
         // Free-text field now present (in addition to the dropdown's field).
-        final freeText = find.byType(TextField).last;
+        final freeText = find.byKey(const ValueKey('sentence-comment-field'));
         FilledButton affirmBtn() => tester.widget<FilledButton>(
           find
-              .ancestor(
-                of: find.text('CONFIRMAR MANUTENÇÃO'),
-                matching: find.byWidgetPredicate((w) => w is FilledButton),
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
               )
               .first,
         );
@@ -966,8 +1066,15 @@ void main() {
         await tester.pump();
         expect(affirmBtn().onPressed, isNotNull);
 
-        await tester.tap(find.text('CONFIRMAR MANUTENÇÃO'));
-        await tester.pump();
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
         expect(notifier.resolveDisputeCalls, 1);
         expect(notifier.lastResolution, DisputeResolution.overturn);
         expect(notifier.lastReasonCode, 'OTHER');
@@ -995,7 +1102,7 @@ void main() {
         // Hash-seal cue is hidden until the affirm arc is opened.
         expect(find.textContaining('sela o hash'), findsNothing);
 
-        await tester.tap(find.text('MANTER MULTA'));
+        await tester.tap(find.text('CONFIRMAR INFRAÇÃO'));
         await tester.pumpAndSettle();
 
         // 5.4: affirming surfaces the immutable-seal cue (INV-21).
@@ -1004,8 +1111,15 @@ void main() {
         // Named code alone enables affirm — the sealed hash is the evidence.
         await _selectReasonCode(tester, 'Falha de Sensor');
 
-        await tester.tap(find.text('CONFIRMAR MANUTENÇÃO'));
-        await tester.pump();
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
 
         expect(notifier.resolveDisputeCalls, 1);
         expect(notifier.lastResolution, DisputeResolution.overturn);
@@ -1112,11 +1226,64 @@ void main() {
 
         // The action buttons exist in the tree and can be scrolled into view via
         // the card's internal SingleChildScrollView — no off-screen exception.
-        final action = find.text('MANTER MULTA');
+        final action = find.text('CONFIRMAR INFRAÇÃO');
         expect(action, findsOneWidget);
         await tester.ensureVisible(action);
         await tester.pump();
         expect(tester.takeException(), isNull);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'submit failure keeps SentencePanelModal open and preserves input',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        final notifier = _FailingDisputeNotifier();
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(status: SanctionReviewStatus.disputed),
+            notifier: notifier,
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('ANULAR INFRAÇÃO'));
+        await tester.pumpAndSettle();
+
+        await _selectReasonCode(tester, 'Falha de Sensor');
+        const comment = 'Laudo técnico em anexo comprova a falha do sensor.';
+        await tester.enterText(
+          find.byKey(const ValueKey('sentence-comment-field')),
+          comment,
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find
+              .descendant(
+                of: find.byType(SentencePanelModal),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+
+        // Transactional submit: the modal must NOT close on failure.
+        expect(find.byType(SentencePanelModal), findsOneWidget);
+        // Clean domain error rendered inside the modal (Lesson 5 — no prefix).
+        expect(
+          find.descendant(
+            of: find.byType(SentencePanelModal),
+            matching: find.textContaining('Conexão perdida durante o envio'),
+          ),
+          findsOneWidget,
+        );
+        // The auditor's typed comment survives for an immediate retry.
+        expect(find.text(comment), findsOneWidget);
 
         addTearDown(tester.view.resetPhysicalSize);
       },
@@ -1134,7 +1301,7 @@ void main() {
       await tester.pump();
 
       final btnFinder = find.ancestor(
-        of: find.text('SELAR VEREDITO'),
+        of: find.text('CONFIRMAR INFRAÇÃO'),
         matching: find.byWidgetPredicate((w) => w is FilledButton),
       );
       final btn = tester.widget<FilledButton>(btnFinder.first);
@@ -1153,7 +1320,12 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('mock approve failure'), findsOneWidget);
+      // Clean domain message — never a raw `toString()` prefix (Lesson 5).
+      expect(
+        find.textContaining('Falha simulada ao selar o veredito'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('IntegrityException'), findsNothing);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -1384,14 +1556,14 @@ void _sealedEvidenceAndStyleTests() {
       await tester.pump();
 
       final btnFinder = find.ancestor(
-        of: find.text('SELAR VEREDITO'),
+        of: find.text('CONFIRMAR INFRAÇÃO'),
         matching: find.byWidgetPredicate((w) => w is FilledButton),
       );
       final btn = tester.widget<FilledButton>(btnFinder.first);
       expect(btn.onPressed, isNull);
 
       // Tapping must not invoke approve.
-      await tester.tap(find.text('SELAR VEREDITO'), warnIfMissed: false);
+      await tester.tap(find.text('CONFIRMAR INFRAÇÃO'), warnIfMissed: false);
       await tester.pump();
       expect(notifier.approveCalls, 0);
 
@@ -1409,7 +1581,7 @@ void _sealedEvidenceAndStyleTests() {
       await tester.pump();
 
       final btnFinder = find.ancestor(
-        of: find.text('SELAR VEREDITO'),
+        of: find.text('CONFIRMAR INFRAÇÃO'),
         matching: find.byWidgetPredicate((w) => w is FilledButton),
       );
       final btn = tester.widget<FilledButton>(btnFinder.first);

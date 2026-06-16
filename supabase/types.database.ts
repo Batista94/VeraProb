@@ -5150,7 +5150,9 @@ export type Database = {
           p_occurred_at_utc: string;
           p_organization_id: string;
           p_queue_entry_id: string;
+          p_reason_code?: string;
           p_reviewed_by_user_id: string;
+          p_reviewer_reason?: string;
         };
         Returns: Json;
       };

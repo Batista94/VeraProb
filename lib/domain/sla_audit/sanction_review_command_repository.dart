@@ -23,12 +23,20 @@ import 'package:veraprob/domain/sla_audit/sanction_review_result.dart';
 // pr_scanner: ignore-regression — new additive port, no existing domain contract modified (Council-approved)
 abstract class SanctionReviewCommandRepository {
   /// Seals a recommended sanction (`pending → applied`, `VERDICT_SEALED`).
+  ///
+  /// [reasonCode] is OPTIONAL (sealing affirms the engine's verdict). When
+  /// supplied it must be an active key of the closed `dispute_reason_codes`
+  /// taxonomy — the RPC fails closed on an unknown code. [reviewerReason] is an
+  /// optional free-text complement. Both are recorded in the `VERDICT_SEALED`
+  /// ledger fact for verdict explainability (INV-21/INV-23).
   Future<SanctionReviewResult> approveSanction({
     required String organizationId,
     required String queueEntryId,
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+    String? reasonCode,
+    String? reviewerReason,
   });
 
   /// Refuses a recommended sanction (`pending → rejected`, `VERDICT_REFUSED`).
