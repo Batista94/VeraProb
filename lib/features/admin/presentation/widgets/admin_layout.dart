@@ -235,19 +235,14 @@ class AdminLayout extends ConsumerWidget {
     final isWideScreen = MediaQuery.of(context).size.width >= 600;
 
     // ── Incident-responsive drawer ─────────────────────────────
-    // Open on a new/escalating alert; close the instant the queue empties so
-    // the operator never lands on the useless "Operação Limpa" screen.
+    // Close the instant the queue empties so the operator never lands on the
+    // useless "Operação Limpa" screen.
     ref.listen(activeAlertsStreamProvider, (prev, next) {
-      final prevCount = prev?.value?.length ?? 0;
       final nextCount = next.value?.length ?? 0;
       final isOpen = ref.read(isAlertsDrawerOpenProvider);
       if (nextCount == 0 && isOpen) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _adminScaffoldKey.currentState?.closeEndDrawer();
-        });
-      } else if (nextCount > prevCount && !isOpen) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _adminScaffoldKey.currentState?.openEndDrawer();
         });
       }
     });

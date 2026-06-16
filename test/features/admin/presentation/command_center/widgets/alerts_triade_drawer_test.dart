@@ -379,14 +379,14 @@ void main() {
       expect(find.text('Maria'), findsOneWidget);
     });
 
-    testWidgets('exibe "Operador Não Identificado" para alerta sem driver_id', (
+    testWidgets('exibe "Motorista Não Identificado" para alerta sem driver_id', (
       tester,
     ) async {
       await buildHost(tester);
       // alertLow has no driver_id in context → '_unknown' group → null driverName
       alertStreamController.add([alertLow()]);
       await tester.pump();
-      expect(find.text('Operador Não Identificado'), findsOneWidget);
+      expect(find.text('Motorista Não Identificado'), findsOneWidget);
     });
   });
 

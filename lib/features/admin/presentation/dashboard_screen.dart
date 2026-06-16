@@ -8,6 +8,9 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
+import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
+import 'package:veraprob/state/providers/sla_financial_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -234,6 +237,9 @@ class _DevSeedButton extends ConsumerWidget {
       ref.invalidate(operationalZonesProvider);
       ref.invalidate(contractListProvider);
       ref.invalidate(slaTemplatesProvider);
+      ref.invalidate(financialImpactProvider);
+      ref.invalidate(dashboardRiskFeedProvider);
+      ref.invalidate(activeAlertsProvider);
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

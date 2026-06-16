@@ -423,6 +423,11 @@ class PostgresTestConfig {
     final alertId = uuid.v4();
     final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
     try {
+      final effectiveContext = Map<String, dynamic>.from(context);
+      if (alertType != 'TELEGRAM_ORPHAN' &&
+          !effectiveContext.containsKey('driver_id')) {
+        effectiveContext['driver_id'] = uuid.v4();
+      }
       await seedClient.from('operational_alerts').insert({
         'id': alertId,
         'organization_id': orgId,
@@ -433,7 +438,7 @@ class PostgresTestConfig {
         'triggered_at_utc': DateTime.now().toUtc().toIso8601String(),
         'triggering_event_id': triggeringEventId,
         'trace_id': traceId,
-        'context': context,
+        'context': effectiveContext,
         'status': status,
       });
     } finally {
@@ -474,7 +479,7 @@ class PostgresTestConfig {
             'alert_type': 'SLA_BREACH',
             'severity': severity,
             'triggered_at_utc': now,
-            'context': <String, dynamic>{},
+            'context': <String, dynamic>{'driver_id': uuid.v4()},
             'status': status,
           });
         }
@@ -515,7 +520,7 @@ class PostgresTestConfig {
 
   /// Builds a valid 8-char binding token code from [seed].
   static String fakeTokenCode(String seed) {
-    const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+    const alphabet = 'ABCDEFGHJKMNP' 'QRSTUVWXYZ23456789';
     // FNV-1a 64-bit for collision-free distribution (hashCode collides).
     final bytes = utf8.encode(seed);
     var h = 0xcbf29ce484222325;

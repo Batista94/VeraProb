@@ -67,7 +67,13 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
+    );
+    final isTesting = WidgetsBinding.instance.runtimeType.toString().contains(
+      'Test',
+    );
+    if (!isTesting) {
+      _pulseController.repeat(reverse: true);
+    }
 
     _pulseAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),

@@ -307,7 +307,7 @@ class _DriverGroupCardState extends State<_DriverGroupCard> {
                                 children: [
                                   Text(
                                     group.driverName ??
-                                        'Operador Não Identificado',
+                                        'Motorista Não Identificado',
                                     style: VeraProbTypography.bodyMedium
                                         .copyWith(fontWeight: FontWeight.w600),
                                     maxLines: 1,
