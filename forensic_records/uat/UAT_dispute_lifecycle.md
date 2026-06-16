@@ -23,7 +23,7 @@
 - Auditor card actions (pending): **SELAR VEREDITO**, **RECUSAR VEREDITO** (→ **CONFIRMAR RECUSA**), **SOLICITAR PROVA FORENSE**.
 - Auditor card actions (disputed): **GERAR LINK DE DISPUTA**, **ANULAR MULTA** (→ **CONFIRMAR ANULAÇÃO**, perdoa a multa), **MANTER MULTA** (→ **CONFIRMAR MANUTENÇÃO**, mantém/sela a multa), **CANCELAR SOLICITAÇÃO** (retrata).
 - Reason-code taxonomy: dropdown `dispute-reason-code-dropdown` (ex.: "Falha de Sensor", "Outro (ver comentário)"). Mandatory on RECUSAR / ANULAR / MANTER.
-- Portal: **Selecionar e enviar**, **Confirmar De Acordo**.
+- Portal: **De Acordo — Aceitar**, **Enviar Contestação**, Modal de confirmação do De Acordo.
 - Rule Studio: **Agendar**, **Aposentar**.
 
 ---
@@ -130,36 +130,44 @@
 ### TC-4.2 — Disputed snapshot → submit counter-evidence
 1. Open the portal with a valid token for a sanction in `disputed` state (from TC-3.3).
 
-**Expected:** header **"Portal de Disputa"**, verdict summary (rule type + description), **"Evidências (n)"** list with `SHA-256 …` prefixes, and the **"Contestar — enviar contraprova"** branch.
+**Expected:** header **"Portal Oficial de Resolução de Disputas"** with Org and CNPJ, immutable context card, optional **EvidenceDropzone**, and a mandatory text area for the justification. The button **"Enviar Contestação"** must be disabled.
 
-2. Click **Selecionar e enviar**, pick a valid PDF/PNG/JPG ≤10 MB.
+2. Type a justification with less than 20 chars.
+**Expected:** The button **"Enviar Contestação"** remains disabled.
 
-**Expected:** button → "Enviando...", then snackbar **"Contraprova enviada. Aguardando análise do auditor."** Snapshot reloads.
+3. Type a justification with ≥20 chars.
+**Expected:** The button **"Enviar Contestação"** becomes enabled (teal).
+
+4. (Optional) Select a valid PDF/PNG/JPG ≤10 MB in the Dropzone, then click **"Enviar Contestação"**.
+
+**Expected:** The form becomes read-only (spinner appears). If a file was selected, phase says "Verificando integridade..." then "Enviando...". Once finished, the form is replaced by a green receipt with the protocol number (`VRP-<utc>-<hash>`) and submission time in BRT.
 
 ### TC-4.3 — File validation error paths
-| Input | Expected snackbar |
+| Input | Expected behavior (Inline Error in Dropzone) |
 |-------|-------------------|
-| Unsupported ext (e.g. `.exe` / `.docx`) | **"Tipo não permitido. Use JPG, PNG, PDF, HEIC ou WEBP."** |
-| Empty/0-byte file | **"Arquivo vazio ou ilegível."** |
-| File > 10 MB | **"Arquivo excede 10 MB."** |
-| Content ≠ declared type (MIME spoof) | **"O conteúdo do arquivo não corresponde ao tipo informado."** |
-| Corruption mid-upload (hash) | **"O arquivo foi alterado durante o envio. Tente novamente."** |
+| Unsupported ext (e.g. `.exe` / `.docx`) | **"O arquivo deve ter extensão .jpg, .jpeg, .png, .pdf, .heic, .heif ou .webp"** |
+| Empty/0-byte file | **"Erro ao ler conteúdo do arquivo."** |
+| File > 10 MB | **"O arquivo excede o limite de 10 MB."** |
 
-All must be opaque domain messages — never a raw infra/DB error.
+All errors appear inline inside the Dropzone (not as a snackbar). The justification text is preserved, and the user can pick another file or just remove it and submit without a file.
 
-### TC-4.4 — Applied snapshot → "De Acordo" (accept penalty)
-1. Open the portal with a token for a sanction in `applied` state.
+### TC-4.4 — "De Acordo" (accept penalty)
+1. Open the portal with a valid token (disputed or applied state).
 
-**Expected:** green **"De Acordo — aceitar penalidade"** branch, with **"Hash do registro: <64-hex>"** (selectable, full hash visible).
+**Expected:** The **"De Acordo — Aceitar"** button is present alongside the contestation form.
 
-2. Click **Confirmar De Acordo**.
+2. Click **"De Acordo — Aceitar"**.
 
-**Expected:** button → "Registrando...", then card flips to **"Penalidade Aceita"** ("Seu aceite foi registrado de forma definitiva e auditável. Obrigado."). Hash-bound acknowledgement persisted (INV-9). Re-clicking is guarded (no double-submit, `_isSaving`).
+**Expected:** A confirmation modal opens (`barrierDismissible: false`). 
+
+3. Click the confirm button inside the modal.
+
+**Expected:** Button → "Registrando...", then modal closes and the main screen updates to show a green success receipt ("Sua concordância foi registrada com sucesso"). Re-clicking is guarded (no double-submit).
 
 ### TC-4.5 — Idempotent re-acknowledge
 1. Reload the same token after TC-4.4.
 
-**Expected:** no error; acknowledgement is stable (single ledger row). No duplicate penalty.
+**Expected:** The system detects the protocol was already finalized and displays the receipt/success screen. No duplicate penalty.
 
 ---
 
