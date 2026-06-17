@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -23,19 +24,36 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
   @override
   Future<PortalSnapshot> read(String token) async {
     try {
-      final result = await _client.rpc<dynamic>(
-        'read_dispute_portal',
-        params: {'p_token': token},
-      );
+      final result = await _client
+          .rpc<dynamic>('read_dispute_portal', params: {'p_token': token})
+          .timeout(const Duration(seconds: 10));
       if (result is! Map) {
-        throw const PortalDisputeException('Resposta inválida do portal.');
+        throw const PortalDisputeException(
+          'Resposta inválida do portal.',
+          retryable: true,
+        );
       }
       return PortalSnapshot.fromJson(Map<String, dynamic>.from(result));
     } on PortalDisputeException {
       rethrow;
+    } on TimeoutException {
+      throw const PortalDisputeException(
+        'Tempo esgotado ao contatar o servidor. Tente novamente.',
+        retryable: true,
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw const PortalDisputeException('Link inválido ou expirado.');
+      }
+      throw const PortalDisputeException(
+        'Falha temporária de comunicação. Tente novamente.',
+        retryable: true,
+      );
     } catch (_) {
-      // INV-26: every failure (not found / expired / revoked) looks identical.
-      throw const PortalDisputeException('Link inválido ou expirado.');
+      throw const PortalDisputeException(
+        'Erro inesperado de rede. Tente novamente.',
+        retryable: true,
+      );
     }
   }
 
@@ -44,20 +62,38 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
     String token,
   ) async {
     try {
-      final result = await _client.rpc<dynamic>(
-        'read_infraction_context',
-        params: {'p_token': token},
-      );
+      final result = await _client
+          .rpc<dynamic>('read_infraction_context', params: {'p_token': token})
+          .timeout(const Duration(seconds: 10));
       if (result is! Map) {
-        throw const PortalDisputeException('Resposta inválida do portal.');
+        throw const PortalDisputeException(
+          'Resposta inválida do portal.',
+          retryable: true,
+        );
       }
       return InfractionContextProjection.fromJson(
         Map<String, dynamic>.from(result),
       );
     } on PortalDisputeException {
       rethrow;
+    } on TimeoutException {
+      throw const PortalDisputeException(
+        'Tempo esgotado ao contatar o servidor. Tente novamente.',
+        retryable: true,
+      );
+    } on PostgrestException catch (e) {
+      if (e.code == '42501') {
+        throw const PortalDisputeException('Link inválido ou expirado.');
+      }
+      throw const PortalDisputeException(
+        'Falha temporária de comunicação. Tente novamente.',
+        retryable: true,
+      );
     } catch (_) {
-      throw const PortalDisputeException('Link inválido ou expirado.');
+      throw const PortalDisputeException(
+        'Erro inesperado de rede. Tente novamente.',
+        retryable: true,
+      );
     }
   }
 

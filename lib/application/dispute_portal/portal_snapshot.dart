@@ -122,7 +122,9 @@ enum PortalSubmissionOutcome {
 /// Typed failure for the external portal data path (no infra leakage to UI).
 class PortalDisputeException implements Exception {
   final String message;
-  const PortalDisputeException(this.message);
+  final bool retryable;
+  const PortalDisputeException(this.message, {this.retryable = false});
   @override
-  String toString() => 'PortalDisputeException: $message';
+  String toString() =>
+      'PortalDisputeException: $message (retryable: $retryable)';
 }

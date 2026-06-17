@@ -33,10 +33,17 @@ class DisputePortalPage extends ConsumerWidget {
                 loading: () => const _LoadingView(),
                 error: (err, _) {
                   String msg = 'Link inválido ou expirado.';
+                  bool retryable = false;
                   if (err is PortalDisputeException) {
                     msg = err.message;
+                    retryable = err.retryable;
                   }
-                  return _ErrorView(message: msg);
+                  return _ErrorView(
+                    message: msg,
+                    retryable: retryable,
+                    onRetry: () =>
+                        ref.invalidate(portalPageDataProvider(token)),
+                  );
                 },
               ),
             ),
@@ -177,15 +184,35 @@ class _LoadingView extends StatelessWidget {
 
 class _ErrorView extends StatelessWidget {
   final String message;
-  const _ErrorView({required this.message});
+  final bool retryable;
+  final VoidCallback? onRetry;
+
+  const _ErrorView({
+    required this.message,
+    this.retryable = false,
+    this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return _PortalCard(
-      icon: Icons.error_outline,
-      color: VeraProbColors.error,
-      title: 'Link Inválido',
-      message: message,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _PortalCard(
+          icon: Icons.error_outline,
+          color: VeraProbColors.error,
+          title: retryable ? 'Falha de Conexão' : 'Link Inválido',
+          message: message,
+        ),
+        if (retryable && onRetry != null) ...[
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Tentar Novamente'),
+          ),
+        ],
+      ],
     );
   }
 }
