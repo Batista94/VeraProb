@@ -387,6 +387,20 @@ class SupabaseDataSeedingRepository
 
     if (contracts.isEmpty) return;
 
+    await _ensureContractRules(organizationId, contracts);
+
+    final contract = contracts.first;
+    final now = _dateTimeProvider.nowUtc();
+
+    await _insertSanctionRecommendation(organizationId, contract, now, driver);
+
+    await _seedOperationalAlerts(organizationId, contract, now, driver);
+  }
+
+  Future<void> _ensureContractRules(
+    String organizationId,
+    List<Map<String, dynamic>> contracts,
+  ) async {
     // INV-21 / P0002: Ensure ALL contracts have rule sets to allow approval
     for (final contract in contracts) {
       try {
@@ -398,14 +412,16 @@ class SupabaseDataSeedingRepository
 
         if (hasRuleSet == null) {
           await _supabase.from('contract_rule_sets').insert({
-            'id': '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+            'id':
+                '00000000-0000-0000-0000-${(contract['id'] as String).substring(24)}',
             'organization_id': organizationId,
             'contract_id': contract['id'],
           });
           await _supabase.from('contract_rule_versions').insert({
-            'id': '11111111-1111-1111-1111-${contract['id'].substring(24)}',
+            'id':
+                '11111111-1111-1111-1111-${(contract['id'] as String).substring(24)}',
             'rule_set_id':
-                '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+                '00000000-0000-0000-0000-${(contract['id'] as String).substring(24)}',
             'rule_type': 'MAX_TOLERANCE_DELAY',
             'rule_config': {'threshold_minutes': 15},
             'rule_version': 1,
@@ -418,11 +434,14 @@ class SupabaseDataSeedingRepository
         // Ignore conflict if already exists
       }
     }
+  }
 
-    // Use the first contract for seeding the sanction ledger entry
-    final contract = contracts.first;
-
-    final now = _dateTimeProvider.nowUtc();
+  Future<void> _insertSanctionRecommendation(
+    String organizationId,
+    Map<String, dynamic> contract,
+    DateTime now,
+    Map<String, dynamic>? driver,
+  ) async {
     final setId = 'sim-set-${now.millisecondsSinceEpoch}';
 
     try {
@@ -462,10 +481,17 @@ class SupabaseDataSeedingRepository
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
+  }
 
+  Future<void> _seedOperationalAlerts(
+    String organizationId,
+    Map<String, dynamic> contract,
+    DateTime now,
+    Map<String, dynamic>? driver,
+  ) async {
     // Seed active operational alerts — driver attribution required for all
     // driver-bound types; TELEGRAM_ORPHAN is exempt (orphan by definition).
-    final driverContext = driver != null
+    final driverContext = (driver != null && driver['id'] != null)
         ? {
             'driver_id': driver['id'] as String,
             'driver_name': driver['full_name'] as String,
