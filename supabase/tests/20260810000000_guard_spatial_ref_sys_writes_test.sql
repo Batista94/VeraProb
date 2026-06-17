@@ -13,16 +13,24 @@ BEGIN
       ),
       'guard trigger is attached to public.spatial_ref_sys'
     );
+    -- EXECUTE 'SET ROLE' (SQL command path) is used instead of plpgsql SET LOCAL so
+    -- that current_user inside the trigger function reflects the target role.
+    EXECUTE 'SET ROLE TO anon';
     RETURN NEXT throws_ok(
       'DELETE FROM public.spatial_ref_sys WHERE srid = -99999',
       '42501',
+      'spatial_ref_sys is a read-only PostGIS reference catalog: DELETE denied for role anon',
       'anon DELETE on spatial_ref_sys is blocked by the guard'
     );
+    EXECUTE 'SET ROLE TO authenticated';
     RETURN NEXT throws_ok(
       'UPDATE public.spatial_ref_sys SET auth_name = auth_name WHERE srid = -99999',
       '42501',
+      'spatial_ref_sys is a read-only PostGIS reference catalog: UPDATE denied for role authenticated',
       'authenticated UPDATE on spatial_ref_sys is blocked by the guard'
     );
+    -- Reset to postgres (privileged) — trigger must NOT block this path.
+    EXECUTE 'RESET ROLE';
     RETURN NEXT lives_ok(
       'DELETE FROM public.spatial_ref_sys WHERE srid = -99999',
       'privileged role (postgres) is NOT blocked by the guard (0-row no-op)'

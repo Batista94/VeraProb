@@ -39,6 +39,22 @@ VALUES
    '00000000-0000-0000-0000-0000000008f6', 'set-role',
    '00000000-0000-0000-0000-0000000008aa', '{}'::jsonb, 'pending');
 
+-- Rule set required by approve_sanction terminal path (_persist_evidence_snapshot).
+INSERT INTO public.contract_rule_sets (id, organization_id, contract_id)
+VALUES ('00000000-0000-0000-0000-0000000008bb',
+        '00000000-0000-0000-0000-0000000008a1',
+        '00000000-0000-0000-0000-0000000008aa')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.contract_rule_versions
+  (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
+   active_from_utc, active_to_utc, created_at_utc)
+VALUES ('00000000-0000-0000-0000-0000000008cc',
+        '00000000-0000-0000-0000-0000000008bb',
+        'MAX_TOLERANCE_DELAY', '{"threshold_minutes": 30}'::jsonb, 1, 0,
+        '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z')
+ON CONFLICT DO NOTHING;
+
 -- 1. approve_sanction exists with the expected signature.
 SELECT has_function(
   'public', 'approve_sanction',

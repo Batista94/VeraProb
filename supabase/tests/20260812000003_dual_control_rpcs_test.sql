@@ -54,6 +54,22 @@ VALUES
    '00000000-0000-0000-0000-0000000009f5', 'set-reject', '00000000-0000-0000-0000-0000000009aa',
    '{"fine_cents": 200000}'::jsonb, 'pending');
 
+-- Rule set required by approve_sanction terminal path for below-threshold entries.
+INSERT INTO public.contract_rule_sets (id, organization_id, contract_id)
+VALUES ('00000000-0000-0000-0000-0000000009bb',
+        '00000000-0000-0000-0000-0000000009a1',
+        '00000000-0000-0000-0000-0000000009aa')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.contract_rule_versions
+  (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
+   active_from_utc, active_to_utc, created_at_utc)
+VALUES ('00000000-0000-0000-0000-0000000009cc',
+        '00000000-0000-0000-0000-0000000009bb',
+        'MAX_TOLERANCE_DELAY', '{"threshold_minutes": 30}'::jsonb, 1, 0,
+        '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z')
+ON CONFLICT DO NOTHING;
+
 -- ── Existence + grants ────────────────────────────────────────────────────────
 SELECT has_function(
   'public', 'confirm_peer_review',

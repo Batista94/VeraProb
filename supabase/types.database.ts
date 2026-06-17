@@ -1549,6 +1549,7 @@ export type Database = {
           integrity_hash: string;
           ledger_entry_id: string;
           organization_id: string;
+          queue_entry_id: string | null;
           rule_set_id: string;
           schema_version: number;
           sealed_at_utc: string;
@@ -1565,6 +1566,7 @@ export type Database = {
           integrity_hash: string;
           ledger_entry_id: string;
           organization_id: string;
+          queue_entry_id?: string | null;
           rule_set_id: string;
           schema_version?: number;
           sealed_at_utc?: string;
@@ -1581,6 +1583,7 @@ export type Database = {
           integrity_hash?: string;
           ledger_entry_id?: string;
           organization_id?: string;
+          queue_entry_id?: string | null;
           rule_set_id?: string;
           schema_version?: number;
           sealed_at_utc?: string;
@@ -4964,6 +4967,21 @@ export type Database = {
         Returns: string;
       };
       _compute_easter: { Args: { p_year: number }; Returns: string };
+      _persist_evidence_snapshot: {
+        Args: {
+          p_contract: string;
+          p_idempotency_key: string;
+          p_ledger_id: string;
+          p_occurred_at_utc: string;
+          p_org: string;
+          p_plan_version: number;
+          p_queue_entry_id: string;
+          p_sealed_by: string;
+          p_set_id: string;
+          p_verdict_type: string;
+        };
+        Returns: Json;
+      };
       _postgis_deprecate: {
         Args: { newname: string; oldname: string; version: string };
         Returns: undefined;
@@ -5708,6 +5726,7 @@ export type Database = {
         Returns: undefined;
       };
       read_dispute_portal: { Args: { p_token: string }; Returns: Json };
+      read_infraction_context: { Args: { p_token: string }; Returns: Json };
       record_forensic_failure: {
         Args: { p_org_id: string };
         Returns: undefined;
@@ -6681,6 +6700,10 @@ export type Database = {
       };
       verify_forensic_evidence: {
         Args: { p_ledger_entry_id: string; p_organization_id: string };
+        Returns: Json;
+      };
+      verify_forensic_evidence_by_queue: {
+        Args: { p_organization_id: string; p_queue_entry_id: string };
         Returns: Json;
       };
       vp_haversine_meters: {
