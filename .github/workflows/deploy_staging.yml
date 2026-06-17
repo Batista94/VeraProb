@@ -51,6 +51,8 @@ jobs:
         run: |
           supabase secrets set RESEND_API_KEY="$RESEND_API_KEY"
           supabase functions deploy notify-invite --no-verify-jwt
+          supabase functions deploy portal-submit-request --no-verify-jwt
+          supabase functions deploy portal-finalize-upload --no-verify-jwt
 
   build-staging:
     name: Build Web (WASM) → Staging

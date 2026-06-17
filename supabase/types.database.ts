@@ -5579,6 +5579,10 @@ export type Database = {
         Args: { p_driver_id: string; p_org_id: string; p_set_id: string };
         Returns: Json;
       };
+      get_financial_impact_summary: {
+        Args: { p_org_id: string };
+        Returns: Json;
+      };
       get_fleet_risk_summary: {
         Args: { p_limit?: number; p_organization_id: string };
         Returns: {

@@ -16,13 +16,14 @@ import 'package:veraprob/domain/reporting/i_forensic_pdf_generator.dart';
 ///         verdict, so it can never be passed off as a billable certificate.
 class PdfDossierGenerator implements IForensicPdfGenerator {
   static const PdfColor _amber = PdfColor.fromInt(0xFFFBBF24);
-  static const PdfColor _amberFaint = PdfColor.fromInt(0x14FBBF24);
+  // Watermark alpha = 0x20 ≈ 12.5% opacity (within 8-15% spec — readable but subtle)
+  static const PdfColor _amberFaint = PdfColor.fromInt(0x20FBBF24);
   static const PdfColor _rose = PdfColor.fromInt(0xFFF87171);
-  static const PdfColor _roseFaint = PdfColor.fromInt(0x14F87171);
+  static const PdfColor _roseFaint = PdfColor.fromInt(0x20F87171);
   static const PdfColor _teal = PdfColor.fromInt(0xFF2DD4BF);
-  static const PdfColor _tealFaint = PdfColor.fromInt(0x142DD4BF);
+  static const PdfColor _tealFaint = PdfColor.fromInt(0x202DD4BF);
   static const PdfColor _darkGreen = PdfColor.fromInt(0xFF065F46);
-  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x14065F46);
+  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x20065F46);
 
   @override
   Future<List<int>> generateDossier(ForensicDossier dossier) async {
@@ -135,7 +136,16 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             // say so explicitly so it is never used to close a billing early.
             _sectionHeader('DEFESA DO TRANSPORTADOR'),
             pw.SizedBox(height: 4),
-            if (sealed)
+            if (dossier.classification == DossierClassification.annulled)
+              // INV-21: Anulada por deliberação interna — seção de defesa dispensada.
+              pw.Text(
+                'Dispensado - Infração anulada por deliberação interna.',
+                style: const pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey700,
+                ),
+              )
+            else if (sealed)
               _renderImageOrFallback(dossier.telegramImageBytes)
             else
               pw.Text(

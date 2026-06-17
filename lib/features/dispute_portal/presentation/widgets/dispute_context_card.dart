@@ -120,10 +120,13 @@ class DisputeContextCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              contextData.recordId,
-                              style: VeraProbTypography.dataValue.copyWith(
-                                fontFamily: 'Courier',
+                            Flexible(
+                              child: Text(
+                                contextData.recordId,
+                                overflow: TextOverflow.ellipsis,
+                                style: VeraProbTypography.dataValue.copyWith(
+                                  fontFamily: 'Courier',
+                                ),
                               ),
                             ),
                             const SizedBox(width: VeraProbSpacing.xs),
