@@ -371,6 +371,18 @@ class SupabaseDataSeedingRepository
           .eq('organization_id', organizationId)
           .limit(1)
           .maybeSingle();
+      final vehicle = await _supabase
+          .from('vehicles')
+          .select('id, plate')
+          .eq('organization_id', organizationId)
+          .limit(1)
+          .maybeSingle();
+      if (vehicle != null) {
+        // Pass vehicle data to the mock payload
+        driver ??= {}; // Ensure driver is not null for next steps
+        driver['vehicle_id'] = vehicle['id'];
+        driver['vehicle_plate'] = vehicle['plate'];
+      }
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
@@ -379,6 +391,36 @@ class SupabaseDataSeedingRepository
 
     final now = _dateTimeProvider.nowUtc();
     final setId = 'sim-set-${now.millisecondsSinceEpoch}';
+
+    // INV-21 / P0002: Ensure contract has a rule set to allow approval
+    try {
+      final hasRuleSet = await _supabase
+          .from('contract_rule_sets')
+          .select('id')
+          .eq('contract_id', contract['id'])
+          .maybeSingle();
+
+      if (hasRuleSet == null) {
+        await _supabase.from('contract_rule_sets').insert({
+          'id': '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+          'organization_id': organizationId,
+          'contract_id': contract['id'],
+        });
+        await _supabase.from('contract_rule_versions').insert({
+          'id': '11111111-1111-1111-1111-${contract['id'].substring(24)}',
+          'rule_set_id':
+              '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+          'rule_type': 'MAX_TOLERANCE_DELAY',
+          'rule_config': {'threshold_minutes': 15},
+          'rule_version': 1,
+          'evaluation_order': 0,
+          'active_from_utc': '2020-01-01T00:00:00Z',
+          'created_at_utc': '2020-01-01T00:00:00Z',
+        });
+      }
+    } catch (_) {
+      // Ignore conflict if already exists
+    }
 
     try {
       await _supabase.from('sla_audit_ledger_v2').insert({
@@ -403,6 +445,14 @@ class SupabaseDataSeedingRepository
             'threshold_value': 80.0,
             'fine_cents': 150000,
             'confidence_score': 99,
+            if (driver != null && driver.containsKey('vehicle_id')) ...{
+              'vehicle_id': driver['vehicle_id'],
+              'vehicle_plate': driver['vehicle_plate'],
+            },
+            if (driver != null && driver.containsKey('full_name')) ...{
+              'driver_id': driver['id'],
+              'driver_name': driver['full_name'],
+            },
           },
         },
       });

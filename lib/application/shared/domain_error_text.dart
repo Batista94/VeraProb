@@ -20,5 +20,5 @@ String humanizeDomainError(Object? error) => switch (error) {
   ResourceNotFoundException(:final message) => message,
   IdempotencyProcessingException(:final message) => message,
   DualControlSelfApprovalException(:final message) => message,
-  _ => 'Não foi possível concluir a ação. Tente novamente.',
+  _ => 'Erro Desconhecido: ${error?.toString() ?? "null"}',
 };

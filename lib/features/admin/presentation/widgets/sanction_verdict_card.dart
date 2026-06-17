@@ -424,21 +424,47 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                   0,
                                 ),
                                 child: Container(
-                                  padding: const EdgeInsets.all(10),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: VeraProbColors.error.withValues(
-                                      alpha: 0.08,
+                                      alpha: 0.1,
                                     ),
-                                    borderRadius: BorderRadius.circular(6),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: VeraProbColors.error.withValues(
+                                        alpha: 0.3,
+                                      ),
+                                    ),
                                   ),
-                                  child: Text(
-                                    actionState is AsyncError
-                                        ? humanizeDomainError(actionState.error)
-                                        : _dossierError!,
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: VeraProbColors.error,
-                                    ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Icon(
+                                        Icons.error_outline_rounded,
+                                        color: VeraProbColors.error,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          actionState is AsyncError
+                                              ? humanizeDomainError(
+                                                  actionState.error,
+                                                )
+                                              : _dossierError!,
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                            color: VeraProbColors.error,
+                                            height: 1.3,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),

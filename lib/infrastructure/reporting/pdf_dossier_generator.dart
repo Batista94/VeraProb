@@ -16,14 +16,17 @@ import 'package:veraprob/domain/reporting/i_forensic_pdf_generator.dart';
 ///         verdict, so it can never be passed off as a billable certificate.
 class PdfDossierGenerator implements IForensicPdfGenerator {
   static const PdfColor _amber = PdfColor.fromInt(0xFFFBBF24);
-  // Watermark alpha = 0x26 ≈ 15% opacity
   static const PdfColor _amberFaint = PdfColor.fromInt(0x26FBBF24);
+  static const PdfColor _amberWatermark = PdfColor.fromInt(0x14FBBF24);
   static const PdfColor _rose = PdfColor.fromInt(0xFFF87171);
   static const PdfColor _roseFaint = PdfColor.fromInt(0x26F87171);
+  static const PdfColor _roseWatermark = PdfColor.fromInt(0x14F87171);
   static const PdfColor _teal = PdfColor.fromInt(0xFF2DD4BF);
   static const PdfColor _tealFaint = PdfColor.fromInt(0x262DD4BF);
+  static const PdfColor _tealWatermark = PdfColor.fromInt(0x142DD4BF);
   static const PdfColor _darkGreen = PdfColor.fromInt(0xFF065F46);
   static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x26065F46);
+  static const PdfColor _darkGreenWatermark = PdfColor.fromInt(0x14065F46);
 
   @override
   Future<List<int>> generateDossier(ForensicDossier dossier) async {
@@ -39,26 +42,31 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
       final (
         PdfColor accent,
         PdfColor faint,
+        PdfColor watermarkColor,
         String watermarkText,
       ) = switch (dossier.classification) {
         DossierClassification.preliminary => (
           _amber,
           _amberFaint,
+          _amberWatermark,
           'PRELIMINAR - EM ANÁLISE',
         ),
         DossierClassification.applied => (
           _rose,
           _roseFaint,
+          _roseWatermark,
           'INFRAÇÃO CONFIRMADA',
         ),
         DossierClassification.annulled => (
           _teal,
           _tealFaint,
+          _tealWatermark,
           'INFRAÇÃO ANULADA',
         ),
         DossierClassification.acknowledged => (
           _darkGreen,
           _darkGreenFaint,
+          _darkGreenWatermark,
           'VEREDITO SELADO - DE ACORDO',
         ),
       };
@@ -86,7 +94,10 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
           child: pw.Watermark.text(
             watermarkText,
             angle: math.pi / 5,
-            style: pw.TextStyle(color: faint, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(
+              color: watermarkColor,
+              fontWeight: pw.FontWeight.bold,
+            ),
           ),
         ),
       );

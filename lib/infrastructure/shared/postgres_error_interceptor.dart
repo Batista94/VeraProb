@@ -67,12 +67,17 @@ mixin PostgresErrorInterceptor {
       '22P02' || // invalid_text_representation
       '23503' || // foreign_key_violation
       'PGRST116' || // not_found
-      'PGRST204' || // column_not_found
-      'P0002' => // no_data_found (PL/pgSQL RAISE EXCEPTION for missing related data)
+      'PGRST204' => // column_not_found
       ResourceNotFoundException(
         resourceType: resourceType,
         resourceId: resourceId,
         message: 'Registro não encontrado ou indisponível.',
+      ),
+
+      'P0002' => ResourceNotFoundException(
+        resourceType: resourceType,
+        resourceId: resourceId,
+        message: 'Regras de contrato ou evidências não encontradas.',
       ),
 
       // Business Logic: RAISE EXCEPTION from Postgres functions/triggers
