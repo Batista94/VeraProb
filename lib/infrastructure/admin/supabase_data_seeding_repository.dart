@@ -533,7 +533,7 @@ class SupabaseDataSeedingRepository
 
   Future<void> _seedSmartCnpjContractors(String organizationId) async {
     final contractors = [
-      {'name': 'Logística Ãguia S/A', 'cnpj': '61219049000196'},
+      {'name': 'Logística Águia S/A', 'cnpj': '61219049000196'},
       {'name': 'Transportes Veloz', 'cnpj': '11444777000161'},
     ];
 

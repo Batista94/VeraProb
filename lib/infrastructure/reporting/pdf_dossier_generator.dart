@@ -16,14 +16,14 @@ import 'package:veraprob/domain/reporting/i_forensic_pdf_generator.dart';
 ///         verdict, so it can never be passed off as a billable certificate.
 class PdfDossierGenerator implements IForensicPdfGenerator {
   static const PdfColor _amber = PdfColor.fromInt(0xFFFBBF24);
-  // Watermark alpha = 0x20 ≈ 12.5% opacity (within 8-15% spec — readable but subtle)
-  static const PdfColor _amberFaint = PdfColor.fromInt(0x20FBBF24);
+  // Watermark alpha = 0x26 ≈ 15% opacity
+  static const PdfColor _amberFaint = PdfColor.fromInt(0x26FBBF24);
   static const PdfColor _rose = PdfColor.fromInt(0xFFF87171);
-  static const PdfColor _roseFaint = PdfColor.fromInt(0x20F87171);
+  static const PdfColor _roseFaint = PdfColor.fromInt(0x26F87171);
   static const PdfColor _teal = PdfColor.fromInt(0xFF2DD4BF);
-  static const PdfColor _tealFaint = PdfColor.fromInt(0x202DD4BF);
+  static const PdfColor _tealFaint = PdfColor.fromInt(0x262DD4BF);
   static const PdfColor _darkGreen = PdfColor.fromInt(0xFF065F46);
-  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x20065F46);
+  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x26065F46);
 
   @override
   Future<List<int>> generateDossier(ForensicDossier dossier) async {

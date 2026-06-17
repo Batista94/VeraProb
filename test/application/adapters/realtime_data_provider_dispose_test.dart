@@ -101,7 +101,7 @@ void main() {
       expect(emissions, isEmpty);
     });
 
-    test('dispose fecha stream de posiçÃµes', () async {
+    test('dispose fecha stream de posições', () async {
       final provider = RealtimeDataProvider(mockDateTime, mockClient);
       await provider.connect();
 
@@ -137,7 +137,7 @@ void main() {
       final emissions = <List<VehiclePosition>>[];
       provider.positionStream.listen(emissions.add);
 
-      // Adicionar posiçÃµes ao buffer
+      // Adicionar posições ao buffer
       final payload = PostgresChangePayload(
         schema: 'public',
         table: 'vehicle_positions',
