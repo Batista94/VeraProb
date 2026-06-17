@@ -189,4 +189,49 @@ class PostgresForensicEvidenceSnapshotRepository extends BasePostgresRepository
       },
     );
   }
+
+  @override
+  Future<EvidenceVerification> verifyByQueueEntry({
+    required String organizationId,
+    required String queueEntryId,
+  }) {
+    return withErrorHandler(
+      'forensic_evidence_snapshot',
+      queueEntryId,
+      () async {
+        final result = await client.rpc<Map<String, dynamic>>(
+          'verify_forensic_evidence_by_queue',
+          params: {
+            'p_organization_id': organizationId,
+            'p_queue_entry_id': queueEntryId,
+          },
+        );
+
+        final storedHash = result['stored_hash'] as String;
+        final computedHash = result['computed_hash'] as String;
+        final status = result['status'] == 'authentic'
+            ? EvidenceVerificationStatus.authentic
+            : EvidenceVerificationStatus.tampered;
+
+        final snapshotJson = result['snapshot'] as Map<String, dynamic>;
+        final snapshot = ForensicEvidenceSnapshot.fromJson(snapshotJson);
+
+        if (status == EvidenceVerificationStatus.tampered) {
+          throw IntegrityException(
+            'Forensic snapshot integrity check failed for queue entry $queueEntryId '
+            '(stored=$storedHash computed=$computedHash). Potential tampering.',
+            field: 'integrity_hash',
+          );
+        }
+
+        return EvidenceVerification(
+          ledgerEntryId: snapshot.ledgerEntryId,
+          status: status,
+          storedHash: storedHash,
+          computedHash: computedHash,
+          snapshot: snapshot,
+        );
+      },
+    );
+  }
 }

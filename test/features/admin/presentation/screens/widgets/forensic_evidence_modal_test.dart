@@ -66,6 +66,30 @@ class _MockSnapshotRepo implements ForensicEvidenceSnapshotRepository {
   }
 
   @override
+  Future<EvidenceVerification> verifyByQueueEntry({
+    required String organizationId,
+    required String queueEntryId,
+  }) async {
+    verifyCalls++;
+    if (shouldThrowIntegrity) {
+      throw const IntegrityException(
+        'Integrity check failed: tampered content',
+        field: 'integrity_hash',
+      );
+    }
+    if (mockSnapshot == null) {
+      throw Exception('Not found');
+    }
+    return EvidenceVerification(
+      ledgerEntryId: mockSnapshot!.ledgerEntryId,
+      status: EvidenceVerificationStatus.authentic,
+      storedHash: mockSnapshot!.integrityHash,
+      computedHash: mockSnapshot!.integrityHash,
+      snapshot: mockSnapshot!,
+    );
+  }
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -122,7 +146,7 @@ void main() {
       ],
       child: const MaterialApp(
         home: Scaffold(
-          body: ForensicEvidenceModal(ledgerEntryId: 'ledger-001'),
+          body: ForensicEvidenceModal(queueEntryId: 'queue-001'),
         ),
       ),
     );

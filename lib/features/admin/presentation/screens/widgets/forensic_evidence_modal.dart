@@ -21,9 +21,9 @@ import 'package:veraprob/state/providers/security_incident_provider.dart';
 /// - **Timezone Translation:** All UTC timestamps are translated to the
 ///   operator's local time and suffix the timezone abbreviation (e.g. BRT).
 class ForensicEvidenceModal extends ConsumerStatefulWidget {
-  final String ledgerEntryId;
+  final String queueEntryId;
 
-  const ForensicEvidenceModal({super.key, required this.ledgerEntryId});
+  const ForensicEvidenceModal({super.key, required this.queueEntryId});
 
   @override
   ConsumerState<ForensicEvidenceModal> createState() =>
@@ -46,7 +46,7 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
         .log(
           eventType: 'FORENSIC_INTEGRITY_COMPROMISED',
           metadata: {
-            'ledger_entry_id': widget.ledgerEntryId,
+            'queue_entry_id': widget.queueEntryId,
             'source': 'forensic_evidence_modal_tampered_warning',
             'details':
                 'Integrity check failed: local hash mismatch with database.',
@@ -66,7 +66,7 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
           .log(
             eventType: 'SECURITY_INCIDENT_ESCALATION_REQUESTED',
             metadata: {
-              'ledger_entry_id': widget.ledgerEntryId,
+              'queue_entry_id': widget.queueEntryId,
               'source': 'forensic_evidence_modal_escalation',
               'reason':
                   'Operator requested incident escalation due to integrity breach.',
@@ -218,12 +218,12 @@ class _ForensicEvidenceModalState extends ConsumerState<ForensicEvidenceModal> {
   @override
   Widget build(BuildContext context) {
     final verificationAsync = ref.watch(
-      forensicEvidenceVerificationProvider(widget.ledgerEntryId),
+      forensicEvidenceVerificationByQueueProvider(widget.queueEntryId),
     );
 
     // Listen for tampered status to log silently exactly once.
     ref.listen<AsyncValue<EvidenceSnapshotView>>(
-      forensicEvidenceVerificationProvider(widget.ledgerEntryId),
+      forensicEvidenceVerificationByQueueProvider(widget.queueEntryId),
       (previous, next) {
         if (next is AsyncData &&
             next.value!.status == EvidenceSnapshotStatus.tampered) {

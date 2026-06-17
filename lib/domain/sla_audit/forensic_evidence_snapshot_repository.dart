@@ -84,4 +84,11 @@ abstract class ForensicEvidenceSnapshotRepository {
     required String organizationId,
     required String ledgerEntryId,
   });
+
+  /// Recomputes and compares the integrity hash for a snapshot located via
+  /// its queue entry ID. Used by the UI modal for applied verdicts.
+  Future<EvidenceVerification> verifyByQueueEntry({
+    required String organizationId,
+    required String queueEntryId,
+  });
 }

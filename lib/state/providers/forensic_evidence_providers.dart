@@ -37,3 +37,24 @@ final forensicEvidenceVerificationProvider = FutureProvider.autoDispose
         return EvidenceSnapshotView.tampered(ledgerEntryId);
       }
     });
+
+/// Verifies a forensic snapshot's integrity for [queueEntryId].
+/// Used by the applied card modal, which accesses the snapshot before
+/// the final ledger entry is easily queryable.
+final forensicEvidenceVerificationByQueueProvider = FutureProvider.autoDispose
+    .family<EvidenceSnapshotView, String>((ref, queueEntryId) async {
+      final orgId = ref.watch(currentOrganizationIdProvider);
+      if (orgId == null) {
+        throw const DomainException('Organization context not found (INV-1)');
+      }
+      final repo = ref.watch(forensicEvidenceSnapshotRepositoryProvider);
+      try {
+        final result = await repo.verifyByQueueEntry(
+          organizationId: orgId,
+          queueEntryId: queueEntryId,
+        );
+        return EvidenceSnapshotView.fromVerification(result);
+      } on IntegrityException {
+        return EvidenceSnapshotView.tampered(queueEntryId);
+      }
+    });

@@ -240,6 +240,36 @@ class InMemoryForensicEvidenceSnapshotRepository
     );
   }
 
+  @override
+  Future<EvidenceVerification> verifyByQueueEntry({
+    required String organizationId,
+    required String queueEntryId,
+  }) async {
+    // For in-memory testing, attempt to match queueEntryId as ledgerEntryId,
+    // otherwise fallback to returning the first snapshot for the org.
+    try {
+      return await verify(
+        organizationId: organizationId,
+        ledgerEntryId: queueEntryId,
+      );
+    } catch (_) {
+      final row = _rows.firstWhere(
+        (r) => r['organization_id'] == organizationId,
+        orElse: () => const {},
+      );
+      if (row.isEmpty) {
+        throw ResourceNotFoundException(
+          resourceType: 'forensic_evidence_snapshot',
+          resourceId: queueEntryId,
+        );
+      }
+      return verify(
+        organizationId: organizationId,
+        ledgerEntryId: row['ledger_entry_id'] as String,
+      );
+    }
+  }
+
   // ── Test helpers ───────────────────────────────────────────────────────────
 
   /// Simulates an insider mutating sealed content without re-sealing the hash.

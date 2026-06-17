@@ -744,7 +744,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               onPressed: () => showDialog<void>(
                 context: context,
                 builder: (_) =>
-                    ForensicEvidenceModal(ledgerEntryId: item.ledgerEntryId),
+                    ForensicEvidenceModal(queueEntryId: item.id),
               ),
               icon: const Icon(Icons.shield_outlined, size: 16),
               label: const Text('Visualizar Evidência Forense'),
