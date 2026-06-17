@@ -15,10 +15,14 @@ enum DossierClassification {
   /// Working copy: telemetry + map + contract only, stamped "PRELIMINAR".
   preliminary,
 
-  /// Verdict sealed (applied / rejected / acknowledged). Immutable and billable:
-  /// carries the carrier defense, the auditor's reason code and the verdict's
-  /// cryptographic seal, stamped "VEREDITO SELADO".
-  sealed,
+  /// Verdict applied (multa confirmada).
+  applied,
+
+  /// Verdict annulled (rejected/anulada/isentada).
+  annulled,
+
+  /// Verdict acknowledged (selado e de acordo pelo cliente).
+  acknowledged,
 }
 
 /// Represents the final immutable data required to generate an Executive-Grade
@@ -62,7 +66,7 @@ class ForensicDossier extends Equatable {
   });
 
   /// Whether this dossier reflects a sealed, terminal verdict (INV-21).
-  bool get isSealed => classification == DossierClassification.sealed;
+  bool get isSealed => classification != DossierClassification.preliminary;
 
   /// Computes the SHA-256 hash (INV-9) of the entire dossier contents.
   /// Any modification to the image bytes or ledger entry will change the hash.

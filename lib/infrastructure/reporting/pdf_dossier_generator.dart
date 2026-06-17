@@ -15,13 +15,14 @@ import 'package:veraprob/domain/reporting/i_forensic_pdf_generator.dart';
 ///         is watermarked "PRELIMINAR" and omits the carrier defense / sealed
 ///         verdict, so it can never be passed off as a billable certificate.
 class PdfDossierGenerator implements IForensicPdfGenerator {
-  // Industrial-Dark semantic accents (Amber = preliminary/risk, Emerald =
-  // sealed/verdict). The 0x18 alpha keeps the diagonal watermark legible but
-  // non-obstructive over the forensic body.
-  static const PdfColor _amber = PdfColor.fromInt(0xFFF59E0B);
-  static const PdfColor _amberFaint = PdfColor.fromInt(0x18F59E0B);
-  static const PdfColor _green = PdfColor.fromInt(0xFF059669);
-  static const PdfColor _greenFaint = PdfColor.fromInt(0x1810B981);
+  static const PdfColor _amber = PdfColor.fromInt(0xFFFBBF24);
+  static const PdfColor _amberFaint = PdfColor.fromInt(0x14FBBF24);
+  static const PdfColor _rose = PdfColor.fromInt(0xFFF87171);
+  static const PdfColor _roseFaint = PdfColor.fromInt(0x14F87171);
+  static const PdfColor _teal = PdfColor.fromInt(0xFF2DD4BF);
+  static const PdfColor _tealFaint = PdfColor.fromInt(0x142DD4BF);
+  static const PdfColor _darkGreen = PdfColor.fromInt(0xFF065F46);
+  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x14065F46);
 
   @override
   Future<List<int>> generateDossier(ForensicDossier dossier) async {
@@ -34,11 +35,32 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
       final generatedAt = DateTime.now().toUtc();
 
       final sealed = dossier.isSealed;
-      final accent = sealed ? _green : _amber;
-      final faint = sealed ? _greenFaint : _amberFaint;
-      final watermarkText = sealed
-          ? 'VEREDITO SELADO'
-          : 'PRELIMINAR - EM ANÁLISE';
+      final (
+        PdfColor accent,
+        PdfColor faint,
+        String watermarkText,
+      ) = switch (dossier.classification) {
+        DossierClassification.preliminary => (
+          _amber,
+          _amberFaint,
+          'PRELIMINAR - EM ANÁLISE',
+        ),
+        DossierClassification.applied => (
+          _rose,
+          _roseFaint,
+          'INFRAÇÃO CONFIRMADA',
+        ),
+        DossierClassification.annulled => (
+          _teal,
+          _tealFaint,
+          'INFRAÇÃO ANULADA',
+        ),
+        DossierClassification.acknowledged => (
+          _darkGreen,
+          _darkGreenFaint,
+          'VEREDITO SELADO - DE ACORDO',
+        ),
+      };
 
       final footer = pw.Container(
         decoration: const pw.BoxDecoration(
@@ -74,7 +96,7 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
           footer: (_) => footer,
           build: (_) => [
             // ── Header ────────────────────────────────────────────────────
-            _sectionHeader('DOSSIÊ FORENSE — VeraProb'),
+            _sectionHeader('DOSSIÊ FORENSE - VeraProb'),
             pw.SizedBox(height: 4),
             pw.Text(
               'Gerado em: ${generatedAt.toIso8601String()} UTC',
@@ -83,7 +105,13 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             pw.SizedBox(height: 8),
 
             // ── Status banner (lifecycle reality) ─────────────────────────
-            _statusBanner(sealed, accent, faint, dossier.verdictOutcomeLabel),
+            _statusBanner(
+              sealed,
+              accent,
+              faint,
+              watermarkText,
+              dossier.verdictOutcomeLabel,
+            ),
             pw.SizedBox(height: 12),
 
             // ── Dados do Evento ────────────────────────────────────────────
@@ -111,7 +139,7 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
               _renderImageOrFallback(dossier.telegramImageBytes)
             else
               pw.Text(
-                'PENDENTE — documento preliminar emitido antes da defesa do '
+                'PENDENTE - documento preliminar emitido antes da defesa do '
                 'transportador. Não utilize para fechar faturamento.',
                 style: const pw.TextStyle(
                   fontSize: 9,
@@ -142,7 +170,7 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
                   ? 'Este hash foi computado sobre: eventId, organizationId, '
                         'contractId, occurredAtUtc, payload, savingsCents, '
                         'bytes do mapa estático e bytes da evidência Telegram (quando presentes).'
-                  : 'Selo de custódia do SNAPSHOT PRELIMINAR atual — não é o selo '
+                  : 'Selo de custódia do SNAPSHOT PRELIMINAR atual - não é o selo '
                         'do veredito final. O selo definitivo é emitido apenas '
                         'quando a sanção é concluída (VEREDITO SELADO).',
               style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
@@ -164,11 +192,12 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
     bool sealed,
     PdfColor accent,
     PdfColor faint,
+    String watermarkText,
     String? outcomeLabel,
   ) {
     final title = sealed
-        ? 'VEREDITO SELADO'
-        : 'PRELIMINAR — EM ANÁLISE · SEM DEFESA DO TRANSPORTADOR';
+        ? watermarkText
+        : 'PRELIMINAR - EM ANÁLISE · SEM DEFESA DO TRANSPORTADOR';
     return pw.Container(
       width: double.infinity,
       padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),

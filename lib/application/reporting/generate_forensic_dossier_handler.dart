@@ -18,10 +18,10 @@ class GenerateForensicDossierCommand {
   final num mapLng;
   final List<int>? telegramImageBytes;
 
-  /// One-Click Dossier state machine: `true` once the verdict is terminal
-  /// (applied / rejected / acknowledged). Drives the "VEREDITO SELADO" stamp
-  /// and the sealed-only sections. `false` produces a "PRELIMINAR" document.
-  final bool sealedVerdict;
+  /// One-Click Dossier state machine: identifies the verdict status
+  /// (applied / annulled / acknowledged). Drives the specific taxonomy stamp
+  /// and the sealed-only sections. `preliminary` produces a "PRELIMINAR" document.
+  final DossierClassification classification;
 
   /// Sealed-only metadata mirroring the exact verdict state (INV-21).
   final String? verdictOutcomeLabel;
@@ -39,7 +39,7 @@ class GenerateForensicDossierCommand {
     required this.mapLat,
     required this.mapLng,
     this.telegramImageBytes,
-    this.sealedVerdict = false,
+    this.classification = DossierClassification.preliminary,
     this.verdictOutcomeLabel,
     this.auditorReasonCode,
     this.auditorNote,
@@ -115,9 +115,7 @@ class GenerateForensicDossierHandler {
         mapImageBytes: mapImageBytes,
         telegramImageBytes: command.telegramImageBytes,
         savingsCents: command.savingsCents,
-        classification: command.sealedVerdict
-            ? DossierClassification.sealed
-            : DossierClassification.preliminary,
+        classification: command.classification,
         verdictOutcomeLabel: command.verdictOutcomeLabel,
         auditorReasonCode: command.auditorReasonCode,
         auditorNote: command.auditorNote,

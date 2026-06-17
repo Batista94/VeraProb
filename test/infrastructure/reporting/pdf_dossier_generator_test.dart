@@ -38,6 +38,70 @@ void main() {
 
     // ── Structural Validity ───────────────────────────────────────────────────
 
+    group('DossierClassification matrix (4-color watermark)', () {
+      test('preliminary produces PRELIMINAR - EM ANÁLISE watermark', () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(),
+          mapImageBytes: const [],
+          savingsCents: 0,
+          classification: DossierClassification.preliminary,
+        );
+        final bytes = await generator.generateDossier(dossier);
+        final text = String.fromCharCodes(
+          bytes.where((b) => b >= 32 && b < 127),
+        );
+        expect(text, contains('PRELIMINAR'));
+      });
+
+      test('applied produces INFRAÇÃO CONFIRMADA watermark', () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(),
+          mapImageBytes: const [],
+          savingsCents: 0,
+          classification: DossierClassification.applied,
+        );
+        final bytes = await generator.generateDossier(dossier);
+        final text = String.fromCharCodes(
+          bytes.where((b) => b >= 32 && b < 127),
+        );
+        expect(text, contains('CONFIRMADA'));
+      });
+
+      test('annulled produces INFRAÇÃO ANULADA watermark', () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(),
+          mapImageBytes: const [],
+          savingsCents: 0,
+          classification: DossierClassification.annulled,
+        );
+        final bytes = await generator.generateDossier(dossier);
+        final text = String.fromCharCodes(
+          bytes.where((b) => b >= 32 && b < 127),
+        );
+        expect(text, contains('ANULADA'));
+      });
+
+      test(
+        'acknowledged produces VEREDITO SELADO - DE ACORDO watermark',
+        () async {
+          final dossier = ForensicDossier(
+            ledgerEntry: _buildEntry(),
+            mapImageBytes: const [],
+            savingsCents: 0,
+            classification: DossierClassification.acknowledged,
+          );
+          final bytes = await generator.generateDossier(dossier);
+          // Let's check for VEREDITO, SELADO and ACORDO.
+          final text = String.fromCharCodes(
+            bytes.where((b) => b >= 32 && b < 127),
+          );
+          expect(text, contains('VEREDITO'));
+          expect(text, contains('SELADO'));
+          expect(text, contains('ACORDO'));
+        },
+      );
+    });
+
     test('generateDossier returns non-empty bytes', () async {
       final dossier = ForensicDossier(
         ledgerEntry: _buildEntry(),

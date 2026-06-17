@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
+import 'package:veraprob/domain/reporting/forensic_dossier.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
@@ -743,8 +744,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             child: OutlinedButton.icon(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) =>
-                    ForensicEvidenceModal(queueEntryId: item.id),
+                builder: (_) => ForensicEvidenceModal(queueEntryId: item.id),
               ),
               icon: const Icon(Icons.shield_outlined, size: 16),
               label: const Text('Visualizar Evidência Forense'),
@@ -1280,21 +1280,19 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     }
   }
 
-  /// One-Click Dossier (INV-21): the export button is always live, but the PDF
-  /// it produces mirrors the EXACT queue state. Terminal verdicts emit a sealed
-  /// certificate; everything else emits a watermarked preliminary working copy.
-  static bool _isSealedVerdict(SanctionReviewStatus status) =>
-      status == SanctionReviewStatus.applied ||
-      status == SanctionReviewStatus.rejected ||
-      status == SanctionReviewStatus.acknowledged;
-
   Future<void> _onDownloadDossier() async {
     final item = widget.item;
     final evidence = item.verdictEvidence;
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
-    final sealed = _isSealedVerdict(item.status);
+    final classification = switch (item.status) {
+      SanctionReviewStatus.applied => DossierClassification.applied,
+      SanctionReviewStatus.rejected => DossierClassification.annulled,
+      SanctionReviewStatus.acknowledged => DossierClassification.acknowledged,
+      _ => DossierClassification.preliminary,
+    };
+    final sealed = classification != DossierClassification.preliminary;
     final outcomeLabel = switch (item.status) {
       SanctionReviewStatus.applied => 'INFRAÇÃO CONFIRMADA',
       SanctionReviewStatus.rejected => 'INFRAÇÃO ANULADA',
@@ -1324,7 +1322,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       savingsCents: evidence.fineCents.cents,
       mapLat: evidence.primaryEvidenceLat,
       mapLng: evidence.primaryEvidenceLng,
-      sealedVerdict: sealed,
+      classification: classification,
       verdictOutcomeLabel: outcomeLabel,
       auditorNote: (auditorNote != null && auditorNote.isNotEmpty)
           ? auditorNote
