@@ -145,9 +145,7 @@ void main() {
         securityIncidentLoggerProvider.overrideWithValue(securityLogger),
       ],
       child: const MaterialApp(
-        home: Scaffold(
-          body: ForensicEvidenceModal(queueEntryId: 'queue-001'),
-        ),
+        home: Scaffold(body: ForensicEvidenceModal(queueEntryId: 'queue-001')),
       ),
     );
   }
