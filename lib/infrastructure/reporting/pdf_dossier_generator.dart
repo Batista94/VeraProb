@@ -15,18 +15,34 @@ import 'package:veraprob/domain/reporting/i_forensic_pdf_generator.dart';
 ///         is watermarked "PRELIMINAR" and omits the carrier defense / sealed
 ///         verdict, so it can never be passed off as a billable certificate.
 class PdfDossierGenerator implements IForensicPdfGenerator {
-  static const PdfColor _amber = PdfColor.fromInt(0xFFFBBF24);
-  static const PdfColor _amberFaint = PdfColor.fromInt(0x26FBBF24);
-  static const PdfColor _amberWatermark = PdfColor.fromInt(0x14FBBF24);
-  static const PdfColor _rose = PdfColor.fromInt(0xFFF87171);
-  static const PdfColor _roseFaint = PdfColor.fromInt(0x26F87171);
-  static const PdfColor _roseWatermark = PdfColor.fromInt(0x14F87171);
-  static const PdfColor _teal = PdfColor.fromInt(0xFF2DD4BF);
-  static const PdfColor _tealFaint = PdfColor.fromInt(0x262DD4BF);
-  static const PdfColor _tealWatermark = PdfColor.fromInt(0x142DD4BF);
-  static const PdfColor _darkGreen = PdfColor.fromInt(0xFF065F46);
-  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0x26065F46);
-  static const PdfColor _darkGreenWatermark = PdfColor.fromInt(0x14065F46);
+  static const PdfColor _amber = PdfColor.fromInt(
+    0xFFB45309,
+  ); // Dark Amber/Orange for high contrast on white (4.5:1)
+  static const PdfColor _amberFaint = PdfColor.fromInt(0xFFFEF3C7);
+  static const PdfColor _amberWatermark = PdfColor.fromInt(
+    0x10FFD0A0,
+  ); // 6% alpha — degrades to soft pastel on alpha-ignorant viewers
+  static const PdfColor _rose = PdfColor.fromInt(
+    0xFFBE123C,
+  ); // Deep Crimson Red for high contrast (4.5:1)
+  static const PdfColor _roseFaint = PdfColor.fromInt(0xFFFFE4E6);
+  static const PdfColor _roseWatermark = PdfColor.fromInt(
+    0x10FFA0A0,
+  ); // 6% alpha
+  static const PdfColor _teal = PdfColor.fromInt(
+    0xFF0F766E,
+  ); // Deep Teal for high contrast (4.5:1)
+  static const PdfColor _tealFaint = PdfColor.fromInt(0xFFCCFBF1);
+  static const PdfColor _tealWatermark = PdfColor.fromInt(
+    0x10A0E0D0,
+  ); // 6% alpha
+  static const PdfColor _darkGreen = PdfColor.fromInt(
+    0xFF065F46,
+  ); // Already high contrast dark green
+  static const PdfColor _darkGreenFaint = PdfColor.fromInt(0xFFD1FAE5);
+  static const PdfColor _darkGreenWatermark = PdfColor.fromInt(
+    0x10A0D0A0,
+  ); // 6% alpha
 
   @override
   Future<List<int>> generateDossier(ForensicDossier dossier) async {
@@ -148,12 +164,13 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             _sectionHeader('DEFESA DO TRANSPORTADOR'),
             pw.SizedBox(height: 4),
             if (dossier.classification == DossierClassification.annulled)
-              // INV-21: Anulada por deliberação interna — seção de defesa dispensada.
+              // FRENTE 2: Fallback de texto para status 'rejected' / 'annulled' (Dossiê Forense)
               pw.Text(
-                'Dispensado - Infração anulada por deliberação interna.',
-                style: const pw.TextStyle(
+                'ISENTADO - Infração anulada pelo auditor. Não há cobrança de multa ou necessidade de envio de defesa pelo transportador.',
+                style: pw.TextStyle(
                   fontSize: 9,
-                  color: PdfColors.grey700,
+                  fontWeight: pw.FontWeight.bold,
+                  color: _teal,
                 ),
               )
             else if (sealed)
@@ -239,10 +256,14 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             ),
           ),
           if (sealed && outcomeLabel != null && outcomeLabel.isNotEmpty) ...[
-            pw.SizedBox(height: 2),
+            pw.SizedBox(height: 4),
             pw.Text(
               'Resultado: $outcomeLabel',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
+              style: pw.TextStyle(
+                fontSize: 10,
+                fontWeight: pw.FontWeight.bold,
+                color: accent,
+              ),
             ),
           ],
         ],

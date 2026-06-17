@@ -238,5 +238,23 @@ void main() {
         );
       },
     );
+
+    testWidgets('renders loading failure error message with error styling', (
+      tester,
+    ) async {
+      final repo = _MockSnapshotRepo(mockSnapshot: null);
+      final logger = _MockSecurityIncidentLogger();
+
+      await tester.pumpWidget(
+        buildModal(repository: repo, securityLogger: logger),
+      );
+      await tester.pumpAndSettle();
+
+      // Displays error text
+      expect(
+        find.textContaining('Erro ao carregar evidência:'),
+        findsOneWidget,
+      );
+    });
   });
 }

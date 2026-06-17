@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sentry_flutter/sentry_flutter.dart'
     show SentryNavigatorObserver;
-import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
+import 'package:supabase_flutter/supabase_flutter.dart'
+    as sb
+    show AuthResponse, AuthState;
 
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
@@ -56,11 +58,11 @@ import 'package:veraprob/state/providers/super_admin_providers.dart';
 /// revoked session bounces the user back to [AppRoutes.login] from any screen
 /// (closes the AUTH-TRAP / NotFoundPage dead-end).
 class AuthRefreshNotifier extends ChangeNotifier {
-  AuthRefreshNotifier(Stream<AuthState> stream) {
+  AuthRefreshNotifier(Stream<sb.AuthState> stream) {
     _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
   }
 
-  late final StreamSubscription<AuthState> _subscription;
+  late final StreamSubscription<sb.AuthState> _subscription;
 
   @override
   void dispose() {
@@ -90,15 +92,37 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   final refresh = AuthRefreshNotifier(client.auth.onAuthStateChange);
   ref.onDispose(refresh.dispose);
 
+  // Frente 4: If the session is expired but has a refresh token, proactively
+  // trigger a background refresh. Supabase will emit SIGNED_OUT via
+  // onAuthStateChange if the refresh fails, bouncing to /login automatically.
+  final initialSession = client.auth.currentSession;
+  if (initialSession != null && initialSession.isExpired) {
+    client.auth.refreshSession().catchError((Object e) {
+      debugPrint('[Auth Router] Initial session refresh failed: $e');
+      return sb.AuthResponse();
+    });
+  }
+
   final router = GoRouter(
     initialLocation: AppRoutes.login,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: refresh,
     observers: [SentryNavigatorObserver()],
     redirect: (context, state) {
-      final hasSession = client.auth.currentSession != null;
+      final session = client.auth.currentSession;
+      final hasSession =
+          session != null &&
+          (!session.isExpired ||
+              (session.refreshToken != null &&
+                  session.refreshToken!.isNotEmpty));
       final path = state.uri.path;
       final isPublic = AppRoutes.publicPaths.contains(path);
+
+      // SECURITY AUDIT: If accessing root '/', redirect to login or dashboard based on session.
+      // This prevents landing on a stale layout or dashboard shell on fresh browser load.
+      if (path == '/' || path.isEmpty) {
+        return hasSession ? AppRoutes.adminDashboard : AppRoutes.login;
+      }
 
       // Unauthenticated access to a protected route → login. Logged-in users
       // are deliberately NOT auto-forwarded off /login: the post-auth

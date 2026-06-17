@@ -210,7 +210,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 16),
               ],
               TextField(
                 key: const ValueKey('sentence-comment-field'),
@@ -226,6 +226,10 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                 ),
                 style: const TextStyle(fontSize: 13),
               ),
@@ -233,18 +237,38 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: VeraProbColors.error.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                  child: Text(
-                    _errorMessage!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: VeraProbColors.error,
-                      fontWeight: FontWeight.w500,
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.error.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: VeraProbColors.error.withValues(alpha: 0.3),
                     ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: VeraProbColors.error,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: VeraProbColors.error,
+                            height: 1.3,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

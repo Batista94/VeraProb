@@ -356,15 +356,13 @@ class SupabaseDataSeedingRepository
 
   @override
   Future<void> seedActiveSanctions(String organizationId) async {
-    Map<String, dynamic>? contract;
+    List<Map<String, dynamic>> contracts;
     Map<String, dynamic>? driver;
     try {
-      contract = await _supabase
+      contracts = await _supabase
           .from('contracts')
           .select()
-          .eq('organization_id', organizationId)
-          .limit(1)
-          .maybeSingle();
+          .eq('organization_id', organizationId);
       driver = await _supabase
           .from('drivers')
           .select('id, full_name')
@@ -387,40 +385,45 @@ class SupabaseDataSeedingRepository
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
 
-    if (contract == null) return;
+    if (contracts.isEmpty) return;
+
+    // INV-21 / P0002: Ensure ALL contracts have rule sets to allow approval
+    for (final contract in contracts) {
+      try {
+        final hasRuleSet = await _supabase
+            .from('contract_rule_sets')
+            .select('id')
+            .eq('contract_id', contract['id'])
+            .maybeSingle();
+
+        if (hasRuleSet == null) {
+          await _supabase.from('contract_rule_sets').insert({
+            'id': '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+            'organization_id': organizationId,
+            'contract_id': contract['id'],
+          });
+          await _supabase.from('contract_rule_versions').insert({
+            'id': '11111111-1111-1111-1111-${contract['id'].substring(24)}',
+            'rule_set_id':
+                '00000000-0000-0000-0000-${contract['id'].substring(24)}',
+            'rule_type': 'MAX_TOLERANCE_DELAY',
+            'rule_config': {'threshold_minutes': 15},
+            'rule_version': 1,
+            'evaluation_order': 0,
+            'active_from_utc': '2020-01-01T00:00:00Z',
+            'created_at_utc': '2020-01-01T00:00:00Z',
+          });
+        }
+      } catch (_) {
+        // Ignore conflict if already exists
+      }
+    }
+
+    // Use the first contract for seeding the sanction ledger entry
+    final contract = contracts.first;
 
     final now = _dateTimeProvider.nowUtc();
     final setId = 'sim-set-${now.millisecondsSinceEpoch}';
-
-    // INV-21 / P0002: Ensure contract has a rule set to allow approval
-    try {
-      final hasRuleSet = await _supabase
-          .from('contract_rule_sets')
-          .select('id')
-          .eq('contract_id', contract['id'])
-          .maybeSingle();
-
-      if (hasRuleSet == null) {
-        await _supabase.from('contract_rule_sets').insert({
-          'id': '00000000-0000-0000-0000-${contract['id'].substring(24)}',
-          'organization_id': organizationId,
-          'contract_id': contract['id'],
-        });
-        await _supabase.from('contract_rule_versions').insert({
-          'id': '11111111-1111-1111-1111-${contract['id'].substring(24)}',
-          'rule_set_id':
-              '00000000-0000-0000-0000-${contract['id'].substring(24)}',
-          'rule_type': 'MAX_TOLERANCE_DELAY',
-          'rule_config': {'threshold_minutes': 15},
-          'rule_version': 1,
-          'evaluation_order': 0,
-          'active_from_utc': '2020-01-01T00:00:00Z',
-          'created_at_utc': '2020-01-01T00:00:00Z',
-        });
-      }
-    } catch (_) {
-      // Ignore conflict if already exists
-    }
 
     try {
       await _supabase.from('sla_audit_ledger_v2').insert({

@@ -419,7 +419,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                               Padding(
                                 padding: const EdgeInsets.fromLTRB(
                                   20,
-                                  0,
+                                  12,
                                   20,
                                   0,
                                 ),
@@ -1733,59 +1733,61 @@ class _ForensicSealRow extends StatelessWidget {
       button: true,
       child: Tooltip(
         message: 'Ver evidência completa em 1 clique',
-        child: InkWell(
-          onTap: () => showDialog<void>(
-            context: context,
-            builder: (_) => InvestigationModal(
-              setId: item.setId,
-              contractId: item.contractId,
-            ),
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          decoration: BoxDecoration(
+            color: VeraProbColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: VeraProbColors.border, width: 0.5),
           ),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: VeraProbColors.border, width: 0.5),
+          child: InkWell(
+            onTap: () => showDialog<void>(
+              context: context,
+              builder: (_) => InvestigationModal(
+                setId: item.setId,
+                contractId: item.contractId,
+              ),
             ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.verified_user,
-                  size: 16,
-                  color: VeraProbColors.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Cadeia de Custódia · Prova Forense',
-                        style: VeraProbTypography.caption.copyWith(
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                      Text(
-                        'SHA-256: ${item.shortEvidenceHash}...',
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                        style: VeraProbTypography.caption.copyWith(
-                          fontFamily: 'monospace',
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.verified_user,
+                    size: 16,
+                    color: VeraProbColors.primary,
                   ),
-                ),
-                const Icon(
-                  Icons.chevron_right,
-                  size: 16,
-                  color: VeraProbColors.textDisabled,
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cadeia de Custódia · Prova Forense',
+                          style: VeraProbTypography.caption.copyWith(
+                            letterSpacing: 0.4,
+                          ),
+                        ),
+                        Text(
+                          'SHA-256: ${item.shortEvidenceHash}...',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: VeraProbTypography.caption.copyWith(
+                            fontFamily: 'monospace',
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: VeraProbColors.textDisabled,
+                  ),
+                ],
+              ),
             ),
           ),
         ),

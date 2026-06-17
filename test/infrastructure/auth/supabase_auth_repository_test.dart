@@ -240,7 +240,7 @@ void main() {
 
         final result = await repo.signInWithPassword(
           email: 'admin@veraprob.com',
-          password: 'correct-horse-battery-staple',
+          password: 'secure-password',
         );
 
         expect(result, equals('user-1'));
@@ -973,6 +973,99 @@ void main() {
         // (the old session's expiresAt is irrelevant — server says user is valid)
         expect(result, isA<AuthUser>());
         verify(() => mockAuth.getUser()).called(1);
+      });
+    });
+
+    // ── Refresh Token Awareness (Frente 4) ──────────────────────────────
+
+    group('isAuthenticated — refresh token awareness', () {
+      test('returns true when session is expired but has a refresh token', () {
+        final session = MockSession();
+        when(() => session.isExpired).thenReturn(true);
+        when(() => session.refreshToken).thenReturn('valid-refresh-token');
+        when(() => mockAuth.currentSession).thenReturn(session);
+
+        expect(repo.isAuthenticated, isTrue);
+      });
+
+      test(
+        'returns false when session is expired and has NO refresh token',
+        () {
+          final session = MockSession();
+          when(() => session.isExpired).thenReturn(true);
+          when(() => session.refreshToken).thenReturn(null);
+          when(() => mockAuth.currentSession).thenReturn(session);
+
+          expect(repo.isAuthenticated, isFalse);
+        },
+      );
+
+      test(
+        'returns false when session is expired and refresh token is empty',
+        () {
+          final session = MockSession();
+          when(() => session.isExpired).thenReturn(true);
+          when(() => session.refreshToken).thenReturn('');
+          when(() => mockAuth.currentSession).thenReturn(session);
+
+          expect(repo.isAuthenticated, isFalse);
+        },
+      );
+
+      test('returns true when session is NOT expired (regardless of refresh '
+          'token)', () {
+        final session = MockSession();
+        when(() => session.isExpired).thenReturn(false);
+        when(() => session.refreshToken).thenReturn(null);
+        when(() => mockAuth.currentSession).thenReturn(session);
+
+        expect(repo.isAuthenticated, isTrue);
+      });
+    });
+
+    group('authStatusStream — refresh token awareness', () {
+      test('emits false when expired session has no refresh token', () async {
+        final controller = StreamController<supabase.AuthState>();
+        when(
+          () => mockAuth.onAuthStateChange,
+        ).thenAnswer((_) => controller.stream);
+
+        final expiredNoRefresh = MockSession();
+        when(() => expiredNoRefresh.isExpired).thenReturn(true);
+        when(() => expiredNoRefresh.refreshToken).thenReturn(null);
+
+        final future = repo.authStatusStream.first;
+        controller.add(
+          supabase.AuthState(
+            supabase.AuthChangeEvent.tokenRefreshed,
+            expiredNoRefresh,
+          ),
+        );
+
+        expect(await future, isFalse);
+        await controller.close();
+      });
+
+      test('emits true when expired session has a refresh token', () async {
+        final controller = StreamController<supabase.AuthState>();
+        when(
+          () => mockAuth.onAuthStateChange,
+        ).thenAnswer((_) => controller.stream);
+
+        final expiredWithRefresh = MockSession();
+        when(() => expiredWithRefresh.isExpired).thenReturn(true);
+        when(() => expiredWithRefresh.refreshToken).thenReturn('valid-refresh');
+
+        final future = repo.authStatusStream.first;
+        controller.add(
+          supabase.AuthState(
+            supabase.AuthChangeEvent.tokenRefreshed,
+            expiredWithRefresh,
+          ),
+        );
+
+        expect(await future, isTrue);
+        await controller.close();
       });
     });
   });

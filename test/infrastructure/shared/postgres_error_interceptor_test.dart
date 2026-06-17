@@ -205,7 +205,10 @@ void main() {
 
         expect(result, isA<ResourceNotFoundException>());
         final rnf = result as ResourceNotFoundException;
-        expect(rnf.message, 'Registro não encontrado ou indisponível.');
+        expect(
+          rnf.message,
+          'Regras de contrato ou evidências não encontradas.',
+        );
       },
     );
 
