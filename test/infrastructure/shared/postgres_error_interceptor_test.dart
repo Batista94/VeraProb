@@ -193,6 +193,19 @@ void main() {
       expect(result, isA<ResourceNotFoundException>());
     });
 
+    test('maps P0002 (no_data_found) from PL/pgSQL to ResourceNotFoundException', () {
+      const exception = PostgrestException(
+        message: 'No rule set for contract...',
+        code: 'P0002',
+      );
+
+      final result = testClass.mapPostgrestToDomainException(exception);
+
+      expect(result, isA<ResourceNotFoundException>());
+      final rnf = result as ResourceNotFoundException;
+      expect(rnf.message, 'Registro não encontrado ou indisponível.');
+    });
+
     test('maps 23503 (foreign_key_violation) to ResourceNotFoundException '
         '(INV-26: no schema leak)', () {
       const exception = PostgrestException(
@@ -216,7 +229,7 @@ void main() {
       expect(rnf.resourceType, 'execution_state');
       expect(rnf.resourceId, 'state-123');
       // No table names, FK names, or column names leak to the exception
-      expect(rnf.message, 'Resource not found.');
+      expect(rnf.message, 'Registro não encontrado ou indisponível.');
     });
   });
 }
