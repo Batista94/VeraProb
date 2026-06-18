@@ -81,12 +81,14 @@ Future<String?> scheduleContractualRule(
   if (session == null) {
     return 'Sessão expirada. Faça login novamente.';
   }
+  // INV-1: Obtain organizationId from currentOrganizationIdProvider (fallback to session.orgId)
+  final orgId = ref.read(currentOrganizationIdProvider) ?? session.orgId;
   try {
     await ref
         .read(scheduleContractualRuleHandlerProvider)
         .handle(
           ScheduleContractualRuleCommand(
-            organizationId: session.orgId,
+            organizationId: orgId,
             contractId: contractId,
             oldRuleId: oldRuleId,
             ruleType: ruleType,
@@ -117,12 +119,14 @@ Future<String?> retireContractualRule(
   if (session == null) {
     return 'Sessão expirada. Faça login novamente.';
   }
+  // INV-1: Obtain organizationId from currentOrganizationIdProvider (fallback to session.orgId)
+  final orgId = ref.read(currentOrganizationIdProvider) ?? session.orgId;
   try {
     await ref
         .read(retireContractualRuleHandlerProvider)
         .handle(
           RetireContractualRuleCommand(
-            organizationId: session.orgId,
+            organizationId: orgId,
             ruleId: ruleId,
             callerRole: ref.read(currentUserRoleProvider),
             sessionId: session.sessionId,
