@@ -143,7 +143,10 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
     }
   }
 
+  bool _isSubmitting = false;
+
   Future<void> submit(String token) async {
+    if (_isSubmitting) return;
     if (state is PortalSubmissionHashing ||
         state is PortalSubmissionUploading) {
       return; // Guard anti-duplo-clique
@@ -164,10 +167,11 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
       return;
     }
 
-    String? sha256Client;
-    final file = currentState.file;
-
+    _isSubmitting = true;
     try {
+      String? sha256Client;
+      final file = currentState.file;
+
       if (file != null) {
         state = const PortalSubmissionHashing();
         final hasher = ref.read(fileHasherProvider);
@@ -199,6 +203,8 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
           ? e as Exception
           : IntegrityException('Falha no envio: $e');
       state = PortalSubmissionError(cause, currentState);
+    } finally {
+      _isSubmitting = false;
     }
   }
 

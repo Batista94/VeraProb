@@ -11,6 +11,7 @@ import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart';
+import 'package:veraprob/features/admin/presentation/widgets/admin_session_keep_alive.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
@@ -247,57 +248,59 @@ class AdminLayout extends ConsumerWidget {
       }
     });
 
-    return CallbackShortcuts(
-      bindings: _pillarShortcuts(),
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          key: _adminScaffoldKey,
-          backgroundColor: VeraProbColors.background,
-          endDrawer: const AlertsTriadeDrawer(),
-          onEndDrawerChanged: (isOpen) {
-            ref.read(isAlertsDrawerOpenProvider.notifier).set(isOpen);
-          },
-          appBar: _buildAppBar(context, ref, isWideScreen),
-          body: Row(
-            children: [
-              _buildSidebar(
-                context,
-                ref,
-                isWideScreen,
-                selectedIndex,
-                destinations,
-              ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1600),
-                    child: Container(
-                      color: VeraProbColors.background,
-                      child: Column(
-                        children: [
-                          // Deep hub screen → offer a path back to the launcher.
-                          if (selectedIndex > AdminNav.adminHub.index)
-                            _HubBackButton(
-                              onBack: () => navigationShell.goBranch(
-                                AdminNav.adminHub.index,
+    return AdminSessionKeepAlive(
+      child: CallbackShortcuts(
+        bindings: _pillarShortcuts(),
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            key: _adminScaffoldKey,
+            backgroundColor: VeraProbColors.background,
+            endDrawer: const AlertsTriadeDrawer(),
+            onEndDrawerChanged: (isOpen) {
+              ref.read(isAlertsDrawerOpenProvider.notifier).set(isOpen);
+            },
+            appBar: _buildAppBar(context, ref, isWideScreen),
+            body: Row(
+              children: [
+                _buildSidebar(
+                  context,
+                  ref,
+                  isWideScreen,
+                  selectedIndex,
+                  destinations,
+                ),
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 1600),
+                      child: Container(
+                        color: VeraProbColors.background,
+                        child: Column(
+                          children: [
+                            // Deep hub screen → offer a path back to the launcher.
+                            if (selectedIndex > AdminNav.adminHub.index)
+                              _HubBackButton(
+                                onBack: () => navigationShell.goBranch(
+                                  AdminNav.adminHub.index,
+                                ),
                               ),
-                            ),
-                          if (ref.watch(selectedContractIdProvider) != null)
-                            _InternalBackButton(
-                              onBack: () => ref
-                                  .read(selectedContractIdProvider.notifier)
-                                  .set(null),
-                            ),
-                          Expanded(child: navigationShell),
-                        ],
+                            if (ref.watch(selectedContractIdProvider) != null)
+                              _InternalBackButton(
+                                onBack: () => ref
+                                    .read(selectedContractIdProvider.notifier)
+                                    .set(null),
+                              ),
+                            Expanded(child: navigationShell),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

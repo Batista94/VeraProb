@@ -10,8 +10,8 @@ import 'package:uuid/uuid.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/session_recovery.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/zone_ui_utils.dart';
 
 /// Opens the zone create/edit dialog.
@@ -167,7 +167,8 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     });
 
     try {
-      final orgId = ref.read(currentOrganizationIdProvider);
+      // Resilient session recovery: attempt token refresh before giving up
+      final orgId = await SessionRecovery.ensureOrgIdWidget(ref);
       if (orgId == null) {
         throw const DomainException('Sessão expirada. Faça login novamente.');
       }

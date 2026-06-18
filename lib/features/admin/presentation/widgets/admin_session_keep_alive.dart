@@ -6,40 +6,48 @@ import 'package:go_router/go_router.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
-/// Wraps the SuperAdmin shell to monitor for user inactivity.
-/// Shows a warning dialog after 5 minutes of idle time.
-/// Forces logout after 7 minutes of idle time.
-/// Proactively refreshes the JWT every 50 minutes to prevent silent expiry.
-class SuperAdminSessionTimeout extends ConsumerStatefulWidget {
+/// Wraps the Admin shell to keep the Supabase session alive and monitor
+/// for user inactivity.
+///
+/// Two responsibilities:
+/// 1. **Proactive Token Refresh** — refreshes the JWT every [_refreshInterval]
+///    (well before the 60-min Supabase expiry) to prevent silent token death
+///    in Flutter Web WASM where the SDK auto-refresh can be unreliable.
+/// 2. **Idle Detection** — shows a warning dialog after [_idleWarningDuration]
+///    of no pointer activity, then force-logs out after [_forceLogoutDuration].
+///
+/// Mirrors the behavior of [SuperAdminSessionTimeout] with longer timeouts
+/// suited for admin operational workflows (CSV imports, contract setup, etc.).
+class AdminSessionKeepAlive extends ConsumerStatefulWidget {
   final Widget child;
 
-  const SuperAdminSessionTimeout({super.key, required this.child});
+  const AdminSessionKeepAlive({super.key, required this.child});
 
   @override
-  ConsumerState<SuperAdminSessionTimeout> createState() =>
-      _SuperAdminSessionTimeoutState();
+  ConsumerState<AdminSessionKeepAlive> createState() =>
+      _AdminSessionKeepAliveState();
 }
 
-class _SuperAdminSessionTimeoutState
-    extends ConsumerState<SuperAdminSessionTimeout> {
+class _AdminSessionKeepAliveState extends ConsumerState<AdminSessionKeepAlive> {
+  Timer? _refreshTimer;
   Timer? _idleTimer;
   Timer? _logoutTimer;
-  Timer? _refreshTimer;
   bool _isWarningOpen = false;
 
   /// Refresh the JWT token every 50 minutes (JWT expires at 60 min).
   static const _refreshInterval = Duration(minutes: 50);
 
+  /// Show idle warning after 25 minutes of no pointer activity.
+  static const _idleWarningDuration = Duration(minutes: 25);
+
+  /// Force logout after 30 minutes of no pointer activity.
+  static const _forceLogoutDuration = Duration(minutes: 30);
+
   @override
   void initState() {
     super.initState();
     _startRefreshTimer();
-    _resetTimers();
-  }
-
-  void _handleUserInteraction() {
-    if (_isWarningOpen) return;
-    _resetTimers();
+    _resetIdleTimers();
   }
 
   // ── Proactive Token Refresh ──────────────────────────────────────────────
@@ -54,17 +62,23 @@ class _SuperAdminSessionTimeoutState
       await ref.read(authRepositoryProvider).refreshSession();
     } catch (_) {
       // If refresh fails, the router's auth redirect will bounce to /login
+      // on the next auth state change event.
     }
   }
 
   // ── Idle Detection ───────────────────────────────────────────────────────
 
-  void _resetTimers() {
+  void _handleUserInteraction() {
+    if (_isWarningOpen) return;
+    _resetIdleTimers();
+  }
+
+  void _resetIdleTimers() {
     _idleTimer?.cancel();
     _logoutTimer?.cancel();
 
-    _idleTimer = Timer(const Duration(minutes: 5), _showWarning);
-    _logoutTimer = Timer(const Duration(minutes: 7), _forceLogout);
+    _idleTimer = Timer(_idleWarningDuration, _showWarning);
+    _logoutTimer = Timer(_forceLogoutDuration, _forceLogout);
   }
 
   void _showWarning() {
@@ -77,7 +91,8 @@ class _SuperAdminSessionTimeoutState
       builder: (ctx) => AlertDialog(
         title: const Text('Aviso de Inatividade'),
         content: const Text(
-          'Por motivos de segurança, sua sessão será encerrada em breve por inatividade.\n\nDeseja continuar logado?',
+          'Por motivos de segurança, sua sessão será encerrada em breve '
+          'por inatividade.\n\nDeseja continuar logado?',
         ),
         actions: [
           ElevatedButton(
@@ -85,8 +100,8 @@ class _SuperAdminSessionTimeoutState
               Navigator.of(ctx).pop();
               if (mounted) {
                 setState(() => _isWarningOpen = false);
-                _resetTimers();
-                // Proactively refresh when user confirms they're active
+                _resetIdleTimers();
+                // Also proactively refresh when user confirms they're active
                 _refreshSession();
               }
             },
@@ -117,9 +132,9 @@ class _SuperAdminSessionTimeoutState
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _idleTimer?.cancel();
     _logoutTimer?.cancel();
-    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -128,11 +143,7 @@ class _SuperAdminSessionTimeoutState
     return Listener(
       behavior: HitTestBehavior.translucent,
       onPointerDown: (_) => _handleUserInteraction(),
-      onPointerMove: (_) {
-        // Debounce or just keep resetting. Timer cancel/recreation is cheap enough in Dart,
-        // but pointerMove fires constantly. Just calling _handleUserInteraction is fine.
-        _handleUserInteraction();
-      },
+      onPointerMove: (_) => _handleUserInteraction(),
       onPointerUp: (_) => _handleUserInteraction(),
       child: widget.child,
     );

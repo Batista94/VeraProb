@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
@@ -97,6 +98,10 @@ Widget _host(_FakeGateway gateway, {FakeFileHasher? hasher}) {
 }
 
 void main() {
+  setUpAll(() async {
+    await initializeDateFormatting('pt_BR', null);
+  });
+
   group('DisputePortalPage — UI Tests (W1-W12)', () {
     testWidgets('W1, W2, W3: Justificativa habilita o Enviar Contestação', (
       tester,
@@ -209,7 +214,7 @@ void main() {
       await tester.tap(find.text('Enviar Contestação'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Contestação Enviada'), findsOneWidget);
+      expect(find.text('Contestação Recebida com Sucesso'), findsOneWidget);
       expect(find.text('Enviar Contestação'), findsNothing); // Form oculto
     });
 

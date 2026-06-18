@@ -463,8 +463,9 @@ class SupabaseDataSeedingRepository
             'primary_evidence_timestamp_utc': now.toIso8601String(),
             'evidence_hash':
                 'seed000000000000000000000000000000000000000000000000000000000001',
-            'delta_value': 8.5,
+            'measured_value': 88.5,
             'threshold_value': 80.0,
+            'address': 'Avenida do Estado, Glicério, Sé, São Paulo - SP',
             'fine_cents': 150000,
             'confidence_score': 99,
             if (driver != null && driver.containsKey('vehicle_id')) ...{

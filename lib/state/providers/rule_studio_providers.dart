@@ -16,6 +16,7 @@ import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 import 'contract_providers.dart';
 import 'shared_providers.dart';
+import 'package:veraprob/state/session_recovery.dart';
 
 // ── Infrastructure ────────────────────────────────────────────────────────────
 
@@ -75,9 +76,9 @@ Future<String?> scheduleContractualRule(
   required int evaluationOrder,
   required DateTime effectiveAtUtc,
 }) async {
-  final organizationId = ref.read(currentOrganizationIdProvider);
-  final sessionId = ref.read(currentSessionIdProvider);
-  if (organizationId == null || sessionId == null) {
+  // Resilient session recovery: attempt token refresh before giving up
+  final session = await SessionRecovery.ensureSessionWidget(ref);
+  if (session == null) {
     return 'Sessão expirada. Faça login novamente.';
   }
   try {
@@ -85,7 +86,7 @@ Future<String?> scheduleContractualRule(
         .read(scheduleContractualRuleHandlerProvider)
         .handle(
           ScheduleContractualRuleCommand(
-            organizationId: organizationId,
+            organizationId: session.orgId,
             contractId: contractId,
             oldRuleId: oldRuleId,
             ruleType: ruleType,
@@ -93,7 +94,7 @@ Future<String?> scheduleContractualRule(
             evaluationOrder: evaluationOrder,
             effectiveAtUtc: effectiveAtUtc,
             callerRole: ref.read(currentUserRoleProvider),
-            sessionId: sessionId,
+            sessionId: session.sessionId,
           ),
         );
     return null;
@@ -111,9 +112,9 @@ Future<String?> retireContractualRule(
   WidgetRef ref, {
   required String ruleId,
 }) async {
-  final organizationId = ref.read(currentOrganizationIdProvider);
-  final sessionId = ref.read(currentSessionIdProvider);
-  if (organizationId == null || sessionId == null) {
+  // Resilient session recovery: attempt token refresh before giving up
+  final session = await SessionRecovery.ensureSessionWidget(ref);
+  if (session == null) {
     return 'Sessão expirada. Faça login novamente.';
   }
   try {
@@ -121,10 +122,10 @@ Future<String?> retireContractualRule(
         .read(retireContractualRuleHandlerProvider)
         .handle(
           RetireContractualRuleCommand(
-            organizationId: organizationId,
+            organizationId: session.orgId,
             ruleId: ruleId,
             callerRole: ref.read(currentUserRoleProvider),
-            sessionId: sessionId,
+            sessionId: session.sessionId,
           ),
         );
     return null;

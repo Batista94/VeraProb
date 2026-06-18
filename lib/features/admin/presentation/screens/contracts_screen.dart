@@ -6,8 +6,8 @@ import 'package:veraprob/application/sla_audit/clone_contract_command.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/session_recovery.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
@@ -471,17 +471,17 @@ class _ContractTable extends ConsumerWidget {
 
                         setDialogState(() => isSubmitting = true);
                         try {
-                          final orgId = ref.read(currentOrganizationIdProvider);
-                          if (orgId == null) {
+                          // Resilient session recovery
+                          final session =
+                              await SessionRecovery.ensureSessionWidget(ref);
+                          if (session == null) {
                             throw const DomainException(
                               'Sessão expirada. Faça login novamente.',
                             );
                           }
-                          final sessionId =
-                              ref.read(currentSessionIdProvider) ?? '';
                           final cmd = CloneContractCommand(
-                            organizationId: orgId,
-                            sessionId: sessionId,
+                            organizationId: session.orgId,
+                            sessionId: session.sessionId,
                             sourceContractId: c.id,
                             name: nameController.text.trim(),
                             contractorName: c.contractorName,

@@ -8,6 +8,7 @@ import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 
 import 'package:veraprob/features/dispute_portal/presentation/widgets/portal_header.dart';
 import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_context_card.dart';
+import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_success_view.dart';
 import 'package:veraprob/features/dispute_portal/presentation/widgets/evidence_dropzone.dart';
 import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_action_footer.dart';
 
@@ -71,12 +72,9 @@ class DisputePortalPage extends ConsumerWidget {
             orgCnpj: data.contextData.orgCnpj,
           ),
           const SizedBox(height: VeraProbSpacing.lg),
-          _PortalCard(
-            icon: Icons.check_circle_outline,
-            color: VeraProbColors.success,
-            title: 'Contestação Enviada',
-            message:
-                'Sua contestação foi registrada com sucesso.\nProtocolo: ${submissionState.protocol}',
+          DisputeSuccessView(
+            submittedAtUtc: submissionState.submittedAtUtc,
+            protocol: submissionState.protocol,
           ),
         ],
       );
