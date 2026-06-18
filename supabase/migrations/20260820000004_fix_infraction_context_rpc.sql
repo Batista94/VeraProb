@@ -81,16 +81,18 @@ BEGIN
     ELSE NULL
   END;
 
-  -- Location label: address first, then lat,lng, else '-'
+  -- Location label: geofence_name > address > location_label > lat,lng > '-'
   v_lat := v_queue.verdict_evidence ->> 'primary_evidence_lat';
   v_lng := v_queue.verdict_evidence ->> 'primary_evidence_lng';
-  v_location := CASE
-    WHEN (v_queue.verdict_evidence ->> 'address') IS NOT NULL AND (v_queue.verdict_evidence ->> 'address') <> '' 
-      THEN v_queue.verdict_evidence ->> 'address'
-    WHEN v_lat IS NOT NULL AND v_lng IS NOT NULL 
-      THEN v_lat || ',' || v_lng
-    ELSE '-'
-  END;
+  v_location := COALESCE(
+    NULLIF(v_queue.verdict_evidence ->> 'geofence_name', ''),
+    NULLIF(v_queue.verdict_evidence ->> 'address', ''),
+    NULLIF(v_queue.verdict_evidence ->> 'location_label', ''),
+    CASE
+      WHEN v_lat IS NOT NULL AND v_lng IS NOT NULL THEN v_lat || ',' || v_lng
+      ELSE '-'
+    END
+  );
 
   RETURN jsonb_build_object(
     'asset_identifier',   v_queue.vehicle_plate,

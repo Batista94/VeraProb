@@ -1,4 +1,4 @@
-# Test Plan: 20260820000002_fix_location_label_rpc.sql
+# Test Plan: 20260820000003_fix_location_label_rpc.sql
 
 ## Goal
 Verify that the `read_infraction_context` RPC prioritizes textual location labels (e.g. `geofence_name`, `address`) over numerical coordinates.

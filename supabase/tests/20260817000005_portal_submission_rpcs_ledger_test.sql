@@ -36,7 +36,11 @@ VALUES
    '{"rule_type":"MAX_TOLERANCE_DELAY","description":"A2"}'::jsonb, 'applied', NULL,NULL,NULL),
   ('00000000-0000-0000-0000-00000dad5e04','00000000-0000-0000-0000-00000dad5a01',
    '00000000-0000-0000-0000-00000dad5f04','set5','00000000-0000-0000-0000-00000dad5aa1',
-   '{"rule_type":"MAX_TOLERANCE_DELAY","description":"A3"}'::jsonb, 'applied', NULL,NULL,NULL)
+   '{"rule_type":"MAX_TOLERANCE_DELAY","description":"A3"}'::jsonb, 'applied', NULL,NULL,NULL),
+  ('00000000-0000-0000-0000-00000dad5e05','00000000-0000-0000-0000-00000dad5a01',
+   '00000000-0000-0000-0000-00000dad5f05','set5','00000000-0000-0000-0000-00000dad5aa1',
+   '{"rule_type":"MAX_TOLERANCE_DELAY","description":"D2","fine_cents":50000}'::jsonb,
+   'disputed', NOW(), '00000000-0000-0000-0000-00000dad5b01', NOW()+INTERVAL '5 days')
 ON CONFLICT (id) DO NOTHING;
 
 -- Tokens (explicit token value so RPCs can be called by token).
@@ -58,7 +62,10 @@ VALUES
    '00000000-0000-0000-0000-00000dad5b01',NOW()+INTERVAL '24 hours',5,'read',5,NOW()),
   ('00000000-0000-0000-0000-00000dad5c05','00000000-0000-0000-0000-00000dad5a01',
    '00000000-0000-0000-0000-00000dad5e03','00000000-0000-0000-0000-0000dad57005',
-   '00000000-0000-0000-0000-00000dad5b01',NOW()+INTERVAL '24 hours',5,'read',5,NOW())
+   '00000000-0000-0000-0000-00000dad5b01',NOW()+INTERVAL '24 hours',5,'read',5,NOW()),
+  ('00000000-0000-0000-0000-00000dad5c06','00000000-0000-0000-0000-00000dad5a01',
+   '00000000-0000-0000-0000-00000dad5e05','00000000-0000-0000-0000-0000dad57006',
+   '00000000-0000-0000-0000-00000dad5b01',NOW()+INTERVAL '24 hours',5,'submit',5,NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- Served-snapshot facts for the ack flow (what read_dispute_portal would log).
@@ -138,7 +145,7 @@ BEGIN
     'Justificativa de contestacao da submissao dois.');
   PERFORM set_config('t.sub2', r.submission_id::text, true);
   SELECT * INTO r FROM public.create_portal_submission(
-    '00000000-0000-0000-0000-0000dad57001','p3.pdf','application/pdf',2048,repeat('6',64),
+    '00000000-0000-0000-0000-0000dad57006','p3.pdf','application/pdf',2048,repeat('6',64),
     'Justificativa de contestacao da submissao tres.');
   PERFORM set_config('t.sub3', r.submission_id::text, true);
 END $$;

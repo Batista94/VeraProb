@@ -32,6 +32,14 @@ VALUES
   ('00000000-0000-0000-0000-00000dad6e01','00000000-0000-0000-0000-00000dad6a01',
    '00000000-0000-0000-0000-00000dad6f01','set6','00000000-0000-0000-0000-00000dad6aa1',
    '{"rule_type":"MAX_TOLERANCE_DELAY","description":"D","fine_cents":50000}'::jsonb,
+   'disputed', NOW(), '00000000-0000-0000-0000-00000dad6b01', NOW()+INTERVAL '5 days'),
+  ('00000000-0000-0000-0000-00000dad6e02','00000000-0000-0000-0000-00000dad6a01',
+   '00000000-0000-0000-0000-00000dad6f02','set6','00000000-0000-0000-0000-00000dad6aa1',
+   '{"rule_type":"MAX_TOLERANCE_DELAY","description":"D2","fine_cents":50000}'::jsonb,
+   'disputed', NOW(), '00000000-0000-0000-0000-00000dad6b01', NOW()+INTERVAL '5 days'),
+  ('00000000-0000-0000-0000-00000dad6e03','00000000-0000-0000-0000-00000dad6a01',
+   '00000000-0000-0000-0000-00000dad6f03','set6','00000000-0000-0000-0000-00000dad6aa1',
+   '{"rule_type":"MAX_TOLERANCE_DELAY","description":"D3","fine_cents":50000}'::jsonb,
    'disputed', NOW(), '00000000-0000-0000-0000-00000dad6b01', NOW()+INTERVAL '5 days')
 ON CONFLICT (id) DO NOTHING;
 
@@ -51,7 +59,13 @@ VALUES
    '00000000-0000-0000-0000-00000dad6b01',NOW()-INTERVAL '1 hours',5,'submit',5,NOW()-INTERVAL '2 hours'),
   ('00000000-0000-0000-0000-00000dad6c04','00000000-0000-0000-0000-00000dad6a01',
    '00000000-0000-0000-0000-00000dad6e01','00000000-0000-0000-0000-0000dad67004',
-   '00000000-0000-0000-0000-00000dad6b01',NOW()+INTERVAL '24 hours',5,'read',5,NOW())
+   '00000000-0000-0000-0000-00000dad6b01',NOW()+INTERVAL '24 hours',5,'read',5,NOW()),
+  ('00000000-0000-0000-0000-00000dad6c05','00000000-0000-0000-0000-00000dad6a01',
+   '00000000-0000-0000-0000-00000dad6e02','00000000-0000-0000-0000-0000dad67005',
+   '00000000-0000-0000-0000-00000dad6b01',NOW()+INTERVAL '24 hours',5,'submit',10,NOW()),
+  ('00000000-0000-0000-0000-00000dad6c06','00000000-0000-0000-0000-00000dad6a01',
+   '00000000-0000-0000-0000-00000dad6e03','00000000-0000-0000-0000-0000dad67006',
+   '00000000-0000-0000-0000-00000dad6b01',NOW()+INTERVAL '24 hours',5,'submit',10,NOW())
 ON CONFLICT (id) DO NOTHING;
 
 -- =============================================================================
@@ -198,7 +212,7 @@ DO $$
 DECLARE r RECORD; v UUID;
 BEGIN
   SELECT * INTO r FROM public.create_portal_submission(
-    '00000000-0000-0000-0000-0000dad67001','seal.pdf','application/pdf',2048,repeat('c',64),
+    '00000000-0000-0000-0000-0000dad67005','seal.pdf','application/pdf',2048,repeat('c',64),
     'Justificativa para o selo combinado verificavel.');
   PERFORM set_config('t.sub_seal', r.submission_id::text, true);
   PERFORM set_config('t.just_seal',
@@ -274,7 +288,7 @@ DO $$
 DECLARE v UUID;
 BEGIN
   v := public.submit_portal_justification_only(
-    '00000000-0000-0000-0000-0000dad67001',
+    '00000000-0000-0000-0000-0000dad67006',
     'Contesto sem anexo: a infracao decorre de falha do sistema.');
   PERFORM set_config('t.jo1', v::text, true);
 END $$;
