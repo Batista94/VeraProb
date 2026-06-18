@@ -218,9 +218,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                           children: [
                             // ── Zona 2: Financial Hero ─────────────────────────────────────
                             _buildFinancialHero(
+                              context: context,
                               item: item,
                               displayName: displayName,
                               confidenceColor: confidenceColor,
+                              isLoading: isLoading,
                             ),
 
                             const SizedBox(height: 16),
@@ -499,18 +501,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                   ],
                                 ),
                               ),
-                            if (item.status ==
-                                SanctionReviewStatus.applied) ...[
+                            if (item.status == SanctionReviewStatus.applied)
                               _buildForensicEvidenceVisualizerRow(
                                 context,
                                 item,
                               ),
-                              _AcknowledgeInternalRow(
-                                isLoading: isLoading,
-                                onAcknowledge: () =>
-                                    _onAcknowledgeInternal(context),
-                              ),
-                            ],
                           ],
                         ),
                       ),
@@ -719,9 +714,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   }
 
   Widget _buildFinancialHero({
+    required BuildContext context,
     required SanctionQueueItemView item,
     required String displayName,
     required Color confidenceColor,
+    required bool isLoading,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -778,6 +775,28 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                 score: item.verdictEvidence.confidenceScore,
                 color: confidenceColor,
               ),
+              if (item.status == SanctionReviewStatus.applied) ...[
+                const SizedBox(width: 8),
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: VeraProbColors.textSecondary,
+                  ),
+                  tooltip: 'Mais opções',
+                  enabled: !isLoading,
+                  onSelected: (value) {
+                    if (value == 'acknowledge_internal') {
+                      _onAcknowledgeInternal(context);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'acknowledge_internal',
+                      child: Text('Forçar Aceite Manual (Exceção)'),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ],
@@ -2628,49 +2647,6 @@ class _PortalSubmissionTile extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// "Registrar De Acordo" action for an `applied` sanction — documents an
-/// off-band carrier acceptance (TENANT_ADMIN-gated server-side). Hidden cost is
-/// zero for auditors: the RPC rejects non-admins with an opaque error (INV-26).
-class _AcknowledgeInternalRow extends StatelessWidget {
-  final bool isLoading;
-  final VoidCallback onAcknowledge;
-  const _AcknowledgeInternalRow({
-    required this.isLoading,
-    required this.onAcknowledge,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: isLoading ? null : onAcknowledge,
-              icon: isLoading
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.handshake_outlined, size: 16),
-              label: const Text('Registrar De Acordo'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: VeraProbColors.success,
-                side: BorderSide(
-                  color: VeraProbColors.success.withValues(alpha: 0.5),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 10),
-              ),
-            ),
           ),
         ],
       ),

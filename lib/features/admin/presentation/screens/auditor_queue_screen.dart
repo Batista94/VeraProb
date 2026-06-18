@@ -646,8 +646,8 @@ class _TabItemState extends State<_TabItem> {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = VeraProbColors.primary;
-    final inactiveColor = VeraProbColors.textSecondary;
+    const activeColor = VeraProbColors.primary;
+    const inactiveColor = VeraProbColors.textSecondary;
 
     final textColor = widget.isSelected
         ? activeColor
