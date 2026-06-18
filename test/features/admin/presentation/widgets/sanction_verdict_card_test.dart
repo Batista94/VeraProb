@@ -1,10 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
+import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
@@ -36,6 +39,14 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/investigati
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+
+class _FakeGenerateForensicDossierHandler extends Fake
+    implements GenerateForensicDossierHandler {
+  @override
+  Future<List<int>> handle(GenerateForensicDossierCommand command) async {
+    return [1, 2, 3, 4];
+  }
+}
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -310,6 +321,9 @@ List<Override> _baseOverrides({
     ledgerEntriesProvider.overrideWith((ref, id) async => const []),
     // Deterministic: bypass the live Nominatim call for the infraction address.
     reverseGeocodeProvider.overrideWith((ref, _) async => null),
+    generateForensicDossierHandlerProvider.overrideWithValue(
+      _FakeGenerateForensicDossierHandler(),
+    ),
   ];
 }
 
@@ -891,22 +905,41 @@ void main() {
 
 void _resolutionSealAndA11yTests() {
   group('SanctionVerdictCard — Forensic Seal (INV-9/INV-21)', () {
-    testWidgets('renders SHA-256 hash prefix in seal row', (tester) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets(
+      'renders SHA-256 hash prefix in seal row with correct styling and bottom padding',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
 
-      final item = _makeItem();
-      await tester.pumpWidget(_buildCard(item));
-      await tester.pump();
+        final item = _makeItem();
+        await tester.pumpWidget(_buildCard(item));
+        await tester.pump();
 
-      expect(
-        find.textContaining('SHA-256: ${item.shortEvidenceHash}'),
-        findsOneWidget,
-      );
-      expect(find.text('Cadeia de Custódia · Prova Forense'), findsOneWidget);
+        expect(
+          find.textContaining('SHA-256: ${item.shortEvidenceHash}'),
+          findsOneWidget,
+        );
+        expect(find.text('Cadeia de Custódia · Prova Forense'), findsOneWidget);
 
-      addTearDown(tester.view.resetPhysicalSize);
-    });
+        // Verify text contrast and font weight
+        final textWidget = tester.widget<Text>(
+          find.text('Cadeia de Custódia · Prova Forense'),
+        );
+        expect(textWidget.style?.color, VeraProbColors.textSecondary);
+        expect(textWidget.style?.fontWeight, FontWeight.w600);
+
+        // Verify bottom padding on the card's scroll view to prevent collisions/overlaps
+        final scrollView = tester.widget<SingleChildScrollView>(
+          find.descendant(
+            of: find.byType(SanctionVerdictCard),
+            matching: find.byType(SingleChildScrollView),
+          ),
+        );
+        expect(scrollView.padding, const EdgeInsets.only(bottom: 16));
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
 
     testWidgets('tapping seal row opens InvestigationModal (audit trail)', (
       tester,
@@ -1355,11 +1388,95 @@ void _resolutionSealAndA11yTests() {
       addTearDown(tester.view.resetPhysicalSize);
     });
   });
-
-  _sealedEvidenceAndStyleTests();
 }
 
 void _sealedEvidenceAndStyleTests() {
+  group('SanctionVerdictCard — Forensic Dossier Export', () {
+    testWidgets(
+      'renders download dossier button, handles click and displays success SnackBar',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        final item = _makeItem(status: SanctionReviewStatus.pending);
+        await tester.pumpWidget(_buildCard(item));
+        await tester.pump();
+
+        // Find the button by key
+        final buttonFinder = find.byKey(
+          const ValueKey('download-dossier-button'),
+        );
+        expect(buttonFinder, findsOneWidget);
+
+        // Verify the styling: it must be wrapped in a Container with width/height of 40px
+        final container = tester.widget<Container>(
+          find
+              .descendant(of: buttonFinder, matching: find.byType(Container))
+              .first,
+        );
+        expect(container.constraints?.minWidth, 40.0);
+        expect(container.constraints?.minHeight, 40.0);
+
+        // Assert the dossier button is correctly positioned in the Financial Hero zone,
+        // specifically next to the confidence badge (INTEGRIDADE) within the same Row.
+        final confidenceText = find.text('INTEGRIDADE');
+        expect(confidenceText, findsOneWidget);
+        final siblingRow = find.ancestor(
+          of: buttonFinder,
+          matching: find.byWidgetPredicate((widget) {
+            return widget is Row &&
+                widget.mainAxisSize == MainAxisSize.min &&
+                find
+                    .descendant(
+                      of: find.byWidget(widget),
+                      matching: confidenceText,
+                    )
+                    .evaluate()
+                    .isNotEmpty;
+          }),
+        );
+        expect(siblingRow, findsOneWidget);
+
+        // Mock BinaryMessenger call handler for FileSaver package to avoid MissingPluginException
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('file_saver'),
+          (methodCall) async => 'fake_file_path.pdf',
+        );
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          const MethodChannel('plugins.flutter.io/path_provider'),
+          (methodCall) async => Directory.systemTemp.path,
+        );
+
+        // Tap the download button
+        await tester.runAsync(() async {
+          await tester.tap(buttonFinder);
+          // Wait for the real file I/O to complete in the event loop
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+        });
+        await tester.pump(); // Allow SnackBar to build
+
+        // SnackBar must display success message
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(
+          find.textContaining('Dossiê preliminar baixado'),
+          findsOneWidget,
+        );
+
+        // Clean up temp files from temp directory
+        try {
+          final tempDir = Directory.systemTemp;
+          for (final entity in tempDir.listSync()) {
+            if (entity is File && entity.path.contains('dossie_preliminar_')) {
+              await entity.delete();
+            }
+          }
+        } catch (_) {}
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+  });
+
   group('SanctionVerdictCard — Sealed Evidence Action Button', () {
     testWidgets(
       'renders Visualizar Evidência Forense when status is applied and opens modal',

@@ -472,128 +472,238 @@ class _Header extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Lesson #3: narrow panel — short labels + tooltip on segments
-        final isNarrow = constraints.maxWidth < 900;
-        return Row(
+        // Adapt layout at 720px width to keep actions clean
+        final isNarrow = constraints.maxWidth < 720;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                'Tribunal de Auditoria',
-                style: VeraProbTypography.sectionTitle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Segmented filter toggle — Expanded prevents right overflow
-            Expanded(
-              flex: 3,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SegmentedButton<AuditorQueueFilter>(
-                  segments: [
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.pending,
-                      // Lesson #3: short label on narrow, full label on wide
-                      label: isNarrow
-                          ? Tooltip(
-                              message: 'Pendentes ($count)',
-                              child: Text('($count)'),
-                            )
-                          : Text('Pendentes ($count)'),
-                      icon: const Icon(
-                        Icons.pending_actions_outlined,
-                        size: 14,
-                      ),
+            // Row 1: Title and Actions
+            Row(
+              children: [
+                const Icon(
+                  Icons.gavel_rounded,
+                  color: VeraProbColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Tribunal de Auditoria',
+                    style: VeraProbTypography.sectionTitle.copyWith(
+                      fontSize: 16,
                     ),
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.disputed,
-                      label: isNarrow
-                          ? Tooltip(
-                              message: 'Aguardando Evidência ($disputedCount)',
-                              child: Text('($disputedCount)'),
-                            )
-                          : Text('Aguardando Evidência ($disputedCount)'),
-                      icon: const Icon(
-                        Icons.hourglass_empty_outlined,
-                        size: 14,
-                      ),
-                    ),
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.sealed,
-                      label: isNarrow
-                          ? const Tooltip(
-                              message: 'Concluídos',
-                              child: SizedBox.shrink(),
-                            )
-                          : const Text('Concluídos'),
-                      icon: const Icon(Icons.verified_user_outlined, size: 14),
-                    ),
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.acknowledged,
-                      label: isNarrow
-                          ? const Tooltip(
-                              message: 'De Acordo',
-                              child: SizedBox.shrink(),
-                            )
-                          : const Text('De Acordo'),
-                      icon: const Icon(Icons.handshake_outlined, size: 14),
-                    ),
-                  ],
-                  selected: {filter},
-                  onSelectionChanged: (newSelection) {
-                    // Manual filter change clears the breach-badge drill-down.
-                    ref.read(disputeOverdueOnlyProvider.notifier).set(false);
-                    ref
-                        .read(auditorQueueFilterProvider.notifier)
-                        .setFilter(newSelection.first);
-                  },
-                  style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: VeraProbColors.primary.withValues(
-                      alpha: 0.15,
-                    ),
-                    selectedForegroundColor: VeraProbColors.primary,
-                    foregroundColor: VeraProbColors.textSecondary,
-                    side: const BorderSide(color: VeraProbColors.border),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
-
-            const Spacer(),
-            // WS-5: Map toggle for narrow screens
-            if (showMapToggle)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Tooltip(
-                  message: 'Mapa Forense',
-                  child: OutlinedButton.icon(
-                    onPressed: onMapToggle,
-                    icon: const Icon(Icons.map_outlined, size: 16),
-                    label: isNarrow
-                        ? const SizedBox.shrink()
-                        : const Text('Mapa Forense'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: VeraProbColors.primary,
-                      side: BorderSide(
-                        color: VeraProbColors.primary.withValues(alpha: 0.5),
-                      ),
-                      textStyle: const TextStyle(fontSize: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                const Spacer(),
+                if (showMapToggle) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Tooltip(
+                      message: 'Mapa Forense',
+                      child: OutlinedButton.icon(
+                        onPressed: onMapToggle,
+                        icon: const Icon(Icons.map_outlined, size: 14),
+                        label: isNarrow
+                            ? const SizedBox.shrink()
+                            : const Text('Mapa Forense'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: VeraProbColors.primary,
+                          side: BorderSide(
+                            color: VeraProbColors.primary.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: const Size(36, 36),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            const SlaBreachBadge(),
-            _SimulateButton(isNarrow: isNarrow),
+                ],
+                const SlaBreachBadge(),
+                _SimulateButton(isNarrow: isNarrow),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Row 2: Premium Custom Sliding Tabs
+            _AuditorTabs(
+              selectedFilter: filter,
+              pendingCount: count,
+              disputedCount: disputedCount,
+              isNarrow: isNarrow,
+              onFilterChanged: (newFilter) {
+                // Manual filter change clears the breach-badge drill-down.
+                ref.read(disputeOverdueOnlyProvider.notifier).set(false);
+                ref
+                    .read(auditorQueueFilterProvider.notifier)
+                    .setFilter(newFilter);
+              },
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+class _AuditorTabs extends StatelessWidget {
+  final AuditorQueueFilter selectedFilter;
+  final int pendingCount;
+  final int disputedCount;
+  final bool isNarrow;
+  final ValueChanged<AuditorQueueFilter> onFilterChanged;
+
+  const _AuditorTabs({
+    required this.selectedFilter,
+    required this.pendingCount,
+    required this.disputedCount,
+    required this.isNarrow,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TabItem(
+              value: AuditorQueueFilter.pending,
+              icon: Icons.pending_actions_outlined,
+              label: 'Pendentes ($pendingCount)',
+              isSelected: selectedFilter == AuditorQueueFilter.pending,
+              onTap: () => onFilterChanged(AuditorQueueFilter.pending),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.disputed,
+              icon: Icons.hourglass_empty_outlined,
+              label: isNarrow
+                  ? 'Aguardando ($disputedCount)'
+                  : 'Aguardando Evidência ($disputedCount)',
+              isSelected: selectedFilter == AuditorQueueFilter.disputed,
+              onTap: () => onFilterChanged(AuditorQueueFilter.disputed),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.sealed,
+              icon: Icons.verified_user_outlined,
+              label: 'Concluídos',
+              isSelected: selectedFilter == AuditorQueueFilter.sealed,
+              onTap: () => onFilterChanged(AuditorQueueFilter.sealed),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.acknowledged,
+              icon: Icons.handshake_outlined,
+              label: 'De Acordo',
+              isSelected: selectedFilter == AuditorQueueFilter.acknowledged,
+              onTap: () => onFilterChanged(AuditorQueueFilter.acknowledged),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TabItem extends StatefulWidget {
+  final AuditorQueueFilter value;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TabItem({
+    required this.value,
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_TabItem> createState() => _TabItemState();
+}
+
+class _TabItemState extends State<_TabItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final activeColor = VeraProbColors.primary;
+    final inactiveColor = VeraProbColors.textSecondary;
+
+    final textColor = widget.isSelected
+        ? activeColor
+        : (_isHovered ? VeraProbColors.textPrimary : inactiveColor);
+
+    final iconColor = widget.isSelected
+        ? activeColor
+        : (_isHovered ? VeraProbColors.textPrimary : inactiveColor);
+
+    final bgAlpha = widget.isSelected ? 0.15 : (_isHovered ? 0.05 : 0.0);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? activeColor.withValues(alpha: bgAlpha)
+                : (_isHovered
+                      ? Colors.white.withValues(alpha: bgAlpha)
+                      : Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: widget.isSelected
+                  ? activeColor.withValues(alpha: 0.3)
+                  : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 14, color: iconColor),
+              const SizedBox(width: 8),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 12,
+                  fontWeight: widget.isSelected
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  fontFamily: VeraProbTypography.base.fontFamily,
+                ),
+                child: Text(widget.label),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

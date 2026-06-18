@@ -211,6 +211,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     const SizedBox(height: 8),
                     Flexible(
                       child: SingleChildScrollView(
+                        padding: const EdgeInsets.only(bottom: 16),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -671,30 +672,48 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               color: VeraProbColors.textDisabled,
             ),
           ),
-          const Spacer(),
-          if (_isDossierLoading)
-            const SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            Tooltip(
-              message: 'Baixar Dossiê',
-              child: InkWell(
-                onTap: _onDownloadDossier,
-                borderRadius: BorderRadius.circular(4),
-                child: const Padding(
-                  padding: EdgeInsets.all(4.0),
-                  child: Icon(
-                    Icons.picture_as_pdf_outlined,
-                    size: 16,
-                    color: VeraProbColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDossierButton() {
+    if (_isDossierLoading) {
+      return Container(
+        height: 40,
+        width: 40,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: VeraProbColors.border),
+        ),
+        child: const CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return Tooltip(
+      message: 'Baixar Dossiê PDF',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: const ValueKey('download-dossier-button'),
+          onTap: _onDownloadDossier,
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 40,
+            width: 40,
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: VeraProbColors.border),
+            ),
+            child: const Icon(
+              Icons.picture_as_pdf_outlined,
+              size: 16,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -749,9 +768,17 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             ),
           ),
           const SizedBox(width: 12),
-          _ConfidenceBadge(
-            score: item.verdictEvidence.confidenceScore,
-            color: confidenceColor,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildDossierButton(),
+              const SizedBox(width: 8),
+              _ConfidenceBadge(
+                score: item.verdictEvidence.confidenceScore,
+                color: confidenceColor,
+              ),
+            ],
           ),
         ],
       ),
@@ -1766,6 +1793,8 @@ class _ForensicSealRow extends StatelessWidget {
                         Text(
                           'Cadeia de Custódia · Prova Forense',
                           style: VeraProbTypography.caption.copyWith(
+                            color: VeraProbColors.textSecondary,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: 0.4,
                           ),
                         ),
@@ -1776,6 +1805,7 @@ class _ForensicSealRow extends StatelessWidget {
                           style: VeraProbTypography.caption.copyWith(
                             fontFamily: 'monospace',
                             fontSize: 10,
+                            color: VeraProbColors.textDisabled,
                           ),
                         ),
                       ],
