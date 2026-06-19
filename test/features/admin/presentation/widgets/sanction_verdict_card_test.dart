@@ -430,7 +430,9 @@ void main() {
   });
 
   group('SanctionVerdictCard — INV-7 Immutability (SELADO)', () {
-    testWidgets('shows MULTA APLICADA badge when status is applied', (tester) async {
+    testWidgets('shows MULTA APLICADA badge when status is applied', (
+      tester,
+    ) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
 

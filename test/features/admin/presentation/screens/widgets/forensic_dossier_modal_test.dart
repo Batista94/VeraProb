@@ -13,6 +13,7 @@ import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -137,6 +138,7 @@ void main() {
     required SecurityIncidentLogger logger,
     List<EvaluationTrace> traces = const [],
     ForensicDossierTab initialTab = ForensicDossierTab.evidence,
+    VerdictProvenance? provenance,
   }) {
     return ProviderScope(
       overrides: [
@@ -144,6 +146,7 @@ void main() {
         forensicEvidenceSnapshotRepositoryProvider.overrideWithValue(
           repository,
         ),
+        verdictProvenanceProvider.overrideWith((ref, id) async => provenance),
         securityIncidentLoggerProvider.overrideWithValue(logger),
         evaluationTracesProvider.overrideWith((ref, id) async => traces),
         ledgerEntriesProvider.overrideWith((ref, id) async => const []),
@@ -212,7 +215,54 @@ void main() {
   });
 
   group('ForensicDossierModal — Custódia tab', () {
-    testWidgets('authentic snapshot shows seal + operator + hash', (
+    testWidgets(
+      'authentic snapshot surfaces actor email when provenance exists',
+      (tester) async {
+        await tester.pumpWidget(
+          buildModal(
+            repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+            logger: _MockSecurityIncidentLogger(),
+            initialTab: ForensicDossierTab.custody,
+            provenance: (
+              actorEmail: 'auditor@tenant.com',
+              actorUserId: 'user-001',
+              sealedAtUtc: DateTime.utc(2026, 1, 15, 15),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cópia Autenticada'), findsOneWidget);
+        expect(find.text('Selado Por'), findsOneWidget);
+        expect(find.text('auditor@tenant.com'), findsOneWidget);
+        // Ensure the UUID is not in the main text tree
+        expect(find.text('operator-123'), findsNothing);
+        expect(
+          find.textContaining('sha256-mock-hash-value-1234567890abcdef'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'authentic snapshot degrades to short UUID when email missing',
+      (tester) async {
+        await tester.pumpWidget(
+          buildModal(
+            repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+            logger: _MockSecurityIncidentLogger(),
+            initialTab: ForensicDossierTab.custody,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Cópia Autenticada'), findsOneWidget);
+        expect(find.text('Selado Por (Operador)'), findsOneWidget);
+        expect(find.text('operator-123...'), findsOneWidget); // truncated
+      },
+    );
+
+    testWidgets('SHA-256 is tap-to-copy and shows success SnackBar', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -224,10 +274,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Cópia Autenticada'), findsOneWidget);
-      expect(find.text('operator-123'), findsOneWidget);
+      await tester.ensureVisible(find.byType(IconButton).last);
+      await tester.tap(find.byType(IconButton).last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
       expect(
-        find.text('sha256-mock-hash-value-1234567890abcdef'),
+        find.text('Hash copiado para a área de transferência'),
         findsOneWidget,
       );
     });

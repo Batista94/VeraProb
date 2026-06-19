@@ -9,7 +9,9 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/investigati
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/forensic_evidence_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
+import 'package:flutter/services.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 
 /// Tab indices for [ForensicDossierModal]. Used by deep-links from the card
 /// (e.g. the custody-chain row jumps straight to [custody]).
@@ -565,18 +567,36 @@ class _CustodyChainTab extends ConsumerWidget {
         padding: const EdgeInsets.all(24),
         child: value.status == EvidenceSnapshotStatus.tampered
             ? _TamperedView(isEscalating: isEscalating, onEscalate: onEscalate)
-            : _CustodyAuthenticView(snapshot: value),
+            : _CustodyAuthenticView(
+                snapshot: value,
+                queueEntryId: queueEntryId,
+              ),
       ),
     };
   }
 }
 
-class _CustodyAuthenticView extends StatelessWidget {
+class _CustodyAuthenticView extends ConsumerWidget {
   final EvidenceSnapshotView snapshot;
-  const _CustodyAuthenticView({required this.snapshot});
+  final String queueEntryId;
+  const _CustodyAuthenticView({
+    required this.snapshot,
+    required this.queueEntryId,
+  });
+
+  String _shortenUuid(String uuid) {
+    final parts = uuid.split('-');
+    if (parts.length > 1) {
+      return '${parts[0]}-${parts[1]}...';
+    }
+    return uuid.length > 8 ? '${uuid.substring(0, 8)}...' : uuid;
+  }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final provenance = ref.watch(verdictProvenanceProvider(queueEntryId)).value;
+    final actorEmail = provenance?.actorEmail;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -635,7 +655,17 @@ class _CustodyAuthenticView extends StatelessWidget {
                 'Vigência Fim',
                 _formatLocalDateWithTimezone(snapshot.effectiveToUtc),
               ),
-              _LockedRow('Selado Por (Operador)', snapshot.sealedBy),
+              if (actorEmail != null && actorEmail.isNotEmpty)
+                _LockedRow(
+                  'Selado Por',
+                  actorEmail,
+                  tooltip: 'Identificador Interno: ${snapshot.sealedBy}',
+                )
+              else
+                _LockedRow(
+                  'Selado Por (Operador)',
+                  _shortenUuid(snapshot.sealedBy),
+                ),
               _LockedRow(
                 'Selado Em (Data)',
                 _formatLocalDateWithTimezone(snapshot.sealedAtUtc),
@@ -667,12 +697,39 @@ class _CustodyAuthenticView extends StatelessWidget {
                 style: VeraProbTypography.fieldLabel,
               ),
               const SizedBox(height: 4),
-              SelectableText(
-                snapshot.integrityHash,
-                style: VeraProbTypography.caption.copyWith(
-                  fontFamily: 'monospace',
-                  color: VeraProbColors.textPrimary,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: SelectableText(
+                      snapshot.integrityHash,
+                      style: VeraProbTypography.caption.copyWith(
+                        fontFamily: 'monospace',
+                        color: VeraProbColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.copy,
+                      size: 16,
+                      color: VeraProbColors.textDisabled,
+                    ),
+                    tooltip: 'Copiar hash',
+                    onPressed: () {
+                      Clipboard.setData(
+                        ClipboardData(text: snapshot.integrityHash),
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Hash copiado para a área de transferência',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
@@ -907,10 +964,19 @@ class _TamperedView extends StatelessWidget {
 class _LockedRow extends StatelessWidget {
   final String label;
   final String value;
-  const _LockedRow(this.label, this.value);
+  final String? tooltip;
+  const _LockedRow(this.label, this.value, {this.tooltip});
 
   @override
   Widget build(BuildContext context) {
+    final valueWidget = Text(
+      value,
+      style: VeraProbTypography.bodyMedium.copyWith(
+        color: VeraProbColors.textPrimary,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -937,13 +1003,9 @@ class _LockedRow extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    value,
-                    style: VeraProbTypography.bodyMedium.copyWith(
-                      color: VeraProbColors.textPrimary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: tooltip != null
+                      ? Tooltip(message: tooltip, child: valueWidget)
+                      : valueWidget,
                 ),
               ],
             ),
