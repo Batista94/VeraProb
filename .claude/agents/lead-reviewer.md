@@ -112,6 +112,7 @@ You must actively scan for these patterns. If ANY is found, the verdict is `[NO-
 | 11 | SECURITY-DEFINER-VIEW | `CREATE VIEW` without `WITH (security_invoker = true)` |
 | 12 | PARTITION-RLS-GAP | `CREATE TABLE ... PARTITION OF` without `ENABLE ROW LEVEL SECURITY` + mirrored policy |
 | 13 | INV-DATA-API-GRANT | New `public` table without explicit `GRANT` to `authenticated`/`service_role` |
+| 14 | LAZY-TEST-BYPASS | pgTAP test containing only `SELECT pass()` or trivial assertions without data setup |
 
 ---
 
@@ -170,6 +171,7 @@ Verify that tests prove the failures first:
 * For concurrency fixes, verify there are unit/integration tests that use `Future.wait` or concurrent processes to force and prove the race condition before testing the fix.
 * Ensure code coverage handles edge cases, network timeouts, and database connection losses, rather than only testing success paths.
 * Verify 1:1 mapping between SQL migrations and forensic test plans (`forensic_records/plans/{timestamp}*_test_plan.md`).
+* **LAZY-TEST-BYPASS:** Absolutely reject any pgTAP test that simply uses `SELECT pass()` or fails to simulate realistic tenant data and Anti-Oracle logic to bypass CI. Test files must assert specific state changes or expected error codes (42501).
 
 ### Regression Ack Discipline
 * Grep for `// pr_scanner: ignore-regression` in the diff.

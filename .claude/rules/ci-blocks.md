@@ -7,7 +7,7 @@ paths:
 
 # VeraProb — Common CI Blocks & Forensic Fixes
 
-Top 10 scanner-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
+Top 14 scanner-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
 
 ---
 
@@ -308,4 +308,38 @@ GRANT ALL ON TABLE public.my_table TO service_role;
 ```
 
 Do NOT use global `ALTER DEFAULT PRIVILEGES` to restore the insecure legacy defaults, as that violates tenant and data isolation boundaries (INV-22).
+
+---
+
+## 14. LAZY-TEST-BYPASS: Mock/Empty pgTAP Tests
+
+**Problem:** Creating pgTAP tests (`supabase/tests/*.sql`) that only assert `SELECT pass()` or test trivial logic without mocking isolated tenant state and asserting actual table mutations or specific Anti-Oracle errors (42501). This is a severe integrity violation used to bypass CI `test-db` constraints.
+
+**Fix:** pgTAP tests must be authentic and robust.
+1. Use `tests.create_org_with_id` or insert isolated `organization_id` data.
+2. Insert actual records and simulate the state.
+3. Call the target function or RPC.
+4. Use `results_eq`, `is()`, or `throws_ok()` with specific expected outputs or Anti-Oracle 42501 errors.
+
+```sql
+-- Wrong (Bypass/Lazy)
+BEGIN;
+SELECT plan(1);
+SELECT pass('Bypass test');
+SELECT * FROM finish();
+ROLLBACK;
+
+-- Right (Authentic Forensic Test)
+BEGIN;
+SELECT plan(1);
+-- ... insert org and setup data ...
+SELECT throws_ok(
+  $$SELECT public.read_infraction_context('00000000-0000-0000-0000-000000000000'::uuid)$$,
+  '42501',
+  'Portal access denied.',
+  'Missing token returns 42501 (Anti-Oracle)'
+);
+SELECT * FROM finish();
+ROLLBACK;
+```
 
