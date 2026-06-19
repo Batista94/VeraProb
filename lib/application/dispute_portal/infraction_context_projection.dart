@@ -1,3 +1,10 @@
+import 'package:intl/intl.dart';
+import 'package:timezone/timezone.dart' as tz;
+
+import 'package:veraprob/domain/shared/brazil_time.dart';
+import 'package:veraprob/domain/shared/coordinate.dart';
+import 'package:veraprob/domain/shared/money.dart';
+
 class InfractionContextProjection {
   final String assetIdentifier;
   final int penaltyValueCents;
@@ -11,8 +18,7 @@ class InfractionContextProjection {
   final String orgCnpj;
   final String orgLogoUrl;
   final String? clauseRef;
-  final num? primaryEvidenceLat;
-  final num? primaryEvidenceLng;
+  final Coordinate? primaryEvidenceCoordinate;
 
   const InfractionContextProjection({
     required this.assetIdentifier,
@@ -27,11 +33,57 @@ class InfractionContextProjection {
     required this.orgCnpj,
     required this.orgLogoUrl,
     this.clauseRef,
-    this.primaryEvidenceLat,
-    this.primaryEvidenceLng,
+    this.primaryEvidenceCoordinate,
   });
 
+  /// Formatted penalty value in BRL (e.g., "R$ 1.500,00").
+  String get formattedPenaltyValue {
+    final value = Money(penaltyValueCents).toDouble();
+    return NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$').format(value);
+  }
+
+  /// Formatted occurrence date in America/Sao_Paulo timezone.
+  String get formattedOccurredAtBrt {
+    BrazilTime.ensureInitialized();
+    final brtDate = tz.TZDateTime.from(
+      occurredAtUtc,
+      tz.getLocation(BrazilTime.operationalTimezone),
+    );
+    return DateFormat('dd/MM/yyyy HH:mm').format(brtDate);
+  }
+
+  String get formattedMeasuredValue =>
+      measuredValue != null ? '$measuredValue $_unit' : '-';
+
+  String get formattedThresholdValue =>
+      thresholdValue != null ? '$thresholdValue $_unit' : '-';
+
+  String get formattedExceededBy =>
+      exceededBy != null ? '+$exceededBy $_unit' : '-';
+
+  String get _unit {
+    if (clauseRef == null) return 'unid.';
+    final prefix = clauseRef!.split('-').first.toUpperCase();
+    switch (prefix) {
+      case 'VEL':
+        return 'km/h';
+      case 'ATR':
+      case 'POS':
+        return 'min';
+      case 'ABR':
+        return 'eventos';
+      default:
+        return 'unid.';
+    }
+  }
+
   factory InfractionContextProjection.fromJson(Map<String, dynamic> json) {
+    final latNum = json['primary_evidence_lat'] as num?;
+    final lngNum = json['primary_evidence_lng'] as num?;
+
+    final double? lat = latNum?.toDouble(); // Physical Metric - Double Required
+    final double? lng = lngNum?.toDouble(); // Physical Metric - Double Required
+
     return InfractionContextProjection(
       assetIdentifier: json['asset_identifier'] as String,
       penaltyValueCents: json['penalty_value_cents'] as int,
@@ -45,8 +97,9 @@ class InfractionContextProjection {
       orgCnpj: json['org_cnpj'] as String,
       orgLogoUrl: json['org_logo_url'] as String,
       clauseRef: json['clause_ref'] as String?,
-      primaryEvidenceLat: json['primary_evidence_lat'] as num?,
-      primaryEvidenceLng: json['primary_evidence_lng'] as num?,
+      primaryEvidenceCoordinate: lat != null && lng != null
+          ? Coordinate(lat, lng)
+          : null,
     );
   }
 }

@@ -524,6 +524,6 @@ class InMemorySanctionReviewCommandRepository
     required String createdByUserId,
   }) async {
     // Generate a dummy UUID-like string for in-memory testing
-    return 'in-memory-token-${DateTime.now().millisecondsSinceEpoch}';
+    return 'in-memory-token-${DateTime.now().toUtc().millisecondsSinceEpoch}';
   }
 }

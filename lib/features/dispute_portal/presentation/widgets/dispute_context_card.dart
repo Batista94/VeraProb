@@ -11,23 +11,6 @@ class DisputeContextCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final penaltyValue =
-        'R\$ ${(contextData.penaltyValueCents / 100).toStringAsFixed(2).replaceAll('.', ',')}';
-    final occurredAtBrt = contextData.occurredAtUtc.toLocal();
-    final occurredAtString =
-        '${occurredAtBrt.day.toString().padLeft(2, '0')}/${occurredAtBrt.month.toString().padLeft(2, '0')}/${occurredAtBrt.year} ${occurredAtBrt.hour.toString().padLeft(2, '0')}:${occurredAtBrt.minute.toString().padLeft(2, '0')}';
-
-    final unit = _getUnit(contextData.clauseRef);
-    final measuredValue = contextData.measuredValue != null
-        ? '${contextData.measuredValue} $unit'
-        : '-';
-    final thresholdValue = contextData.thresholdValue != null
-        ? '${contextData.thresholdValue} $unit'
-        : '-';
-    final exceededBy = contextData.exceededBy != null
-        ? '+${contextData.exceededBy} $unit'
-        : '-';
-
     return Card(
       elevation: 0,
       color: VeraProbColors.surfaceElevated,
@@ -70,7 +53,7 @@ class DisputeContextCard extends StatelessWidget {
               'Ativo',
               contextData.assetIdentifier,
               'Data (Horário de Brasília)',
-              occurredAtString,
+              contextData.formattedOccurredAtBrt,
             ),
             const SizedBox(height: VeraProbSpacing.sm),
             Row(
@@ -82,11 +65,10 @@ class DisputeContextCard extends StatelessWidget {
                     children: [
                       Text('Localização', style: VeraProbTypography.fieldLabel),
                       const SizedBox(height: VeraProbSpacing.xs),
-                      if (contextData.primaryEvidenceLat != null &&
-                          contextData.primaryEvidenceLng != null)
+                      if (contextData.primaryEvidenceCoordinate != null)
                         ReverseGeocodedAddress(
-                          lat: contextData.primaryEvidenceLat!.toDouble(),
-                          lng: contextData.primaryEvidenceLng!.toDouble(),
+                          lat: contextData.primaryEvidenceCoordinate!.latitude,
+                          lng: contextData.primaryEvidenceCoordinate!.longitude,
                         )
                       else
                         Text(
@@ -103,7 +85,7 @@ class DisputeContextCard extends StatelessWidget {
                       Text('Valor', style: VeraProbTypography.fieldLabel),
                       const SizedBox(height: VeraProbSpacing.xs),
                       Text(
-                        penaltyValue,
+                        contextData.formattedPenaltyValue,
                         style: VeraProbTypography.dataValue.copyWith(
                           color: VeraProbColors.error,
                         ),
@@ -114,7 +96,12 @@ class DisputeContextCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: VeraProbSpacing.sm),
-            _buildDataRow('Medido', measuredValue, 'Limite', thresholdValue),
+            _buildDataRow(
+              'Medido',
+              contextData.formattedMeasuredValue,
+              'Limite',
+              contextData.formattedThresholdValue,
+            ),
             const SizedBox(height: VeraProbSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -126,7 +113,7 @@ class DisputeContextCard extends StatelessWidget {
                       Text('Excesso', style: VeraProbTypography.fieldLabel),
                       const SizedBox(height: VeraProbSpacing.xs),
                       Text(
-                        exceededBy,
+                        contextData.formattedExceededBy,
                         style: VeraProbTypography.dataValue.copyWith(
                           color: VeraProbColors.warning,
                         ),
@@ -225,21 +212,5 @@ class DisputeContextCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getUnit(String? clauseRef) {
-    if (clauseRef == null) return 'unid.';
-    final prefix = clauseRef.split('-').first.toUpperCase();
-    switch (prefix) {
-      case 'VEL':
-        return 'km/h';
-      case 'ATR':
-      case 'POS':
-        return 'min';
-      case 'ABR':
-        return 'eventos';
-      default:
-        return 'unid.';
-    }
   }
 }
