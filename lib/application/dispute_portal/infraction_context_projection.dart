@@ -10,6 +10,9 @@ class InfractionContextProjection {
   final String orgDisplayName;
   final String orgCnpj;
   final String orgLogoUrl;
+  final String? clauseRef;
+  final num? primaryEvidenceLat;
+  final num? primaryEvidenceLng;
 
   const InfractionContextProjection({
     required this.assetIdentifier,
@@ -23,6 +26,9 @@ class InfractionContextProjection {
     required this.orgDisplayName,
     required this.orgCnpj,
     required this.orgLogoUrl,
+    this.clauseRef,
+    this.primaryEvidenceLat,
+    this.primaryEvidenceLng,
   });
 
   factory InfractionContextProjection.fromJson(Map<String, dynamic> json) {
@@ -38,6 +44,9 @@ class InfractionContextProjection {
       orgDisplayName: json['org_display_name'] as String,
       orgCnpj: json['org_cnpj'] as String,
       orgLogoUrl: json['org_logo_url'] as String,
+      clauseRef: json['clause_ref'] as String?,
+      primaryEvidenceLat: json['primary_evidence_lat'] as num?,
+      primaryEvidenceLng: json['primary_evidence_lng'] as num?,
     );
   }
 }

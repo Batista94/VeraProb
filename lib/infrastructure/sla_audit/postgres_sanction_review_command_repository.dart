@@ -185,6 +185,27 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     }
   }
 
+  @override
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    try {
+      final token = await client.rpc<String>(
+        'generate_portal_submit_token',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_created_by': createdByUserId,
+        },
+      );
+      return token;
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'generate_portal_submit_token');
+    }
+  }
+
   Object _mapError(
     PostgrestException e,
     String queueEntryId,

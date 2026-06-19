@@ -516,4 +516,14 @@ class InMemorySanctionReviewCommandRepository
 
     return entry;
   }
+
+  @override
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    // Generate a dummy UUID-like string for in-memory testing
+    return 'in-memory-token-${DateTime.now().millisecondsSinceEpoch}';
+  }
 }

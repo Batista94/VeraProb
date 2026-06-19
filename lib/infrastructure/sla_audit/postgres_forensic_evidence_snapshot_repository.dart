@@ -146,17 +146,6 @@ class PostgresForensicEvidenceSnapshotRepository extends BasePostgresRepository
       'forensic_evidence_snapshot',
       ledgerEntryId,
       () async {
-        final snapshot = await findByLedgerEntry(
-          organizationId: organizationId,
-          ledgerEntryId: ledgerEntryId,
-        );
-        if (snapshot == null) {
-          throw ResourceNotFoundException(
-            resourceType: 'forensic_evidence_snapshot',
-            resourceId: ledgerEntryId,
-          );
-        }
-
         final result = await client.rpc<Map<String, dynamic>>(
           'verify_forensic_evidence',
           params: {
@@ -170,6 +159,9 @@ class PostgresForensicEvidenceSnapshotRepository extends BasePostgresRepository
         final status = result['status'] == 'authentic'
             ? EvidenceVerificationStatus.authentic
             : EvidenceVerificationStatus.tampered;
+
+        final snapshotJson = result['snapshot'] as Map<String, dynamic>;
+        final snapshot = ForensicEvidenceSnapshot.fromJson(snapshotJson);
 
         if (status == EvidenceVerificationStatus.tampered) {
           throw IntegrityException(

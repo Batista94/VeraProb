@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 
 class DisputeContextCard extends StatelessWidget {
   final InfractionContextProjection contextData;
@@ -12,10 +13,20 @@ class DisputeContextCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final penaltyValue =
         'R\$ ${(contextData.penaltyValueCents / 100).toStringAsFixed(2).replaceAll('.', ',')}';
-    final occurredAtBrt = contextData.occurredAtUtc
-        .toLocal(); // Ideally we format properly
+    final occurredAtBrt = contextData.occurredAtUtc.toLocal();
     final occurredAtString =
         '${occurredAtBrt.day.toString().padLeft(2, '0')}/${occurredAtBrt.month.toString().padLeft(2, '0')}/${occurredAtBrt.year} ${occurredAtBrt.hour.toString().padLeft(2, '0')}:${occurredAtBrt.minute.toString().padLeft(2, '0')}';
+
+    final unit = _getUnit(contextData.clauseRef);
+    final measuredValue = contextData.measuredValue != null
+        ? '${contextData.measuredValue} $unit'
+        : '-';
+    final thresholdValue = contextData.thresholdValue != null
+        ? '${contextData.thresholdValue} $unit'
+        : '-';
+    final exceededBy = contextData.exceededBy != null
+        ? '+${contextData.exceededBy} $unit'
+        : '-';
 
     return Card(
       elevation: 0,
@@ -62,20 +73,48 @@ class DisputeContextCard extends StatelessWidget {
               occurredAtString,
             ),
             const SizedBox(height: VeraProbSpacing.sm),
-            _buildDataRow(
-              'Localização',
-              contextData.locationLabel,
-              'Valor',
-              penaltyValue,
-              value2Color: VeraProbColors.error,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Localização', style: VeraProbTypography.fieldLabel),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      if (contextData.primaryEvidenceLat != null &&
+                          contextData.primaryEvidenceLng != null)
+                        ReverseGeocodedAddress(
+                          lat: contextData.primaryEvidenceLat!.toDouble(),
+                          lng: contextData.primaryEvidenceLng!.toDouble(),
+                        )
+                      else
+                        Text(
+                          contextData.locationLabel,
+                          style: VeraProbTypography.dataValue,
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Valor', style: VeraProbTypography.fieldLabel),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      Text(
+                        penaltyValue,
+                        style: VeraProbTypography.dataValue.copyWith(
+                          color: VeraProbColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: VeraProbSpacing.sm),
-            _buildDataRow(
-              'Medido',
-              contextData.measuredValue?.toString() ?? '-',
-              'Limite',
-              contextData.thresholdValue?.toString() ?? '-',
-            ),
+            _buildDataRow('Medido', measuredValue, 'Limite', thresholdValue),
             const SizedBox(height: VeraProbSpacing.sm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -87,7 +126,7 @@ class DisputeContextCard extends StatelessWidget {
                       Text('Excesso', style: VeraProbTypography.fieldLabel),
                       const SizedBox(height: VeraProbSpacing.xs),
                       Text(
-                        '+${contextData.exceededBy ?? '-'}',
+                        exceededBy,
                         style: VeraProbTypography.dataValue.copyWith(
                           color: VeraProbColors.warning,
                         ),
@@ -186,5 +225,21 @@ class DisputeContextCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  String _getUnit(String? clauseRef) {
+    if (clauseRef == null) return 'unid.';
+    final prefix = clauseRef.split('-').first.toUpperCase();
+    switch (prefix) {
+      case 'VEL':
+        return 'km/h';
+      case 'ATR':
+      case 'POS':
+        return 'min';
+      case 'ABR':
+        return 'eventos';
+      default:
+        return 'unid.';
+    }
   }
 }

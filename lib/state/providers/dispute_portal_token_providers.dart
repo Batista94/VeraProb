@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:veraprob/application/sla_audit/generate_dispute_portal_token_command.dart';
-import 'package:veraprob/application/sla_audit/generate_dispute_portal_token_handler.dart';
+import 'package:veraprob/application/sla_audit/generate_portal_submit_token_command.dart';
+import 'package:veraprob/application/sla_audit/generate_portal_submit_token_handler.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
@@ -24,8 +24,8 @@ class DisputePortalTokenNotifier extends Notifier<AsyncValue<String?>> {
   @override
   AsyncValue<String?> build() => const AsyncData(null);
 
-  GenerateDisputePortalTokenHandler get _handler =>
-      GenerateDisputePortalTokenHandler(
+  GeneratePortalSubmitTokenHandler get _handler =>
+      GeneratePortalSubmitTokenHandler(
         tenantValidator: ref.watch(tenantValidationServiceProvider),
         queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
         reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
@@ -44,7 +44,7 @@ class DisputePortalTokenNotifier extends Notifier<AsyncValue<String?>> {
     state = const AsyncLoading();
     final result = await AsyncValue.guard<String?>(
       () => _handler.handle(
-        GenerateDisputePortalTokenCommand(
+        GeneratePortalSubmitTokenCommand(
           queueEntryId: sanctionId,
           createdByUserId: createdByUserId,
           actorEmail: actorEmail,

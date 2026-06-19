@@ -107,4 +107,14 @@ abstract class SanctionReviewCommandRepository {
     required String queueEntryId,
     required String createdByUserId,
   });
+
+  /// Mints a submit-scoped token allowing a carrier to upload counter-evidence.
+  /// Backed by the `generate_portal_submit_token` SECURITY DEFINER RPC.
+  ///
+  /// Requires the sanction to be strictly `disputed`. Returns the opaque UUID token.
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  });
 }

@@ -104,6 +104,16 @@ class _FakeReview implements SanctionReviewCommandRepository {
     lastPortalQueueEntryId = queueEntryId;
     return 'token-$queueEntryId';
   }
+
+  @override
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    lastPortalQueueEntryId = queueEntryId;
+    return 'submit-token-$queueEntryId';
+  }
 }
 
 void main() {
@@ -151,6 +161,20 @@ void main() {
       expect(token, 'token-q-1');
       expect(repo.lastPortalQueueEntryId, 'q-1');
     });
+
+    test(
+      'generatePortalSubmitToken returns a submit token for the entry',
+      () async {
+        final repo = _FakeReview();
+        final token = await repo.generatePortalSubmitToken(
+          organizationId: 'org-1',
+          queueEntryId: 'q-1',
+          createdByUserId: 'u-1',
+        );
+        expect(token, 'submit-token-q-1');
+        expect(repo.lastPortalQueueEntryId, 'q-1');
+      },
+    );
 
     test('dispute seals disputed + an SLA deadline (INV-15)', () async {
       final repo = _FakeReview();
