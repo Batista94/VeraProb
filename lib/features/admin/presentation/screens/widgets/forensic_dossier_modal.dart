@@ -12,6 +12,8 @@ import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:flutter/services.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/domain/sla_audit/dispute_evidence_attachment.dart'; // pr_scanner: ignore
+import 'package:veraprob/state/providers/dispute_evidence_providers.dart';
 
 /// Tab indices for [ForensicDossierModal]. Used by deep-links from the card
 /// (e.g. the custody-chain row jumps straight to [custody]).
@@ -204,7 +206,10 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _RawEvidenceTab(setId: widget.setId),
+                  _RawEvidenceTab(
+                    setId: widget.setId,
+                    queueEntryId: widget.queueEntryId,
+                  ),
                   _CustodyChainTab(
                     queueEntryId: widget.queueEntryId,
                     isEscalating: _isEscalating,
@@ -280,86 +285,247 @@ class _DossierHeader extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// Tab 1 — Raw Evidence (telemetry that triggered the sanction)
-// ═══════════════════════════════════════════════════════════════
-
 class _RawEvidenceTab extends ConsumerWidget {
   final String setId;
-  const _RawEvidenceTab({required this.setId});
+  final String queueEntryId;
+  const _RawEvidenceTab({required this.setId, required this.queueEntryId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tracesAsync = ref.watch(evaluationTracesProvider(setId));
+    final evidenceAsync = ref.watch(disputeEvidenceListProvider(queueEntryId));
 
-    return switch (tracesAsync) {
-      AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            'Erro ao carregar evidência: $error',
-            style: VeraProbTypography.bodySmall.copyWith(
-              color: VeraProbColors.error,
-            ),
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        Text(
+          'EVIDÊNCIAS ANEXADAS',
+          style: VeraProbTypography.caption.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
           ),
         ),
-      ),
-      AsyncData(:final value) => () {
-        final decisions = value.expand((t) => t.decisions).toList();
-        if (decisions.isEmpty) {
-          return _EmptyEvidenceState();
-        }
-        return ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            Text(
-              'TELEMETRIA BRUTA',
-              style: VeraProbTypography.caption.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.8,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Dados físicos capturados que dispararam a avaliação contratual.',
-              style: VeraProbTypography.bodySmall.copyWith(
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            ...decisions.map((d) => _RawEvidenceCard(decision: d)),
-          ],
-        );
-      }(),
-    };
+        const SizedBox(height: 4),
+        Text(
+          'Documentos e fotos anexados pela transportadora.',
+          style: VeraProbTypography.bodySmall.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        switch (evidenceAsync) {
+          AsyncLoading() => const Center(child: CircularProgressIndicator()),
+          AsyncError(:final error) => Text(
+            'Erro ao carregar evidências: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+          AsyncData(:final value) =>
+            value.isEmpty
+                ? Text(
+                    'Nenhuma evidência anexada pela transportadora.',
+                    style: VeraProbTypography.bodyMedium.copyWith(
+                      color: VeraProbColors.textDisabled,
+                    ),
+                  )
+                : Column(
+                    children: value
+                        .map((e) => _EvidenceManifestCard(attachment: e))
+                        .toList(),
+                  ),
+        },
+        const SizedBox(height: 32),
+        const Divider(color: VeraProbColors.border),
+        const SizedBox(height: 24),
+        Text(
+          'AVALIAÇÃO DO MOTOR FORENSE',
+          style: VeraProbTypography.caption.copyWith(
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.8,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Dados físicos capturados que dispararam a avaliação contratual.',
+          style: VeraProbTypography.bodySmall.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        switch (tracesAsync) {
+          AsyncLoading() => const Center(child: CircularProgressIndicator()),
+          AsyncError(:final error) => Text(
+            'Erro ao carregar avaliação do motor: $error',
+            style: const TextStyle(color: VeraProbColors.error),
+          ),
+          AsyncData(:final value) => () {
+            final decisions = value.expand((t) => t.decisions).toList();
+            if (decisions.isEmpty) {
+              return const Text(
+                'Sem telemetria',
+                style: TextStyle(color: VeraProbColors.textDisabled),
+              );
+            }
+            return Column(
+              children: decisions
+                  .map((d) => _RawEvidenceCard(decision: d))
+                  .toList(),
+            );
+          }(),
+        },
+      ],
+    );
   }
 }
 
-class _EmptyEvidenceState extends StatelessWidget {
+class _EvidenceManifestCard extends StatelessWidget {
+  final DisputeEvidenceAttachment attachment;
+  const _EvidenceManifestCard({required this.attachment});
+
+  static String _formatSize(int bytes) {
+    if (bytes >= 1024 * 1024) {
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
+    if (bytes >= 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '$bytes B';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
+    final isPdf = attachment.fileName.toLowerCase().endsWith('.pdf');
+    final (
+      badgeColor,
+      badgeIcon,
+      badgeLabel,
+      tooltip,
+    ) = switch (attachment.verificationStatus) {
+      EvidenceVerificationStatus.verified => (
+        VeraProbColors.onTime,
+        Icons.verified_outlined,
+        'VERIFICADO',
+        'Assinatura digital íntegra e verificada',
+      ),
+      EvidenceVerificationStatus.mismatch => (
+        VeraProbColors.error,
+        Icons.gpp_bad_outlined,
+        'DIVERGENTE',
+        'Adulteração detectada. Não use como prova.',
+      ),
+      EvidenceVerificationStatus.pending => (
+        VeraProbColors.warning,
+        Icons.hourglass_empty_outlined,
+        'PENDENTE',
+        'Aguardando verificação. Não use como prova.',
+      ),
+    };
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(
-            Icons.sensors_off,
-            size: 48,
-            color: VeraProbColors.textDisabled,
+          Row(
+            children: [
+              Icon(
+                isPdf ? Icons.picture_as_pdf_outlined : Icons.image_outlined,
+                size: 20,
+                color: VeraProbColors.textSecondary,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      attachment.fileName,
+                      style: VeraProbTypography.bodyMedium.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: VeraProbColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_formatSize(attachment.fileSizeBytes)} • Anexado em ${_formatLocalDateWithTimezone(attachment.attachedAtUtc)}',
+                      style: VeraProbTypography.caption.copyWith(
+                        color: VeraProbColors.textDisabled,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Tooltip(
+                message: tooltip,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(badgeIcon, size: 12, color: badgeColor),
+                      const SizedBox(width: 4),
+                      Text(
+                        badgeLabel,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: badgeColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            'Sem telemetria bruta registrada',
-            style: VeraProbTypography.sectionTitle,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Esta ocorrência não possui payload de evidência física associado.',
-            textAlign: TextAlign.center,
-            style: VeraProbTypography.bodySmall.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(
+                Icons.fingerprint,
+                size: 14,
+                color: VeraProbColors.textDisabled,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: SelectableText(
+                  attachment.sha256Hash,
+                  style: VeraProbTypography.caption.copyWith(
+                    fontFamily: 'monospace',
+                    color: VeraProbColors.textDisabled,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.copy,
+                  size: 14,
+                  color: VeraProbColors.textDisabled,
+                ),
+                tooltip: 'Copiar hash',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: attachment.sha256Hash));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Hash copiado para a área de transferência',
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -14,6 +14,9 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
+import 'package:veraprob/domain/sla_audit/dispute_evidence_attachment.dart'
+    as attach;
+import 'package:veraprob/state/providers/dispute_evidence_providers.dart';
 
 class _MockHttpOverrides extends HttpOverrides {
   @override
@@ -137,6 +140,7 @@ void main() {
     required ForensicEvidenceSnapshotRepository repository,
     required SecurityIncidentLogger logger,
     List<EvaluationTrace> traces = const [],
+    List<attach.DisputeEvidenceAttachment> evidenceList = const [],
     ForensicDossierTab initialTab = ForensicDossierTab.evidence,
     VerdictProvenance? provenance,
   }) {
@@ -149,6 +153,9 @@ void main() {
         verdictProvenanceProvider.overrideWith((ref, id) async => provenance),
         securityIncidentLoggerProvider.overrideWithValue(logger),
         evaluationTracesProvider.overrideWith((ref, id) async => traces),
+        disputeEvidenceListProvider.overrideWith(
+          (ref, id) async => evidenceList,
+        ),
         ledgerEntriesProvider.overrideWith((ref, id) async => const []),
         executionStateProvider.overrideWith((ref, id) async => null),
       ],
@@ -183,8 +190,8 @@ void main() {
     });
   });
 
-  group('ForensicDossierModal — Evidência tab (raw telemetry)', () {
-    testWidgets('surfaces actual vs limit speed and the excess', (
+  group('ForensicDossierModal — Evidência tab (manifest + telemetry)', () {
+    testWidgets('surfaces actual vs limit speed and the excess in Section B', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -201,7 +208,9 @@ void main() {
       expect(find.text('+8.5 km/h'), findsOneWidget);
     });
 
-    testWidgets('shows empty state when no telemetry exists', (tester) async {
+    testWidgets('shows empty state when no telemetry exists in Section B', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildModal(
           repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
@@ -210,7 +219,66 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Sem telemetria bruta registrada'), findsOneWidget);
+      expect(find.text('Sem telemetria'), findsOneWidget);
+    });
+
+    testWidgets(
+      'shows attachment manifest with verification badges in Section A',
+      (tester) async {
+        final mockAttachment = attach.DisputeEvidenceAttachment.validated(
+          id: 'att-001',
+          organizationId: 'org-001',
+          queueEntryId: 'queue-001',
+          storagePath: 'path/to/evidence.pdf',
+          fileName: 'evidence.pdf',
+          mimeType: 'application/pdf',
+          fileSizeBytes: 2048576, // ~2.0 MB
+          sha256Hash:
+              'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e',
+          verificationStatus: attach.EvidenceVerificationStatus.verified,
+          hashVerifiedAtUtc: DateTime.utc(2026, 1, 15, 12, 5),
+          uploadedBy: 'carrier-user-123',
+          attachedAtUtc: DateTime.utc(2026, 1, 15, 12, 0),
+          deletedAtUtc: null,
+        );
+
+        await tester.pumpWidget(
+          buildModal(
+            repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+            logger: _MockSecurityIncidentLogger(),
+            evidenceList: [mockAttachment],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('evidence.pdf'), findsOneWidget);
+        expect(find.text('VERIFICADO'), findsOneWidget);
+        expect(find.textContaining('2.0 MB'), findsOneWidget);
+        expect(
+          find.textContaining(
+            'a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('shows empty state when no attachments exist in Section A', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildModal(
+          repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+          logger: _MockSecurityIncidentLogger(),
+          evidenceList: [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nenhuma evidência anexada pela transportadora.'),
+        findsOneWidget,
+      );
     });
   });
 

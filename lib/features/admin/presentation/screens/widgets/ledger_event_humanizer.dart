@@ -24,6 +24,18 @@ String humanizeLedgerEventType(String type) {
       return 'Contestação Negada (Multa Mantida)';
     case 'DISPUTE_RETRACTED':
       return 'Contestação Retratada';
+    case 'DISPUTE_EVIDENCE_ATTACHED':
+      return 'Evidência Anexada à Contestação';
+    case 'EVIDENCE_HASH_MISMATCH':
+      return 'Divergência de Assinatura Criptográfica';
+
+    // ── Peer Review (Dual Control) ──────────────────────────────────────────
+    case 'PEER_REVIEW_REQUESTED':
+      return 'Revisão por Pares Solicitada (Duplo Controle)';
+    case 'PEER_REVIEW_DECLINED':
+      return 'Revisão por Pares Recusada';
+    case 'PEER_REVIEW_CONFIRMED':
+      return 'Revisão por Pares Confirmada';
 
     // ── Justification lifecycle ─────────────────────────────────────────────
     case 'JUSTIFICATION_SUBMITTED':
