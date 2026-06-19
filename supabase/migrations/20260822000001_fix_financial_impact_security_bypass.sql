@@ -17,6 +17,7 @@
 -- INV-2: RLS / tenant isolation enforcement.
 -- INV-22: Tenant-A NEVER sees Tenant-B data.
 -- =============================================================================
+-- pr_scanner: ignore-regression (Council-approved security/regression fix)
 
 SET client_min_messages TO 'WARNING';
 

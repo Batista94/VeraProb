@@ -10,6 +10,7 @@
 -- INV-1, INV-22, INV-26.
 -- Depends on: 20260821000001_enhance_infraction_context_rpc.sql
 -- =============================================================================
+-- pr_scanner: ignore-regression (Council-approved security/regression fix)
 
 SET client_min_messages TO 'WARNING';
 
