@@ -299,6 +299,7 @@ List<Override> _baseOverrides({
   required SanctionQueueItemView item,
   required SanctionActionNotifier notifier,
   String? contractName = 'Test Contract',
+  String? currentOperatorId = 'test-user',
 }) {
   return [
     contractNameProvider.overrideWith((ref, id) async => contractName),
@@ -310,7 +311,7 @@ List<Override> _baseOverrides({
     tenantValidationServiceProvider.overrideWithValue(
       _MockTenantValidationService(),
     ),
-    currentOperatorIdProvider.overrideWithValue('test-user'),
+    currentOperatorIdProvider.overrideWithValue(currentOperatorId),
     currentOperatorEmailProvider.overrideWithValue('test@example.com'),
     currentSessionIdProvider.overrideWithValue('test-session'),
     dateTimeProviderProvider.overrideWithValue(
@@ -1837,6 +1838,62 @@ void _sealedEvidenceAndStyleTests() {
       addTearDown(tester.view.resetPhysicalSize);
     });
   });
+
+  // ── C1: Suspect A regression — null operatorId guard ──────────────────────
+
+  group(
+    'SanctionVerdictCard — Baixar Dossiê null operatorId guard (Suspect A)',
+    () {
+      testWidgets(
+        'C1: null currentOperatorIdProvider shows "Sessão expirada" — handler not called',
+        (tester) async {
+          tester.view.physicalSize = const Size(800, 1200);
+          tester.view.devicePixelRatio = 1.0;
+
+          // Rejected status reproduces the exact bug scenario:
+          // admin annuls → card moves to "Concluídos" → clicks "Baixar Dossiê"
+          // while auth state might be briefly null after navigation.
+          final item = _makeItem(status: SanctionReviewStatus.rejected);
+          final notifier = _MockSanctionActionNotifier();
+
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                // Suspect A: simulate auth null (e.g. brief refresh during navigation).
+                ..._baseOverrides(
+                  item: item,
+                  notifier: notifier,
+                  currentOperatorId: null,
+                ),
+              ],
+              child: MaterialApp(
+                home: Scaffold(
+                  body: SingleChildScrollView(
+                    child: SanctionVerdictCard(item: item),
+                  ),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final buttonFinder = find.byKey(
+            const ValueKey('download-dossier-button'),
+          );
+          expect(buttonFinder, findsOneWidget);
+
+          await tester.tap(buttonFinder);
+          await tester.pump();
+
+          // Guard must fire — no handler invocation, no SnackBar success.
+          expect(find.byType(SnackBar), findsNothing);
+          expect(find.textContaining('Sessão expirada'), findsOneWidget);
+
+          addTearDown(tester.view.resetPhysicalSize);
+        },
+      );
+    },
+  );
 }
 
 // ── Test Mock Definitions for Forensic Evidence Modal ─────────────────────────

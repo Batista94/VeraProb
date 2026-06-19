@@ -31,6 +31,11 @@ class PostgresPdfDossierLogRepository
         'generated_by': operatorId,
       });
     } on PostgrestException catch (e) {
+      if (e.code == '23505') {
+        // INV-15: custody entry already exists for this (org, ledger_entry, hash).
+        // Idempotent — PDF was already generated and logged; not a failure.
+        return;
+      }
       throw mapPostgrestToDomainException(
         e,
         resourceType: 'pdf_dossier_log',

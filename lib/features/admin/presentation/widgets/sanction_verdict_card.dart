@@ -24,6 +24,7 @@ import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geoc
 import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
 import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 import 'package:veraprob/state/providers/dispute_portal_token_providers.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
@@ -1358,6 +1359,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
+    if (userId.isEmpty) {
+      setState(
+        () => _dossierError =
+            'Sessão expirada. Recarregue a página e tente novamente.',
+      );
+      return;
+    }
+
     final classification = switch (item.status) {
       SanctionReviewStatus.applied => DossierClassification.applied,
       SanctionReviewStatus.rejected => DossierClassification.annulled,
@@ -1432,6 +1441,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         ),
       );
     } catch (e) {
+      LoggerService().error('dossier_download_failed', error: e);
       if (!mounted) return;
       setState(
         () => _dossierError = 'Falha ao gerar o dossiê. Tente novamente.',
