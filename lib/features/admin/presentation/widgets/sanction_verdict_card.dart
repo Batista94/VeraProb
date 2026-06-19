@@ -509,7 +509,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                   ],
                                 ),
                               ),
-                            if (item.status == SanctionReviewStatus.applied)
+                            if (item.status == SanctionReviewStatus.applied ||
+                                item.status == SanctionReviewStatus.rejected)
                               _buildForensicEvidenceVisualizerRow(
                                 context,
                                 item,
@@ -568,6 +569,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   /// plain pending card (severity is already carried by the left accent).
   Widget _buildStatusRibbon(SanctionQueueItemView item, bool isLocked) {
     final cfg = switch (item.status) {
+      SanctionReviewStatus.applied => (
+        color: VeraProbColors.error,
+        icon: Icons.gavel_rounded,
+        label: 'MULTA APLICADA',
+        tooltip: 'Penalidade confirmada e aplicada — imutável',
+        fill: 0.2,
+        bordered: false,
+      ),
       SanctionReviewStatus.disputed => (
         color: VeraProbColors.warning,
         icon: Icons.hourglass_empty_outlined,
@@ -1795,72 +1804,21 @@ class _ForensicSealRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      label:
-          'Abrir cadeia de custódia forense. Hash: ${item.verdictEvidence.evidenceHash}',
-      button: true,
-      child: Tooltip(
-        message: 'Ver evidência completa em 1 clique',
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Center(
         child: Container(
-          margin: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: VeraProbColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: VeraProbColors.border, width: 0.5),
+            color: VeraProbColors.surfaceElevated.withValues(alpha: 0.5),
+            borderRadius: BorderRadius.circular(4),
           ),
-          child: InkWell(
-            onTap: () => showDialog<void>(
-              context: context,
-              builder: (_) => ForensicDossierModal(
-                setId: item.setId,
-                contractId: item.contractId,
-                queueEntryId: item.id,
-                initialTab: ForensicDossierTab.custody,
-              ),
-            ),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.verified_user,
-                    size: 16,
-                    color: VeraProbColors.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Cadeia de Custódia · Prova Forense',
-                          style: VeraProbTypography.caption.copyWith(
-                            color: VeraProbColors.textSecondary,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                        Text(
-                          'SHA-256: ${item.shortEvidenceHash}...',
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                          style: VeraProbTypography.caption.copyWith(
-                            fontFamily: 'monospace',
-                            fontSize: 10,
-                            color: VeraProbColors.textDisabled,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    size: 16,
-                    color: VeraProbColors.textDisabled,
-                  ),
-                ],
-              ),
+          child: Text(
+            'SHA-256: ${item.shortEvidenceHash}...',
+            style: VeraProbTypography.caption.copyWith(
+              fontFamily: 'monospace',
+              fontSize: 10,
+              color: VeraProbColors.textDisabled,
             ),
           ),
         ),

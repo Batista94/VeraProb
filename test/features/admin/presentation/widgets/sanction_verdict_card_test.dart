@@ -430,7 +430,7 @@ void main() {
   });
 
   group('SanctionVerdictCard — INV-7 Immutability (SELADO)', () {
-    testWidgets('shows SELADO badge when status is applied', (tester) async {
+    testWidgets('shows MULTA APLICADA badge when status is applied', (tester) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
 
@@ -439,7 +439,7 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.text('SELADO'), findsOneWidget);
+      expect(find.text('MULTA APLICADA'), findsOneWidget);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -917,60 +917,27 @@ void main() {
 
 void _resolutionSealAndA11yTests() {
   group('SanctionVerdictCard — Forensic Seal (INV-9/INV-21)', () {
-    testWidgets(
-      'renders SHA-256 hash prefix in seal row with correct styling and bottom padding',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 1400);
-        tester.view.devicePixelRatio = 1.0;
-
-        final item = _makeItem();
-        await tester.pumpWidget(_buildCard(item));
-        await tester.pump();
-
-        expect(
-          find.textContaining('SHA-256: ${item.shortEvidenceHash}'),
-          findsOneWidget,
-        );
-        expect(find.text('Cadeia de Custódia · Prova Forense'), findsOneWidget);
-
-        // Verify text contrast and font weight
-        final textWidget = tester.widget<Text>(
-          find.text('Cadeia de Custódia · Prova Forense'),
-        );
-        expect(textWidget.style?.color, VeraProbColors.textSecondary);
-        expect(textWidget.style?.fontWeight, FontWeight.w600);
-
-        // Verify bottom padding on the card's scroll view to prevent collisions/overlaps
-        final scrollView = tester.widget<SingleChildScrollView>(
-          find.descendant(
-            of: find.byType(SanctionVerdictCard),
-            matching: find.byType(SingleChildScrollView),
-          ),
-        );
-        expect(scrollView.padding, const EdgeInsets.only(bottom: 16));
-
-        addTearDown(tester.view.resetPhysicalSize);
-      },
-    );
-
-    testWidgets('tapping seal row opens forensic dossier (custody tab)', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(1200, 1400);
+    testWidgets('renders SHA-256 hash in seal row passively', (tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
       tester.view.devicePixelRatio = 1.0;
 
-      await tester.pumpWidget(_buildCard(_makeItem()));
+      final item = _makeItem();
+      await tester.pumpWidget(_buildCard(item));
       await tester.pump();
 
-      expect(find.byType(ForensicDossierModal), findsNothing);
-
-      await tester.tap(find.text('Cadeia de Custódia · Prova Forense'));
-      await tester.pumpAndSettle();
-
-      final modal = tester.widget<ForensicDossierModal>(
-        find.byType(ForensicDossierModal),
+      expect(
+        find.textContaining('SHA-256: ${item.shortEvidenceHash}'),
+        findsOneWidget,
       );
-      expect(modal.initialTab, ForensicDossierTab.custody);
+
+      // Verify bottom padding on the card's scroll view to prevent collisions/overlaps
+      final scrollView = tester.widget<SingleChildScrollView>(
+        find.descendant(
+          of: find.byType(SanctionVerdictCard),
+          matching: find.byType(SingleChildScrollView),
+        ),
+      );
+      expect(scrollView.padding, const EdgeInsets.only(bottom: 16));
 
       addTearDown(tester.view.resetPhysicalSize);
     });
