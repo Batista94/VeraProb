@@ -243,9 +243,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('DADOS IMUTÁVEIS'), findsOneWidget);
-      expect(find.text('R\$ 150,00'), findsOneWidget);
+      expect(find.text('R\$\u00A0150,00'), findsOneWidget);
       expect(find.text('ABC-1234'), findsOneWidget);
-      expect(find.text('+20'), findsOneWidget);
+      expect(find.text('+20 unid.'), findsOneWidget);
       expect(find.text('REC-XYZ-789'), findsOneWidget);
     });
 
