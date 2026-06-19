@@ -280,5 +280,57 @@ void main() {
         expect(v.geofenceRadiusMeters, isNull);
       },
     );
+
+    test(
+      'fromJson with legacy records uses measured_value minus threshold_value',
+      () {
+        final legacyJson = {
+          'clause_ref': 'ATR-001',
+          'rule_id': 'rule-legacy',
+          'rule_version': 1,
+          'primary_evidence_lat': -23.5505,
+          'primary_evidence_lng': -46.6333,
+          'primary_evidence_timestamp_utc': validTimestamp.toIso8601String(),
+          'evidence_hash': 'abc123',
+          'measured_value': 88.5,
+          'threshold_value': 80.0,
+          'fine_cents': 50000,
+          'confidence_score': 100,
+        };
+        final v = VerdictEvidence.fromJson(legacyJson);
+        expect(v.deltaValue, 8.5);
+        expect(v.thresholdValue, 80.0);
+      },
+    );
+
+    test(
+      'fromJson throws DomainException if both delta_value and measured_value are missing',
+      () {
+        final corruptJson = {
+          'clause_ref': 'ATR-001',
+          'rule_id': 'rule-legacy',
+          'rule_version': 1,
+          'primary_evidence_lat': -23.5505,
+          'primary_evidence_lng': -46.6333,
+          'primary_evidence_timestamp_utc': validTimestamp.toIso8601String(),
+          'evidence_hash': 'abc123',
+          'threshold_value': 80.0,
+          'fine_cents': 50000,
+          'confidence_score': 100,
+        };
+        expect(
+          () => VerdictEvidence.fromJson(corruptJson),
+          throwsA(
+            isA<DomainException>().having(
+              (e) => e.message,
+              'message',
+              contains(
+                'Missing both delta_value and measured_value in payload',
+              ),
+            ),
+          ),
+        );
+      },
+    );
   });
 }

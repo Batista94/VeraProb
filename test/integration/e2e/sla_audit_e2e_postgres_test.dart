@@ -145,6 +145,12 @@ void main() {
     // Initialize the real client
     client = SupabaseClient(supabaseUrl, supabaseKey);
 
+    // Clean up forensic/test data from previous runs to ensure isolation
+    await client.rpc<void>(
+      'test_cleanup_forensic_data',
+      params: {'p_org_id': '00000000-0000-0000-0000-000000000001'},
+    );
+
     // Instantiate Data Access Layer
     planRepo = PostgresPlanDeclarationRepository(client);
     executionRepo = PostgresContractualExecutionStateRepository(
@@ -639,6 +645,16 @@ void main() {
         contractId: contractId,
       );
       expect(executedList.first.boundVehicleId, vehicleId);
+
+      // Seed a sanction in the review queue to be read by the live aggregates RPC
+      await client.from('sanction_review_queue').insert({
+        'organization_id': '00000000-0000-0000-0000-000000000001',
+        'ledger_entry_id': const Uuid().v4(),
+        'set_id': sharedSetId,
+        'contract_id': contractId,
+        'status': 'applied',
+        'verdict_evidence': {'fine_cents': 10000},
+      });
 
       // 2. Verify Financial Impact projections
       // Pass the operational date window so the query service filters correctly.
