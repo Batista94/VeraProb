@@ -870,7 +870,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         context: context,
                         title: 'Confirmar Infração',
                         actionLabel: 'CONFIRMAR INFRAÇÃO',
-                        actionColor: VeraProbColors.neutral,
+                        actionColor: VeraProbColors.info,
                         showSlaWarning: false,
                         isAccept: false,
                         requireTextAlways: false,
@@ -889,8 +889,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     : const Icon(Icons.gavel_rounded, size: 16),
                 label: const Text('CONFIRMAR INFRAÇÃO'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: VeraProbColors.neutral,
-                  foregroundColor: VeraProbColors.textPrimary,
+                  backgroundColor: VeraProbColors.info,
+                  foregroundColor: VeraProbColors.background,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -922,12 +922,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
           ),
           Semantics(
             label: 'Solicitar prova forense ao motorista',
-            child: TextButton.icon(
+            child: OutlinedButton.icon(
               onPressed: isLoading ? null : () => _onRequestMoreProof(context),
               icon: const Icon(Icons.find_in_page_outlined, size: 16),
               label: const Text('SOLICITAR DEFESA'),
-              style: TextButton.styleFrom(
-                foregroundColor: VeraProbColors.textSecondary,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: VeraProbColors.info,
+                side: const BorderSide(color: VeraProbColors.info),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,

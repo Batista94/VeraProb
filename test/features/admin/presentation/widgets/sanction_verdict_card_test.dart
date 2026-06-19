@@ -1925,29 +1925,31 @@ void _sealedEvidenceAndStyleTests() {
       await tester.pump();
     }
 
-    testWidgets('CONFIRMAR INFRAÇÃO is neutral slate, not success green', (
-      tester,
-    ) async {
-      await pumpPending(tester);
+    testWidgets(
+      'CONFIRMAR INFRAÇÃO is neutral blue action, not success green',
+      (tester) async {
+        await pumpPending(tester);
 
-      final btn = tester.widget<FilledButton>(
-        find
-            .ancestor(
-              of: find.text('CONFIRMAR INFRAÇÃO'),
-              matching: find.byType(FilledButton),
-            )
-            .first,
-      );
-      const states = <WidgetState>{};
-      expect(
-        btn.style?.backgroundColor?.resolve(states),
-        VeraProbColors.neutral,
-      );
-      expect(
-        btn.style?.foregroundColor?.resolve(states),
-        VeraProbColors.textPrimary,
-      );
-    });
+        final btn = tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('CONFIRMAR INFRAÇÃO'),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        const states = <WidgetState>{};
+        expect(
+          btn.style?.backgroundColor?.resolve(states),
+          VeraProbColors.info,
+        );
+        // Dark text on the light-blue fill — white would fail WCAG contrast.
+        expect(
+          btn.style?.foregroundColor?.resolve(states),
+          VeraProbColors.background,
+        );
+      },
+    );
 
     testWidgets(
       'ANULAR INFRAÇÃO stays ghost-red (state, not verb regression)',
@@ -1969,22 +1971,26 @@ void _sealedEvidenceAndStyleTests() {
       },
     );
 
-    testWidgets('SOLICITAR DEFESA is neutral text, not warning amber', (
+    testWidgets('SOLICITAR DEFESA is blue outline action, not warning amber', (
       tester,
     ) async {
       await pumpPending(tester);
 
-      final btn = tester.widget<TextButton>(
+      final btn = tester.widget<OutlinedButton>(
         find
             .ancestor(
               of: find.text('SOLICITAR DEFESA'),
-              matching: find.byType(TextButton),
+              matching: find.byType(OutlinedButton),
             )
             .first,
       );
       expect(
         btn.style?.foregroundColor?.resolve(const <WidgetState>{}),
-        VeraProbColors.textSecondary,
+        VeraProbColors.info,
+      );
+      expect(
+        btn.style?.side?.resolve(const <WidgetState>{})?.color,
+        VeraProbColors.info,
       );
     });
   });
