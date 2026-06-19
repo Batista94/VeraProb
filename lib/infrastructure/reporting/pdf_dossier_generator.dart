@@ -87,6 +87,12 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
         ),
       };
 
+      // Citable document id — eventId when present, else the short verdict/custody
+      // seal. No schema change; reuses data already sealed in the dossier.
+      final dossierId =
+          entry.eventId ??
+          (dossier.verdictSealHash ?? hash).substring(0, 12).toUpperCase();
+
       final footer = pw.Container(
         decoration: const pw.BoxDecoration(
           border: pw.Border(
@@ -94,9 +100,20 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
           ),
         ),
         padding: const pw.EdgeInsets.only(top: 4),
-        child: pw.Text(
-          'SHA-256: $hash  |  Gerado em: ${generatedAt.toIso8601String()} UTC',
-          style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(
+              'Documento gerado eletronicamente. Validade jurídica garantida por '
+              'selo criptográfico SHA-256. Dispensada assinatura manual.',
+              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+            ),
+            pw.SizedBox(height: 2),
+            pw.Text(
+              'SHA-256: $hash  |  Gerado em: ${generatedAt.toIso8601String()} UTC',
+              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+            ),
+          ],
         ),
       );
 
@@ -127,6 +144,10 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             _sectionHeader('DOSSIÊ FORENSE - VeraProb'),
             pw.SizedBox(height: 4),
             pw.Text(
+              'Dossiê Nº: $dossierId',
+              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+            ),
+            pw.Text(
               'Gerado em: ${generatedAt.toIso8601String()} UTC',
               style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
             ),
@@ -154,7 +175,10 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             // ── Mapa da Ocorrência ─────────────────────────────────────────
             _sectionHeader('MAPA DA OCORRÊNCIA'),
             pw.SizedBox(height: 4),
-            _renderImageOrFallback(dossier.mapImageBytes),
+            _renderImageOrFallback(
+              dossier.mapImageBytes,
+              fallback: 'Sem coordenadas registradas para esta ocorrência.',
+            ),
             pw.SizedBox(height: 12),
 
             // ── Defesa do Transportador ───────────────────────────────────
@@ -174,7 +198,11 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
                 ),
               )
             else if (sealed)
-              _renderImageOrFallback(dossier.telegramImageBytes)
+              _renderImageOrFallback(
+                dossier.telegramImageBytes,
+                fallback:
+                    'Transportador não anexou evidência de defesa para esta ocorrência.',
+              )
             else
               pw.Text(
                 'PENDENTE - documento preliminar emitido antes da defesa do '
@@ -190,12 +218,22 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
             if (sealed) ..._verdictSection(dossier),
 
             // ── Resumo Financeiro ──────────────────────────────────────────
+            // INV-21: an annulled verdict has ZERO financial impact. The original
+            // amount stays sealed in the hash, but the rendered summary MUST show
+            // R$ 0,00 so the carrier is never billed off an isentada dossier.
             _sectionHeader('RESUMO FINANCEIRO'),
             pw.SizedBox(height: 4),
-            _labelValue(
-              'Savings BRL',
-              'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)}',
-            ),
+            if (dossier.classification == DossierClassification.annulled)
+              _labelValue(
+                'Impacto Financeiro',
+                'R\$ 0,00 (multa original de '
+                    'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)} isentada)',
+              )
+            else
+              _labelValue(
+                'Impacto Financeiro',
+                'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)}',
+              ),
             pw.SizedBox(height: 12),
 
             // ── Cadeia de Custódia (INV-9) ─────────────────────────────────
@@ -298,14 +336,18 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
     ];
   }
 
-  /// Renders image bytes as a [pw.Image], falling back to 'N/D' text when:
+  /// Renders image bytes as a [pw.Image], falling back to a contextual message
+  /// (never a bare 'N/D') when:
   ///   - bytes is null or empty
   ///   - bytes are not a valid/decodable image format (e.g. during testing)
-  pw.Widget _renderImageOrFallback(List<int>? bytes) {
+  pw.Widget _renderImageOrFallback(
+    List<int>? bytes, {
+    required String fallback,
+  }) {
     if (bytes == null || bytes.isEmpty) {
       return pw.Text(
-        'N/D',
-        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+        fallback,
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
       );
     }
     try {
@@ -315,10 +357,10 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
         fit: pw.BoxFit.contain,
       );
     } catch (_) {
-      // Invalid or undecodable image data — render placeholder.
+      // Invalid or undecodable image data — render contextual placeholder.
       return pw.Text(
-        'N/D',
-        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey),
+        fallback,
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
       );
     }
   }

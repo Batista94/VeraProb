@@ -254,5 +254,95 @@ void main() {
         expect(ex.message, equals('test error'));
       },
     );
+
+    // ── Pkg 1: Financial correctness & legal hardening ───────────────────────
+    // Regression guards for the annulment billing bug + legal footer + doc id +
+    // contextual empty-section text. Accented glyphs do not survive the
+    // 32..126 byte filter, so all assertions use ASCII substrings only.
+
+    String pdfTextOf(List<int> bytes) =>
+        String.fromCharCodes(bytes.where((b) => b >= 32 && b < 127));
+
+    group('financial summary (annulment billing bug)', () {
+      test('annulled dossier renders R\$ 0,00 impact + original amount marked '
+          'isentada (carrier never re-billed off an annulment)', () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(),
+          mapImageBytes: const [],
+          savingsCents: 150000, // R$ 1500,00 original fine
+          classification: DossierClassification.annulled,
+        );
+
+        // PDF content streams emit one [(token)]TJ per word, so assert on
+        // single space-free tokens, never multi-word phrases.
+        final text = pdfTextOf(await generator.generateDossier(dossier));
+
+        expect(text, contains('0,00'));
+        expect(text, contains('isentada'));
+        // Original amount stays visible as context, never as the impact value.
+        expect(text, contains('1500.00'));
+      });
+
+      test(
+        'applied dossier renders the full financial impact (no isentada note)',
+        () async {
+          final dossier = ForensicDossier(
+            ledgerEntry: _buildEntry(),
+            mapImageBytes: const [],
+            savingsCents: 150000,
+            classification: DossierClassification.applied,
+          );
+
+          final text = pdfTextOf(await generator.generateDossier(dossier));
+
+          expect(text, contains('1500.00'));
+          expect(text, isNot(contains('isentada')));
+        },
+      );
+    });
+
+    test('footer carries the legal validity disclaimer', () async {
+      final dossier = ForensicDossier(
+        ledgerEntry: _buildEntry(),
+        mapImageBytes: const [],
+        savingsCents: 0,
+      );
+
+      final text = pdfTextOf(await generator.generateDossier(dossier));
+
+      // Single token from "Dispensada assinatura manual".
+      expect(text, contains('Dispensada'));
+    });
+
+    test(
+      'header carries a citable document id (Dossiê Nº = eventId)',
+      () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(eventId: 'event-pdf-test-042'),
+          mapImageBytes: const [],
+          savingsCents: 0,
+        );
+
+        final text = pdfTextOf(await generator.generateDossier(dossier));
+
+        expect(text, contains('event-pdf-test-042'));
+      },
+    );
+
+    test(
+      'empty map renders contextual fallback text, never a bare N/D',
+      () async {
+        final dossier = ForensicDossier(
+          ledgerEntry: _buildEntry(),
+          mapImageBytes: const [],
+          savingsCents: 0,
+        );
+
+        final text = pdfTextOf(await generator.generateDossier(dossier));
+
+        // Single token from "Sem coordenadas registradas para esta ocorrência."
+        expect(text, contains('coordenadas'));
+      },
+    );
   });
 }

@@ -22,7 +22,7 @@ import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sentence_panel_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
-import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_dossier_modal.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/dispute_portal_token_providers.dart';
@@ -34,7 +34,6 @@ import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
-import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
 
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
@@ -261,6 +260,9 @@ SanctionQueueItemView _makeItem({
   DateTime? resolutionDueAtUtc,
   DateTime? disputedAtUtc,
   String? disputedBy,
+  String? reviewedByUserId,
+  DateTime? reviewedAtUtc,
+  String? firstReviewerId,
 }) {
   final evidence = VerdictEvidence.create(
     clauseRef: clauseRef,
@@ -292,6 +294,9 @@ SanctionQueueItemView _makeItem({
     resolutionDueAtUtc: resolutionDueAtUtc,
     disputedAtUtc: disputedAtUtc,
     disputedBy: disputedBy,
+    reviewedByUserId: reviewedByUserId,
+    reviewedAtUtc: reviewedAtUtc,
+    firstReviewerId: firstReviewerId,
   );
 }
 
@@ -300,6 +305,7 @@ List<Override> _baseOverrides({
   required SanctionActionNotifier notifier,
   String? contractName = 'Test Contract',
   String? currentOperatorId = 'test-user',
+  VerdictProvenance? verdictProvenance,
 }) {
   return [
     contractNameProvider.overrideWith((ref, id) async => contractName),
@@ -307,6 +313,9 @@ List<Override> _baseOverrides({
     sanctionWindowProvider.overrideWith((ref, setId) async => null),
     disputeReasonCodesProvider.overrideWith((ref) async => _testReasonCodes),
     disputeRetractionProvenanceProvider.overrideWith((ref, id) async => null),
+    verdictProvenanceProvider.overrideWith(
+      (ref, id) async => verdictProvenance,
+    ),
     sanctionActionStateProvider.overrideWith2((_) => notifier),
     tenantValidationServiceProvider.overrideWithValue(
       _MockTenantValidationService(),
@@ -332,6 +341,7 @@ Widget _buildCard(
   SanctionQueueItemView item, {
   SanctionActionNotifier? notifier,
   String? contractName = 'Test Contract',
+  VerdictProvenance? verdictProvenance,
 }) {
   final n = notifier ?? _MockSanctionActionNotifier();
   return ProviderScope(
@@ -339,6 +349,7 @@ Widget _buildCard(
       item: item,
       notifier: n,
       contractName: contractName,
+      verdictProvenance: verdictProvenance,
     ),
     child: MaterialApp(
       home: Scaffold(
@@ -942,7 +953,7 @@ void _resolutionSealAndA11yTests() {
       },
     );
 
-    testWidgets('tapping seal row opens InvestigationModal (audit trail)', (
+    testWidgets('tapping seal row opens forensic dossier (custody tab)', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(1200, 1400);
@@ -951,12 +962,15 @@ void _resolutionSealAndA11yTests() {
       await tester.pumpWidget(_buildCard(_makeItem()));
       await tester.pump();
 
-      expect(find.byType(InvestigationModal), findsNothing);
+      expect(find.byType(ForensicDossierModal), findsNothing);
 
       await tester.tap(find.text('Cadeia de Custódia · Prova Forense'));
       await tester.pumpAndSettle();
 
-      expect(find.byType(InvestigationModal), findsOneWidget);
+      final modal = tester.widget<ForensicDossierModal>(
+        find.byType(ForensicDossierModal),
+      );
+      expect(modal.initialTab, ForensicDossierTab.custody);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -1480,7 +1494,7 @@ void _sealedEvidenceAndStyleTests() {
 
   group('SanctionVerdictCard — Sealed Evidence Action Button', () {
     testWidgets(
-      'renders Visualizar Evidência Forense when status is applied and opens modal',
+      'renders Dossiê Forense when status is applied and opens the dossier modal',
       (tester) async {
         tester.view.physicalSize = const Size(800, 1200);
         tester.view.devicePixelRatio = 1.0;
@@ -1511,13 +1525,13 @@ void _sealedEvidenceAndStyleTests() {
         );
         await tester.pump();
 
-        final btn = find.text('Visualizar Evidência Forense');
+        final btn = find.text('Dossiê Forense');
         expect(btn, findsOneWidget);
 
         await tester.tap(btn);
         await tester.pumpAndSettle();
 
-        expect(find.byType(ForensicEvidenceModal), findsOneWidget);
+        expect(find.byType(ForensicDossierModal), findsOneWidget);
 
         addTearDown(tester.view.resetPhysicalSize);
       },
@@ -1894,6 +1908,204 @@ void _sealedEvidenceAndStyleTests() {
       );
     },
   );
+
+  // ── Pkg 1: Morality-free action buttons ──────────────────────────────────
+  // Semantic color (green/red) is reserved for STATE (badges). Verbs MUST be
+  // neutral so confirming a fine never reads as "the good choice". These guards
+  // pin the neutralized palette so a future restyle can't silently moralize the
+  // actions again.
+  group('SanctionVerdictCard — morality-free action palette', () {
+    Future<void> pumpPending(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 1400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      await tester.pumpWidget(
+        _buildCard(_makeItem(status: SanctionReviewStatus.pending)),
+      );
+      await tester.pump();
+    }
+
+    testWidgets('CONFIRMAR INFRAÇÃO is neutral slate, not success green', (
+      tester,
+    ) async {
+      await pumpPending(tester);
+
+      final btn = tester.widget<FilledButton>(
+        find
+            .ancestor(
+              of: find.text('CONFIRMAR INFRAÇÃO'),
+              matching: find.byType(FilledButton),
+            )
+            .first,
+      );
+      const states = <WidgetState>{};
+      expect(
+        btn.style?.backgroundColor?.resolve(states),
+        VeraProbColors.neutral,
+      );
+      expect(
+        btn.style?.foregroundColor?.resolve(states),
+        VeraProbColors.textPrimary,
+      );
+    });
+
+    testWidgets(
+      'ANULAR INFRAÇÃO stays ghost-red (state, not verb regression)',
+      (tester) async {
+        await pumpPending(tester);
+
+        final btn = tester.widget<OutlinedButton>(
+          find
+              .ancestor(
+                of: find.text('ANULAR INFRAÇÃO'),
+                matching: find.byType(OutlinedButton),
+              )
+              .first,
+        );
+        expect(
+          btn.style?.foregroundColor?.resolve(const <WidgetState>{}),
+          VeraProbColors.error,
+        );
+      },
+    );
+
+    testWidgets('SOLICITAR DEFESA is neutral text, not warning amber', (
+      tester,
+    ) async {
+      await pumpPending(tester);
+
+      final btn = tester.widget<TextButton>(
+        find
+            .ancestor(
+              of: find.text('SOLICITAR DEFESA'),
+              matching: find.byType(TextButton),
+            )
+            .first,
+      );
+      expect(
+        btn.style?.foregroundColor?.resolve(const <WidgetState>{}),
+        VeraProbColors.textSecondary,
+      );
+    });
+  });
+
+  // ── Pkg 2: Verdict accountability provenance (INV-21) ────────────────────
+  // Confirmed and annulled cards must name WHO sealed/annulled and WHEN —
+  // email from the ledger fact, UUID fallback when absent. Symmetric liability.
+  group('SanctionVerdictCard — verdict provenance', () {
+    Future<void> pump(
+      WidgetTester tester,
+      SanctionQueueItemView item, {
+      VerdictProvenance? provenance,
+    }) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      await tester.pumpWidget(_buildCard(item, verdictProvenance: provenance));
+      await tester.pump();
+    }
+
+    testWidgets('applied card names the sealing auditor by email', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        _makeItem(status: SanctionReviewStatus.applied),
+        provenance: (
+          actorEmail: 'ana.auditor@frota.com',
+          actorUserId: 'uuid-ana-0001',
+          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
+        ),
+      );
+
+      expect(find.text('RESPONSABILIDADE DO VEREDITO'), findsOneWidget);
+      expect(
+        find.textContaining('Confirmado por ana.auditor@frota.com'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'rejected card names the annulling auditor + keeps the reason',
+      (tester) async {
+        await pump(
+          tester,
+          _makeItem(
+            status: SanctionReviewStatus.rejected,
+            rejectionReason: 'Falha de sensor confirmada na telemetria',
+          ),
+          provenance: (
+            actorEmail: 'bruno.lead@frota.com',
+            actorUserId: 'uuid-bruno-002',
+            sealedAtUtc: DateTime.utc(2026, 1, 16, 11, 0),
+          ),
+        );
+
+        expect(
+          find.textContaining('Anulado por bruno.lead@frota.com'),
+          findsOneWidget,
+        );
+        // Refusal reason zone still renders alongside provenance.
+        expect(find.text('MOTIVO DA RECUSA'), findsOneWidget);
+      },
+    );
+
+    testWidgets('falls back to short reviewer UUID when no ledger email', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        _makeItem(
+          status: SanctionReviewStatus.applied,
+          reviewedByUserId: 'abcdef12-3456-7890',
+          reviewedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
+        ),
+        provenance: null,
+      );
+
+      expect(find.textContaining('Confirmado por abcdef12…'), findsOneWidget);
+    });
+
+    testWidgets('dual-control surfaces the proposing reviewer too', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        _makeItem(
+          status: SanctionReviewStatus.applied,
+          firstReviewerId: 'proposer-9999',
+        ),
+        provenance: (
+          actorEmail: 'sealer@frota.com',
+          actorUserId: 'uuid-sealer',
+          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
+        ),
+      );
+
+      expect(find.textContaining('Proposto por proposer…'), findsOneWidget);
+    });
+
+    testWidgets('blank ledger email degrades to the provenance UUID, '
+        'not the queue-row UUID', (tester) async {
+      await pump(
+        tester,
+        _makeItem(
+          status: SanctionReviewStatus.applied,
+          // Row UUID differs from the fact UUID — the fact must win.
+          reviewedByUserId: 'rowuuid-9999',
+          reviewedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
+        ),
+        provenance: (
+          actorEmail: '   ', // blank ledger email — must be skipped
+          actorUserId: 'factuuid-1234',
+          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
+        ),
+      );
+
+      expect(find.textContaining('Confirmado por factuuid…'), findsOneWidget);
+      expect(find.textContaining('rowuuid'), findsNothing);
+    });
+  });
 }
 
 // ── Test Mock Definitions for Forensic Evidence Modal ─────────────────────────

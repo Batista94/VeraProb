@@ -1,6 +1,6 @@
 import 'package:veraprob/domain/sla_audit/forensic_evidence_snapshot_repository.dart';
 
-/// Application-layer projection consumed by [ForensicEvidenceModal].
+/// Application-layer projection consumed by the forensic dossier surface.
 /// Shields presentation from domain types (INV-13).
 enum EvidenceSnapshotStatus { authentic, tampered }
 
@@ -21,7 +21,7 @@ class FrozenRuleView {
   });
 }
 
-/// Display DTO for the ForensicEvidenceModal — all fields pre-extracted.
+/// Display DTO for the forensic dossier custody/rule tabs — all fields pre-extracted.
 class EvidenceSnapshotView {
   final String ledgerEntryId;
   final EvidenceSnapshotStatus status;

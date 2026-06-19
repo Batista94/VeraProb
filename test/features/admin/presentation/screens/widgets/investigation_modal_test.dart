@@ -302,6 +302,35 @@ void main() {
 
       expect(find.text('AUDITADO'), findsNothing);
     });
+
+    testWidgets(
+      'Pkg 3: timeline renders human label primary + raw enum subtitle',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final trace = _buildTrace(triggeringEventId: 'evt-trigger-001');
+        final ledger = [
+          _buildLedgerEntry(eventId: 'evt-bound-001', type: 'EXECUTION_BOUND'),
+        ];
+
+        await tester.pumpWidget(
+          _buildModal(
+            traces: AsyncValue.data([trace]),
+            ledger: AsyncValue.data(ledger),
+            execution: const AsyncValue.data(null),
+          ),
+        );
+        await _openModal(tester);
+        await tester.pumpAndSettle();
+
+        // Human label for the dispatcher …
+        expect(find.text('Execução Vinculada ao Ativo'), findsOneWidget);
+        // … and the raw enum kept as forensic subtitle (citability).
+        expect(find.text('EXECUTION_BOUND'), findsOneWidget);
+      },
+    );
   });
 
   group('InvestigationModal — 1-Click Proof Rule (INV-15)', () {

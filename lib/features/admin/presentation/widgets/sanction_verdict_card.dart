@@ -17,8 +17,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/shared/domain_error_text.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_modal.dart';
-import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_evidence_modal.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/forensic_dossier_modal.dart';
 import 'package:veraprob/features/admin/presentation/shared/compliance_widgets.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
 import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
@@ -408,6 +407,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                               _RefusalReasonZone(
                                 reason: item.rejectionReason!.trim(),
                               ),
+
+                            // ── Zona 4.25: Verdict accountability (INV-21) ────────────────
+                            // Who sealed/annulled this terminal verdict, and when.
+                            // Symmetric on applied + rejected — both carry equal
+                            // liability, so neither hides its author.
+                            if (item.status == SanctionReviewStatus.applied ||
+                                item.status == SanctionReviewStatus.rejected)
+                              _VerdictProvenanceZone(item: item),
 
                             // ── Zona 4.3: Retraction provenance (re-pending verdicts) ─────
                             // A `pending` item carrying a non-null disputedAtUtc was
@@ -817,10 +824,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             child: OutlinedButton.icon(
               onPressed: () => showDialog<void>(
                 context: context,
-                builder: (_) => ForensicEvidenceModal(queueEntryId: item.id),
+                builder: (_) => ForensicDossierModal(
+                  setId: item.setId,
+                  contractId: item.contractId,
+                  queueEntryId: item.id,
+                ),
               ),
               icon: const Icon(Icons.shield_outlined, size: 16),
-              label: const Text('Visualizar Evidência Forense'),
+              label: const Text('Dossiê Forense'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: VeraProbColors.primary,
                 side: const BorderSide(color: VeraProbColors.primary),
@@ -859,7 +870,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         context: context,
                         title: 'Confirmar Infração',
                         actionLabel: 'CONFIRMAR INFRAÇÃO',
-                        actionColor: VeraProbColors.success,
+                        actionColor: VeraProbColors.neutral,
                         showSlaWarning: false,
                         isAccept: false,
                         requireTextAlways: false,
@@ -878,8 +889,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     : const Icon(Icons.gavel_rounded, size: 16),
                 label: const Text('CONFIRMAR INFRAÇÃO'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: VeraProbColors.success,
-                  foregroundColor: VeraProbColors.background,
+                  backgroundColor: VeraProbColors.neutral,
+                  foregroundColor: VeraProbColors.textPrimary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -916,7 +927,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               icon: const Icon(Icons.find_in_page_outlined, size: 16),
               label: const Text('SOLICITAR DEFESA'),
               style: TextButton.styleFrom(
-                foregroundColor: VeraProbColors.warning,
+                foregroundColor: VeraProbColors.textSecondary,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,
@@ -1799,9 +1810,11 @@ class _ForensicSealRow extends StatelessWidget {
           child: InkWell(
             onTap: () => showDialog<void>(
               context: context,
-              builder: (_) => InvestigationModal(
+              builder: (_) => ForensicDossierModal(
                 setId: item.setId,
                 contractId: item.contractId,
+                queueEntryId: item.id,
+                initialTab: ForensicDossierTab.custody,
               ),
             ),
             borderRadius: BorderRadius.circular(8),
@@ -2216,6 +2229,103 @@ class _RetractionProvenanceZone extends ConsumerWidget {
                 color: VeraProbColors.textSecondary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Zona 4.25: Verdict accountability (INV-21).
+///
+/// Surfaces WHO sealed (applied) or annulled (rejected) the verdict and WHEN —
+/// the human-readable email comes from the `VERDICT_SEALED` / `VERDICT_REFUSED`
+/// ledger fact ([verdictProvenanceProvider]); the queue row only carries a UUID.
+/// Falls back to the short reviewer UUID when the fact (or its email) is absent,
+/// so a sealed verdict is never authorless on screen.
+class _VerdictProvenanceZone extends ConsumerWidget {
+  final SanctionQueueItemView item;
+  const _VerdictProvenanceZone({required this.item});
+
+  static String _shortActor(String? id) {
+    if (id == null || id.trim().isEmpty) return 'desconhecido';
+    final v = id.trim();
+    return v.length <= 8 ? v : '${v.substring(0, 8)}…';
+  }
+
+  static String _formatLocal(DateTime utc) {
+    final l = utc.toLocal();
+    return '${l.day.toString().padLeft(2, '0')}/'
+        '${l.month.toString().padLeft(2, '0')} '
+        '${l.hour.toString().padLeft(2, '0')}:'
+        '${l.minute.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isAnnulled = item.status == SanctionReviewStatus.rejected;
+    final provenance = ref.watch(verdictProvenanceProvider(item.id)).value;
+
+    // Email (ledger fact) is the friendly identity; degrade to the row UUID.
+    final actor = (provenance?.actorEmail?.trim().isNotEmpty ?? false)
+        ? provenance!.actorEmail!.trim()
+        : _shortActor(provenance?.actorUserId ?? item.reviewedByUserId);
+    final at = provenance?.sealedAtUtc ?? item.reviewedAtUtc;
+
+    final verb = isAnnulled ? 'Anulado' : 'Confirmado';
+    final accent = isAnnulled
+        ? VeraProbColors.error
+        : VeraProbColors.textSecondary;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.neutral.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: VeraProbColors.neutral.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.verified_user_outlined, size: 13, color: accent),
+                const SizedBox(width: 6),
+                Text(
+                  'RESPONSABILIDADE DO VEREDITO',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: accent,
+                    fontSize: 9,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '$verb por $actor'
+              '${at != null ? ' em ${_formatLocal(at)}' : ''}.',
+              style: VeraProbTypography.bodyMedium.copyWith(
+                fontSize: 12,
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+            // Dual-control (Phase 10.5): the first reviewer proposed, a distinct
+            // auditor sealed — surface both so the four-eyes trail is visible.
+            if (item.firstReviewerId != null &&
+                item.firstReviewerId!.trim().isNotEmpty)
+              Text(
+                'Proposto por ${_shortActor(item.firstReviewerId)} (controle duplo).',
+                style: VeraProbTypography.bodyMedium.copyWith(
+                  fontSize: 12,
+                  color: VeraProbColors.textSecondary,
+                ),
+              ),
           ],
         ),
       ),

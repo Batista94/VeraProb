@@ -200,6 +200,45 @@ final disputeRetractionProvenanceProvider = FutureProvider.autoDispose
       );
     });
 
+// ── Verdict provenance enrichment (INV-21) ───────────────────────────────────
+
+/// Who sealed/annulled a terminal verdict and when, read from the latest
+/// `VERDICT_SEALED` / `VERDICT_REFUSED` ledger fact. The queue row carries only
+/// `reviewed_by` (UUID); the human-readable [actorEmail] lives in the fact
+/// payload, closing the SOX/SOC2 accountability gap (confirming a wrong fine is
+/// equal liability to annulling a valid one).
+typedef VerdictProvenance = ({
+  String? actorEmail,
+  String? actorUserId,
+  DateTime? sealedAtUtc,
+});
+
+/// Lazily resolves the sealing/annulment fact for a terminal queue item. Null
+/// when no verdict fact exists. RLS scopes the ledger read to the caller's org.
+final verdictProvenanceProvider = FutureProvider.autoDispose
+    .family<VerdictProvenance?, String>((ref, queueEntryId) async {
+      final row = await ref
+          .watch(supabaseClientProvider)
+          .from('sla_audit_ledger_v2')
+          .select('payload, occurred_at_utc')
+          .inFilter('type', const ['VERDICT_SEALED', 'VERDICT_REFUSED'])
+          .eq('payload->>queue_entry_id', queueEntryId)
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (row == null) return null;
+      final payload = row['payload'] as Map<String, dynamic>?;
+      final occurred = row['occurred_at_utc'] as String?;
+      final actorId =
+          (payload?['approved_by_user_id'] ?? payload?['rejected_by_user_id'])
+              as String?;
+      return (
+        actorEmail: payload?['actor_email'] as String?,
+        actorUserId: actorId,
+        sealedAtUtc: occurred == null ? null : DateTime.parse(occurred).toUtc(),
+      );
+    });
+
 // ── Contract name enrichment ──────────────────────────────────────────────────
 
 /// Resolves the human-readable contract name for a given [contractId].

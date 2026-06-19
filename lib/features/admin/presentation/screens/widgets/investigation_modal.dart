@@ -6,6 +6,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_map_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/ledger_event_humanizer.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
 final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
@@ -25,9 +26,6 @@ class InvestigationModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tracesAsync = ref.watch(evaluationTracesProvider(setId));
-    final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
-
     return Dialog(
       backgroundColor: VeraProbColors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -93,80 +91,104 @@ class InvestigationModal extends ConsumerWidget {
 
             // ── Fixed Body (Internal Scrolling) ─────────────────────────
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Context Header ────────────────────────────
-                    _ContextHeader(setId: setId, contractId: contractId),
-                    const SizedBox(height: 24),
-
-                    // ── Main Content ──────────────────────────────
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Left: Map Panel & Ledger Timeline
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              children: [
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                    final stateAsync = ref.watch(
-                                      executionStateProvider(setId),
-                                    );
-                                    return switch (stateAsync) {
-                                      AsyncData(:final value) => () {
-                                        if (value == null) {
-                                          return const SizedBox();
-                                        }
-                                        return InvestigationMapPanel(
-                                          execution: value,
-                                        );
-                                      }(),
-                                      AsyncLoading() => const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                      AsyncError() => const SizedBox(),
-                                    };
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: _LedgerTimelinePanel(
-                                    ledgerAsync: ledgerAsync,
-                                    triggeringEventId: switch (tracesAsync) {
-                                      AsyncData(:final value) =>
-                                        value.isNotEmpty
-                                            ? value.first.triggeringEventId
-                                            : null,
-                                      _ => null,
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-
-                          // Right: Evaluation Trace
-                          Expanded(
-                            flex: 2,
-                            child: _EvaluationTracePanel(
-                              tracesAsync: tracesAsync,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              child: InvestigationDossierBody(
+                setId: setId,
+                contractId: contractId,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Reusable decision-reconstruction body: context chips, execution map +
+/// operational ledger timeline, and the engine evaluation traces.
+///
+/// Extracted from [InvestigationModal] so the consolidated `ForensicDossierModal`
+/// can host the same "Decisões" surface as a tab without the standalone dialog
+/// chrome.
+class InvestigationDossierBody extends ConsumerWidget {
+  final String setId;
+  final String contractId;
+
+  const InvestigationDossierBody({
+    super.key,
+    required this.setId,
+    required this.contractId,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tracesAsync = ref.watch(evaluationTracesProvider(setId));
+    final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Context Header ────────────────────────────
+          _ContextHeader(setId: setId, contractId: contractId),
+          const SizedBox(height: 24),
+
+          // ── Main Content ──────────────────────────────
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left: Map Panel & Ledger Timeline
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      Consumer(
+                        builder: (context, ref, child) {
+                          final stateAsync = ref.watch(
+                            executionStateProvider(setId),
+                          );
+                          return switch (stateAsync) {
+                            AsyncData(:final value) => () {
+                              if (value == null) {
+                                return const SizedBox();
+                              }
+                              return InvestigationMapPanel(execution: value);
+                            }(),
+                            AsyncLoading() => const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                            AsyncError() => const SizedBox(),
+                          };
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: _LedgerTimelinePanel(
+                          ledgerAsync: ledgerAsync,
+                          triggeringEventId: switch (tracesAsync) {
+                            AsyncData(:final value) =>
+                              value.isNotEmpty
+                                  ? value.first.triggeringEventId
+                                  : null,
+                            _ => null,
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 24),
+
+                // Right: Evaluation Trace
+                Expanded(
+                  flex: 2,
+                  child: _EvaluationTracePanel(tracesAsync: tracesAsync),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -418,10 +440,20 @@ class _TimelineEvent extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
+                  // Human label primary — the dispatcher reads plain language.
                   Text(
-                    entry.type,
+                    humanizeLedgerEventType(entry.type),
                     style: VeraProbTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  // Raw enum kept as forensic subtitle (MODO AUDITORIA citability).
+                  Text(
+                    entry.type,
+                    style: VeraProbTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      color: VeraProbColors.textSecondary,
                     ),
                   ),
                 ],
