@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(13);
+SELECT plan(16);
 
 -- =============================================================================
 -- pgTAP: read_infraction_context RPC
@@ -175,6 +175,30 @@ SELECT throws_ok(
   $$ SELECT public.read_infraction_context('ffffffff-ffff-ffff-ffff-ffffffffffff') $$,
   '42501', NULL,
   'T13: unknown token returns opaque 42501'
+);
+
+-- T14: measured_value = ROUND(threshold + delta) = ROUND(5.0 + 7.5) = 13.
+SELECT is(
+  (SELECT (public.read_infraction_context('b3b30001-0000-0000-0000-000000000000')
+          ->> 'measured_value')::int),
+  13,
+  'T14: measured_value = ROUND(threshold_value + delta_value)'
+);
+
+-- T15: threshold_value = ROUND(5.0) = 5.
+SELECT is(
+  (SELECT (public.read_infraction_context('b3b30001-0000-0000-0000-000000000000')
+          ->> 'threshold_value')::int),
+  5,
+  'T15: threshold_value = ROUND(threshold_value from verdict_evidence)'
+);
+
+-- T16: exceeded_by = ROUND(delta_value) = ROUND(7.5) = 8, not measured - threshold.
+SELECT is(
+  (SELECT (public.read_infraction_context('b3b30001-0000-0000-0000-000000000000')
+          ->> 'exceeded_by')::int),
+  8,
+  'T16: exceeded_by = ROUND(delta_value), not recomputed as measured - threshold'
 );
 
 SELECT * FROM finish();

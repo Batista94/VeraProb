@@ -75,6 +75,7 @@ void main() async {
           vehiclePlate: 'ZZZ-9999',
           referenceUtc: DateTime.now().toUtc(),
           excludeQueueEntryId: uuid.v4(),
+          beforeUtc: DateTime.now().toUtc().add(const Duration(hours: 1)),
         );
 
         expect(result, isEmpty);
@@ -99,6 +100,7 @@ void main() async {
           vehiclePlate: plate,
           referenceUtc: now,
           excludeQueueEntryId: uuid.v4(), // exclude nonexistent → include all
+          beforeUtc: now.add(const Duration(hours: 1)),
         );
 
         final ids = result.map((e) => e.id).toSet();
@@ -123,6 +125,7 @@ void main() async {
           vehiclePlate: plate,
           referenceUtc: now,
           excludeQueueEntryId: currentId,
+          beforeUtc: now.add(const Duration(hours: 1)),
         );
 
         final ids = result.map((e) => e.id).toSet();
@@ -152,6 +155,7 @@ void main() async {
           vehiclePlate: plate,
           referenceUtc: now,
           excludeQueueEntryId: uuid.v4(),
+          beforeUtc: now.add(const Duration(hours: 1)),
         );
 
         final ids = result.map((e) => e.id).toSet();
@@ -179,6 +183,7 @@ void main() async {
           vehiclePlate: plate,
           referenceUtc: now,
           excludeQueueEntryId: uuid.v4(),
+          beforeUtc: now.add(const Duration(hours: 1)),
         );
 
         final ids = result.map((e) => e.id).toSet();
@@ -211,6 +216,7 @@ void main() async {
           vehiclePlate: plate,
           referenceUtc: now,
           excludeQueueEntryId: uuid.v4(),
+          beforeUtc: now.add(const Duration(hours: 1)),
         );
 
         final ids = result.map((e) => e.id).toList();
@@ -243,6 +249,7 @@ void main() async {
             vehiclePlate: plate,
             referenceUtc: DateTime.now().toUtc(),
             excludeQueueEntryId: uuid.v4(),
+            beforeUtc: DateTime.now().toUtc().add(const Duration(hours: 1)),
           );
 
           expect(result, hasLength(1));
@@ -254,6 +261,52 @@ void main() async {
             reason: 'createdAtUtc must be UTC (INV-9)',
           );
           expect(entry.verdictEvidence.clauseRef, equals('VEL-02'));
+        },
+      );
+
+      test(
+        '8. beforeUtc excludes entries at or after the anchor timestamp',
+        () async {
+          final plate = 'BEF-${uuid.v4().substring(0, 4).toUpperCase()}';
+          final monthStart = DateTime.utc(
+            DateTime.now().toUtc().year,
+            DateTime.now().toUtc().month,
+            1,
+          );
+          final id1 = await insertQueueRow(
+            vehiclePlate: plate,
+            createdAtUtc: monthStart.add(const Duration(hours: 1)),
+          );
+          final id2 = await insertQueueRow(
+            vehiclePlate: plate,
+            createdAtUtc: monthStart.add(const Duration(hours: 2)),
+          );
+          final id3 = await insertQueueRow(
+            vehiclePlate: plate,
+            createdAtUtc: monthStart.add(const Duration(hours: 3)),
+          );
+
+          // Anchor = h+2 → only id1 (h+1) must be returned.
+          final result = await repository.findByPlateInMonth(
+            organizationId: PostgresTestConfig.testOrgId,
+            vehiclePlate: plate,
+            referenceUtc: monthStart.add(const Duration(hours: 2)),
+            excludeQueueEntryId: id2,
+            beforeUtc: monthStart.add(const Duration(hours: 2)),
+          );
+
+          final ids = result.map((e) => e.id).toSet();
+          expect(
+            ids,
+            equals({id1}),
+            reason: 'only entry before anchor included',
+          );
+          expect(ids, isNot(contains(id2)), reason: 'current excluded by ID');
+          expect(
+            ids,
+            isNot(contains(id3)),
+            reason: 'future excluded by beforeUtc',
+          );
         },
       );
     },

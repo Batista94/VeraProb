@@ -1639,7 +1639,8 @@ class _RecurrenceZone extends ConsumerWidget {
     final plate = item.vehiclePlate;
     if (plate == null || plate.isEmpty) return const SizedBox.shrink();
 
-    final key = '${item.id}|$plate|${item.organizationId}';
+    final key =
+        '${item.id}|$plate|${item.organizationId}|${item.createdAtUtc.toIso8601String()}';
     return switch (ref.watch(vehicleInfractionRecurrenceProvider(key))) {
       AsyncLoading() => const SizedBox(height: 48),
       AsyncError() => const SizedBox.shrink(),

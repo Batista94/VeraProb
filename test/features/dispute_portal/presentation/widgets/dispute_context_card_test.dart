@@ -5,6 +5,39 @@ import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_co
 
 void main() {
   group('DisputeContextCard', () {
+    testWidgets('renders correct Medido/Limite/Excesso text values', (
+      WidgetTester tester,
+    ) async {
+      final contextData = InfractionContextProjection(
+        recordId: 'test-record-id',
+        assetIdentifier: 'TST-0001',
+        orgDisplayName: 'Org Alpha',
+        orgCnpj: '78.423.287/0001-50',
+        orgLogoUrl: '',
+        locationLabel: 'Rua Teste, 1',
+        occurredAtUtc: DateTime.utc(2026, 6, 19, 20, 2),
+        penaltyValueCents: 150000,
+        // measured = ROUND(threshold + delta) = ROUND(80 + 8.5) = 89
+        // exceeded = ROUND(delta) = ROUND(8.5) = 9
+        // These are the values the fixed RPC returns; NOT delta_value (9) and delta-threshold (-71).
+        measuredValue: 89,
+        thresholdValue: 80,
+        exceededBy: 9,
+        clauseRef: 'VEL-01',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(body: DisputeContextCard(contextData: contextData)),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('89 km/h'), findsOneWidget);
+      expect(find.text('80 km/h'), findsOneWidget);
+      expect(find.text('+9 km/h'), findsOneWidget);
+    });
+
     testWidgets('does not overflow when recordId is very long', (
       WidgetTester tester,
     ) async {

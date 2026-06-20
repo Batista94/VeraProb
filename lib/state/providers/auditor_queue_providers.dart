@@ -284,20 +284,25 @@ final sanctionWindowProvider = FutureProvider.autoDispose
 
 /// Computes the monthly recurrence context for a vehicle plate.
 ///
-/// Key format: "$queueEntryId|$vehiclePlate|$organizationId"
+/// Key format: "$queueEntryId|$vehiclePlate|$organizationId|$createdAtIso"
+///
+/// The 4th segment is the card's own `createdAtUtc.toIso8601String()` — used
+/// as `referenceUtc` so the month range and the `beforeUtc` upper-bound both
+/// anchor to when *this* infraction occurred, not the current wall-clock time.
 ///
 /// Returns null when [vehiclePlate] is empty (no plate = no recurrence context).
 final vehicleInfractionRecurrenceProvider = FutureProvider.autoDispose
     .family<InfractionRecurrenceReport?, String>((ref, key) async {
       final parts = key.split('|');
-      if (parts.length != 3 || parts[1].isEmpty) return null;
+      if (parts.length != 4 || parts[1].isEmpty) return null;
+      final createdAt = DateTime.parse(parts[3]).toUtc();
       final service = VehicleInfractionRecurrenceService(
         repository: ref.watch(vehicleInfractionRecurrenceRepositoryProvider),
       );
       return service.computeRecurrence(
         organizationId: parts[2],
         vehiclePlate: parts[1],
-        referenceUtc: DateTime.now().toUtc(),
+        referenceUtc: createdAt,
         currentQueueEntryId: parts[0],
       );
     });

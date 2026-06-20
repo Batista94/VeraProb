@@ -51,207 +51,31 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
       // Uncompressed content streams allow SHA-256 verification without a PDF reader.
       final doc = pw.Document(compress: false);
       final hash = dossier.computeHash();
-      final entry = dossier.ledgerEntry;
       final generatedAt = DateTime.now().toUtc();
-
       final sealed = dossier.isSealed;
-      final (
-        PdfColor accent,
-        PdfColor faint,
-        PdfColor watermarkColor,
-        String watermarkText,
-      ) = switch (dossier.classification) {
-        DossierClassification.preliminary => (
-          _amber,
-          _amberFaint,
-          _amberWatermark,
-          'PRELIMINAR - EM ANÁLISE',
-        ),
-        DossierClassification.applied => (
-          _rose,
-          _roseFaint,
-          _roseWatermark,
-          'INFRAÇÃO CONFIRMADA',
-        ),
-        DossierClassification.annulled => (
-          _teal,
-          _tealFaint,
-          _tealWatermark,
-          'INFRAÇÃO ANULADA',
-        ),
-        DossierClassification.acknowledged => (
-          _darkGreen,
-          _darkGreenFaint,
-          _darkGreenWatermark,
-          'VEREDITO SELADO - DE ACORDO',
-        ),
-      };
+
+      final theme = _getThemeTokens(dossier.classification);
 
       // Citable document id — eventId when present, else the short verdict/custody
       // seal. No schema change; reuses data already sealed in the dossier.
       final dossierId =
-          entry.eventId ??
+          dossier.ledgerEntry.eventId ??
           (dossier.verdictSealHash ?? hash).substring(0, 12).toUpperCase();
-
-      final footer = pw.Container(
-        decoration: const pw.BoxDecoration(
-          border: pw.Border(
-            top: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
-          ),
-        ),
-        padding: const pw.EdgeInsets.only(top: 4),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'Documento gerado eletronicamente. Validade jurídica garantida por '
-              'selo criptográfico SHA-256. Dispensada assinatura manual.',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
-            ),
-            pw.SizedBox(height: 2),
-            pw.Text(
-              'SHA-256: $hash  |  Gerado em: ${generatedAt.toIso8601String()} UTC',
-              style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
-            ),
-          ],
-        ),
-      );
-
-      // Full-page diagonal watermark — the unmistakable "reality stamp" of the
-      // document's lifecycle state, painted behind the forensic body.
-      final pageTheme = pw.PageTheme(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(40),
-        buildBackground: (_) => pw.FullPage(
-          ignoreMargins: true,
-          child: pw.Watermark.text(
-            watermarkText,
-            angle: math.pi / 5,
-            style: pw.TextStyle(
-              color: watermarkColor,
-              fontWeight: pw.FontWeight.bold,
-            ),
-          ),
-        ),
-      );
 
       doc.addPage(
         pw.MultiPage(
-          pageTheme: pageTheme,
-          footer: (_) => footer,
-          build: (_) => [
-            // ── Header ────────────────────────────────────────────────────
-            _sectionHeader('DOSSIÊ FORENSE - VeraProb'),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              'Dossiê Nº: $dossierId',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-            ),
-            pw.Text(
-              'Gerado em: ${generatedAt.toIso8601String()} UTC',
-              style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-            ),
-            pw.SizedBox(height: 8),
-
-            // ── Status banner (lifecycle reality) ─────────────────────────
-            _statusBanner(
-              sealed,
-              accent,
-              faint,
-              watermarkText,
-              dossier.verdictOutcomeLabel,
-            ),
-            pw.SizedBox(height: 12),
-
-            // ── Dados do Evento ────────────────────────────────────────────
-            _sectionHeader('DADOS DO EVENTO'),
-            pw.SizedBox(height: 4),
-            _labelValue('Contrato', entry.contractId),
-            _labelValue('Org ID', entry.organizationId),
-            _labelValue('Data UTC', entry.occurredAtUtc.toIso8601String()),
-            _labelValue('Tipo', entry.type),
-            pw.SizedBox(height: 12),
-
-            // ── Mapa da Ocorrência ─────────────────────────────────────────
-            _sectionHeader('MAPA DA OCORRÊNCIA'),
-            pw.SizedBox(height: 4),
-            _renderImageOrFallback(
-              dossier.mapImageBytes,
-              fallback: 'Sem coordenadas registradas para esta ocorrência.',
-            ),
-            pw.SizedBox(height: 12),
-
-            // ── Defesa do Transportador ───────────────────────────────────
-            // Sealed: the carrier's submitted evidence is part of the record.
-            // Preliminary: the defense window is still open — the document MUST
-            // say so explicitly so it is never used to close a billing early.
-            _sectionHeader('DEFESA DO TRANSPORTADOR'),
-            pw.SizedBox(height: 4),
-            if (dossier.classification == DossierClassification.annulled)
-              // FRENTE 2: Fallback de texto para status 'rejected' / 'annulled' (Dossiê Forense)
-              pw.Text(
-                'ISENTADO - Infração anulada pelo auditor. Não há cobrança de multa ou necessidade de envio de defesa pelo transportador.',
-                style: pw.TextStyle(
-                  fontSize: 9,
-                  fontWeight: pw.FontWeight.bold,
-                  color: _teal,
-                ),
-              )
-            else if (sealed)
-              _renderImageOrFallback(
-                dossier.telegramImageBytes,
-                fallback:
-                    'Transportador não anexou evidência de defesa para esta ocorrência.',
-              )
-            else
-              pw.Text(
-                'PENDENTE - documento preliminar emitido antes da defesa do '
-                'transportador. Não utilize para fechar faturamento.',
-                style: const pw.TextStyle(
-                  fontSize: 9,
-                  color: PdfColors.grey700,
-                ),
-              ),
-            pw.SizedBox(height: 12),
-
-            // ── Veredito do Auditor (sealed only, INV-21) ─────────────────
-            if (sealed) ..._verdictSection(dossier),
-
-            // ── Resumo Financeiro ──────────────────────────────────────────
-            // INV-21: an annulled verdict has ZERO financial impact. The original
-            // amount stays sealed in the hash, but the rendered summary MUST show
-            // R$ 0,00 so the carrier is never billed off an isentada dossier.
-            _sectionHeader('RESUMO FINANCEIRO'),
-            pw.SizedBox(height: 4),
-            if (dossier.classification == DossierClassification.annulled)
-              _labelValue(
-                'Impacto Financeiro',
-                'R\$ 0,00 (multa original de '
-                    'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)} isentada)',
-              )
-            else
-              _labelValue(
-                'Impacto Financeiro',
-                'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)}',
-              ),
-            pw.SizedBox(height: 12),
-
-            // ── Cadeia de Custódia (INV-9) ─────────────────────────────────
-            _sectionHeader('CADEIA DE CUSTÓDIA (INV-9)'),
-            pw.SizedBox(height: 4),
-            pw.Text('SHA-256: $hash', style: const pw.TextStyle(fontSize: 8)),
-            pw.SizedBox(height: 4),
-            pw.Text(
-              sealed
-                  ? 'Este hash foi computado sobre: eventId, organizationId, '
-                        'contractId, occurredAtUtc, payload, savingsCents, '
-                        'bytes do mapa estático e bytes da evidência Telegram (quando presentes).'
-                  : 'Selo de custódia do SNAPSHOT PRELIMINAR atual - não é o selo '
-                        'do veredito final. O selo definitivo é emitido apenas '
-                        'quando a sanção é concluída (VEREDITO SELADO).',
-              style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
-            ),
-          ],
+          pageTheme: _buildPageTheme(theme.watermarkText, theme.watermarkColor),
+          footer: (_) => _buildFooter(hash, generatedAt),
+          build: (_) => _buildContent(
+            dossier: dossier,
+            dossierId: dossierId,
+            generatedAt: generatedAt,
+            hash: hash,
+            sealed: sealed,
+            accent: theme.accent,
+            faint: theme.faint,
+            watermarkText: theme.watermarkText,
+          ),
         ),
       );
 
@@ -259,6 +83,239 @@ class PdfDossierGenerator implements IForensicPdfGenerator {
     } catch (e) {
       throw PdfGenerationException(e.toString());
     }
+  }
+
+  // ── Extracted Builders ─────────────────────────────────────────────────────
+
+  ({
+    PdfColor accent,
+    PdfColor faint,
+    PdfColor watermarkColor,
+    String watermarkText,
+  })
+  _getThemeTokens(DossierClassification classification) {
+    return switch (classification) {
+      DossierClassification.preliminary => (
+        accent: _amber,
+        faint: _amberFaint,
+        watermarkColor: _amberWatermark,
+        watermarkText: 'PRELIMINAR - EM ANÁLISE',
+      ),
+      DossierClassification.applied => (
+        accent: _rose,
+        faint: _roseFaint,
+        watermarkColor: _roseWatermark,
+        watermarkText: 'INFRAÇÃO CONFIRMADA',
+      ),
+      DossierClassification.annulled => (
+        accent: _teal,
+        faint: _tealFaint,
+        watermarkColor: _tealWatermark,
+        watermarkText: 'INFRAÇÃO ANULADA',
+      ),
+      DossierClassification.acknowledged => (
+        accent: _darkGreen,
+        faint: _darkGreenFaint,
+        watermarkColor: _darkGreenWatermark,
+        watermarkText: 'VEREDITO SELADO - DE ACORDO',
+      ),
+    };
+  }
+
+  pw.Widget _buildFooter(String hash, DateTime generatedAt) {
+    return pw.Container(
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(
+          top: pw.BorderSide(color: PdfColors.grey400, width: 0.5),
+        ),
+      ),
+      padding: const pw.EdgeInsets.only(top: 4),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(
+            'Documento gerado eletronicamente. Validade jurídica garantida por '
+            'selo criptográfico SHA-256. Dispensada assinatura manual.',
+            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+          ),
+          pw.SizedBox(height: 2),
+          pw.Text(
+            'SHA-256: $hash  |  Gerado em: ${generatedAt.toIso8601String()} UTC',
+            style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.PageTheme _buildPageTheme(String watermarkText, PdfColor watermarkColor) {
+    // Full-page diagonal watermark — the unmistakable "reality stamp" of the
+    // document's lifecycle state, painted behind the forensic body.
+    return pw.PageTheme(
+      pageFormat: PdfPageFormat.a4,
+      margin: const pw.EdgeInsets.all(40),
+      buildBackground: (_) => pw.FullPage(
+        ignoreMargins: true,
+        child: pw.Watermark.text(
+          watermarkText,
+          angle: math.pi / 5,
+          style: pw.TextStyle(
+            color: watermarkColor,
+            fontWeight: pw.FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<pw.Widget> _buildContent({
+    required ForensicDossier dossier,
+    required String dossierId,
+    required DateTime generatedAt,
+    required String hash,
+    required bool sealed,
+    required PdfColor accent,
+    required PdfColor faint,
+    required String watermarkText,
+  }) {
+    final entry = dossier.ledgerEntry;
+    return [
+      // ── Header ────────────────────────────────────────────────────
+      _sectionHeader('DOSSIÊ FORENSE - VeraProb'),
+      pw.SizedBox(height: 4),
+      pw.Text(
+        'Dossiê Nº: $dossierId',
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+      ),
+      pw.Text(
+        'Gerado em: ${generatedAt.toIso8601String()} UTC',
+        style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+      ),
+      pw.SizedBox(height: 8),
+
+      // ── Status banner (lifecycle reality) ─────────────────────────
+      _statusBanner(
+        sealed,
+        accent,
+        faint,
+        watermarkText,
+        dossier.verdictOutcomeLabel,
+      ),
+      pw.SizedBox(height: 12),
+
+      // ── Dados do Evento ────────────────────────────────────────────
+      _sectionHeader('DADOS DO EVENTO'),
+      pw.SizedBox(height: 4),
+      _labelValue('Contrato', entry.contractId),
+      _labelValue('Org ID', entry.organizationId),
+      _labelValue('Data UTC', entry.occurredAtUtc.toIso8601String()),
+      _labelValue('Tipo', entry.type),
+      pw.SizedBox(height: 12),
+
+      // ── Mapa da Ocorrência ─────────────────────────────────────────
+      _sectionHeader('MAPA DA OCORRÊNCIA'),
+      pw.SizedBox(height: 4),
+      _renderImageOrFallback(
+        dossier.mapImageBytes,
+        fallback: 'Sem coordenadas registradas para esta ocorrência.',
+      ),
+      pw.SizedBox(height: 12),
+
+      // ── Defesa do Transportador ───────────────────────────────────
+      _buildCarrierDefenseSection(dossier, sealed),
+
+      // ── Veredito do Auditor (sealed only, INV-21) ─────────────────
+      if (sealed) ..._verdictSection(dossier),
+
+      // ── Resumo Financeiro ──────────────────────────────────────────
+      _buildFinancialSummarySection(dossier),
+
+      // ── Cadeia de Custódia (INV-9) ─────────────────────────────────
+      _buildChainOfCustodySection(hash, sealed),
+    ];
+  }
+
+  pw.Widget _buildCarrierDefenseSection(ForensicDossier dossier, bool sealed) {
+    // Sealed: the carrier's submitted evidence is part of the record.
+    // Preliminary: the defense window is still open — the document MUST
+    // say so explicitly so it is never used to close a billing early.
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('DEFESA DO TRANSPORTADOR'),
+        pw.SizedBox(height: 4),
+        if (dossier.classification == DossierClassification.annulled)
+          // FRENTE 2: Fallback de texto para status 'rejected' / 'annulled' (Dossiê Forense)
+          pw.Text(
+            'ISENTADO - Infração anulada pelo auditor. Não há cobrança de multa ou necessidade de envio de defesa pelo transportador.',
+            style: pw.TextStyle(
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+              color: _teal,
+            ),
+          )
+        else if (sealed)
+          _renderImageOrFallback(
+            dossier.telegramImageBytes,
+            fallback:
+                'Transportador não anexou evidência de defesa para esta ocorrência.',
+          )
+        else
+          pw.Text(
+            'PENDENTE - documento preliminar emitido antes da defesa do '
+            'transportador. Não utilize para fechar faturamento.',
+            style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
+          ),
+        pw.SizedBox(height: 12),
+      ],
+    );
+  }
+
+  pw.Widget _buildFinancialSummarySection(ForensicDossier dossier) {
+    // INV-21: an annulled verdict has ZERO financial impact. The original
+    // amount stays sealed in the hash, but the rendered summary MUST show
+    // R$ 0,00 so the carrier is never billed off an isentada dossier.
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('RESUMO FINANCEIRO'),
+        pw.SizedBox(height: 4),
+        if (dossier.classification == DossierClassification.annulled)
+          _labelValue(
+            'Impacto Financeiro',
+            'R\$ 0,00 (multa original de '
+                'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)} isentada)',
+          )
+        else
+          _labelValue(
+            'Impacto Financeiro',
+            'R\$ ${(dossier.savingsCents / 100).toStringAsFixed(2)}',
+          ),
+        pw.SizedBox(height: 12),
+      ],
+    );
+  }
+
+  pw.Widget _buildChainOfCustodySection(String hash, bool sealed) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('CADEIA DE CUSTÓDIA (INV-9)'),
+        pw.SizedBox(height: 4),
+        pw.Text('SHA-256: $hash', style: const pw.TextStyle(fontSize: 8)),
+        pw.SizedBox(height: 4),
+        pw.Text(
+          sealed
+              ? 'Este hash foi computado sobre: eventId, organizationId, '
+                    'contractId, occurredAtUtc, payload, savingsCents, '
+                    'bytes do mapa estático e bytes da evidência Telegram (quando presentes).'
+              : 'Selo de custódia do SNAPSHOT PRELIMINAR atual - não é o selo '
+                    'do veredito final. O selo definitivo é emitido apenas '
+                    'quando a sanção é concluída (VEREDITO SELADO).',
+          style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+        ),
+      ],
+    );
   }
 
   // ── Private helpers ────────────────────────────────────────────────────────

@@ -218,6 +218,7 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
                   InvestigationDossierBody(
                     setId: widget.setId,
                     contractId: widget.contractId,
+                    showTraces: false,
                   ),
                   _FrozenRuleTab(queueEntryId: widget.queueEntryId),
                 ],

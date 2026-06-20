@@ -9,6 +9,7 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/investigati
 import 'package:veraprob/features/admin/presentation/screens/widgets/ledger_event_humanizer.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
+final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
 
 /// OCC Investigation Modal — Read-only forensic analysis of contractual
 /// evaluation decisions. Displays the causal chain from ledger events
@@ -111,11 +112,13 @@ class InvestigationModal extends ConsumerWidget {
 class InvestigationDossierBody extends ConsumerWidget {
   final String setId;
   final String contractId;
+  final bool showTraces;
 
   const InvestigationDossierBody({
     super.key,
     required this.setId,
     required this.contractId,
+    this.showTraces = true,
   });
 
   @override
@@ -124,6 +127,103 @@ class InvestigationDossierBody extends ConsumerWidget {
     // The panel itself has been moved to Evidência tab to kill duplication.
     final tracesAsync = ref.watch(evaluationTracesProvider(setId));
     final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
+
+    final mainContent = showTraces
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: Map Panel & Ledger Timeline
+              Expanded(
+                flex: 1,
+                child: Column(
+                  children: [
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final stateAsync = ref.watch(
+                          executionStateProvider(setId),
+                        );
+                        return switch (stateAsync) {
+                          AsyncData(:final value) => () {
+                            if (value == null) return const SizedBox();
+                            return InvestigationMapPanel(execution: value);
+                          }(),
+                          AsyncLoading() => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          AsyncError() => const SizedBox(),
+                        };
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: _LedgerTimelinePanel(
+                        ledgerAsync: ledgerAsync,
+                        triggeringEventId: switch (tracesAsync) {
+                          AsyncData(:final value) =>
+                            value.isNotEmpty
+                                ? value.first.triggeringEventId
+                                : null,
+                          _ => null,
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // Right: Evaluation Trace
+              Expanded(
+                flex: 2,
+                child: _EvaluationTracePanel(tracesAsync: tracesAsync),
+              ),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: Ledger Timeline (Primary Forensic Spine)
+              Expanded(
+                flex: 2,
+                child: _LedgerTimelinePanel(
+                  ledgerAsync: ledgerAsync,
+                  triggeringEventId: switch (tracesAsync) {
+                    AsyncData(:final value) =>
+                      value.isNotEmpty ? value.first.triggeringEventId : null,
+                    _ => null,
+                  },
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // Right: Map Panel (Secondary Context)
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final stateAsync = ref.watch(
+                          executionStateProvider(setId),
+                        );
+                        return switch (stateAsync) {
+                          AsyncData(:final value) => () {
+                            if (value == null) return const SizedBox();
+                            return InvestigationMapPanel(execution: value);
+                          }(),
+                          AsyncLoading() => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          AsyncError() => const SizedBox(),
+                        };
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -135,53 +235,7 @@ class InvestigationDossierBody extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // ── Main Content ──────────────────────────────
-          Expanded(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left: Ledger Timeline (Primary Forensic Spine)
-                Expanded(
-                  flex: 2,
-                  child: _LedgerTimelinePanel(
-                    ledgerAsync: ledgerAsync,
-                    triggeringEventId: switch (tracesAsync) {
-                      AsyncData(:final value) =>
-                        value.isNotEmpty ? value.first.triggeringEventId : null,
-                      _ => null,
-                    },
-                  ),
-                ),
-                const SizedBox(width: 24),
-
-                // Right: Map Panel (Secondary Context)
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Consumer(
-                        builder: (context, ref, child) {
-                          final stateAsync = ref.watch(
-                            executionStateProvider(setId),
-                          );
-                          return switch (stateAsync) {
-                            AsyncData(:final value) => () {
-                              if (value == null) return const SizedBox();
-                              return InvestigationMapPanel(execution: value);
-                            }(),
-                            AsyncLoading() => const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            AsyncError() => const SizedBox(),
-                          };
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: mainContent),
         ],
       ),
     );
@@ -554,6 +608,347 @@ class _TimelineEvent extends StatelessWidget {
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Evaluation Trace Panel
+// ═══════════════════════════════════════════════════════════════
+
+class _EvaluationTracePanel extends StatelessWidget {
+  final AsyncValue<List<EvaluationTrace>> tracesAsync;
+
+  const _EvaluationTracePanel({required this.tracesAsync});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Panel Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.gavel,
+                  size: 16,
+                  color: VeraProbColors.secondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Rastreabilidade Forense',
+                  style: VeraProbTypography.sectionTitle,
+                ),
+              ],
+            ),
+          ),
+
+          // Trace Content
+          Expanded(
+            child: switch (tracesAsync) {
+              AsyncData(:final value) => () {
+                if (value.isEmpty) {
+                  return _NoTraceState();
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: value.length,
+                  itemBuilder: (context, index) {
+                    return _TraceCard(trace: value[index]);
+                  },
+                );
+              }(),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(color: VeraProbColors.primary),
+              ),
+              AsyncError(:final error) => Center(
+                child: Text(
+                  'Erro ao carregar traces: $error',
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
+                  ),
+                ),
+              ),
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Graceful empty state when no evaluation trace is available.
+class _NoTraceState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.info_outline,
+            size: 48,
+            color: VeraProbColors.textDisabled,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Nenhuma rastreabilidade disponível',
+            style: VeraProbTypography.sectionTitle,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Esta obrigação pode ter sido processada antes\n'
+            'da ativação do sistema de rastreabilidade.',
+            textAlign: TextAlign.center,
+            style: VeraProbTypography.bodySmall.copyWith(
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Trace Card
+// ═══════════════════════════════════════════════════════════════
+
+class _TraceCard extends StatelessWidget {
+  final EvaluationTrace trace;
+
+  const _TraceCard({required this.trace});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Trace Metadata Header
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+            ),
+            child: Row(
+              children: [
+                _MetaChip(
+                  icon: Icons.memory,
+                  label: trace.engineVersion,
+                  color: VeraProbColors.secondary,
+                ),
+                const SizedBox(width: 12),
+                _MetaChip(
+                  icon: Icons.access_time,
+                  label: _dateFormat.format(trace.evaluatedAtUtc),
+                  color: VeraProbColors.textSecondary,
+                ),
+                const Spacer(),
+                Text(
+                  '${trace.decisions.length} regra(s)',
+                  style: VeraProbTypography.caption,
+                ),
+              ],
+            ),
+          ),
+
+          // Decisions
+          ...trace.decisions.map(
+            (decision) => _DecisionRow(decision: decision),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 4),
+        Text(label, style: VeraProbTypography.bodySmall.copyWith(color: color)),
+      ],
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Decision Row
+// ═══════════════════════════════════════════════════════════════
+
+class _DecisionRow extends StatelessWidget {
+  final EvaluationDecision decision;
+
+  const _DecisionRow({required this.decision});
+
+  @override
+  Widget build(BuildContext context) {
+    final isPenalty = decision.outcome.contains('PENALTY');
+    final isPass =
+        decision.outcome == 'PASS' || decision.outcome == 'BINDING_CONFIRMED';
+    final outcomeColor = isPenalty
+        ? VeraProbColors.error
+        : isPass
+        ? VeraProbColors.success
+        : VeraProbColors.info;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: VeraProbColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Rule header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: VeraProbColors.info.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  'P${decision.rulePriority}',
+                  style: VeraProbTypography.badge.copyWith(
+                    color: VeraProbColors.info,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  decision.ruleType,
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: outcomeColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  decision.outcome,
+                  style: VeraProbTypography.badge.copyWith(color: outcomeColor),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Rule metadata
+          Row(
+            children: [
+              Text(
+                'Regra: ${decision.ruleId.length > 8 ? decision.ruleId.substring(0, 8) : decision.ruleId}…',
+                style: VeraProbTypography.caption,
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'Versão: v${decision.ruleVersion}',
+                style: VeraProbTypography.caption,
+              ),
+              if (decision.financialImpactCents != null) ...[
+                const Spacer(),
+                Text(
+                  'Impacto: R\$ ${(decision.financialImpactCents! / 100).toStringAsFixed(2)}',
+                  style: VeraProbTypography.bodySmall.copyWith(
+                    color: VeraProbColors.error,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
+
+          // Evidence
+          if (decision.evidence.toJson().isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: VeraProbColors.background,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'PROVA DOCUMENTAL',
+                    style: VeraProbTypography.caption.copyWith(
+                      letterSpacing: 1.0,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...decision.evidence.toJson().entries.map(
+                    (e) => Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        children: [
+                          Text(
+                            '${e.key}: ',
+                            style: VeraProbTypography.caption.copyWith(
+                              color: VeraProbColors.textSecondary,
+                            ),
+                          ),
+                          Text(
+                            '${e.value}',
+                            style: VeraProbTypography.bodySmall.copyWith(
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
