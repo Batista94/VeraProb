@@ -142,8 +142,11 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     } else if (item.status == SanctionReviewStatus.pendingPeerReview) {
       leftBorderColor = VeraProbColors.primary;
     } else if (item.status == SanctionReviewStatus.rejected) {
-      // Refused verdict: attenuated red — distinct from the live pending red.
-      leftBorderColor = VeraProbColors.error.withValues(alpha: 0.5);
+      // Refused verdict: attenuated green — fine annulled, carrier-favorable outcome.
+      leftBorderColor = VeraProbColors.success.withValues(alpha: 0.7);
+    } else if (item.status == SanctionReviewStatus.applied) {
+      // Applied fine: red — confirmed penalty, carrier-adverse outcome.
+      leftBorderColor = VeraProbColors.error;
     } else if (isLocked) {
       leftBorderColor = VeraProbColors.textDisabled;
     } else {
@@ -400,22 +403,6 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                             // ── Zona 4: Forensic Seal ──────────────────────────────────────
                             _ForensicSealRow(item: item),
 
-                            // ── Zona 4.2: Refusal reason (rejected verdicts) ──────────────
-                            if (item.status == SanctionReviewStatus.rejected &&
-                                (item.rejectionReason?.trim().isNotEmpty ??
-                                    false))
-                              _RefusalReasonZone(
-                                reason: item.rejectionReason!.trim(),
-                              ),
-
-                            // ── Zona 4.25: Verdict accountability (INV-21) ────────────────
-                            // Who sealed/annulled this terminal verdict, and when.
-                            // Symmetric on applied + rejected — both carry equal
-                            // liability, so neither hides its author.
-                            if (item.status == SanctionReviewStatus.applied ||
-                                item.status == SanctionReviewStatus.rejected)
-                              _VerdictProvenanceZone(item: item),
-
                             // ── Zona 4.3: Retraction provenance (re-pending verdicts) ─────
                             // A `pending` item carrying a non-null disputedAtUtc was
                             // disputed and later retracted — keep that trail visible
@@ -594,7 +581,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         bordered: true,
       ),
       SanctionReviewStatus.rejected => (
-        color: VeraProbColors.error,
+        color: VeraProbColors.success,
         icon: Icons.block_rounded,
         label: 'VEREDITO RECUSADO',
         tooltip: 'Sanção recusada — multa não aplicada',
@@ -1828,64 +1815,6 @@ class _ForensicSealRow extends StatelessWidget {
   }
 }
 
-/// Zona 4.2: Refusal reason banner for `rejected` verdicts.
-///
-/// Surfaces the auditor's rationale (from `rejection_reason`) on the Concluídos
-/// tab so a refused fine is never a silent ghost — INV-23 explainability.
-class _RefusalReasonZone extends StatelessWidget {
-  final String reason;
-  const _RefusalReasonZone({required this.reason});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: VeraProbColors.error.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: VeraProbColors.error.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.block_rounded,
-                  size: 13,
-                  color: VeraProbColors.error,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  'MOTIVO DA RECUSA',
-                  style: VeraProbTypography.badge.copyWith(
-                    color: VeraProbColors.error,
-                    fontSize: 9,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              reason,
-              style: VeraProbTypography.bodyMedium.copyWith(
-                fontSize: 12,
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Zona 5 (disputed): inline Human Verdict Affirmation controls for a contested
 /// verdict (Componente 5.4).
 ///
@@ -2198,101 +2127,6 @@ class _RetractionProvenanceZone extends ConsumerWidget {
 
 /// Zona 4.25: Verdict accountability (INV-21).
 ///
-/// Surfaces WHO sealed (applied) or annulled (rejected) the verdict and WHEN —
-/// the human-readable email comes from the `VERDICT_SEALED` / `VERDICT_REFUSED`
-/// ledger fact ([verdictProvenanceProvider]); the queue row only carries a UUID.
-/// Falls back to the short reviewer UUID when the fact (or its email) is absent,
-/// so a sealed verdict is never authorless on screen.
-class _VerdictProvenanceZone extends ConsumerWidget {
-  final SanctionQueueItemView item;
-  const _VerdictProvenanceZone({required this.item});
-
-  static String _shortActor(String? id) {
-    if (id == null || id.trim().isEmpty) return 'desconhecido';
-    final v = id.trim();
-    return v.length <= 8 ? v : '${v.substring(0, 8)}…';
-  }
-
-  static String _formatLocal(DateTime utc) {
-    final l = utc.toLocal();
-    return '${l.day.toString().padLeft(2, '0')}/'
-        '${l.month.toString().padLeft(2, '0')} '
-        '${l.hour.toString().padLeft(2, '0')}:'
-        '${l.minute.toString().padLeft(2, '0')}';
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAnnulled = item.status == SanctionReviewStatus.rejected;
-    final provenance = ref.watch(verdictProvenanceProvider(item.id)).value;
-
-    // Email (ledger fact) is the friendly identity; degrade to the row UUID.
-    final actor = (provenance?.actorEmail?.trim().isNotEmpty ?? false)
-        ? provenance!.actorEmail!.trim()
-        : _shortActor(provenance?.actorUserId ?? item.reviewedByUserId);
-    final at = provenance?.sealedAtUtc ?? item.reviewedAtUtc;
-
-    final verb = isAnnulled ? 'Anulado' : 'Confirmado';
-    final accent = isAnnulled
-        ? VeraProbColors.error
-        : VeraProbColors.textSecondary;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: VeraProbColors.neutral.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: VeraProbColors.neutral.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.verified_user_outlined, size: 13, color: accent),
-                const SizedBox(width: 6),
-                Text(
-                  'RESPONSABILIDADE DO VEREDITO',
-                  style: VeraProbTypography.badge.copyWith(
-                    color: accent,
-                    fontSize: 9,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '$verb por $actor'
-              '${at != null ? ' em ${_formatLocal(at)}' : ''}.',
-              style: VeraProbTypography.bodyMedium.copyWith(
-                fontSize: 12,
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-            // Dual-control (Phase 10.5): the first reviewer proposed, a distinct
-            // auditor sealed — surface both so the four-eyes trail is visible.
-            if (item.firstReviewerId != null &&
-                item.firstReviewerId!.trim().isNotEmpty)
-              Text(
-                'Proposto por ${_shortActor(item.firstReviewerId)} (controle duplo).',
-                style: VeraProbTypography.bodyMedium.copyWith(
-                  fontSize: 12,
-                  color: VeraProbColors.textSecondary,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Auditor review of carrier-submitted counter-evidence awaiting a verdict.
 ///
 /// Lists `PENDING_AUDIT` portal submissions for this disputed sanction via the

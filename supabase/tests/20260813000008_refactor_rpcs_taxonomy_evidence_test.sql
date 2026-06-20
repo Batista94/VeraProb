@@ -74,6 +74,22 @@ VALUES
    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
    'MISMATCH', '00000000-0000-0000-0000-0000000db0c4');
 
+-- Rule set required by _persist_evidence_snapshot (wired to reject/resolve/peer RPCs in 20260824000001).
+INSERT INTO public.contract_rule_sets (id, organization_id, contract_id)
+VALUES ('11111111-1111-1111-1111-1111111100bb',
+        '00000000-0000-0000-0000-0000000d2c40',
+        '11111111-1111-1111-1111-1111111111c0')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO public.contract_rule_versions
+  (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
+   active_from_utc, created_at_utc)
+VALUES ('11111111-1111-1111-1111-1111111100cc',
+        '11111111-1111-1111-1111-1111111100bb',
+        'MAX_TOLERANCE_DELAY', '{"threshold_minutes": 30}'::jsonb, 1, 0,
+        '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+ON CONFLICT (id) DO NOTHING;
+
 -- ── B1: signatures (new exist, old dropped) ──────────────────────────────────
 SELECT has_function('public', 'resolve_dispute',
   ARRAY['uuid','uuid','text','text','uuid','text','timestamp with time zone','text','text'],

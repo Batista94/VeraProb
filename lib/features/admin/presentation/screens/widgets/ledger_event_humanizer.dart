@@ -87,3 +87,46 @@ String humanizeLedgerEventType(String type) {
       return type;
   }
 }
+
+/// Maps raw dispute/rejection reason codes to Portuguese operator labels.
+///
+/// Mirrors the seed data from migration 20260813000004_dispute_reason_codes.
+/// Unmapped codes fall back to the raw string (forward-compat for new codes).
+String humanizeReasonCode(String code) {
+  switch (code) {
+    case 'FORCE_MAJEURE':
+      return 'Força Maior';
+    case 'SENSOR_FAULT':
+      return 'Falha de Sensor';
+    case 'GPS_SIGNAL_LOSS':
+      return 'Perda de Sinal GPS';
+    case 'CONTRACT_EXCEPTION':
+      return 'Exceção Contratual';
+    case 'ROUTE_DEVIATION':
+      return 'Desvio de Rota Autorizado';
+    case 'WEATHER_EVENT':
+      return 'Evento Climático';
+    case 'TRAFFIC_INCIDENT':
+      return 'Acidente/Interdição de Via';
+    case 'ASSET_BREAKDOWN':
+      return 'Pane do Ativo (Veículo)';
+    case 'OPERATOR_EMERGENCY':
+      return 'Emergência do Operador';
+    case 'REGULATORY_INTERVENTION':
+      return 'Intervenção Regulatória (Blitz)';
+    case 'COMMUNICATION_FAILURE':
+      return 'Falha de Comunicação';
+    case 'SCHEDULING_ERROR':
+      return 'Erro de Programação';
+    case 'THIRD_PARTY_INCIDENT':
+      return 'Incidente com Terceiro';
+    case 'INFRASTRUCTURE_FAULT':
+      return 'Falha de Infraestrutura';
+    case 'OTHER':
+      return 'Outro';
+    case 'LEGACY_UNCLASSIFIED':
+      return 'Legado Não Classificado';
+    default:
+      return code;
+  }
+}

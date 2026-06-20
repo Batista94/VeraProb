@@ -560,7 +560,7 @@ class _TimelineEvent extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Motivo da Contestação: ',
+                                    'Código de Fundamentação: ',
                                     style: VeraProbTypography.caption.copyWith(
                                       fontWeight: FontWeight.w600,
                                       color: VeraProbColors.textPrimary,
@@ -568,10 +568,11 @@ class _TimelineEvent extends StatelessWidget {
                                   ),
                                   Expanded(
                                     child: Text(
-                                      entry.payload['reason_code'] as String,
+                                      humanizeReasonCode(
+                                        entry.payload['reason_code'] as String,
+                                      ),
                                       style: VeraProbTypography.caption
                                           .copyWith(
-                                            fontFamily: 'monospace',
                                             color: VeraProbColors.textSecondary,
                                           ),
                                     ),

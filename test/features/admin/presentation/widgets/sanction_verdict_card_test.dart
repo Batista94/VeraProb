@@ -305,7 +305,6 @@ List<Override> _baseOverrides({
   required SanctionActionNotifier notifier,
   String? contractName = 'Test Contract',
   String? currentOperatorId = 'test-user',
-  VerdictProvenance? verdictProvenance,
 }) {
   return [
     contractNameProvider.overrideWith((ref, id) async => contractName),
@@ -313,9 +312,6 @@ List<Override> _baseOverrides({
     sanctionWindowProvider.overrideWith((ref, setId) async => null),
     disputeReasonCodesProvider.overrideWith((ref) async => _testReasonCodes),
     disputeRetractionProvenanceProvider.overrideWith((ref, id) async => null),
-    verdictProvenanceProvider.overrideWith(
-      (ref, id) async => verdictProvenance,
-    ),
     sanctionActionStateProvider.overrideWith2((_) => notifier),
     tenantValidationServiceProvider.overrideWithValue(
       _MockTenantValidationService(),
@@ -341,7 +337,6 @@ Widget _buildCard(
   SanctionQueueItemView item, {
   SanctionActionNotifier? notifier,
   String? contractName = 'Test Contract',
-  VerdictProvenance? verdictProvenance,
 }) {
   final n = notifier ?? _MockSanctionActionNotifier();
   return ProviderScope(
@@ -349,7 +344,6 @@ Widget _buildCard(
       item: item,
       notifier: n,
       contractName: contractName,
-      verdictProvenance: verdictProvenance,
     ),
     child: MaterialApp(
       home: Scaffold(
@@ -463,32 +457,6 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('rejected verdict surfaces MOTIVO DA RECUSA with reason', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
-
-      await tester.pumpWidget(
-        _buildCard(
-          _makeItem(
-            status: SanctionReviewStatus.rejected,
-            rejectionReason:
-                'Justificativa do contratante aceita pelo auditor.',
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('MOTIVO DA RECUSA'), findsOneWidget);
-      expect(
-        find.text('Justificativa do contratante aceita pelo auditor.'),
-        findsOneWidget,
-      );
-
-      addTearDown(tester.view.resetPhysicalSize);
-    });
-
     testWidgets('hides action row when sealed (opacity 0.6)', (tester) async {
       tester.view.physicalSize = const Size(800, 1200);
       tester.view.devicePixelRatio = 1.0;
@@ -507,6 +475,23 @@ void main() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'rejected card shows Dossiê Forense button (INV-21 regression guard)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
+        );
+        await tester.pump();
+
+        expect(find.text('Dossiê Forense'), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — API Fail Fallbacks', () {
@@ -1535,7 +1520,7 @@ void _sealedEvidenceAndStyleTests() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('disputed → amber accent; applied → grey accent', (
+    testWidgets('disputed → amber accent; applied → red accent', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -1551,12 +1536,12 @@ void _sealedEvidenceAndStyleTests() {
         _buildCard(_makeItem(status: SanctionReviewStatus.applied)),
       );
       await tester.pump();
-      expect(accentColor(tester), VeraProbColors.textDisabled);
+      expect(accentColor(tester), VeraProbColors.error);
 
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('rejected → attenuated red accent (distinct from pending)', (
+    testWidgets('rejected → attenuated green accent (fine annulled)', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(800, 1400);
@@ -1566,7 +1551,10 @@ void _sealedEvidenceAndStyleTests() {
         _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
       );
       await tester.pump();
-      expect(accentColor(tester), VeraProbColors.error.withValues(alpha: 0.5));
+      expect(
+        accentColor(tester),
+        VeraProbColors.success.withValues(alpha: 0.7),
+      );
 
       addTearDown(tester.view.resetPhysicalSize);
     });
@@ -1961,124 +1949,6 @@ void _sealedEvidenceAndStyleTests() {
         btn.style?.side?.resolve(const <WidgetState>{})?.color,
         VeraProbColors.info,
       );
-    });
-  });
-
-  // ── Pkg 2: Verdict accountability provenance (INV-21) ────────────────────
-  // Confirmed and annulled cards must name WHO sealed/annulled and WHEN —
-  // email from the ledger fact, UUID fallback when absent. Symmetric liability.
-  group('SanctionVerdictCard — verdict provenance', () {
-    Future<void> pump(
-      WidgetTester tester,
-      SanctionQueueItemView item, {
-      VerdictProvenance? provenance,
-    }) async {
-      tester.view.physicalSize = const Size(800, 1600);
-      tester.view.devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      await tester.pumpWidget(_buildCard(item, verdictProvenance: provenance));
-      await tester.pump();
-    }
-
-    testWidgets('applied card names the sealing auditor by email', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        _makeItem(status: SanctionReviewStatus.applied),
-        provenance: (
-          actorEmail: 'ana.auditor@frota.com',
-          actorUserId: 'uuid-ana-0001',
-          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
-        ),
-      );
-
-      expect(find.text('RESPONSABILIDADE DO VEREDITO'), findsOneWidget);
-      expect(
-        find.textContaining('Confirmado por ana.auditor@frota.com'),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets(
-      'rejected card names the annulling auditor + keeps the reason',
-      (tester) async {
-        await pump(
-          tester,
-          _makeItem(
-            status: SanctionReviewStatus.rejected,
-            rejectionReason: 'Falha de sensor confirmada na telemetria',
-          ),
-          provenance: (
-            actorEmail: 'bruno.lead@frota.com',
-            actorUserId: 'uuid-bruno-002',
-            sealedAtUtc: DateTime.utc(2026, 1, 16, 11, 0),
-          ),
-        );
-
-        expect(
-          find.textContaining('Anulado por bruno.lead@frota.com'),
-          findsOneWidget,
-        );
-        // Refusal reason zone still renders alongside provenance.
-        expect(find.text('MOTIVO DA RECUSA'), findsOneWidget);
-      },
-    );
-
-    testWidgets('falls back to short reviewer UUID when no ledger email', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        _makeItem(
-          status: SanctionReviewStatus.applied,
-          reviewedByUserId: 'abcdef12-3456-7890',
-          reviewedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
-        ),
-        provenance: null,
-      );
-
-      expect(find.textContaining('Confirmado por abcdef12…'), findsOneWidget);
-    });
-
-    testWidgets('dual-control surfaces the proposing reviewer too', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        _makeItem(
-          status: SanctionReviewStatus.applied,
-          firstReviewerId: 'proposer-9999',
-        ),
-        provenance: (
-          actorEmail: 'sealer@frota.com',
-          actorUserId: 'uuid-sealer',
-          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
-        ),
-      );
-
-      expect(find.textContaining('Proposto por proposer…'), findsOneWidget);
-    });
-
-    testWidgets('blank ledger email degrades to the provenance UUID, '
-        'not the queue-row UUID', (tester) async {
-      await pump(
-        tester,
-        _makeItem(
-          status: SanctionReviewStatus.applied,
-          // Row UUID differs from the fact UUID — the fact must win.
-          reviewedByUserId: 'rowuuid-9999',
-          reviewedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
-        ),
-        provenance: (
-          actorEmail: '   ', // blank ledger email — must be skipped
-          actorUserId: 'factuuid-1234',
-          sealedAtUtc: DateTime.utc(2026, 1, 16, 9, 30),
-        ),
-      );
-
-      expect(find.textContaining('Confirmado por factuuid…'), findsOneWidget);
-      expect(find.textContaining('rowuuid'), findsNothing);
     });
   });
 }
