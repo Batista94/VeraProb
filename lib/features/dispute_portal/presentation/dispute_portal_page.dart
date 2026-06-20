@@ -59,6 +59,19 @@ class DisputePortalPage extends ConsumerWidget {
     WidgetRef ref,
     PortalPageData data,
   ) {
+    // Verdict sealed internally: the defense window is closed and the token was
+    // revoked in the same transaction. Block any phantom submission attempt.
+    if (data.snapshot.closedInternally) {
+      return const _PortalCard(
+        icon: Icons.gavel_outlined,
+        color: VeraProbColors.textSecondary,
+        title: 'SLA encerrado',
+        message:
+            'Sanção julgada internamente. O prazo de defesa foi finalizado.',
+      );
+    }
+
+    final contextData = data.contextData!;
     final submissionState = ref.watch(portalDisputeSubmissionNotifierProvider);
     final notifier = ref.read(portalDisputeSubmissionNotifierProvider.notifier);
 
@@ -68,8 +81,8 @@ class DisputePortalPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           PortalHeader(
-            orgDisplayName: data.contextData.orgDisplayName,
-            orgCnpj: data.contextData.orgCnpj,
+            orgDisplayName: contextData.orgDisplayName,
+            orgCnpj: contextData.orgCnpj,
           ),
           const SizedBox(height: VeraProbSpacing.lg),
           DisputeSuccessView(
@@ -84,11 +97,11 @@ class DisputePortalPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         PortalHeader(
-          orgDisplayName: data.contextData.orgDisplayName,
-          orgCnpj: data.contextData.orgCnpj,
+          orgDisplayName: contextData.orgDisplayName,
+          orgCnpj: contextData.orgCnpj,
         ),
         const SizedBox(height: VeraProbSpacing.lg),
-        DisputeContextCard(contextData: data.contextData),
+        DisputeContextCard(contextData: contextData),
         const SizedBox(height: VeraProbSpacing.lg),
 
         if (submissionState is PortalSubmissionError)

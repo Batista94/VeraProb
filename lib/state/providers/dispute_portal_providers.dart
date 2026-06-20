@@ -29,24 +29,40 @@ final portalDisputeGatewayProvider = Provider<PortalDisputeGateway>((ref) {
 
 typedef PortalPageData = ({
   PortalSnapshot snapshot,
-  InfractionContextProjection contextData,
+  InfractionContextProjection? contextData,
 });
 
 /// Fetches both the snapshot and the immutable context data required by the portal page.
+///
+/// When the verdict was sealed internally the token is revoked, so
+/// `read_infraction_context` denies while `read_dispute_portal` returns a closed
+/// snapshot. In that case we surface the sealed snapshot (with null context) so
+/// the page can render "SLA encerrado", instead of collapsing to a generic error.
+/// The sealed branch of `read_dispute_portal` returns BEFORE incrementing
+/// `access_count`, so the re-fetch below burns no access.
 final portalPageDataProvider = FutureProvider.autoDispose
     .family<PortalPageData, String>((ref, token) async {
       final gateway = ref.watch(portalDisputeGatewayProvider);
 
-      // Concurrently fetch both (Fail-Fast: if either fails, the Future fails).
-      final results = await Future.wait([
-        gateway.read(token),
-        gateway.readInfractionContext(token),
-      ]);
-
-      return (
-        snapshot: results[0] as PortalSnapshot,
-        contextData: results[1] as InfractionContextProjection,
-      );
+      try {
+        // Concurrently fetch both (Fail-Fast: if either fails, the Future fails).
+        final results = await Future.wait([
+          gateway.read(token),
+          gateway.readInfractionContext(token),
+        ]);
+        return (
+          snapshot: results[0] as PortalSnapshot,
+          contextData: results[1] as InfractionContextProjection,
+        );
+      } on PortalDisputeException {
+        // A revoked-but-sealed token denies the context read. Re-read the
+        // snapshot (free on the sealed branch) and surface the closure.
+        final snapshot = await gateway.read(token);
+        if (snapshot.closedInternally) {
+          return (snapshot: snapshot, contextData: null);
+        }
+        rethrow;
+      }
     });
 
 /// Authenticated auditor gateway for reviewing PENDING_AUDIT portal submissions

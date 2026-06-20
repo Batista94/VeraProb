@@ -57,6 +57,7 @@ PortalSnapshot _snap(String status) => PortalSnapshot(
   description: null,
   evidence: const [],
   snapshotHash: 'a' * 64,
+  closedInternally: false,
 );
 
 void main() {

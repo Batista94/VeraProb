@@ -62,6 +62,12 @@ class PortalSnapshot extends Equatable {
   final List<PortalEvidenceItem> evidence;
   final String snapshotHash;
 
+  /// True when the verdict was sealed internally and the external defense window
+  /// was closed (token revoked) in the same transaction. The RPC returns
+  /// `{ "closed": true, "closed_reason": "JUDGED_INTERNALLY", ... }`. The portal
+  /// then shows "SLA encerrado. Sanção julgada internamente." and hides submit.
+  final bool closedInternally;
+
   const PortalSnapshot({
     required this.status,
     required this.disputedAtUtc,
@@ -70,6 +76,7 @@ class PortalSnapshot extends Equatable {
     required this.description,
     required this.evidence,
     required this.snapshotHash,
+    required this.closedInternally,
   });
 
   /// True once the sanction is applied — the only state where "De Acordo" is
@@ -96,6 +103,9 @@ class PortalSnapshot extends Equatable {
       description: verdict?['description'] as String?,
       evidence: evidenceJson.map(PortalEvidenceItem.fromJson).toList(),
       snapshotHash: json['snapshot_hash'] as String? ?? '',
+      closedInternally:
+          json['closed'] == true &&
+          json['closed_reason'] == 'JUDGED_INTERNALLY',
     );
   }
 
@@ -108,6 +118,7 @@ class PortalSnapshot extends Equatable {
     description,
     evidence,
     snapshotHash,
+    closedInternally,
   ];
 }
 

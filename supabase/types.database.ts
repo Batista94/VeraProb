@@ -1156,6 +1156,7 @@ export type Database = {
           organization_id: string;
           queue_entry_id: string;
           revoked_at_utc: string | null;
+          revoked_reason: string | null;
           token: string;
           token_scope: string;
         };
@@ -1171,6 +1172,7 @@ export type Database = {
           organization_id: string;
           queue_entry_id: string;
           revoked_at_utc?: string | null;
+          revoked_reason?: string | null;
           token?: string;
           token_scope?: string;
         };
@@ -1186,6 +1188,7 @@ export type Database = {
           organization_id?: string;
           queue_entry_id?: string;
           revoked_at_utc?: string | null;
+          revoked_reason?: string | null;
           token?: string;
           token_scope?: string;
         };
@@ -3014,6 +3017,7 @@ export type Database = {
         Row: {
           contract_id: string;
           created_at: string;
+          dispute_round: number;
           disputed_at: string | null;
           disputed_by: string | null;
           first_reviewed_at: string | null;
@@ -3042,6 +3046,7 @@ export type Database = {
         Insert: {
           contract_id: string;
           created_at?: string;
+          dispute_round?: number;
           disputed_at?: string | null;
           disputed_by?: string | null;
           first_reviewed_at?: string | null;
@@ -3070,6 +3075,7 @@ export type Database = {
         Update: {
           contract_id?: string;
           created_at?: string;
+          dispute_round?: number;
           disputed_at?: string | null;
           disputed_by?: string | null;
           first_reviewed_at?: string | null;

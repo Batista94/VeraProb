@@ -14,7 +14,10 @@ import 'package:veraprob/testing/fakes/fake_file_hasher.dart';
 const _t = '11111111-1111-1111-1111-111111111111';
 const _token = _t;
 
-PortalSnapshot _snapshot({required String status}) {
+PortalSnapshot _snapshot({
+  required String status,
+  bool closedInternally = false,
+}) {
   return PortalSnapshot(
     status: status,
     disputedAtUtc: DateTime.utc(2026, 6, 1),
@@ -23,6 +26,7 @@ PortalSnapshot _snapshot({required String status}) {
     description: 'SLA de coleta excedido em 35 minutos.',
     evidence: const [],
     snapshotHash: 'a' * 64,
+    closedInternally: closedInternally,
   );
 }
 
@@ -45,14 +49,21 @@ InfractionContextProjection _context() {
 class _FakeGateway implements PortalDisputeGateway {
   final Object? readError;
   final PortalDisputeException? submitError;
+
+  /// Mimics a verdict sealed internally: the token is revoked, so `read`
+  /// returns a closed snapshot while `readInfractionContext` denies.
+  final bool sealed;
   String? acknowledgedHash;
   int submitCalls = 0;
 
-  _FakeGateway({this.readError, this.submitError});
+  _FakeGateway({this.readError, this.submitError, this.sealed = false});
 
   @override
   Future<PortalSnapshot> read(String token) async {
     if (readError != null) throw readError!;
+    if (sealed) {
+      return _snapshot(status: 'applied', closedInternally: true);
+    }
     return _snapshot(status: 'disputed');
   }
 
@@ -61,6 +72,9 @@ class _FakeGateway implements PortalDisputeGateway {
     String token,
   ) async {
     if (readError != null) throw readError!;
+    if (sealed) {
+      throw const PortalDisputeException('Link inválido ou expirado.');
+    }
     return _context();
   }
 
@@ -247,6 +261,24 @@ void main() {
       expect(find.text('ABC-1234'), findsOneWidget);
       expect(find.text('+20 unid.'), findsOneWidget);
       expect(find.text('REC-XYZ-789'), findsOneWidget);
+    });
+
+    testWidgets('verdict sealed internally shows "SLA encerrado" and no form', (
+      tester,
+    ) async {
+      await tester.pumpWidget(_host(_FakeGateway(sealed: true)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('SLA encerrado'), findsOneWidget);
+      expect(
+        find.text(
+          'Sanção julgada internamente. O prazo de defesa foi finalizado.',
+        ),
+        findsOneWidget,
+      );
+      // No submission surface is offered.
+      expect(find.text('Enviar Contestação'), findsNothing);
+      expect(find.text('De Acordo — Aceitar'), findsNothing);
     });
 
     testWidgets('invalid token surfaces a domain message', (tester) async {

@@ -23,6 +23,7 @@ class _FakeGateway implements PortalDisputeGateway {
     description: 'Atraso além da tolerância',
     evidence: const [],
     snapshotHash: 'a' * 64,
+    closedInternally: false,
   );
 
   @override

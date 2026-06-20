@@ -206,16 +206,20 @@ SELECT throws_ok(
 RESET ROLE;
 
 -- 14. Defense-in-depth: a direct duplicate resolution INSERT raises 23505.
+-- The cycle index is keyed (org, queue_entry_id, dispute_round); the e1 entry was
+-- seeded directly as 'disputed' (dispute_round default 0), so resolve_dispute
+-- (test #6) wrote the DISPUTE_ACCEPTED fact with dispute_round=0. The duplicate
+-- MUST embed the SAME dispute_round to genuinely collide (no false positive).
 SELECT throws_ok(
   $$ INSERT INTO public.sla_audit_ledger_v2
        (organization_id, type, contract_id, plan_version, occurred_at_utc, payload)
      VALUES
        ('00000000-0000-0000-0000-0000000009a1', 'DISPUTE_ACCEPTED',
         '00000000-0000-0000-0000-0000000009aa', 0, '2026-08-09T12:25:00Z',
-        '{"queue_entry_id":"00000000-0000-0000-0000-0000000009e1"}'::jsonb) $$,
+        '{"queue_entry_id":"00000000-0000-0000-0000-0000000009e1","dispute_round":0}'::jsonb) $$,
   '23505',
   NULL,
-  'direct duplicate resolution fact is blocked by the per-partition unique index'
+  'direct duplicate resolution fact is blocked by the per-partition cycle index'
 );
 
 SELECT * FROM finish();
