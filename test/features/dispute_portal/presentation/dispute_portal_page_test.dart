@@ -5,6 +5,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
+import 'package:veraprob/application/dispute_portal/portal_retry_policy.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
 import 'package:veraprob/application/dispute_portal/staged_file.dart';
 import 'package:veraprob/features/dispute_portal/presentation/dispute_portal_page.dart';
@@ -50,13 +51,22 @@ class _FakeGateway implements PortalDisputeGateway {
   final Object? readError;
   final PortalDisputeException? submitError;
 
+  /// Number of leading submit calls that fail with a retryable (infra 503)
+  /// exception before the call succeeds.
+  final int retryableFailures;
+
   /// Mimics a verdict sealed internally: the token is revoked, so `read`
   /// returns a closed snapshot while `readInfractionContext` denies.
   final bool sealed;
   String? acknowledgedHash;
   int submitCalls = 0;
 
-  _FakeGateway({this.readError, this.submitError, this.sealed = false});
+  _FakeGateway({
+    this.readError,
+    this.submitError,
+    this.retryableFailures = 0,
+    this.sealed = false,
+  });
 
   @override
   Future<PortalSnapshot> read(String token) async {
@@ -95,16 +105,29 @@ class _FakeGateway implements PortalDisputeGateway {
   }) async {
     submitCalls++;
     if (submitError != null) throw submitError!;
+    if (submitCalls <= retryableFailures) {
+      throw const PortalDisputeException(
+        'Serviço temporariamente indisponível.',
+        retryable: true,
+      );
+    }
     // Simulate network delay
     await Future<void>.delayed(const Duration(milliseconds: 50));
     return PortalSubmissionOutcome.pendingAudit;
   }
 }
 
-Widget _host(_FakeGateway gateway, {FakeFileHasher? hasher}) {
+Widget _host(
+  _FakeGateway gateway, {
+  FakeFileHasher? hasher,
+  PortalRetryPolicy? retryPolicy,
+}) {
   return ProviderScope(
     overrides: [
       portalDisputeGatewayProvider.overrideWithValue(gateway),
+      portalRetryPolicyProvider.overrideWithValue(
+        retryPolicy ?? PortalRetryPolicy.zeroDelay,
+      ),
       if (hasher != null) fileHasherProvider.overrideWithValue(hasher),
     ],
     child: const MaterialApp(home: DisputePortalPage(token: _token)),
@@ -230,6 +253,63 @@ void main() {
 
       expect(find.text('Contestação Recebida com Sucesso'), findsOneWidget);
       expect(find.text('Enviar Contestação'), findsNothing); // Form oculto
+    });
+
+    testWidgets('W8b: 503 retryable mostra banner e sucede na retry', (
+      tester,
+    ) async {
+      final gateway = _FakeGateway(retryableFailures: 1);
+      await tester.pumpWidget(
+        _host(
+          gateway,
+          retryPolicy: const PortalRetryPolicy(
+            baseDelay: Duration(milliseconds: 300),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField),
+        'Justificativa muito muito longa para passar de vinte.',
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Enviar Contestação'));
+      await tester.tap(find.text('Enviar Contestação'));
+      await tester.pump(); // submit starts → Uploading
+      await tester.pump(const Duration(milliseconds: 10)); // 1st attempt fails
+
+      // Retrying banner visible during the backoff window.
+      expect(find.textContaining('Reenviando'), findsOneWidget);
+
+      await tester.pumpAndSettle(); // backoff elapses → 2nd attempt succeeds
+      expect(find.text('Contestação Recebida com Sucesso'), findsOneWidget);
+      expect(gateway.submitCalls, 2);
+    });
+
+    testWidgets('W8c: 503 esgota tentativas → erro preservando justificativa', (
+      tester,
+    ) async {
+      final gateway = _FakeGateway(retryableFailures: 99);
+      await tester.pumpWidget(_host(gateway)); // zeroDelay
+      await tester.pumpAndSettle();
+
+      const justification =
+          'Justificativa muito muito longa para passar de vinte.';
+      await tester.enterText(find.byType(TextFormField), justification);
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Enviar Contestação'));
+      await tester.tap(find.text('Enviar Contestação'));
+      await tester.pumpAndSettle();
+
+      expect(gateway.submitCalls, 3); // default maxAttempts
+      expect(
+        find.text('Serviço temporariamente indisponível.'),
+        findsOneWidget,
+      );
+      expect(find.text(justification), findsOneWidget); // preserved
     });
 
     testWidgets('W10: De Acordo separado com confirmação', (tester) async {

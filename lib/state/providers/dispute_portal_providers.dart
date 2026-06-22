@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/dispute_portal/i_file_hasher.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_gateway.dart';
+import 'package:veraprob/application/dispute_portal/portal_retry_policy.dart';
 import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
@@ -26,6 +27,12 @@ final portalDisputeGatewayProvider = Provider<PortalDisputeGateway>((ref) {
   final client = ref.watch(supabaseClientProvider);
   return SupabasePortalDisputeGateway(client);
 });
+
+/// Backoff policy applied by the submission notifier to retryable (infra 503)
+/// failures. Overridable in tests with `PortalRetryPolicy.zeroDelay`.
+final portalRetryPolicyProvider = Provider<PortalRetryPolicy>(
+  (ref) => const PortalRetryPolicy(),
+);
 
 typedef PortalPageData = ({
   PortalSnapshot snapshot,

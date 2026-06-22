@@ -19,7 +19,9 @@ class DisputeActionFooter extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBusy =
-        state is PortalSubmissionHashing || state is PortalSubmissionUploading;
+        state is PortalSubmissionHashing ||
+        state is PortalSubmissionUploading ||
+        state is PortalSubmissionRetrying;
 
     bool canSubmit = false;
     String currentJustification = '';

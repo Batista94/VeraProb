@@ -122,19 +122,38 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
     required String? sha256Client,
   }) async {
     // ── Phase 1: request signed upload URL ──────────────────────────────────
-    final requestRes = await _client.functions.invoke(
-      'portal-submit-request',
-      body: {
-        'token': token,
-        'justification': justification,
-        if (file != null) ...{
-          'fileName': file.name,
-          'mimeType': file.mimeType,
-          'fileSizeBytes': file.sizeBytes,
-          'sha256Client': sha256Client,
+    // The whole esteira is safe to retry end-to-end: a transient failure between
+    // create and upload reuses the QUARANTINE row by (token, sha256) without
+    // burning a submission slot (idempotency, migration 20260825000001). Infra
+    // unavailability surfaces as 503 → retryable; a business rejection stays an
+    // opaque non-retryable 404 (INV-26).
+    final FunctionResponse requestRes;
+    try {
+      requestRes = await _client.functions.invoke(
+        'portal-submit-request',
+        body: {
+          'token': token,
+          'justification': justification,
+          if (file != null) ...{
+            'fileName': file.name,
+            'mimeType': file.mimeType,
+            'fileSizeBytes': file.sizeBytes,
+            'sha256Client': sha256Client,
+          },
         },
-      },
-    );
+      );
+    } catch (_) {
+      throw const PortalDisputeException(
+        'Falha temporária de comunicação. Tente novamente.',
+        retryable: true,
+      );
+    }
+    if (requestRes.status == 503) {
+      throw const PortalDisputeException(
+        'Serviço temporariamente indisponível. Tentando novamente…',
+        retryable: true,
+      );
+    }
     if (requestRes.status != 200) {
       throw const PortalDisputeException('Envio recusado. Verifique os dados.');
     }
@@ -150,23 +169,50 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
 
     // ── Phase 1.5: PUT bytes to the quarantine signed URL ─────────────────────
     if (file != null && signedUrl != null) {
-      final putRes = await _http.put(
-        Uri.parse(signedUrl),
-        headers: {'content-type': file.mimeType, 'x-upsert': 'false'},
-        body: file.bytes,
-      );
+      final http.Response putRes;
+      try {
+        putRes = await _http.put(
+          Uri.parse(signedUrl),
+          headers: {'content-type': file.mimeType, 'x-upsert': 'false'},
+          body: file.bytes,
+        );
+      } catch (_) {
+        throw const PortalDisputeException(
+          'Falha no envio do arquivo. Tente novamente.',
+          retryable: true,
+        );
+      }
       if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
-        throw const PortalDisputeException('Falha no envio do arquivo.');
+        // Storage 5xx is transient infra; a 4xx (e.g. an expired signed URL)
+        // needs a fresh request rather than a blind retry.
+        throw PortalDisputeException(
+          'Falha no envio do arquivo.',
+          retryable: putRes.statusCode >= 500,
+        );
       }
     }
 
     // ── Phase 2: finalize (server-side magic-byte + SHA-256 verification) ─────
-    final finalizeRes = await _client.functions.invoke(
-      'portal-finalize-upload',
-      body: {'token': token, 'submissionId': submissionId},
-    );
+    final FunctionResponse finalizeRes;
+    try {
+      finalizeRes = await _client.functions.invoke(
+        'portal-finalize-upload',
+        body: {'token': token, 'submissionId': submissionId},
+      );
+    } catch (_) {
+      throw const PortalDisputeException(
+        'Falha temporária de comunicação. Tente novamente.',
+        retryable: true,
+      );
+    }
     if (finalizeRes.status == 200) {
       return PortalSubmissionOutcome.pendingAudit;
+    }
+    if (finalizeRes.status == 503) {
+      throw const PortalDisputeException(
+        'Serviço temporariamente indisponível. Tentando novamente…',
+        retryable: true,
+      );
     }
     final msg = _errorMessage(finalizeRes.data).toLowerCase();
     if (msg.contains('hash')) return PortalSubmissionOutcome.hashMismatch;

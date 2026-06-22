@@ -86,7 +86,8 @@ class _EvidenceDropzoneState extends State<EvidenceDropzone> {
   Widget build(BuildContext context) {
     final bool isUploading = widget.state is PortalSubmissionUploading;
     final bool isHashing = widget.state is PortalSubmissionHashing;
-    final bool isBusy = isUploading || isHashing;
+    final bool isRetrying = widget.state is PortalSubmissionRetrying;
+    final bool isBusy = isUploading || isHashing || isRetrying;
 
     StagedFile? currentFile;
     if (widget.state is PortalSubmissionStaging) {

@@ -30,6 +30,17 @@ final class PortalSubmissionUploading extends PortalSubmissionState {
   const PortalSubmissionUploading();
 }
 
+/// Transient infra failure (edge-function 503) being retried with backoff.
+final class PortalSubmissionRetrying extends PortalSubmissionState {
+  final int attempt;
+  final int maxAttempts;
+
+  const PortalSubmissionRetrying({
+    required this.attempt,
+    required this.maxAttempts,
+  });
+}
+
 final class PortalSubmissionSuccess extends PortalSubmissionState {
   final DateTime submittedAtUtc;
   final String protocol;
@@ -63,12 +74,21 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
   ];
   static const int _maxSizeBytes = 10 * 1024 * 1024; // 10MB
 
+  bool _disposed = false;
+
   @override
-  PortalSubmissionState build() => const PortalSubmissionInitial();
+  PortalSubmissionState build() {
+    ref.onDispose(() => _disposed = true);
+    return const PortalSubmissionInitial();
+  }
+
+  bool get _isBusy =>
+      state is PortalSubmissionHashing ||
+      state is PortalSubmissionUploading ||
+      state is PortalSubmissionRetrying;
 
   void setJustification(String text) {
-    if (state is PortalSubmissionHashing ||
-        state is PortalSubmissionUploading) {
+    if (_isBusy) {
       return; // Anti-duplo clique
     }
 
@@ -89,8 +109,7 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
   }
 
   void stageFile(StagedFile file) {
-    if (state is PortalSubmissionHashing ||
-        state is PortalSubmissionUploading) {
+    if (_isBusy) {
       return;
     }
 
@@ -124,8 +143,7 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
   }
 
   void clearFile() {
-    if (state is PortalSubmissionHashing ||
-        state is PortalSubmissionUploading) {
+    if (_isBusy) {
       return;
     }
 
@@ -147,8 +165,7 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
 
   Future<void> submit(String token) async {
     if (_isSubmitting) return;
-    if (state is PortalSubmissionHashing ||
-        state is PortalSubmissionUploading) {
+    if (_isBusy) {
       return; // Guard anti-duplo-clique
     }
 
@@ -178,15 +195,33 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
         sha256Client = await hasher.sha256Hex(file.bytes);
       }
 
-      state = const PortalSubmissionUploading();
       final gateway = ref.read(portalDisputeGatewayProvider);
+      final policy = ref.read(portalRetryPolicyProvider);
 
-      await gateway.submitEvidence(
-        token: token,
-        justification: currentState.justification.trim(),
-        file: file,
-        sha256Client: sha256Client,
-      );
+      // Retry only genuine infra unavailability (PortalDisputeException.retryable,
+      // i.e. edge-fn 503 / transient transport). A re-submit reuses the existing
+      // QUARANTINE row by (token, sha256) — no extra slot consumed (idempotency,
+      // migration 20260825000001). Business rejections (INV-26) are NOT retried.
+      for (var attempt = 1; ; attempt++) {
+        state = const PortalSubmissionUploading();
+        try {
+          await gateway.submitEvidence(
+            token: token,
+            justification: currentState.justification.trim(),
+            file: file,
+            sha256Client: sha256Client,
+          );
+          break;
+        } on PortalDisputeException catch (e) {
+          if (!e.retryable || attempt >= policy.maxAttempts) rethrow;
+          state = PortalSubmissionRetrying(
+            attempt: attempt,
+            maxAttempts: policy.maxAttempts,
+          );
+          await Future<void>.delayed(policy.delayAfterAttempt(attempt));
+          if (_disposed) return;
+        }
+      }
 
       final now = DateTime.now().toUtc();
       final pseudoHash =

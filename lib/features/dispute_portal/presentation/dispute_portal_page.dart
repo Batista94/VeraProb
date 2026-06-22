@@ -104,6 +104,42 @@ class DisputePortalPage extends ConsumerWidget {
         DisputeContextCard(contextData: contextData),
         const SizedBox(height: VeraProbSpacing.lg),
 
+        if (submissionState is PortalSubmissionRetrying)
+          Container(
+            margin: const EdgeInsets.only(bottom: VeraProbSpacing.lg),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: VeraProbColors.warning.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: VeraProbColors.warning.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VeraProbColors.warning,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Serviço instável. Reenviando… '
+                    '(tentativa ${submissionState.attempt} de '
+                    '${submissionState.maxAttempts})',
+                    style: VeraProbTypography.bodyMedium.copyWith(
+                      color: VeraProbColors.warning,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         if (submissionState is PortalSubmissionError)
           Container(
             margin: const EdgeInsets.only(bottom: VeraProbSpacing.lg),
