@@ -945,7 +945,7 @@ void _resolutionSealAndA11yTests() {
       expect(find.text('AGUARDANDO EVIDÊNCIA'), findsOneWidget);
       expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
       expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
-      expect(find.text('CANCELAR SOLICITAÇÃO'), findsOneWidget);
+      expect(find.text('Cancelar solicitação'), findsOneWidget);
       // BUG-02: the auditor can mint a carrier portal link from a disputed card.
       expect(find.text('GERAR LINK DE DISPUTA'), findsOneWidget);
       // Pending-only control must NOT leak into a disputed card.
@@ -1153,7 +1153,7 @@ void _resolutionSealAndA11yTests() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('CANCELAR SOLICITAÇÃO'));
+      await tester.tap(find.text('Cancelar solicitação'));
       await tester.pump();
 
       expect(find.byType(TextField), findsNothing);
@@ -1541,23 +1541,24 @@ void _sealedEvidenceAndStyleTests() {
       addTearDown(tester.view.resetPhysicalSize);
     });
 
-    testWidgets('rejected → attenuated green accent (fine annulled)', (
-      tester,
-    ) async {
-      tester.view.physicalSize = const Size(800, 1400);
-      tester.view.devicePixelRatio = 1.0;
+    testWidgets(
+      'rejected → neutral slate accent (no directional bias, INV-23)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
 
-      await tester.pumpWidget(
-        _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
-      );
-      await tester.pump();
-      expect(
-        accentColor(tester),
-        VeraProbColors.success.withValues(alpha: 0.7),
-      );
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
+        );
+        await tester.pump();
+        expect(
+          accentColor(tester),
+          VeraProbColors.neutral.withValues(alpha: 0.5),
+        );
 
-      addTearDown(tester.view.resetPhysicalSize);
-    });
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
 
     testWidgets(
       'focused card border matches the severity accent, never a contrasting hue',
@@ -1883,7 +1884,7 @@ void _sealedEvidenceAndStyleTests() {
     }
 
     testWidgets(
-      'CONFIRMAR INFRAÇÃO is neutral blue action, not success green',
+      'pending CONFIRMAR INFRAÇÃO — FilledButton with verdictAction (INV-23)',
       (tester) async {
         await pumpPending(tester);
 
@@ -1898,58 +1899,175 @@ void _sealedEvidenceAndStyleTests() {
         const states = <WidgetState>{};
         expect(
           btn.style?.backgroundColor?.resolve(states),
-          VeraProbColors.info,
+          VeraProbColors.verdictAction,
         );
-        // Dark text on the light-blue fill — white would fail WCAG contrast.
-        expect(
-          btn.style?.foregroundColor?.resolve(states),
-          VeraProbColors.background,
-        );
+        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
       },
     );
 
     testWidgets(
-      'ANULAR INFRAÇÃO stays ghost-red (state, not verb regression)',
+      'pending ANULAR INFRAÇÃO — FilledButton with verdictAction, parity with CONFIRMAR (INV-23)',
+      (tester) async {
+        await pumpPending(tester);
+
+        final btn = tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('ANULAR INFRAÇÃO'),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        const states = <WidgetState>{};
+        expect(
+          btn.style?.backgroundColor?.resolve(states),
+          VeraProbColors.verdictAction,
+        );
+        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
+      },
+    );
+
+    testWidgets(
+      'pending SOLICITAR DEFESA — muted OutlinedButton, not info-blue (INV-23)',
       (tester) async {
         await pumpPending(tester);
 
         final btn = tester.widget<OutlinedButton>(
           find
               .ancestor(
-                of: find.text('ANULAR INFRAÇÃO'),
+                of: find.text('SOLICITAR DEFESA'),
                 matching: find.byType(OutlinedButton),
               )
               .first,
         );
+        const states = <WidgetState>{};
         expect(
-          btn.style?.foregroundColor?.resolve(const <WidgetState>{}),
-          VeraProbColors.error,
+          btn.style?.foregroundColor?.resolve(states),
+          VeraProbColors.textSecondary,
+        );
+        expect(btn.style?.side?.resolve(states)?.color, VeraProbColors.border);
+      },
+    );
+
+    testWidgets(
+      'disputed ANULAR INFRAÇÃO — FilledButton with verdictAction (INV-23)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.disputed)),
+        );
+        await tester.pump();
+
+        // Find the ANULAR button specifically in disputed context
+        // (two ANULAR candidates if pending was visible; here only disputed)
+        final btn = tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('ANULAR INFRAÇÃO'),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        expect(
+          btn.style?.backgroundColor?.resolve(const <WidgetState>{}),
+          VeraProbColors.verdictAction,
         );
       },
     );
 
-    testWidgets('SOLICITAR DEFESA is blue outline action, not warning amber', (
-      tester,
-    ) async {
-      await pumpPending(tester);
+    testWidgets(
+      'disputed CONFIRMAR INFRAÇÃO — FilledButton with verdictAction (INV-23)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.disputed)),
+        );
+        await tester.pump();
 
-      final btn = tester.widget<OutlinedButton>(
-        find
-            .ancestor(
-              of: find.text('SOLICITAR DEFESA'),
-              matching: find.byType(OutlinedButton),
-            )
-            .first,
-      );
-      expect(
-        btn.style?.foregroundColor?.resolve(const <WidgetState>{}),
-        VeraProbColors.info,
-      );
-      expect(
-        btn.style?.side?.resolve(const <WidgetState>{})?.color,
-        VeraProbColors.info,
-      );
-    });
+        final btn = tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('CONFIRMAR INFRAÇÃO'),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        expect(
+          btn.style?.backgroundColor?.resolve(const <WidgetState>{}),
+          VeraProbColors.verdictAction,
+        );
+      },
+    );
+
+    testWidgets(
+      'fine amount — pending uses textPrimary, applied uses error, rejected uses textDisabled + strikethrough (INV-23)',
+      (tester) async {
+        Text fineText(WidgetTester t) =>
+            t.widget<Text>(find.text('R\$ 1.500,00').first);
+
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        // pending → textPrimary, no strikethrough
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.pending)),
+        );
+        await tester.pump();
+        expect(fineText(tester).style?.color, VeraProbColors.textPrimary);
+        expect(
+          fineText(tester).style?.decoration,
+          isNot(TextDecoration.lineThrough),
+        );
+
+        // applied → error (penalty confirmed)
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.applied)),
+        );
+        await tester.pump();
+        expect(fineText(tester).style?.color, VeraProbColors.error);
+
+        // rejected → textDisabled + strikethrough
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.rejected)),
+        );
+        await tester.pump();
+        expect(fineText(tester).style?.color, VeraProbColors.textDisabled);
+        expect(fineText(tester).style?.decoration, TextDecoration.lineThrough);
+      },
+    );
+
+    testWidgets(
+      'peer review CONFIRMAR (2º AUDITOR) — FilledButton with verdictAction, not success (INV-23)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        await tester.pumpWidget(
+          _buildCard(_makeItem(status: SanctionReviewStatus.pendingPeerReview)),
+        );
+        await tester.pump();
+
+        final btn = tester.widget<FilledButton>(
+          find
+              .ancestor(
+                of: find.text('CONFIRMAR (2º AUDITOR)'),
+                matching: find.byType(FilledButton),
+              )
+              .first,
+        );
+        const states = <WidgetState>{};
+        expect(
+          btn.style?.backgroundColor?.resolve(states),
+          VeraProbColors.verdictAction,
+        );
+        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
+      },
+    );
   });
 }
 

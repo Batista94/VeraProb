@@ -142,8 +142,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     } else if (item.status == SanctionReviewStatus.pendingPeerReview) {
       leftBorderColor = VeraProbColors.primary;
     } else if (item.status == SanctionReviewStatus.rejected) {
-      // Refused verdict: attenuated green — fine annulled, carrier-favorable outcome.
-      leftBorderColor = VeraProbColors.success.withValues(alpha: 0.7);
+      // Refused verdict: neutral slate — verdict sealed, no directional bias (INV-23).
+      leftBorderColor = VeraProbColors.neutral.withValues(alpha: 0.5);
     } else if (item.status == SanctionReviewStatus.applied) {
       // Applied fine: red — confirmed penalty, carrier-adverse outcome.
       leftBorderColor = VeraProbColors.error;
@@ -581,7 +581,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         bordered: true,
       ),
       SanctionReviewStatus.rejected => (
-        color: VeraProbColors.success,
+        color: VeraProbColors.neutral,
         icon: Icons.block_rounded,
         label: 'VEREDITO RECUSADO',
         tooltip: 'Sanção recusada — multa não aplicada',
@@ -741,7 +741,16 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     style: VeraProbTypography.kpiValue.copyWith(
                       fontSize: 32,
                       fontWeight: FontWeight.w800,
-                      color: VeraProbColors.error,
+                      color: switch (item.status) {
+                        SanctionReviewStatus.applied => VeraProbColors.error,
+                        SanctionReviewStatus.rejected =>
+                          VeraProbColors.textDisabled,
+                        _ => VeraProbColors.textPrimary,
+                      },
+                      decoration: item.status == SanctionReviewStatus.rejected
+                          ? TextDecoration.lineThrough
+                          : null,
+                      decorationColor: VeraProbColors.textDisabled,
                       letterSpacing: -0.5,
                     ),
                   ),
@@ -866,7 +875,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         context: context,
                         title: 'Confirmar Infração',
                         actionLabel: 'CONFIRMAR INFRAÇÃO',
-                        actionColor: VeraProbColors.info,
+                        actionColor: VeraProbColors.verdictAction,
                         showSlaWarning: false,
                         isAccept: false,
                         requireTextAlways: false,
@@ -885,8 +894,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     : const Icon(Icons.gavel_rounded, size: 16),
                 label: const Text('CONFIRMAR INFRAÇÃO'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: VeraProbColors.info,
-                  foregroundColor: VeraProbColors.background,
+                  backgroundColor: VeraProbColors.verdictAction,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -895,14 +904,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               ),
             ),
           ),
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: isLoading
                 ? null
                 : () => _openSentencePanel(
                     context: context,
                     title: 'Anular Infração',
                     actionLabel: 'ANULAR INFRAÇÃO',
-                    actionColor: VeraProbColors.error,
+                    actionColor: VeraProbColors.verdictAction,
                     showSlaWarning: false,
                     isAccept: true,
                     requireTextAlways: true,
@@ -910,9 +919,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   ),
             icon: const Icon(Icons.block_rounded, size: 16),
             label: const Text('ANULAR INFRAÇÃO'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: VeraProbColors.error,
-              side: const BorderSide(color: VeraProbColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.verdictAction,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -923,8 +932,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               icon: const Icon(Icons.find_in_page_outlined, size: 16),
               label: const Text('SOLICITAR DEFESA'),
               style: OutlinedButton.styleFrom(
-                foregroundColor: VeraProbColors.info,
-                side: const BorderSide(color: VeraProbColors.info),
+                foregroundColor: VeraProbColors.textSecondary,
+                side: const BorderSide(color: VeraProbColors.border),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 10,
@@ -944,14 +953,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         spacing: 8,
         runSpacing: 8,
         children: [
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: isLoading
                 ? null
                 : () => _openSentencePanel(
                     context: context,
                     title: 'Anular Infração',
                     actionLabel: 'ANULAR INFRAÇÃO',
-                    actionColor: VeraProbColors.success,
+                    actionColor: VeraProbColors.verdictAction,
                     showSlaWarning: hasSlaRemaining,
                     isAccept: true,
                     requireTextAlways: true,
@@ -959,20 +968,20 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   ),
             icon: const Icon(Icons.check_circle_outline, size: 16),
             label: const Text('ANULAR INFRAÇÃO'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: VeraProbColors.success,
-              side: const BorderSide(color: VeraProbColors.success),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.verdictAction,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
-          OutlinedButton.icon(
+          FilledButton.icon(
             onPressed: isLoading
                 ? null
                 : () => _openSentencePanel(
                     context: context,
                     title: 'Confirmar Infração',
                     actionLabel: 'CONFIRMAR INFRAÇÃO',
-                    actionColor: VeraProbColors.error,
+                    actionColor: VeraProbColors.verdictAction,
                     showSlaWarning: hasSlaRemaining,
                     isAccept: false,
                     requireTextAlways: false,
@@ -980,9 +989,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                   ),
             icon: const Icon(Icons.gavel_rounded, size: 16),
             label: const Text('CONFIRMAR INFRAÇÃO'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: VeraProbColors.error,
-              side: const BorderSide(color: VeraProbColors.error),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.verdictAction,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -992,7 +1001,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             child: TextButton.icon(
               onPressed: isLoading ? null : _onRetractDispute,
               icon: const Icon(Icons.undo, size: 16),
-              label: const Text('CANCELAR SOLICITAÇÃO'),
+              label: const Text('Cancelar solicitação'),
               style: TextButton.styleFrom(
                 foregroundColor: VeraProbColors.textSecondary,
                 padding: const EdgeInsets.symmetric(
@@ -1870,7 +1879,7 @@ class _PeerReviewRow extends StatelessWidget {
         Text(
           'AÇÃO PROPOSTA: ${_actionLabel.toUpperCase()}',
           style: VeraProbTypography.badge.copyWith(
-            color: VeraProbColors.primary,
+            color: VeraProbColors.warning,
             fontSize: 9,
             letterSpacing: 0.6,
           ),
@@ -1889,8 +1898,8 @@ class _PeerReviewRow extends StatelessWidget {
                   icon: const Icon(Icons.how_to_reg_outlined, size: 16),
                   label: const Text('CONFIRMAR (2º AUDITOR)'),
                   style: FilledButton.styleFrom(
-                    backgroundColor: VeraProbColors.success,
-                    foregroundColor: VeraProbColors.background,
+                    backgroundColor: VeraProbColors.verdictAction,
+                    foregroundColor: Colors.white,
                     disabledBackgroundColor: VeraProbColors.textDisabled
                         .withValues(alpha: 0.3),
                     padding: const EdgeInsets.symmetric(
