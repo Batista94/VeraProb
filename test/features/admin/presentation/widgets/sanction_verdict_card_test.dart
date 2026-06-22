@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,9 +9,11 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:veraprob/application/reporting/generate_forensic_dossier_handler.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
+import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
 import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
+import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -242,6 +245,46 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
   }
 }
 
+/// Audit gateway whose `listPending` returns empty on the FIRST call and a
+/// single finalized submission on every subsequent call — lets a test prove a
+/// realtime tick triggered a re-fetch (call #2) that surfaces the contraprova.
+class _CountingAuditGateway implements PortalSubmissionAuditGateway {
+  int listCalls = 0;
+  int auditCalls = 0;
+
+  @override
+  Future<List<PortalSubmissionSummary>> listPending({
+    required String organizationId,
+    required String queueEntryId,
+  }) async {
+    listCalls++;
+    if (listCalls == 1) return const [];
+    return [
+      PortalSubmissionSummary(
+        submissionId: 'sub-1',
+        attachmentId: 'att-1',
+        fileName: 'contraprova.pdf',
+        mimeTypeDetected: 'application/pdf',
+        fileSizeBytesActual: 2048,
+        sha256Server: 'a' * 64,
+        status: 'PENDING_AUDIT',
+        submittedAtUtc: DateTime.utc(2026, 6, 1),
+        finalizedAtUtc: DateTime.utc(2026, 6, 1),
+      ),
+    ];
+  }
+
+  @override
+  Future<void> audit({
+    required String organizationId,
+    required String submissionId,
+    required PortalAuditDecision decision,
+    required String auditedByUserId,
+  }) async {
+    auditCalls++;
+  }
+}
+
 SanctionQueueItemView _makeItem({
   int fineCents = 150000,
   int confidenceScore = 95,
@@ -305,8 +348,14 @@ List<Override> _baseOverrides({
   required SanctionActionNotifier notifier,
   String? contractName = 'Test Contract',
   String? currentOperatorId = 'test-user',
+  Stream<Map<String, int>>? portalEvidenceStream,
 }) {
   return [
+    // PKG3: deterministic realtime tick. Default = empty (never emits) so cards
+    // outside the realtime test never hit the unoverridden SupabaseClient.
+    portalEvidenceRealtimeProvider.overrideWith(
+      (ref) => portalEvidenceStream ?? const Stream<Map<String, int>>.empty(),
+    ),
     contractNameProvider.overrideWith((ref, id) async => contractName),
     pendingSanctionsStreamProvider.overrideWith((ref) => Stream.value([item])),
     sanctionWindowProvider.overrideWith((ref, setId) async => null),
@@ -900,6 +949,105 @@ void main() {
   _resolutionSealAndA11yTests();
 
   _sealedEvidenceAndStyleTests();
+
+  _portalRealtimeTests();
+}
+
+void _portalRealtimeTests() {
+  group('SanctionVerdictCard — Portal evidence realtime refresh (PKG3)', () {
+    testWidgets('new attachment tick re-fetches the pending submissions', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final item = _makeItem(status: SanctionReviewStatus.disputed);
+      final controller = StreamController<Map<String, int>>.broadcast();
+      addTearDown(controller.close);
+      final gateway = _CountingAuditGateway();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+              portalEvidenceStream: controller.stream,
+            ),
+            portalSubmissionAuditGatewayProvider.overrideWithValue(gateway),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: SanctionVerdictCard(item: item),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // listPending #1 → empty → the contraprova zone stays hidden.
+      expect(gateway.listCalls, 1);
+      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsNothing);
+
+      // Baseline realtime snapshot (no attachments yet), then a NEW attachment
+      // for THIS dispute → count 0→1 must invalidate + re-fetch.
+      controller.add(const {});
+      await tester.pump();
+      controller.add({item.id: 1});
+      await tester.pumpAndSettle();
+
+      expect(gateway.listCalls, 2);
+      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsOneWidget);
+      expect(find.text('contraprova.pdf'), findsOneWidget);
+    });
+
+    testWidgets('tick for a DIFFERENT dispute does not re-fetch', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final item = _makeItem(status: SanctionReviewStatus.disputed);
+      final controller = StreamController<Map<String, int>>.broadcast();
+      addTearDown(controller.close);
+      final gateway = _CountingAuditGateway();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            ..._baseOverrides(
+              item: item,
+              notifier: _MockSanctionActionNotifier(),
+              portalEvidenceStream: controller.stream,
+            ),
+            portalSubmissionAuditGatewayProvider.overrideWithValue(gateway),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: SanctionVerdictCard(item: item),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(gateway.listCalls, 1);
+
+      controller.add(const {});
+      await tester.pump();
+      // Attachment for an unrelated queue entry → this card must NOT re-fetch.
+      controller.add({'unrelated-queue-id': 1});
+      await tester.pumpAndSettle();
+
+      expect(gateway.listCalls, 1);
+      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsNothing);
+    });
+  });
 }
 
 void _resolutionSealAndA11yTests() {

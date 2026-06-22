@@ -2371,6 +2371,28 @@ class _PortalSubmissionsZoneState
 
   @override
   Widget build(BuildContext context) {
+    // INV-16: a single shared realtime channel feeds every disputed card. When a
+    // NEW counter-evidence attachment lands for THIS dispute (count delta on its
+    // queueEntryId), re-fetch the pending submissions so the auditor sees the
+    // contraprova live — no manual reload, no per-card subscription.
+    final queueEntryId = widget.queueEntryId;
+    ref.listen(portalEvidenceRealtimeProvider, (prev, next) {
+      // Skip until we hold a prior data snapshot (the initial loading→data
+      // emission has no `before` to diff against).
+      final before = switch (prev) {
+        AsyncData(:final value) => value[queueEntryId] ?? 0,
+        _ => null,
+      };
+      if (before == null) return;
+      final after = switch (next) {
+        AsyncData(:final value) => value[queueEntryId] ?? 0,
+        _ => before,
+      };
+      if (after != before) {
+        ref.invalidate(pendingPortalSubmissionsProvider(_key));
+      }
+    });
+
     final async = ref.watch(pendingPortalSubmissionsProvider(_key));
     return switch (async) {
       AsyncData(:final value) =>

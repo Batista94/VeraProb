@@ -100,3 +100,36 @@ final pendingPortalSubmissionsProvider = FutureProvider.autoDispose
         queueEntryId: key.queueEntryId,
       );
     });
+
+/// Single shared realtime tick for finalized portal counter-evidence.
+///
+/// INV-16: ONE channel for the whole auditor session — every disputed card
+/// listens to THIS provider, never its own per-card subscription. Backed by
+/// `dispute_evidence_attachments`, which gains a row 1:1 when
+/// `register_portal_evidence` promotes a portal submission to PENDING_AUDIT
+/// (migration 20260826000001 publishes it on `supabase_realtime`).
+/// `portal_evidence_submissions` itself is deny-all RLS and cannot be streamed.
+///
+/// RLS (`dea_select_own_org`) scopes the stream to the caller's org, so Tenant-A
+/// never observes Tenant-B inserts (INV-22). Emits `queueEntryId → active
+/// attachment count`; a listener detects a NEW attachment for its own dispute
+/// via the count delta and invalidates the matching
+/// [pendingPortalSubmissionsProvider] family entry.
+final portalEvidenceRealtimeProvider =
+    StreamProvider.autoDispose<Map<String, int>>((ref) {
+      return ref
+          .watch(supabaseClientProvider)
+          .from('dispute_evidence_attachments')
+          .stream(primaryKey: ['id'])
+          .map((rows) {
+            final counts = <String, int>{};
+            for (final row in rows) {
+              if (row['deleted_at'] != null) continue;
+              final queueEntryId = row['queue_entry_id'] as String?;
+              if (queueEntryId == null) continue;
+              counts[queueEntryId] = (counts[queueEntryId] ?? 0) + 1;
+            }
+            return counts;
+          })
+          .distinct(mapEquals);
+    });
