@@ -2,8 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
 import 'package:veraprob/application/dispute_portal/staged_file.dart';
@@ -13,7 +12,19 @@ import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_dispute_g
 /// `functions.invoke` returns a 2xx [FunctionResponse] or THROWS
 /// [FunctionException] for any non-2xx; these tests drive that contract through
 /// the [EdgeFunctionInvoker] seam (the gateway's only previously-untested path).
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+
+class MockSupabaseStorageClient extends Mock implements SupabaseStorageClient {}
+
+class MockStorageFileApi extends Mock implements StorageFileApi {}
+
+class FakeFileOptions extends Fake implements FileOptions {}
+
 void main() {
+  setUpAll(() {
+    registerFallbackValue(Uint8List(0));
+    registerFallbackValue(const FileOptions());
+  });
   const portalToken = 'a0000000-0000-4000-8000-000000000000';
   const validJustification = 'Justificativa de contestacao valida e completa.';
 
@@ -28,20 +39,15 @@ void main() {
   // accidental real call leaking past the injected invoker.
   final SupabaseClient client = _UnusableClient();
 
-  SupabasePortalDisputeGateway gateway({
+  SupabasePortalDisputeGateway gateway(
+    SupabaseClient gatewayClient, {
     required EdgeFunctionInvoker invoke,
-    http.Client? httpClient,
-  }) => SupabasePortalDisputeGateway(
-    client,
-    httpClient: httpClient,
-    invoker: invoke,
-  );
-
-  MockClient putOk() => MockClient((_) async => http.Response('', 200));
+  }) => SupabasePortalDisputeGateway(gatewayClient, invoker: invoke);
 
   group('submitEvidence — infra vs business classification', () {
     test('phase-1 503 → retryable PortalDisputeException', () async {
       final g = gateway(
+        client,
         invoke: (name, {body}) async =>
             throw const FunctionException(status: 503),
       );
@@ -66,6 +72,7 @@ void main() {
       'phase-1 404 → NON-retryable PortalDisputeException (INV-26)',
       () async {
         final g = gateway(
+          client,
           invoke: (name, {body}) async =>
               throw const FunctionException(status: 404),
         );
@@ -107,6 +114,7 @@ void main() {
 
     test('finalize 200 → pendingAudit', () async {
       final g = gateway(
+        client,
         invoke: twoPhase(
           () async => FunctionResponse(data: {'ok': true}, status: 200),
         ),
@@ -124,6 +132,7 @@ void main() {
 
     test('finalize 422 hash mismatch → hashMismatch', () async {
       final g = gateway(
+        client,
         invoke: twoPhase(
           () async => throw const FunctionException(
             status: 422,
@@ -144,6 +153,7 @@ void main() {
 
     test('finalize 422 content-type mismatch → mimeMismatch', () async {
       final g = gateway(
+        client,
         invoke: twoPhase(
           () async => throw const FunctionException(
             status: 422,
@@ -166,6 +176,7 @@ void main() {
       'finalize 404 → pendingAudit (idempotent: already promoted)',
       () async {
         final g = gateway(
+          client,
           invoke: twoPhase(
             () async => throw const FunctionException(status: 404),
           ),
@@ -185,14 +196,27 @@ void main() {
 
   test('happy path with file: phase-1 200 + PUT 200 + finalize 200 → '
       'pendingAudit', () async {
+    final mockClient = MockSupabaseClient();
+    final mockStorage = MockSupabaseStorageClient();
+    final mockFileApi = MockStorageFileApi();
+
+    when(() => mockClient.storage).thenReturn(mockStorage);
+    when(
+      () => mockStorage.from('dispute-evidence-portal'),
+    ).thenReturn(mockFileApi);
+    when(
+      () => mockFileApi.uploadBinaryToSignedUrl(any(), any(), any()),
+    ).thenAnswer((_) async => '/path');
+
     final g = gateway(
-      httpClient: putOk(),
+      mockClient,
       invoke: (name, {body}) async {
         if (name == 'portal-submit-request') {
           return FunctionResponse(
             data: {
               'submissionId': 'sub-1',
-              'signedUrl': 'http://127.0.0.1:54321/storage/v1/upload/sub-1',
+              'signedUrl':
+                  'http://127.0.0.1:54321/storage/v1/object/upload/sign/dispute-evidence-portal/sub-1?token=xyz123',
             },
             status: 200,
           );
@@ -210,6 +234,11 @@ void main() {
       ),
       PortalSubmissionOutcome.pendingAudit,
     );
+
+    verify(
+      () =>
+          mockFileApi.uploadBinaryToSignedUrl('sub-1', 'xyz123', staged.bytes),
+    ).called(1);
   });
 }
 

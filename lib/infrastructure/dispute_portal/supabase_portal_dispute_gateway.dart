@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
@@ -24,15 +23,12 @@ typedef EdgeFunctionInvoker =
 
 class SupabasePortalDisputeGateway implements PortalDisputeGateway {
   final SupabaseClient _client;
-  final http.Client _http;
   final EdgeFunctionInvoker _invoke;
 
   SupabasePortalDisputeGateway(
     SupabaseClient client, {
-    http.Client? httpClient,
     @visibleForTesting EdgeFunctionInvoker? invoker,
   }) : _client = client,
-       _http = httpClient ?? http.Client(),
        _invoke =
            invoker ??
            ((name, {body}) => client.functions.invoke(name, body: body));
@@ -182,25 +178,33 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
 
     // ── Phase 1.5: PUT bytes to the quarantine signed URL ─────────────────────
     if (file != null && signedUrl != null) {
-      final http.Response putRes;
       try {
-        putRes = await _http.put(
-          Uri.parse(signedUrl),
-          headers: {'content-type': file.mimeType, 'x-upsert': 'false'},
-          body: file.bytes,
+        final uri = Uri.parse(signedUrl);
+        final uploadToken = uri.queryParameters['token'];
+        if (uploadToken == null) {
+          throw const PortalDisputeException('URL de upload inválida.');
+        }
+
+        final pathSegments = uri.pathSegments;
+        final bucketIndex = pathSegments.indexOf('dispute-evidence-portal');
+        if (bucketIndex == -1 || bucketIndex + 1 >= pathSegments.length) {
+          throw const PortalDisputeException('Caminho de upload inválido.');
+        }
+        final uploadPath = pathSegments.sublist(bucketIndex + 1).join('/');
+
+        await _client.storage
+            .from('dispute-evidence-portal')
+            .uploadBinaryToSignedUrl(uploadPath, uploadToken, file.bytes);
+      } on StorageException catch (e) {
+        throw PortalDisputeException(
+          'Falha no envio do arquivo.',
+          retryable:
+              e.statusCode != null && (int.tryParse(e.statusCode!) ?? 0) >= 500,
         );
       } catch (_) {
         throw const PortalDisputeException(
           'Falha no envio do arquivo. Tente novamente.',
           retryable: true,
-        );
-      }
-      if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
-        // Storage 5xx is transient infra; a 4xx (e.g. an expired signed URL)
-        // needs a fresh request rather than a blind retry.
-        throw PortalDisputeException(
-          'Falha no envio do arquivo.',
-          retryable: putRes.statusCode >= 500,
         );
       }
     }
