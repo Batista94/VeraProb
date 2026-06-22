@@ -18,10 +18,21 @@
  * **Security:**
  *   - No JWT. The token IS the credential.
  *   - Scope/state/ownership failures → sovereigntyErrorResponse (404 parity, INV-26),
- *     indistinguishable from a non-existent token.
+ *     indistinguishable from a non-existent token. The RPC's opaque 42501 carries
+ *     a DETAIL token (PORTAL_SUBMIT_REJECTED:<CODE>) that PostgREST strips from
+ *     the body — it reaches ONLY this service_role fn (Sentry, error_class:BUSINESS_RULE).
+ *   - INFRASTRUCTURE failures (storage signing / transport down) → opaque 503
+ *     (infraErrorResponse), NOT 404. The 503 fires only AFTER the RPC authorized
+ *     the token, and the token is a UUIDv4 (122-bit) unguessable credential, so
+ *     the residual "503 ⇒ valid token" bit is non-enumerable; the 80ms floor +
+ *     per-IP throttle are the timing/enumeration controls. Masking infra as 404
+ *     would break SRE triage and (pre-idempotency) permanently burn a slot.
  *   - 80ms response floor closes the timing side-channel on token validity.
  *   - Best-effort 3 req/min/IP throttle (the hard guarantee is the DB per-token cap).
  *   - SUPABASE_SERVICE_ROLE_KEY is a Deno secret — never in the client bundle.
+ *   - Hash idempotency (RPC): a retry of the SAME bytes whose prior row is still
+ *     QUARANTINE reuses that row + path (no new slot) — recovers a network failure
+ *     between create and upload without burning the carrier's submission cap.
  *
  * Request (file path):     { token, fileName, mimeType, fileSizeBytes, sha256Client, justification, submitterReference? }
  * Request (file-optional):  { token, justification }  (no fileName/mimeType/sha256Client)
@@ -39,6 +50,20 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
+import {
+  infraErrorResponse,
+  logBusinessRejection,
+  logInfraError,
+} from "../shared/infra_error_guard.ts";
+
+// PostgREST/Postgres SQLSTATE for an authorization rejection — the RPC's opaque
+// anti-oracle code. Any returned error with this code is a BUSINESS rejection
+// (→ 404); any other returned/thrown error is treated as INFRASTRUCTURE (→ 503).
+const PG_INSUFFICIENT_PRIVILEGE = "42501";
+
+function isBusinessRejection(error: { code?: string } | null): boolean {
+  return error?.code === PG_INSUFFICIENT_PRIVILEGE;
+}
 
 const QUARANTINE_BUCKET = "dispute-evidence-portal";
 const MAX_BYTES = 10485760;
@@ -102,6 +127,7 @@ export async function handler(
   injectedSupabase?: SupabaseClient,
 ): Promise<Response> {
   const start = Date.now();
+  const correlationId = crypto.randomUUID();
 
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -164,9 +190,18 @@ export async function handler(
         p_token: token,
         p_justification: justification,
       });
-      // 42501 and any failure → identical 404 (INV-26).
-      if (error || !data) {
-        if (error) console.error("[portal-submit-request] justification rpc error:", error.message);
+      if (error) {
+        // Business 42501 → opaque 404 (INV-26); DETAIL logged for SRE triage.
+        if (isBusinessRejection(error)) {
+          logBusinessRejection("portal-submit:justification-rpc", correlationId, error);
+          return withFloor(start, sovereigntyErrorResponse());
+        }
+        // Genuine infra (transport / DB down) → opaque 503.
+        logInfraError("portal-submit:justification-rpc", correlationId, error);
+        return withFloor(start, infraErrorResponse());
+      }
+      // No error but no row → treat as not-found parity (404).
+      if (!data) {
         return withFloor(start, sovereigntyErrorResponse());
       }
       return withFloor(
@@ -174,8 +209,9 @@ export async function handler(
         Response.json({ justificationSubmissionId: data as string }, { status: 200 }),
       );
     } catch (e) {
-      console.error("[portal-submit-request] justification unexpected:", e);
-      return withFloor(start, sovereigntyErrorResponse());
+      // Thrown (not the {data,error} shape) → infrastructure failure.
+      logInfraError("portal-submit:justification-unexpected", correlationId, e);
+      return withFloor(start, infraErrorResponse());
     }
   }
 
@@ -209,9 +245,18 @@ export async function handler(
       p_correlation_id: typeof submitterReference === "string" ? submitterReference : null,
     });
 
-    // 42501 (insufficient_privilege) and any failure → identical 404 (INV-26).
-    if (error || !data || (Array.isArray(data) && data.length === 0)) {
-      if (error) console.error("[portal-submit-request] rpc error:", error.message);
+    if (error) {
+      // Business 42501 → opaque 404 (INV-26); DETAIL logged for SRE triage.
+      if (isBusinessRejection(error)) {
+        logBusinessRejection("portal-submit:create-rpc", correlationId, error);
+        return withFloor(start, sovereigntyErrorResponse());
+      }
+      // Genuine infra (transport / DB down) → opaque 503.
+      logInfraError("portal-submit:create-rpc", correlationId, error);
+      return withFloor(start, infraErrorResponse());
+    }
+    // No error but no row → not-found parity (404).
+    if (!data || (Array.isArray(data) && data.length === 0)) {
       return withFloor(start, sovereigntyErrorResponse());
     }
 
@@ -227,9 +272,11 @@ export async function handler(
       .from(QUARANTINE_BUCKET)
       .createSignedUploadUrl(quarantinePath, { upsert: false });
 
+    // Storage signing runs AFTER the RPC authorized the token → a failure here is
+    // infrastructure, not a business rejection. Opaque 503 (see Security header).
     if (signErr || !signed) {
-      console.error("[portal-submit-request] signed url error:", signErr?.message);
-      return withFloor(start, sovereigntyErrorResponse());
+      logInfraError("portal-submit:sign-url", correlationId, signErr);
+      return withFloor(start, infraErrorResponse());
     }
 
     return withFloor(
@@ -237,8 +284,9 @@ export async function handler(
       Response.json({ submissionId, signedUrl: signed.signedUrl }, { status: 200 }),
     );
   } catch (e) {
-    console.error("[portal-submit-request] unexpected:", e);
-    return withFloor(start, sovereigntyErrorResponse());
+    // Thrown (not the {data,error} shape) → infrastructure failure.
+    logInfraError("portal-submit:unexpected", correlationId, e);
+    return withFloor(start, infraErrorResponse());
   }
 }
 

@@ -138,7 +138,11 @@ void main() async {
             ),
           );
 
-          Future<Object> attempt(SupabaseClient c) => c
+          // DISTINCT sha per client: hash idempotency dedups identical bytes
+          // BEFORE the cap check, so identical shas would collapse to one row.
+          // The availability ceiling is what this test proves — keep the bytes
+          // distinct so all six are genuine, competing submissions.
+          Future<Object> attempt(SupabaseClient c, int i) => c
               .rpc<List<dynamic>>(
                 'create_portal_submission',
                 params: {
@@ -146,7 +150,7 @@ void main() async {
                   'p_file_name': 'evidence.pdf',
                   'p_mime_type': 'application/pdf',
                   'p_file_size_bytes': 1024,
-                  'p_sha256_client': 'a' * 64,
+                  'p_sha256_client': i.toString().padLeft(64, '0'),
                   'p_justification':
                       'Justificativa de contestacao para o teste de concorrencia.',
                 },
@@ -154,7 +158,9 @@ void main() async {
               .then<Object>((r) => r)
               .catchError((Object e) => e);
 
-          final outcomes = await Future.wait(clients.map(attempt));
+          final outcomes = await Future.wait(<Future<Object>>[
+            for (var i = 0; i < clients.length; i++) attempt(clients[i], i),
+          ]);
           for (final c in clients) {
             await c.dispose();
           }
@@ -184,6 +190,75 @@ void main() async {
             (rows as List).length,
             5,
             reason: 'Exactly five quarantine rows persisted for the token.',
+          );
+        },
+      );
+
+      test(
+        'AT-07: 2 parallel submits, same (token, sha) → 1 quarantine row, same submission_id',
+        () async {
+          final q = await _disputedQueue(seed);
+          final tok = await _insertToken(
+            seed,
+            queueId: q.queueId,
+            scope: 'submit',
+            maxSubmissions: 5,
+          );
+
+          final clients = List.generate(
+            2,
+            (_) => SupabaseClient(
+              PostgresTestConfig.supabaseUrl,
+              PostgresTestConfig.serviceRoleKey,
+            ),
+          );
+
+          // Identical bytes → hash idempotency must collapse both calls onto the
+          // SAME quarantine row (no second slot consumed) under the advisory lock.
+          final sha = 'a' * 64;
+          Future<Object> submit(SupabaseClient c) => c
+              .rpc<List<dynamic>>(
+                'create_portal_submission',
+                params: {
+                  'p_token': tok.token,
+                  'p_file_name': 'evidence.pdf',
+                  'p_mime_type': 'application/pdf',
+                  'p_file_size_bytes': 1024,
+                  'p_sha256_client': sha,
+                  'p_justification':
+                      'Justificativa de contestacao para o teste de idempotencia.',
+                },
+              )
+              .then<Object>((r) => r)
+              .catchError((Object e) => e);
+
+          final outcomes = await Future.wait(clients.map(submit));
+          for (final c in clients) {
+            await c.dispose();
+          }
+
+          final ids = outcomes
+              .where((o) => o is List && o.isNotEmpty)
+              .map(
+                (o) =>
+                    ((o as List).first as Map<String, dynamic>)['submission_id']
+                        as String,
+              )
+              .toSet();
+          expect(
+            ids.length,
+            1,
+            reason: 'Idempotent submit must return the one same submission id.',
+          );
+
+          final rows = await seed
+              .from('portal_evidence_submissions')
+              .select('id')
+              .eq('token_id', tok.id);
+          expect(
+            (rows as List).length,
+            1,
+            reason: 'Exactly one quarantine row for identical (token, sha).',
           );
         },
       );

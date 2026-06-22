@@ -37,8 +37,11 @@ interface SubmitBody {
   mimeType?: unknown;
   fileSizeBytes?: unknown;
   sha256Client?: unknown;
+  justification?: unknown;
   submitterReference?: unknown;
 }
+
+const VALID_JUSTIFICATION = "Contesto formalmente a infracao registrada.";
 
 function req(body: SubmitBody | string, ip = randomIp()): Request {
   return new Request("https://edge/portal-submit-request", {
@@ -55,15 +58,18 @@ function validBody(over: Partial<SubmitBody> = {}): SubmitBody {
     mimeType: "application/pdf",
     fileSizeBytes: 1024,
     sha256Client: VALID_SHA,
+    justification: VALID_JUSTIFICATION,
     submitterReference: "carrier-ref-1",
     ...over,
   };
 }
 
-// Mock SupabaseClient: an RPC that mints a row + a storage signer.
+// Mock SupabaseClient: an RPC that mints a row + a storage signer. rpcError may
+// carry a `code` (SQLSTATE): "42501" is a BUSINESS rejection (→ 404); anything
+// else is treated as INFRASTRUCTURE (→ 503).
 function mockSupabase(opts: {
   rpcData?: unknown;
-  rpcError?: { message: string } | null;
+  rpcError?: { message: string; code?: string; details?: string } | null;
   signedUrl?: string | null;
   signError?: { message: string } | null;
 } = {}): any {
@@ -189,15 +195,40 @@ Deno.test("absent submitterReference is accepted (optional)", async () => {
   await res.body?.cancel();
 });
 
-// ── 404 parity for RPC failures (INV-26) ─────────────────────────────────────
+Deno.test("absent justification → 400 (mandatory testimony)", async () => {
+  const body = validBody();
+  delete body.justification;
+  const res = await handler(req(body), happyClient());
+  assertEquals(res.status, 400);
+  await res.body?.cancel();
+});
 
-Deno.test("RPC insufficient_privilege (bad scope/state/cap) → 404, not 4xx leak", async () => {
-  const res = await handler(
-    req(validBody()),
-    mockSupabase({ rpcError: { message: "insufficient_privilege" } }),
-  );
-  assertEquals(res.status, 404);
-  assertEquals(await res.json(), { error: "Not Found" });
+// ── 404 parity for BUSINESS RPC failures (INV-26) ────────────────────────────
+
+Deno.test("RPC 42501 (bad scope/state/cap) → 404, DETAIL logged not leaked", async () => {
+  const logged: string[] = [];
+  const orig = console.error;
+  console.error = (...a: unknown[]) => logged.push(a.join(" "));
+  try {
+    const res = await handler(
+      req(validBody()),
+      mockSupabase({
+        rpcError: {
+          message: "Submission rejected.",
+          code: "42501",
+          details: "PORTAL_SUBMIT_REJECTED:SUBMISSION_CAP_EXCEEDED",
+        },
+      }),
+    );
+    assertEquals(res.status, 404);
+    assertEquals(await res.json(), { error: "Not Found" });
+    assert(
+      logged.some((l) => l.includes("PORTAL_SUBMIT_REJECTED:SUBMISSION_CAP_EXCEEDED")),
+      "DETAIL token must be logged server-side for SRE triage",
+    );
+  } finally {
+    console.error = orig;
+  }
 });
 
 Deno.test("RPC empty result set → 404 parity", async () => {
@@ -206,7 +237,18 @@ Deno.test("RPC empty result set → 404 parity", async () => {
   await res.body?.cancel();
 });
 
-Deno.test("signed-url failure → 404 parity", async () => {
+// ── 503 for INFRASTRUCTURE failures (post-authorization, opaque) ─────────────
+
+Deno.test("RPC non-42501 error (DB/transport down) → 503, opaque body", async () => {
+  const res = await handler(
+    req(validBody()),
+    mockSupabase({ rpcError: { message: "connection refused", code: "08006" } }),
+  );
+  assertEquals(res.status, 503);
+  assertEquals(await res.json(), { error: "Service temporarily unavailable" });
+});
+
+Deno.test("signed-url failure (storage down) → 503, not 404 (infra ≠ business)", async () => {
   const res = await handler(
     req(validBody()),
     mockSupabase({
@@ -215,8 +257,8 @@ Deno.test("signed-url failure → 404 parity", async () => {
       signError: { message: "bucket missing" },
     }),
   );
-  assertEquals(res.status, 404);
-  await res.body?.cancel();
+  assertEquals(res.status, 503);
+  assertEquals(await res.json(), { error: "Service temporarily unavailable" });
 });
 
 // ── Happy path ───────────────────────────────────────────────────────────────
@@ -226,7 +268,7 @@ Deno.test("happy path → 200 { submissionId, signedUrl }", async () => {
   const res = await handler(
     req(validBody()),
     mockSupabase({
-      rpcData: [{ submission_id: subId, quarantine_path: "tok/id.pdf" }],
+      rpcData: [{ submission_id: subId, quarantine_path: "tok/id.pdf", already_finalized: false }],
       signedUrl: "https://storage/signed/PUT",
     }),
   );

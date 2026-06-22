@@ -29,7 +29,17 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
+import { infraErrorResponse, logInfraError } from "../shared/infra_error_guard.ts";
 import { detectMime, isMimeConsistent, mimeExt } from "../shared/magic_bytes.ts";
+
+// Postgres SQLSTATEs the RPCs raise for business rejections (anti-oracle 42501,
+// and P0001 for the attachment-limit IntegrityException). Any other error
+// returned/thrown by an infra call is INFRASTRUCTURE → opaque 503.
+const BUSINESS_SQLSTATES = new Set(["42501", "P0001"]);
+
+function isBusinessRejection(error: { code?: string } | null): boolean {
+  return error?.code !== undefined && BUSINESS_SQLSTATES.has(error.code);
+}
 
 const QUARANTINE_BUCKET = "dispute-evidence-portal";
 const PRODUCTION_BUCKET = "dispute_evidence";
@@ -97,6 +107,8 @@ export async function handler(
   }
   if (req.method !== "POST") return sovereigntyErrorResponse();
 
+  const correlationId = crypto.randomUUID();
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -128,7 +140,8 @@ export async function handler(
     const tok = tokData as TokenRow | null;
     if (tokErr || !tok || tok.token_scope !== "submit") return sovereigntyErrorResponse();
     if (tok.revoked_at_utc !== null) return sovereigntyErrorResponse();
-    if (new Date() > new Date(tok.expires_at_utc)) return sovereigntyErrorResponse();
+    // INV-6: compare epoch ms explicitly (Date.now() is UTC) — no implicit local.
+    if (Date.now() > new Date(tok.expires_at_utc).getTime()) return sovereigntyErrorResponse();
 
     // ── Validate submission ownership + state ──────────────────────────────────
     const { data: subData, error: subErr } = await supabase
@@ -145,8 +158,9 @@ export async function handler(
       .from(QUARANTINE_BUCKET)
       .download(sub.quarantine_storage_path as string);
     if (dlErr || !blob) {
-      console.error("[portal-finalize-upload] download error:", dlErr?.message);
-      return sovereigntyErrorResponse();
+      // Quarantine fetch is infrastructure (storage) — opaque 503, not 404.
+      logInfraError("portal-finalize:download", correlationId, dlErr);
+      return infraErrorResponse();
     }
     const arrayBuffer = await blob.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
@@ -178,8 +192,9 @@ export async function handler(
       .upload(prodPath, bytes, { contentType: detected, upsert: false });
     // Idempotent replay: a prior finalize already copied the object — tolerate it.
     if (upErr && !/exists/i.test(upErr.message)) {
-      console.error("[portal-finalize-upload] upload error:", upErr.message);
-      return sovereigntyErrorResponse();
+      // Production copy is infrastructure (storage) — opaque 503, not 404.
+      logInfraError("portal-finalize:upload", correlationId, upErr);
+      return infraErrorResponse();
     }
 
     // ── Atomic registration ────────────────────────────────────────────────────
@@ -189,15 +204,19 @@ export async function handler(
       p_mime_type_detected: detected,
       p_file_size_bytes_actual: bytes.length,
     });
-    if (regErr || !attachmentId) {
-      console.error("[portal-finalize-upload] register error:", regErr?.message);
-      return sovereigntyErrorResponse();
+    if (regErr) {
+      // Business rejection (state/limit) → opaque 404 (INV-26). Otherwise infra.
+      if (isBusinessRejection(regErr)) return sovereigntyErrorResponse();
+      logInfraError("portal-finalize:register", correlationId, regErr);
+      return infraErrorResponse();
     }
+    if (!attachmentId) return sovereigntyErrorResponse();
 
     return Response.json({ status: "PENDING_AUDIT", attachmentId }, { status: 200 });
   } catch (e) {
-    console.error("[portal-finalize-upload] unexpected:", e);
-    return sovereigntyErrorResponse();
+    // Thrown (not the {data,error} shape) → infrastructure failure.
+    logInfraError("portal-finalize:unexpected", correlationId, e);
+    return infraErrorResponse();
   }
 }
 
