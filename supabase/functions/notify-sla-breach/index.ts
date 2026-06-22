@@ -309,5 +309,9 @@ export async function handler(
   );
 }
 if (import.meta.main) {
-  Deno.serve(handler);
+  // Deno.serve invokes the callback as (request, connInfo). Calling `handler`
+  // directly would bind connInfo to the `injectedSupabase` test seam (2nd param),
+  // making it truthy in production so `?? createClient(...)` never runs and
+  // `supabase.rpc` is undefined. Wrap to pass ONLY the request.
+  Deno.serve((req: Request) => handler(req));
 }

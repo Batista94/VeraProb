@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -14,12 +15,27 @@ import 'package:veraprob/application/dispute_portal/staged_file.dart';
 /// Reads/acknowledges via SECURITY DEFINER RPCs (granted to anon) and submits
 /// counter-evidence through the two portal edge functions. The carrier-declared
 /// SHA-256 is advisory: the server recomputes it at finalize (INV-9).
+/// Invokes a portal edge function. Returns a 2xx [FunctionResponse] or throws
+/// [FunctionException] (status, details, reasonPhrase) for any non-2xx — the
+/// exact contract of `functions_client`'s `invoke`. Infra-private (no app/feature
+/// import); seam exists solely to unit-test [SupabasePortalDisputeGateway].
+typedef EdgeFunctionInvoker =
+    Future<FunctionResponse> Function(String name, {Object? body});
+
 class SupabasePortalDisputeGateway implements PortalDisputeGateway {
   final SupabaseClient _client;
   final http.Client _http;
+  final EdgeFunctionInvoker _invoke;
 
-  SupabasePortalDisputeGateway(this._client, {http.Client? httpClient})
-    : _http = httpClient ?? http.Client();
+  SupabasePortalDisputeGateway(
+    SupabaseClient client, {
+    http.Client? httpClient,
+    @visibleForTesting EdgeFunctionInvoker? invoker,
+  }) : _client = client,
+       _http = httpClient ?? http.Client(),
+       _invoke =
+           invoker ??
+           ((name, {body}) => client.functions.invoke(name, body: body));
 
   @override
   Future<PortalSnapshot> read(String token) async {
@@ -129,7 +145,7 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
     // opaque non-retryable 404 (INV-26).
     final FunctionResponse requestRes;
     try {
-      requestRes = await _client.functions.invoke(
+      requestRes = await _invoke(
         'portal-submit-request',
         body: {
           'token': token,
@@ -142,20 +158,17 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
           },
         },
       );
+    } on FunctionException catch (e) {
+      // invoke() throws on every non-2xx. 5xx (incl. 503) is transient infra →
+      // retry; any 4xx is a business rejection (opaque 404 / validation) and is
+      // NEVER retried (INV-26: anti-oracle parity preserved).
+      throw _classifyInvokeFailure(e);
     } catch (_) {
+      // Genuine transport failure (socket reset, no HTTP status) → retryable.
       throw const PortalDisputeException(
         'Falha temporária de comunicação. Tente novamente.',
         retryable: true,
       );
-    }
-    if (requestRes.status == 503) {
-      throw const PortalDisputeException(
-        'Serviço temporariamente indisponível. Tentando novamente…',
-        retryable: true,
-      );
-    }
-    if (requestRes.status != 200) {
-      throw const PortalDisputeException('Envio recusado. Verifique os dados.');
     }
     final reqData = requestRes.data;
     if (reqData is! Map) {
@@ -193,33 +206,48 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
     }
 
     // ── Phase 2: finalize (server-side magic-byte + SHA-256 verification) ─────
-    final FunctionResponse finalizeRes;
     try {
-      finalizeRes = await _client.functions.invoke(
+      await _invoke(
         'portal-finalize-upload',
         body: {'token': token, 'submissionId': submissionId},
       );
+    } on FunctionException catch (e) {
+      // 5xx → retryable infra. A 404 means the submission was already promoted
+      // to PENDING_AUDIT on a prior attempt (finalize is idempotent) — that is a
+      // success, NOT a rejection. Other 4xx carry the verification verdict.
+      if (e.status >= 500) {
+        throw const PortalDisputeException(
+          'Serviço temporariamente indisponível. Tentando novamente…',
+          retryable: true,
+        );
+      }
+      if (e.status == 404) return PortalSubmissionOutcome.pendingAudit;
+      final msg = _errorMessage(e.details).toLowerCase();
+      if (msg.contains('hash')) return PortalSubmissionOutcome.hashMismatch;
+      if (msg.contains('type') || msg.contains('mime')) {
+        return PortalSubmissionOutcome.mimeMismatch;
+      }
+      return PortalSubmissionOutcome.rejected;
     } catch (_) {
       throw const PortalDisputeException(
         'Falha temporária de comunicação. Tente novamente.',
         retryable: true,
       );
     }
-    if (finalizeRes.status == 200) {
-      return PortalSubmissionOutcome.pendingAudit;
-    }
-    if (finalizeRes.status == 503) {
-      throw const PortalDisputeException(
+    // A 2xx finalize is the verified, promoted-to-audit success.
+    return PortalSubmissionOutcome.pendingAudit;
+  }
+
+  /// Maps a phase-1 [FunctionException] to a typed portal failure. 5xx → retry;
+  /// 4xx → opaque non-retryable (INV-26).
+  PortalDisputeException _classifyInvokeFailure(FunctionException e) {
+    if (e.status >= 500) {
+      return const PortalDisputeException(
         'Serviço temporariamente indisponível. Tentando novamente…',
         retryable: true,
       );
     }
-    final msg = _errorMessage(finalizeRes.data).toLowerCase();
-    if (msg.contains('hash')) return PortalSubmissionOutcome.hashMismatch;
-    if (msg.contains('type') || msg.contains('mime')) {
-      return PortalSubmissionOutcome.mimeMismatch;
-    }
-    return PortalSubmissionOutcome.rejected;
+    return const PortalDisputeException('Envio recusado. Verifique os dados.');
   }
 
   String _errorMessage(dynamic data) {
