@@ -378,6 +378,7 @@ List<Override> _baseOverrides({
     generateForensicDossierHandlerProvider.overrideWithValue(
       _FakeGenerateForensicDossierHandler(),
     ),
+    verdictProvenanceProvider.overrideWith((ref, id) async => null),
   ];
 }
 

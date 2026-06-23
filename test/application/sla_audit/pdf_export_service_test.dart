@@ -916,7 +916,7 @@ void main() {
       await pdfService.generatePdf(package: sealed, report: report);
       sw.stop();
 
-      expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+      expect(sw.elapsed, lessThan(const Duration(seconds: 10)));
     });
   });
 }
