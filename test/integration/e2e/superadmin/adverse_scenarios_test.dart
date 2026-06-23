@@ -35,10 +35,15 @@ void main() {
     late TestOrgData testOrgRevokeRace;
     late TestOrgData testOrgCnpjDuplicate;
     bool supabaseAvailable = false;
+    bool edgeFunctionsAvailable = false;
 
     setUpAll(() async {
       supabaseAvailable = await SuperAdminTestConfig.isSupabaseRunning();
       if (!supabaseAvailable) return;
+
+      edgeFunctionsAvailable =
+          await SuperAdminTestConfig.isEdgeFunctionsRunning();
+      if (!edgeFunctionsAvailable) return;
 
       // 8.1: Org para teste de race condition (arquivar durante edição)
       testOrgRaceCondition = await SuperAdminDataFactory.createOrgWithAdmins(
@@ -126,6 +131,12 @@ void main() {
         '(race condition)', (tester) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 
@@ -222,6 +233,12 @@ void main() {
         'retry com motivo válido (atomicidade preservada)', (tester) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 
@@ -329,6 +346,12 @@ void main() {
         '(apenas 1 operação processada)', (tester) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 
@@ -458,6 +481,12 @@ void main() {
         markTestSkipped('Supabase local não disponível.');
         return;
       }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
+        return;
+      }
 
       // Capturar estado antes da operação
       final statusBefore = await SuperAdminDbVerifier.getOrgStatus(
@@ -569,6 +598,12 @@ void main() {
         markTestSkipped('Supabase local não disponível.');
         return;
       }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
+        return;
+      }
 
       await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
       await SuperAdminNavigationHelper.goToTenantDetail(
@@ -637,6 +672,12 @@ void main() {
         '(race condition)', (tester) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 
@@ -747,6 +788,12 @@ void main() {
         'já existente', (tester) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 
