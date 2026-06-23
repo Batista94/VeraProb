@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(6);
+SELECT plan(7);
 
 -- =============================================================================
 -- pgTAP: list_portal_submissions — Sprint A M6
@@ -42,16 +42,18 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO public.portal_evidence_submissions
   (id, organization_id, queue_entry_id, token_id, quarantine_storage_path,
    file_name, mime_type_declared, file_size_bytes_declared, sha256_client, status,
-   mime_type_detected, file_size_bytes_actual, sha256_server, finalized_at_utc)
+   mime_type_detected, file_size_bytes_actual, sha256_server, justification_text,
+   finalized_at_utc)
 VALUES
   ('00000000-0000-0000-0000-00000dad6501','00000000-0000-0000-0000-00000dad6a01',
    '00000000-0000-0000-0000-00000dad6e01','00000000-0000-0000-0000-00000dad6c01',
    '00000000-0000-0000-0000-00000dad6c01/a.pdf','a.pdf','application/pdf',2048,repeat('a',64),
-   'PENDING_AUDIT','application/pdf',2048,repeat('b',64),NOW()),
+   'PENDING_AUDIT','application/pdf',2048,repeat('b',64),
+   'Justificativa da contestacao anexa para teste.',NOW()),
   ('00000000-0000-0000-0000-00000dad6502','00000000-0000-0000-0000-00000dad6a01',
    '00000000-0000-0000-0000-00000dad6e01','00000000-0000-0000-0000-00000dad6c01',
    '00000000-0000-0000-0000-00000dad6c01/b.pdf','b.pdf','application/pdf',2048,repeat('c',64),
-   'QUARANTINE',NULL,NULL,NULL,NULL)
+   'QUARANTINE',NULL,NULL,NULL,NULL,NULL)
 ON CONFLICT (id) DO NOTHING;
 
 -- S1: signature
@@ -75,6 +77,12 @@ SELECT is(
      '00000000-0000-0000-0000-00000dad6a01','00000000-0000-0000-0000-00000dad6e01') LIMIT 1),
   '00000000-0000-0000-0000-00000dad6501'::uuid,
   'HP2: returns the finalized submission id');
+-- HP3: the sealed carrier testimony is now projected for the auditor.
+SELECT is(
+  (SELECT justification_text FROM public.list_portal_submissions(
+     '00000000-0000-0000-0000-00000dad6a01','00000000-0000-0000-0000-00000dad6e01') LIMIT 1),
+  'Justificativa da contestacao anexa para teste.',
+  'HP3: justification_text is projected with the file submission');
 RESET ROLE;
 
 -- B1: cross-org caller → 42501

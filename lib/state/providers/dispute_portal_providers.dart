@@ -101,6 +101,27 @@ final pendingPortalSubmissionsProvider = FutureProvider.autoDispose
       );
     });
 
+/// Testimony-only (file-optional) portal contests for a given queue entry.
+/// Family keyed by `({orgId, queueEntryId})`. autoDispose, mirroring
+/// [pendingPortalSubmissionsProvider].
+///
+/// INV-1: `orgId` is a family parameter sourced from
+/// `currentOrganizationIdProvider`; the SECURITY DEFINER RPC re-validates the JWT
+/// org server-side (INV-22/26), returning 0 rows on any mismatch. These contests
+/// produce no `dispute_evidence_attachments` row, so they are not carried by
+/// [portalEvidenceRealtimeProvider]; the panel re-queries on (re)build.
+final pendingPortalJustificationsProvider = FutureProvider.autoDispose
+    .family<
+      List<PortalJustificationSummary>,
+      ({String orgId, String queueEntryId})
+    >((ref, key) {
+      final gateway = ref.watch(portalSubmissionAuditGatewayProvider);
+      return gateway.listPendingJustifications(
+        organizationId: key.orgId,
+        queueEntryId: key.queueEntryId,
+      );
+    });
+
 /// Single shared realtime tick for finalized portal counter-evidence.
 ///
 /// INV-16: ONE channel for the whole auditor session — every disputed card

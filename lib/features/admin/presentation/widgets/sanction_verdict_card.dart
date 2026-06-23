@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
@@ -26,6 +27,7 @@ import 'package:veraprob/state/providers/dispute_portal_token_providers.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/state/providers/reporting_providers.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
 import 'ghost_bar_widget.dart';
@@ -2390,54 +2392,59 @@ class _PortalSubmissionsZoneState
       };
       if (after != before) {
         ref.invalidate(pendingPortalSubmissionsProvider(_key));
+        ref.invalidate(pendingPortalJustificationsProvider(_key));
       }
     });
 
-    final async = ref.watch(pendingPortalSubmissionsProvider(_key));
-    return switch (async) {
-      AsyncData(:final value) =>
-        value.isEmpty
-            ? const SizedBox.shrink()
-            : Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.cloud_upload_outlined,
-                          size: 13,
-                          color: VeraProbColors.primary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'CONTRAPROVA DO PORTAL (${value.length})',
-                          style: VeraProbTypography.badge.copyWith(
-                            color: VeraProbColors.primary,
-                            fontSize: 9,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...value.map(
-                      (s) => _PortalSubmissionTile(
-                        summary: s,
-                        isBusy: _busySubmissionId == s.submissionId,
-                        anyBusy: _busySubmissionId != null,
-                        onAccept: () =>
-                            _audit(s.submissionId, PortalAuditDecision.accept),
-                        onReject: () =>
-                            _audit(s.submissionId, PortalAuditDecision.reject),
-                      ),
-                    ),
-                  ],
+    final files =
+        ref.watch(pendingPortalSubmissionsProvider(_key)).value ??
+        const <PortalSubmissionSummary>[];
+    final testimonies =
+        ref.watch(pendingPortalJustificationsProvider(_key)).value ??
+        const <PortalJustificationSummary>[];
+
+    if (files.isEmpty && testimonies.isEmpty) return const SizedBox.shrink();
+    final total = files.length + testimonies.length;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.cloud_upload_outlined,
+                size: 13,
+                color: VeraProbColors.primary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'CONTRAPROVA DO PORTAL ($total)',
+                style: VeraProbTypography.badge.copyWith(
+                  color: VeraProbColors.primary,
+                  fontSize: 9,
+                  letterSpacing: 0.8,
                 ),
               ),
-      _ => const SizedBox.shrink(),
-    };
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...files.map(
+            (s) => _PortalSubmissionTile(
+              summary: s,
+              isBusy: _busySubmissionId == s.submissionId,
+              anyBusy: _busySubmissionId != null,
+              onAccept: () =>
+                  _audit(s.submissionId, PortalAuditDecision.accept),
+              onReject: () =>
+                  _audit(s.submissionId, PortalAuditDecision.reject),
+            ),
+          ),
+          ...testimonies.map((j) => _PortalJustificationTile(summary: j)),
+        ],
+      ),
+    );
   }
 }
 
@@ -2554,6 +2561,21 @@ class _PortalSubmissionTile extends StatelessWidget {
               color: VeraProbColors.textDisabled,
             ),
           ),
+          if (summary.attachmentId != null) ...[
+            const SizedBox(height: 8),
+            _PortalAttachmentThumb(
+              attachmentId: summary.attachmentId!,
+              fileName: summary.fileName,
+              mimeType: summary.mimeTypeDetected,
+              sha256: summary.sha256Server,
+              fileSizeBytes: summary.fileSizeBytesActual,
+            ),
+          ],
+          if (summary.justificationText case final String t
+              when t.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _TestimonyBlock(text: t),
+          ],
           const SizedBox(height: 8),
           Row(
             children: [
@@ -2592,6 +2614,382 @@ class _PortalSubmissionTile extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Read-only tile for a testimony-only (file-optional) portal contest. There is
+/// no file to view and nothing to accept/reject per item — the auditor weighs it
+/// when resolving the dispute. Sealed via SHA-256 (INV-9).
+class _PortalJustificationTile extends StatelessWidget {
+  final PortalJustificationSummary summary;
+  const _PortalJustificationTile({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: VeraProbColors.border, width: 0.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const _PortalProvenanceBadge(),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Defesa textual (sem anexo)',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VeraProbTypography.caption.copyWith(fontSize: 10),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _TestimonyBlock(
+            text: summary.justificationText,
+            sha256: summary.sha256JustificationSeal,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Carrier testimony block — the written justification, rendered raw (escaped by
+/// Flutter Text, never at ingest). Collapses past 4 lines behind "Ver mais".
+/// Optionally shows the testimony seal (INV-9) with a copy affordance.
+class _TestimonyBlock extends StatefulWidget {
+  final String text;
+  final String? sha256;
+  const _TestimonyBlock({required this.text, this.sha256});
+
+  @override
+  State<_TestimonyBlock> createState() => _TestimonyBlockState();
+}
+
+class _TestimonyBlockState extends State<_TestimonyBlock> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final seal = widget.sha256;
+    final shortSeal = (seal != null && seal.length >= 12)
+        ? '${seal.substring(0, 12)}…'
+        : seal;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: const Border(
+          left: BorderSide(color: VeraProbColors.primary, width: 2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'JUSTIFICATIVA DA CONTESTAÇÃO',
+            style: VeraProbTypography.badge.copyWith(
+              color: VeraProbColors.primary,
+              fontSize: 8,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 4),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 180),
+            crossFadeState: _expanded
+                ? CrossFadeState.showSecond
+                : CrossFadeState.showFirst,
+            firstChild: Text(
+              widget.text,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+              style: VeraProbTypography.bodySmall.copyWith(fontSize: 12),
+            ),
+            secondChild: Text(
+              widget.text,
+              style: VeraProbTypography.bodySmall.copyWith(fontSize: 12),
+            ),
+          ),
+          if (widget.text.length > 160)
+            GestureDetector(
+              onTap: () => setState(() => _expanded = !_expanded),
+              child: Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  _expanded ? 'Ver menos' : 'Ver mais',
+                  style: VeraProbTypography.caption.copyWith(
+                    color: VeraProbColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          if (shortSeal != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Selo: $shortSeal',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VeraProbTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: 10,
+                      color: VeraProbColors.textDisabled,
+                    ),
+                  ),
+                ),
+                Semantics(
+                  button: true,
+                  label: 'Copiar selo da justificativa',
+                  child: InkWell(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: seal!));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Selo copiado.')),
+                      );
+                    },
+                    child: const Padding(
+                      padding: EdgeInsets.all(4),
+                      child: Icon(
+                        Icons.copy_rounded,
+                        size: 13,
+                        color: VeraProbColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// 64×64 thumbnail for a dispute attachment, served via the JWT-gated
+/// `auditor-dispute-evidence` proxy (INV-26). Tapping opens a fullscreen
+/// lightbox. Non-image formats show a document glyph (no inline preview).
+class _PortalAttachmentThumb extends ConsumerWidget {
+  final String attachmentId;
+  final String fileName;
+  final String? mimeType;
+  final String? sha256;
+  final int? fileSizeBytes;
+
+  const _PortalAttachmentThumb({
+    required this.attachmentId,
+    required this.fileName,
+    required this.mimeType,
+    required this.sha256,
+    required this.fileSizeBytes,
+  });
+
+  bool get _isImage => (mimeType ?? '').startsWith('image/');
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final url = ref
+        .read(evidenceUrlServiceProvider)
+        .getDisputeAttachmentProxyUrl(attachmentId);
+    final token = ref.watch(currentSessionIdProvider) ?? '';
+
+    final preview = _isImage
+        ? CachedNetworkImage(
+            imageUrl: url,
+            httpHeaders: {'Authorization': 'Bearer $token'},
+            width: 64,
+            height: 64,
+            fit: BoxFit.cover,
+            placeholder: (_, _) => _glyph(Icons.image_outlined),
+            errorWidget: (_, _, _) => _glyph(Icons.broken_image_outlined),
+          )
+        : _glyph(Icons.picture_as_pdf_outlined);
+
+    return Semantics(
+      button: true,
+      label: 'Abrir anexo da contestação',
+      child: InkWell(
+        onTap: () => showDialog<void>(
+          context: context,
+          barrierColor: Colors.black87,
+          builder: (_) => _PortalAttachmentLightbox(
+            url: url,
+            token: token,
+            fileName: fileName,
+            mimeType: mimeType,
+            sha256: sha256,
+            fileSizeBytes: fileSizeBytes,
+            isImage: _isImage,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: preview,
+        ),
+      ),
+    );
+  }
+
+  Widget _glyph(IconData icon) => Container(
+    width: 64,
+    height: 64,
+    color: VeraProbColors.surface,
+    alignment: Alignment.center,
+    child: Icon(icon, size: 26, color: VeraProbColors.textSecondary),
+  );
+}
+
+/// Fullscreen viewer for a dispute attachment. Images are zoomable; other
+/// formats show metadata only (inline preview needs a viewer dep — out of
+/// scope). Footer carries SHA-256 + size + MIME (INV-9 provenance).
+class _PortalAttachmentLightbox extends StatelessWidget {
+  final String url;
+  final String token;
+  final String fileName;
+  final String? mimeType;
+  final String? sha256;
+  final int? fileSizeBytes;
+  final bool isImage;
+
+  const _PortalAttachmentLightbox({
+    required this.url,
+    required this.token,
+    required this.fileName,
+    required this.mimeType,
+    required this.sha256,
+    required this.fileSizeBytes,
+    required this.isImage,
+  });
+
+  String _humanSize(int? bytes) {
+    if (bytes == null) return '—';
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Align(
+            alignment: Alignment.topRight,
+            child: Semantics(
+              button: true,
+              label: 'Fechar visualização',
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
+              ),
+            ),
+          ),
+          Flexible(
+            child: isImage
+                ? InteractiveViewer(
+                    maxScale: 5,
+                    child: CachedNetworkImage(
+                      imageUrl: url,
+                      httpHeaders: {'Authorization': 'Bearer $token'},
+                      fit: BoxFit.contain,
+                      placeholder: (_, _) => const SizedBox(
+                        height: 200,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (_, _, _) => const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Text(
+                          'Não foi possível carregar o anexo.',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  )
+                : Container(
+                    padding: const EdgeInsets.all(32),
+                    color: VeraProbColors.surface,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.picture_as_pdf_outlined,
+                          size: 56,
+                          color: VeraProbColors.textSecondary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          fileName,
+                          textAlign: TextAlign.center,
+                          style: VeraProbTypography.dataValue,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Visualização inline indisponível para este formato.',
+                          textAlign: TextAlign.center,
+                          style: VeraProbTypography.caption,
+                        ),
+                      ],
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: VeraProbColors.background.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  fileName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: VeraProbTypography.dataValue.copyWith(fontSize: 12),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '${mimeType ?? '—'} · ${_humanSize(fileSizeBytes)}',
+                  style: VeraProbTypography.caption.copyWith(fontSize: 10),
+                ),
+                if (sha256 != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'SHA-256: $sha256',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: VeraProbTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      fontSize: 10,
+                      color: VeraProbColors.textDisabled,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ],
       ),

@@ -14,4 +14,14 @@ class EvidenceUrlService {
     if (evidenceId.isEmpty) return '';
     return '${EnvironmentConfig.supabaseUrl}/functions/v1/secure-evidence-proxy?evidence_id=$evidenceId';
   }
+
+  /// Generates the auditor dispute-evidence proxy URL for a dispute attachment.
+  ///
+  /// Served by the `auditor-dispute-evidence` edge function (bucket
+  /// `dispute_evidence`), which enforces JWT + TENANT_ADMIN/AUDITOR role +
+  /// org-scope and strips EXIF (INV-18). UI MUST NOT build this URL manually.
+  String getDisputeAttachmentProxyUrl(String attachmentId) {
+    if (attachmentId.isEmpty) return '';
+    return '${EnvironmentConfig.supabaseUrl}/functions/v1/auditor-dispute-evidence?attachment_id=$attachmentId';
+  }
 }

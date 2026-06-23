@@ -5661,6 +5661,7 @@ export type Database = {
           file_name: string;
           file_size_bytes_actual: number;
           finalized_at_utc: string;
+          justification_text: string;
           mime_type_detected: string;
           sha256_server: string;
           status: string;

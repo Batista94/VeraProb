@@ -11,6 +11,10 @@ class PortalSubmissionSummary extends Equatable {
   final String? mimeTypeDetected;
   final int? fileSizeBytesActual;
   final String? sha256Server;
+
+  /// Carrier testimony submitted WITH the file (sealed at ingest, INV-3/9).
+  /// NULL for legacy rows that predate justification capture.
+  final String? justificationText;
   final String status;
   final DateTime? submittedAtUtc;
   final DateTime? finalizedAtUtc;
@@ -22,6 +26,7 @@ class PortalSubmissionSummary extends Equatable {
     required this.mimeTypeDetected,
     required this.fileSizeBytesActual,
     required this.sha256Server,
+    required this.justificationText,
     required this.status,
     required this.submittedAtUtc,
     required this.finalizedAtUtc,
@@ -37,6 +42,7 @@ class PortalSubmissionSummary extends Equatable {
       mimeTypeDetected: json['mime_type_detected'] as String?,
       fileSizeBytesActual: (json['file_size_bytes_actual'] as num?)?.toInt(),
       sha256Server: json['sha256_server'] as String?,
+      justificationText: json['justification_text'] as String?,
       status: json['status'] as String,
       submittedAtUtc: parseUtc(json['submitted_at_utc']),
       finalizedAtUtc: parseUtc(json['finalized_at_utc']),
@@ -51,9 +57,53 @@ class PortalSubmissionSummary extends Equatable {
     mimeTypeDetected,
     fileSizeBytesActual,
     sha256Server,
+    justificationText,
     status,
     submittedAtUtc,
     finalizedAtUtc,
+  ];
+}
+
+/// Auditor-facing view of a testimony-only (file-optional) portal contest.
+/// Projected by the `list_portal_justification_submissions` RPC over the
+/// deny-all `portal_justification_submissions` table. There are no bytes — the
+/// testimony itself is the evidence, sealed via [sha256JustificationSeal]
+/// (INV-9). Read-only for the auditor (no per-item accept/reject).
+class PortalJustificationSummary extends Equatable {
+  final String justificationSubmissionId;
+  final String justificationText;
+  final String sha256JustificationSeal;
+  final String status;
+  final DateTime? submittedAtUtc;
+
+  const PortalJustificationSummary({
+    required this.justificationSubmissionId,
+    required this.justificationText,
+    required this.sha256JustificationSeal,
+    required this.status,
+    required this.submittedAtUtc,
+  });
+
+  factory PortalJustificationSummary.fromJson(Map<String, dynamic> json) {
+    final submitted = json['submitted_at_utc'];
+    return PortalJustificationSummary(
+      justificationSubmissionId: json['justification_submission_id'] as String,
+      justificationText: json['justification_text'] as String,
+      sha256JustificationSeal: json['sha256_justification_seal'] as String,
+      status: json['status'] as String,
+      submittedAtUtc: submitted == null
+          ? null
+          : DateTime.parse(submitted as String).toUtc(),
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+    justificationSubmissionId,
+    justificationText,
+    sha256JustificationSeal,
+    status,
+    submittedAtUtc,
   ];
 }
 
@@ -73,6 +123,13 @@ extension PortalAuditDecisionRpc on PortalAuditDecision {
 /// DEFINER RPCs (org + TENANT_ADMIN/AUDITOR gated server-side; INV-22/26).
 abstract class PortalSubmissionAuditGateway {
   Future<List<PortalSubmissionSummary>> listPending({
+    required String organizationId,
+    required String queueEntryId,
+  });
+
+  /// Testimony-only (file-optional) contests awaiting review. Backed by
+  /// `list_portal_justification_submissions` (org + TENANT_ADMIN/AUDITOR gated).
+  Future<List<PortalJustificationSummary>> listPendingJustifications({
     required String organizationId,
     required String queueEntryId,
   });

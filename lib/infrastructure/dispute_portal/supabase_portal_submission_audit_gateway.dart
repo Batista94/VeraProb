@@ -37,6 +37,31 @@ class SupabasePortalSubmissionAuditGateway extends BasePostgresRepository
   }
 
   @override
+  Future<List<PortalJustificationSummary>> listPendingJustifications({
+    required String organizationId,
+    required String queueEntryId,
+  }) async {
+    try {
+      final rows = await client.rpc<List<dynamic>>(
+        'list_portal_justification_submissions',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+        },
+      );
+      return rows
+          .map(
+            (r) => PortalJustificationSummary.fromJson(
+              Map<String, dynamic>.from(r as Map),
+            ),
+          )
+          .toList(growable: false);
+    } on PostgrestException catch (e) {
+      throw mapPostgrestToDomainException(e);
+    }
+  }
+
+  @override
   Future<void> audit({
     required String organizationId,
     required String submissionId,

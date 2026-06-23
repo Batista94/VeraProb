@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -263,16 +264,23 @@ class _CountingAuditGateway implements PortalSubmissionAuditGateway {
       PortalSubmissionSummary(
         submissionId: 'sub-1',
         attachmentId: 'att-1',
-        fileName: 'contraprova.pdf',
-        mimeTypeDetected: 'application/pdf',
+        fileName: 'contraprova.jpg',
+        mimeTypeDetected: 'image/jpeg',
         fileSizeBytesActual: 2048,
         sha256Server: 'a' * 64,
+        justificationText: 'Contestacao com anexo.',
         status: 'PENDING_AUDIT',
         submittedAtUtc: DateTime.utc(2026, 6, 1),
         finalizedAtUtc: DateTime.utc(2026, 6, 1),
       ),
     ];
   }
+
+  @override
+  Future<List<PortalJustificationSummary>> listPendingJustifications({
+    required String organizationId,
+    required String queueEntryId,
+  }) async => const [];
 
   @override
   Future<void> audit({
@@ -1001,8 +1009,54 @@ void _portalRealtimeTests() {
 
       expect(gateway.listCalls, 2);
       expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsOneWidget);
-      expect(find.text('contraprova.pdf'), findsOneWidget);
+      expect(find.text('contraprova.jpg'), findsOneWidget);
     });
+
+    testWidgets(
+      'surfaced contraprova shows the carrier testimony + thumbnail',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final item = _makeItem(status: SanctionReviewStatus.disputed);
+        final controller = StreamController<Map<String, int>>.broadcast();
+        addTearDown(controller.close);
+        final gateway = _CountingAuditGateway();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._baseOverrides(
+                item: item,
+                notifier: _MockSanctionActionNotifier(),
+                portalEvidenceStream: controller.stream,
+              ),
+              portalSubmissionAuditGatewayProvider.overrideWithValue(gateway),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        controller.add(const {});
+        await tester.pump();
+        controller.add({item.id: 1});
+        await tester.pumpAndSettle();
+
+        // Bug 1a fix: the auditor now reads the justification text...
+        // (AnimatedCrossFade keeps both collapsed/expanded children mounted.)
+        expect(find.text('JUSTIFICATIVA DA CONTESTAÇÃO'), findsOneWidget);
+        expect(find.textContaining('Contestacao com anexo.'), findsWidgets);
+        // ...and a viewable attachment thumbnail (proxied image) is present.
+        expect(find.byType(CachedNetworkImage), findsWidgets);
+      },
+    );
 
     testWidgets('tick for a DIFFERENT dispute does not re-fetch', (
       tester,
