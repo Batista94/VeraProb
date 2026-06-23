@@ -3,7 +3,8 @@ SELECT plan(5);
 
 -- Setup
 INSERT INTO public.organizations (id, name, cnpj)
-VALUES ('11111111-1111-1111-1111-111111111111'::uuid, 'Test Org', '12345678901234');
+VALUES ('11111111-1111-1111-1111-111111111111'::uuid, 'Test Org', '12345678901234')
+ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.sanction_review_queue (id, organization_id, vehicle_plate, verdict_evidence, status, ledger_entry_id, set_id, contract_id)
 VALUES (

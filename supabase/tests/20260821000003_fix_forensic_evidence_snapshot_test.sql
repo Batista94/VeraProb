@@ -3,7 +3,8 @@ SELECT plan(6);
 
 -- Setup Org
 INSERT INTO public.organizations (id, name, cnpj)
-VALUES ('22222222-2222-2222-2222-222222222222'::uuid, 'Test Org', '12345678901234');
+VALUES ('22222222-2222-2222-2222-222222222222'::uuid, 'Test Org', '12345678901234')
+ON CONFLICT (id) DO NOTHING;
 
 -- Pre-insert ledger entries required by the FK constraint:
 -- FOREIGN KEY (organization_id, ledger_entry_id) REFERENCES sla_audit_ledger_v2(organization_id, id)

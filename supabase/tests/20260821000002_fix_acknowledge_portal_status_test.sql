@@ -3,7 +3,8 @@ SELECT plan(8);
 
 -- Setup Org
 INSERT INTO public.organizations (id, name, cnpj)
-VALUES ('11111111-1111-1111-1111-111111111111'::uuid, 'Test Org', '12345678901234');
+VALUES ('11111111-1111-1111-1111-111111111111'::uuid, 'Test Org', '12345678901234')
+ON CONFLICT (id) DO NOTHING;
 
 -- Queue 1 (status: applied)
 -- contract_id must be UUID-format text: acknowledge_via_portal does v_queue.contract_id::uuid

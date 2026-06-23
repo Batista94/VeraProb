@@ -5,7 +5,7 @@ SELECT plan(10);
 -- ── Fixture setup como superuser (bypass RLS) ─────────────────────────────────
 INSERT INTO public.organizations (id, name, cnpj) VALUES
   ('00000000-0000-0000-0000-000000000010'::uuid, 'Test Tenant A - Financial', '10101010101010'),
-  ('00000000-0000-0000-0000-000000000011'::uuid, 'Test Tenant B - Financial', '11111111111111')
+  ('00000000-0000-0000-0000-000000000011'::uuid, 'Test Tenant B - Financial', '09111111111111')
 ON CONFLICT (id) DO NOTHING;
 
 -- ledger_entry_id: sem FK enforçada — usar UUIDs sintéticos diretamente
