@@ -303,6 +303,7 @@ SanctionQueueItemView _makeItem({
   String? reviewedByUserId,
   DateTime? reviewedAtUtc,
   String? firstReviewerId,
+  DateTime? defenseSubmittedAt,
 }) {
   final evidence = VerdictEvidence.create(
     clauseRef: clauseRef,
@@ -337,6 +338,7 @@ SanctionQueueItemView _makeItem({
     reviewedByUserId: reviewedByUserId,
     reviewedAtUtc: reviewedAtUtc,
     firstReviewerId: firstReviewerId,
+    defenseSubmittedAt: defenseSubmittedAt,
   );
 }
 
@@ -439,6 +441,53 @@ void main() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'shows Cancelar solicitação button when defense is NOT submitted',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(
+              status: SanctionReviewStatus.disputed,
+              defenseSubmittedAt: null,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Cancelar solicitação'), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'hides Cancelar solicitação button when defense IS submitted',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1200);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(
+              status: SanctionReviewStatus.disputed,
+              defenseSubmittedAt: DateTime.utc(2026, 6, 23),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Cancelar solicitação'), findsNothing);
+        // The evaluate buttons should still be visible
+        expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
+        expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
   });
 
   group('SanctionVerdictCard — INV-4 Money Precision', () {
@@ -1483,6 +1532,68 @@ void _resolutionSealAndA11yTests() {
         );
         // The auditor's typed comment survives for an immediate retry.
         expect(find.text(comment), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'SLA warning is SHOWN when deadline is future and defense is NOT submitted',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(
+              status: SanctionReviewStatus.disputed,
+              resolutionDueAtUtc: _fixedUtc.add(const Duration(days: 1)),
+              defenseSubmittedAt: null,
+            ),
+            notifier: _MockSanctionActionNotifier(),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('ANULAR INFRAÇÃO'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SentencePanelModal), findsOneWidget);
+        expect(
+          find.textContaining('Atenção: Transportador ainda no prazo de SLA'),
+          findsOneWidget,
+        );
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+
+    testWidgets(
+      'SLA warning is HIDDEN when deadline is future but defense IS submitted',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        await tester.pumpWidget(
+          _buildCard(
+            _makeItem(
+              status: SanctionReviewStatus.disputed,
+              resolutionDueAtUtc: _fixedUtc.add(const Duration(days: 1)),
+              defenseSubmittedAt: _fixedUtc,
+            ),
+            notifier: _MockSanctionActionNotifier(),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('ANULAR INFRAÇÃO'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(SentencePanelModal), findsOneWidget);
+        expect(
+          find.textContaining('Atenção: Transportador ainda no prazo de SLA'),
+          findsNothing,
+        );
 
         addTearDown(tester.view.resetPhysicalSize);
       },

@@ -957,8 +957,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         ],
       );
     } else if (item.status == SanctionReviewStatus.disputed) {
-      final now = DateTime.now().toUtc();
+      final now = ref.watch(dateTimeProviderProvider).nowUtc();
       final hasSlaRemaining =
+          item.defenseSubmittedAt == null &&
           item.resolutionDueAtUtc != null &&
           item.resolutionDueAtUtc!.isAfter(now);
 
@@ -1008,22 +1009,23 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
-          Semantics(
-            label:
-                'Cancelar solicitação de prova — devolve à fila de pendentes',
-            child: TextButton.icon(
-              onPressed: isLoading ? null : _onRetractDispute,
-              icon: const Icon(Icons.undo, size: 16),
-              label: const Text('Cancelar solicitação'),
-              style: TextButton.styleFrom(
-                foregroundColor: VeraProbColors.textSecondary,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 10,
+          if (item.defenseSubmittedAt == null)
+            Semantics(
+              label:
+                  'Cancelar solicitação de prova — devolve à fila de pendentes',
+              child: TextButton.icon(
+                onPressed: isLoading ? null : _onRetractDispute,
+                icon: const Icon(Icons.undo, size: 16),
+                label: const Text('Cancelar solicitação'),
+                style: TextButton.styleFrom(
+                  foregroundColor: VeraProbColors.textSecondary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       );
     } else if (item.status == SanctionReviewStatus.pendingPeerReview) {
