@@ -57,6 +57,8 @@ class SanctionVerdictCard extends ConsumerStatefulWidget {
 class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   bool _isDossierLoading = false;
   String? _dossierError;
+  String? _draftSentenceCode;
+  String? _draftSentenceText;
 
   // Maps clause prefix → measurement unit for forensically accurate display.
   // VEL clauses measure km/h over-speed — never "min".
@@ -97,6 +99,14 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final evidence = item.verdictEvidence;
     final actionState = ref.watch(sanctionActionStateProvider(item.id));
     final isLoading = actionState is AsyncLoading;
+
+    final now = ref.watch(dateTimeProviderProvider).nowUtc();
+    final hasSlaRemaining =
+        item.status == SanctionReviewStatus.disputed &&
+        item.defenseSubmittedAt == null &&
+        item.resolutionDueAtUtc != null &&
+        item.resolutionDueAtUtc!.isAfter(now);
+
     // Pacote 3: `disputed` is now interactive (auditor resolves the dispute);
     // Phase 10.5: `pending_peer_review` is interactive (second auditor confirms/
     // declines). Only terminal verdicts (applied/rejected) are locked.
@@ -480,7 +490,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (item.resolutionDueAtUtc != null) ...[
+                                    if (hasSlaRemaining) ...[
                                       _DisputeSlaChip(
                                         dueAtUtc: item.resolutionDueAtUtc!,
                                       ),
@@ -526,6 +536,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         isLoading,
                         canSeal,
                         isOwnPeerRequest,
+                        hasSlaRemaining,
                       ),
                     ),
                   ],
@@ -868,6 +879,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     bool isLoading,
     bool canSeal,
     bool isOwnPeerRequest,
+    bool hasSlaRemaining,
   ) {
     if (item.status == SanctionReviewStatus.pending) {
       final sealBlockedReason = canSeal
@@ -957,12 +969,6 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         ],
       );
     } else if (item.status == SanctionReviewStatus.disputed) {
-      final now = ref.watch(dateTimeProviderProvider).nowUtc();
-      final hasSlaRemaining =
-          item.defenseSubmittedAt == null &&
-          item.resolutionDueAtUtc != null &&
-          item.resolutionDueAtUtc!.isAfter(now);
-
       return Wrap(
         spacing: 8,
         runSpacing: 8,
@@ -1060,6 +1066,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         showSlaWarning: showSlaWarning,
         isAccept: isAccept,
         requireTextAlways: requireTextAlways,
+        initialCode: _draftSentenceCode,
+        initialText: _draftSentenceText,
+        onChanged: (code, text) {
+          _draftSentenceCode = code;
+          _draftSentenceText = text;
+        },
         onConfirm: onConfirm,
       ),
     );
@@ -1399,55 +1411,60 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       return;
     }
 
-    final classification = switch (item.status) {
-      SanctionReviewStatus.applied => DossierClassification.applied,
-      SanctionReviewStatus.rejected => DossierClassification.annulled,
-      SanctionReviewStatus.acknowledged => DossierClassification.acknowledged,
-      _ => DossierClassification.preliminary,
-    };
-    final sealed = classification != DossierClassification.preliminary;
-    final outcomeLabel = switch (item.status) {
-      SanctionReviewStatus.applied => 'INFRAÇÃO CONFIRMADA',
-      SanctionReviewStatus.rejected => 'INFRAÇÃO ANULADA',
-      SanctionReviewStatus.acknowledged =>
-        'DE ACORDO (ACEITE DO TRANSPORTADOR)',
-      _ => null,
-    };
-    final auditorNote = item.rejectionReason?.trim();
-
-    final entry = SlaLedgerEntry(
-      eventId: item.ledgerEntryId,
-      organizationId: item.organizationId,
-      contractId: item.contractId,
-      type: 'SANCTION_VERDICT',
-      planVersion: 0,
-      occurredAtUtc: item.createdAtUtc,
-    );
-
-    final command = GenerateForensicDossierCommand(
-      sessionId: sessionId,
-      operatorId: userId,
-      jwtOrganizationId: item.organizationId,
-      requestedOrganizationId: item.organizationId,
-      ledgerEntry: entry,
-      savingsCents: evidence.fineCents.cents,
-      mapLat: evidence.primaryEvidenceLat,
-      mapLng: evidence.primaryEvidenceLng,
-      classification: classification,
-      verdictOutcomeLabel: outcomeLabel,
-      auditorReasonCode: item.rejectionReasonCode?.trim(),
-      auditorNote: (auditorNote != null && auditorNote.isNotEmpty)
-          ? auditorNote
-          : null,
-      verdictSealHash: sealed ? evidence.evidenceHash : null,
-    );
-
     setState(() {
       _isDossierLoading = true;
       _dossierError = null;
     });
 
     try {
+      final provenance = await ref.read(
+        verdictProvenanceProvider(item.id).future,
+      );
+
+      final classification = switch (item.status) {
+        SanctionReviewStatus.applied => DossierClassification.applied,
+        SanctionReviewStatus.rejected => DossierClassification.annulled,
+        SanctionReviewStatus.acknowledged => DossierClassification.acknowledged,
+        _ => DossierClassification.preliminary,
+      };
+      final sealed = classification != DossierClassification.preliminary;
+      final outcomeLabel = switch (item.status) {
+        SanctionReviewStatus.applied => 'INFRAÇÃO CONFIRMADA',
+        SanctionReviewStatus.rejected => 'INFRAÇÃO ANULADA',
+        SanctionReviewStatus.acknowledged =>
+          'DE ACORDO (ACEITE DO TRANSPORTADOR)',
+        _ => null,
+      };
+      final auditorNoteText =
+          provenance?.auditorNote?.trim() ?? item.rejectionReason?.trim();
+
+      final entry = SlaLedgerEntry(
+        eventId: item.ledgerEntryId,
+        organizationId: item.organizationId,
+        contractId: item.contractId,
+        type: 'SANCTION_VERDICT',
+        planVersion: 0,
+        occurredAtUtc: item.createdAtUtc,
+      );
+
+      final command = GenerateForensicDossierCommand(
+        sessionId: sessionId,
+        operatorId: userId,
+        jwtOrganizationId: item.organizationId,
+        requestedOrganizationId: item.organizationId,
+        ledgerEntry: entry,
+        savingsCents: evidence.fineCents.cents,
+        mapLat: evidence.primaryEvidenceLat,
+        mapLng: evidence.primaryEvidenceLng,
+        classification: classification,
+        verdictOutcomeLabel: outcomeLabel,
+        auditorReasonCode: item.rejectionReasonCode?.trim(),
+        auditorNote: (auditorNoteText != null && auditorNoteText.isNotEmpty)
+            ? auditorNoteText
+            : null,
+        verdictSealHash: sealed ? evidence.evidenceHash : null,
+      );
+
       final handler = ref.read(generateForensicDossierHandlerProvider);
       final bytes = await handler.handle(command);
       final prefix = sealed ? 'dossie_selado' : 'dossie_preliminar';

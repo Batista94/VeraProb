@@ -295,6 +295,7 @@ void main() {
               actorEmail: 'auditor@tenant.com',
               actorUserId: 'user-001',
               sealedAtUtc: DateTime.utc(2026, 1, 15, 15),
+              auditorNote: null,
             ),
           ),
         );

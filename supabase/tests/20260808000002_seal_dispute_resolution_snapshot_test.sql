@@ -39,7 +39,7 @@ VALUES ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000
 SELECT has_function(
   'public',
   'seal_dispute_resolution_snapshot',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'integer', 'timestamp with time zone', 'uuid', 'text'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'integer', 'timestamp with time zone', 'uuid', 'text', 'uuid'],
   'Function seal_dispute_resolution_snapshot exists with correct signature'
 );
 
@@ -53,7 +53,7 @@ SELECT is(
 -- 3. Execute privilege for authenticated
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text)',
+    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text, uuid)',
     'EXECUTE'),
   'authenticated may execute seal_dispute_resolution_snapshot'
 );
@@ -61,7 +61,7 @@ SELECT ok(
 -- 4. Execute privilege for service_role
 SELECT ok(
   has_function_privilege('service_role',
-    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text)',
+    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text, uuid)',
     'EXECUTE'),
   'service_role may execute seal_dispute_resolution_snapshot'
 );
@@ -79,7 +79,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1', NULL::UUID
      ) $$,
   'seal_dispute_resolution_snapshot executes successfully on happy path'
 );
@@ -100,7 +100,7 @@ SELECT is(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1', NULL::UUID
    ) ->> 'idempotency_key'),
   'idem-dispute-1',
   'Idempotency key replay returns the existing snapshot record'
@@ -116,7 +116,7 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-evil'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-evil', NULL::UUID
      ) $$,
   '42501',
   NULL,

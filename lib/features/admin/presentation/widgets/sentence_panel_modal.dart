@@ -10,6 +10,9 @@ class SentencePanelModal extends StatefulWidget {
   final bool showSlaWarning;
   final bool isAccept;
   final bool requireTextAlways;
+  final String? initialCode;
+  final String? initialText;
+  final void Function(String? code, String text)? onChanged;
   final Future<void> Function(String reasonCode, String reasonText) onConfirm;
 
   const SentencePanelModal({
@@ -20,6 +23,9 @@ class SentencePanelModal extends StatefulWidget {
     required this.showSlaWarning,
     required this.isAccept,
     required this.requireTextAlways,
+    this.initialCode,
+    this.initialText,
+    this.onChanged,
     required this.onConfirm,
   });
 
@@ -28,8 +34,8 @@ class SentencePanelModal extends StatefulWidget {
 }
 
 class _SentencePanelModalState extends State<SentencePanelModal> {
-  String? _selectedCode;
-  final _textController = TextEditingController();
+  late String? _selectedCode = widget.initialCode;
+  late final _textController = TextEditingController(text: widget.initialText);
   bool _isLoading = false;
   String? _errorMessage;
   bool _assumedRisk = false;
@@ -41,6 +47,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
   }
 
   void _onTextChanged() {
+    widget.onChanged?.call(_selectedCode, _textController.text);
     setState(() {});
   }
 
@@ -185,6 +192,10 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                         setState(() {
                           _selectedCode = code;
                         });
+                        widget.onChanged?.call(
+                          _selectedCode,
+                          _textController.text,
+                        );
                       },
                 label: widget.isAccept
                     ? 'Motivo da anulação (taxonomia)'

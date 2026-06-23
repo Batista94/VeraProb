@@ -211,6 +211,7 @@ typedef VerdictProvenance = ({
   String? actorEmail,
   String? actorUserId,
   DateTime? sealedAtUtc,
+  String? auditorNote,
 });
 
 /// Lazily resolves the sealing/annulment fact for a terminal queue item. Null
@@ -221,7 +222,12 @@ final verdictProvenanceProvider = FutureProvider.autoDispose
           .watch(supabaseClientProvider)
           .from('sla_audit_ledger_v2')
           .select('payload, occurred_at_utc')
-          .inFilter('type', const ['VERDICT_SEALED', 'VERDICT_REFUSED'])
+          .inFilter('type', const [
+            'VERDICT_SEALED',
+            'VERDICT_REFUSED',
+            'DISPUTE_ACCEPTED',
+            'DISPUTE_OVERTURNED',
+          ])
           .eq('payload->>queue_entry_id', queueEntryId)
           .order('occurred_at_utc', ascending: false)
           .limit(1)
@@ -230,12 +236,20 @@ final verdictProvenanceProvider = FutureProvider.autoDispose
       final payload = row['payload'] as Map<String, dynamic>?;
       final occurred = row['occurred_at_utc'] as String?;
       final actorId =
-          (payload?['approved_by_user_id'] ?? payload?['rejected_by_user_id'])
+          (payload?['approved_by_user_id'] ??
+                  payload?['rejected_by_user_id'] ??
+                  payload?['resolved_by_user_id'])
+              as String?;
+      final note =
+          (payload?['reviewer_reason'] ??
+                  payload?['rejection_reason'] ??
+                  payload?['resolution_reason'])
               as String?;
       return (
         actorEmail: payload?['actor_email'] as String?,
         actorUserId: actorId,
         sealedAtUtc: occurred == null ? null : DateTime.parse(occurred).toUtc(),
+        auditorNote: note,
       );
     });
 

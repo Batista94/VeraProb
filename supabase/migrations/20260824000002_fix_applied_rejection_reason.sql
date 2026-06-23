@@ -1,20 +1,159 @@
 -- =============================================================================
--- Migration: fix_applied_rejection_reason
--- Purpose:   Fixes a bug where `rejection_reason` was being dropped for confirmed
---            infractions (DISPUTE_OVERTURNED and APPROVE/OVERTURN in peer review)
---            in the `sanction_review_queue` table. The text was only being saved
---            to the immutable ledger, making it invisible to the UI and forensic
---            dossiers.
+-- Migration: fix_applied_rejection_reason & snapshot queue linkage
+-- Purpose:   Fixes two intertwined bugs for confirmed infractions (DISPUTE_OVERTURNED):
+--            1. `rejection_reason` was being dropped in `sanction_review_queue`.
+--               Text was only saved to the immutable ledger.
+--            2. `seal_dispute_resolution_snapshot` was not recording `queue_entry_id`
+--               in the `forensic_evidence_snapshots` vault, causing P0002 when
+--               the UI tried to load the forensic dossier for applied cards.
 --
---            Also includes a batched backfill to restore the dropped reasons
---            from `sla_audit_ledger_v2` for past confirmed infractions.
+--            Also includes batched backfills to restore the dropped reasons
+--            and link past snapshots using the immutable ledger payloads.
 --
--- pr_scanner: ignore-regression — bug fix on existing RPCs.
+-- pr_scanner: ignore-regression — bug fix on existing RPCs and missing links.
 -- =============================================================================
 
 SET client_min_messages TO 'WARNING';
 
--- ── 1. Update resolve_dispute to preserve resolution_reason on OVERTURN ──
+-- ── 1. Fix seal_dispute_resolution_snapshot (Add queue_entry_id) ────────────
+DROP FUNCTION IF EXISTS public.seal_dispute_resolution_snapshot(UUID, UUID, UUID, TEXT, INT, TIMESTAMPTZ, UUID, TEXT);
+
+CREATE OR REPLACE FUNCTION public.seal_dispute_resolution_snapshot(
+  p_organization_id  UUID,
+  p_ledger_entry_id  UUID,
+  p_contract_id      UUID,
+  p_set_id           TEXT,
+  p_plan_version     INT,
+  p_occurred_at_utc  TIMESTAMPTZ,
+  p_sealed_by        UUID,
+  p_idempotency_key  TEXT,
+  p_queue_entry_id   UUID
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, extensions
+AS $$
+DECLARE
+  v_jwt_org     TEXT;
+  v_rule_set_id UUID;
+  v_rules       JSONB;
+  v_max_version INT;
+  v_eff_from    TIMESTAMPTZ;
+  v_eff_to      TIMESTAMPTZ;
+  v_snapshot    JSONB;
+  v_hash        TEXT;
+  v_existing    public.forensic_evidence_snapshots;
+  v_row         public.forensic_evidence_snapshots;
+BEGIN
+  -- 1. Tenant guard (INV-1, INV-22). Fail-closed: NULL JWT is rejected
+  v_jwt_org := auth.jwt() -> 'app_metadata' ->> 'org_id';
+  IF v_jwt_org IS NULL OR v_jwt_org::uuid <> p_organization_id THEN
+    RAISE EXCEPTION 'Cross-tenant seal rejected (INV-1/INV-22)'
+      USING ERRCODE = 'insufficient_privilege';
+  END IF;
+
+  SELECT * INTO v_existing
+    FROM public.forensic_evidence_snapshots
+   WHERE organization_id = p_organization_id
+     AND idempotency_key = p_idempotency_key;
+  IF FOUND THEN
+    RETURN to_jsonb(v_existing);
+  END IF;
+
+  SELECT id INTO v_rule_set_id
+    FROM public.contract_rule_sets
+   WHERE organization_id = p_organization_id
+     AND contract_id = p_contract_id::text
+   LIMIT 1;
+  IF v_rule_set_id IS NULL THEN
+    RAISE EXCEPTION 'No rule set for contract % (Req 5.3)', p_contract_id
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  SELECT
+    jsonb_agg(
+      jsonb_build_object(
+        'rule_id',          rv.id,
+        'rule_type',        rv.rule_type,
+        'rule_config',      rv.rule_config,
+        'rule_version',     rv.rule_version,
+        'evaluation_order', rv.evaluation_order,
+        'active_from_utc',  rv.active_from_utc,
+        'active_to_utc',    rv.active_to_utc
+      ) ORDER BY rv.evaluation_order
+    ),
+    max(rv.rule_version),
+    min(rv.active_from_utc),
+    max(rv.active_to_utc)
+  INTO v_rules, v_max_version, v_eff_from, v_eff_to
+  FROM public.contract_rule_versions rv
+  WHERE rv.rule_set_id = v_rule_set_id
+    AND rv.active_from_utc <= p_occurred_at_utc
+    AND (rv.active_to_utc IS NULL OR rv.active_to_utc > p_occurred_at_utc);
+
+  IF v_rules IS NULL THEN
+    RAISE EXCEPTION 'No active SLA rule for contract % at % (Req 5.3, 13.1)',
+      p_contract_id, p_occurred_at_utc
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  v_snapshot := jsonb_build_object(
+    'schema_version',     1,
+    'organization_id',    p_organization_id,
+    'contract_id',        p_contract_id,
+    'rule_set_id',        v_rule_set_id,
+    'sla_rule_version',   v_max_version,
+    'effective_from_utc', v_eff_from,
+    'effective_to_utc',   v_eff_to,
+    'verdict_type',       'DISPUTE_OVERTURNED',
+    'set_id',             p_set_id,
+    'plan_version',       p_plan_version,
+    'occurred_at_utc',    p_occurred_at_utc,
+    'ledger_entry_id',    p_ledger_entry_id,
+    'rules',              v_rules
+  );
+
+  v_hash := encode(
+    extensions.digest(public.jsonb_canonical_text(v_snapshot), 'sha256'),
+    'hex'
+  );
+
+  INSERT INTO public.forensic_evidence_snapshots
+    (organization_id, ledger_entry_id, contract_id, rule_set_id,
+     sla_rule_version, effective_from_utc, effective_to_utc, snapshot,
+     schema_version, integrity_hash, idempotency_key, sealed_by, queue_entry_id)
+  VALUES
+    (p_organization_id, p_ledger_entry_id, p_contract_id, v_rule_set_id,
+     v_max_version, v_eff_from, v_eff_to, v_snapshot,
+     1, v_hash, p_idempotency_key, p_sealed_by, p_queue_entry_id)
+  RETURNING * INTO v_row;
+
+  RETURN to_jsonb(v_row);
+
+EXCEPTION
+  WHEN unique_violation THEN
+    SELECT * INTO v_existing
+      FROM public.forensic_evidence_snapshots
+     WHERE organization_id = p_organization_id
+       AND idempotency_key = p_idempotency_key;
+    IF FOUND THEN
+      RETURN to_jsonb(v_existing);
+    END IF;
+    RAISE;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.seal_dispute_resolution_snapshot(
+  UUID, UUID, UUID, TEXT, INT, TIMESTAMPTZ, UUID, TEXT, UUID
+) TO authenticated;
+
+GRANT EXECUTE ON FUNCTION public.seal_dispute_resolution_snapshot(
+  UUID, UUID, UUID, TEXT, INT, TIMESTAMPTZ, UUID, TEXT, UUID
+) TO service_role;
+
+
+-- ── 2. Update resolve_dispute to preserve resolution_reason and pass queue ──
 CREATE OR REPLACE FUNCTION public.resolve_dispute(
   p_organization_id     UUID,
   p_queue_entry_id      UUID,
@@ -167,7 +306,7 @@ BEGIN
   IF p_resolution = 'DISPUTE_OVERTURNED' THEN
     v_snapshot := public.seal_dispute_resolution_snapshot(
       p_organization_id, v_ledger_id, v_queue.contract_id::uuid, v_queue.set_id,
-      0, p_occurred_at_utc, p_resolved_by_user_id, p_idempotency_key);
+      0, p_occurred_at_utc, p_resolved_by_user_id, p_idempotency_key, p_queue_entry_id);
   END IF;
 
   IF p_resolution = 'DISPUTE_ACCEPTED' THEN
@@ -182,7 +321,8 @@ BEGIN
 END;
 $$;
 
--- ── 2. Update confirm_peer_review to preserve reason for applied actions ──
+
+-- ── 3. Update confirm_peer_review to preserve reason & pass queue_entry_id ──
 CREATE OR REPLACE FUNCTION public.confirm_peer_review(
   p_organization_id     UUID,
   p_queue_entry_id      UUID,
@@ -274,7 +414,7 @@ BEGIN
   IF v_ledger_type = 'DISPUTE_OVERTURNED' THEN
     v_snapshot := public.seal_dispute_resolution_snapshot(
       p_organization_id, v_ledger_id, v_queue.contract_id::uuid, v_queue.set_id,
-      0, p_occurred_at_utc, v_user, p_idempotency_key);
+      0, p_occurred_at_utc, v_user, p_idempotency_key, p_queue_entry_id);
   END IF;
 
   IF v_ledger_type IN ('VERDICT_REFUSED', 'DISPUTE_ACCEPTED') THEN
@@ -299,11 +439,12 @@ GRANT EXECUTE ON FUNCTION public.confirm_peer_review(UUID, UUID, UUID, TEXT, TIM
   TO authenticated;
 
 
--- ── 3. Batched Backfill for past dropped reasons ────────────────────────────
+-- ── 4. Batched Backfill for past dropped reasons & missing links ────────────
 DO $$
 DECLARE
   v_rows INT;
 BEGIN
+  -- Backfill 1: Restore `rejection_reason` on `sanction_review_queue`
   LOOP
     UPDATE public.sanction_review_queue q
        SET rejection_reason = sub.reason
@@ -320,6 +461,28 @@ BEGIN
        AND q.id IN (
          SELECT id FROM public.sanction_review_queue
           WHERE status = 'applied' AND rejection_reason IS NULL
+          LIMIT 1000
+       );
+
+    GET DIAGNOSTICS v_rows = ROW_COUNT;
+    EXIT WHEN v_rows = 0;
+  END LOOP;
+
+  -- Backfill 2: Restore `queue_entry_id` on `forensic_evidence_snapshots`
+  LOOP
+    UPDATE public.forensic_evidence_snapshots s
+       SET queue_entry_id = (
+         SELECT (payload->>'queue_entry_id')::uuid
+           FROM public.sla_audit_ledger_v2 l
+          WHERE l.id = s.ledger_entry_id
+            AND l.organization_id = s.organization_id
+       )
+     WHERE s.queue_entry_id IS NULL
+       AND s.snapshot->>'verdict_type' = 'DISPUTE_OVERTURNED'
+       AND s.id IN (
+         SELECT id FROM public.forensic_evidence_snapshots
+          WHERE queue_entry_id IS NULL
+            AND snapshot->>'verdict_type' = 'DISPUTE_OVERTURNED'
           LIMIT 1000
        );
 
