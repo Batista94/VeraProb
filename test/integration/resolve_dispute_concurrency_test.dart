@@ -88,7 +88,7 @@ void main() async {
       'user_id': auditorId,
       'organization_id': _orgId,
       'role': 'AUDITOR',
-    }, onConflict: 'user_id');
+    }, onConflict: 'user_id,organization_id');
 
     auditor = SupabaseClient(
       PostgresTestConfig.supabaseUrl,
@@ -122,6 +122,18 @@ void main() async {
             'fine_cents': 150000,
             'confidence_score': 100,
           };
+
+          // Contracts row required: ledger FK (sla_audit_ledger_v2.contract_id → contracts.id).
+          await seed.from('contracts').insert({
+            'id': contractId,
+            'organization_id': _orgId,
+            'name': 'Resolve Dispute Concurrency Contract',
+            'contractor_name': 'Dispute Carrier',
+            'valid_from_utc': '2026-01-01T00:00:00Z',
+            'valid_until_utc': '2027-01-01T00:00:00Z',
+            'status': 'active',
+            'dual_control_threshold_cents': 100000000,
+          });
 
           // 1. SANCTION_RECOMMENDED ledger → trigger auto-creates a pending queue row.
           final recommended = await seed

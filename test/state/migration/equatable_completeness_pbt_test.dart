@@ -71,6 +71,7 @@ const _entitySpecs = <EntitySpec>[
       'reviewedAtUtc',
       'reviewedByUserId',
       'rejectionReason',
+      'rejectionReasonCode',
       'vehiclePlate',
       'operatorName',
       'firstReviewerId',

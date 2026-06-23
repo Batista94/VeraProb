@@ -1723,7 +1723,7 @@ void _sealedEvidenceAndStyleTests() {
           // Wait for the real file I/O to complete in the event loop
           await Future<void>.delayed(const Duration(milliseconds: 300));
         });
-        await tester.pump(); // Allow SnackBar to build
+        await tester.pumpAndSettle(); // Allow SnackBar to build and animate in
 
         // SnackBar must display success message
         expect(find.byType(SnackBar), findsOneWidget);

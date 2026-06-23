@@ -111,7 +111,7 @@ void main() async {
         'user_id': id,
         'organization_id': _orgId,
         'role': 'AUDITOR',
-      }, onConflict: 'user_id');
+      }, onConflict: 'user_id,organization_id');
     }
 
     approverA = await _signIn(_approverAEmail);
