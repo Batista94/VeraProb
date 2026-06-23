@@ -464,30 +464,29 @@ void main() {
       },
     );
 
-    testWidgets(
-      'hides Cancelar solicitação button when defense IS submitted',
-      (tester) async {
-        tester.view.physicalSize = const Size(800, 1200);
-        tester.view.devicePixelRatio = 1.0;
+    testWidgets('hides Cancelar solicitação button when defense IS submitted', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
 
-        await tester.pumpWidget(
-          _buildCard(
-            _makeItem(
-              status: SanctionReviewStatus.disputed,
-              defenseSubmittedAt: DateTime.utc(2026, 6, 23),
-            ),
+      await tester.pumpWidget(
+        _buildCard(
+          _makeItem(
+            status: SanctionReviewStatus.disputed,
+            defenseSubmittedAt: DateTime.utc(2026, 6, 23),
           ),
-        );
-        await tester.pump();
+        ),
+      );
+      await tester.pump();
 
-        expect(find.text('Cancelar solicitação'), findsNothing);
-        // The evaluate buttons should still be visible
-        expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
-        expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
+      expect(find.text('Cancelar solicitação'), findsNothing);
+      // The evaluate buttons should still be visible
+      expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
+      expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
 
-        addTearDown(tester.view.resetPhysicalSize);
-      },
-    );
+      addTearDown(tester.view.resetPhysicalSize);
+    });
   });
 
   group('SanctionVerdictCard — INV-4 Money Precision', () {

@@ -1413,9 +1413,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         'DE ACORDO (ACEITE DO TRANSPORTADOR)',
       _ => null,
     };
-    final auditorNote = item.status == SanctionReviewStatus.rejected
-        ? item.rejectionReason?.trim()
-        : null;
+    final auditorNote = item.rejectionReason?.trim();
 
     final entry = SlaLedgerEntry(
       eventId: item.ledgerEntryId,
@@ -1437,6 +1435,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       mapLng: evidence.primaryEvidenceLng,
       classification: classification,
       verdictOutcomeLabel: outcomeLabel,
+      auditorReasonCode: item.rejectionReasonCode?.trim(),
       auditorNote: (auditorNote != null && auditorNote.isNotEmpty)
           ? auditorNote
           : null,

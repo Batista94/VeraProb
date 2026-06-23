@@ -46,6 +46,7 @@ class SanctionReviewQueueEntry extends Equatable {
   final DateTime? reviewedAtUtc;
   final String? reviewedByUserId;
   final String? rejectionReason;
+  final String? rejectionReasonCode;
 
   /// Denormalized vehicle plate, resolved at INSERT time by the DB trigger
   /// (migration 20260610000001_srq_vehicle_plate.sql). Nullable — unbound
@@ -88,6 +89,7 @@ class SanctionReviewQueueEntry extends Equatable {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.rejectionReasonCode,
     this.vehiclePlate,
     this.operatorName,
     this.firstReviewerId,
@@ -108,6 +110,7 @@ class SanctionReviewQueueEntry extends Equatable {
     DateTime? reviewedAtUtc,
     String? reviewedByUserId,
     String? rejectionReason,
+    String? rejectionReasonCode,
     String? firstReviewerId,
     String? peerReviewProposedAction,
     String? peerReviewOriginStatus,
@@ -135,6 +138,9 @@ class SanctionReviewQueueEntry extends Equatable {
       rejectionReason: clearRejectionReason
           ? null
           : (rejectionReason ?? this.rejectionReason),
+      rejectionReasonCode: clearRejectionReason
+          ? null
+          : (rejectionReasonCode ?? this.rejectionReasonCode),
       vehiclePlate: vehiclePlate,
       operatorName: operatorName,
       firstReviewerId: clearPeerReview

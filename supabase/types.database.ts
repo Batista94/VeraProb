@@ -5813,6 +5813,7 @@ export type Database = {
           p_occurred_at_utc: string;
           p_organization_id: string;
           p_plan_version: number;
+          p_queue_entry_id: string;
           p_sealed_by: string;
           p_set_id: string;
         };

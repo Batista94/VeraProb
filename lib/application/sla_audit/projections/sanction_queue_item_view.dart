@@ -25,6 +25,7 @@ class SanctionQueueItemView extends Equatable {
   final DateTime? reviewedAtUtc;
   final String? reviewedByUserId;
   final String? rejectionReason;
+  final String? rejectionReasonCode;
 
   /// Human-readable contract name resolved asynchronously from the UI layer.
   /// Null until enriched via [contractNameProvider]. Never stored in the DB row.
@@ -91,6 +92,7 @@ class SanctionQueueItemView extends Equatable {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.rejectionReasonCode,
     this.contractName,
     this.windowStartUtc,
     this.windowEndUtc,
@@ -147,6 +149,7 @@ class SanctionQueueItemView extends Equatable {
           : null,
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
+      rejectionReasonCode: row['rejection_reason_code'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
       operatorName: row['operator_name'] as String?,
       firstReviewerId: row['first_reviewer_id'] as String?,
@@ -180,6 +183,7 @@ class SanctionQueueItemView extends Equatable {
       reviewedAtUtc: entry.reviewedAtUtc,
       reviewedByUserId: entry.reviewedByUserId,
       rejectionReason: entry.rejectionReason,
+      rejectionReasonCode: entry.rejectionReasonCode,
       vehiclePlate: entry.vehiclePlate,
       operatorName: entry.operatorName,
       firstReviewerId: entry.firstReviewerId,
@@ -206,6 +210,7 @@ class SanctionQueueItemView extends Equatable {
     reviewedAtUtc,
     reviewedByUserId,
     rejectionReason,
+    rejectionReasonCode,
     vehiclePlate,
     operatorName,
     firstReviewerId,
