@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
@@ -14,16 +15,15 @@ import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_dispute_g
 /// the [EdgeFunctionInvoker] seam (the gateway's only previously-untested path).
 class MockSupabaseClient extends Mock implements SupabaseClient {}
 
-class MockSupabaseStorageClient extends Mock implements SupabaseStorageClient {}
+class MockPostgrestClient extends Mock implements PostgrestClient {}
 
-class MockStorageFileApi extends Mock implements StorageFileApi {}
-
-class FakeFileOptions extends Fake implements FileOptions {}
+class MockHttpClient extends Mock implements http.Client {}
 
 void main() {
   setUpAll(() {
     registerFallbackValue(Uint8List(0));
     registerFallbackValue(const FileOptions());
+    registerFallbackValue(Uri.parse(''));
   });
   const portalToken = 'a0000000-0000-4000-8000-000000000000';
   const validJustification = 'Justificativa de contestacao valida e completa.';
@@ -42,7 +42,12 @@ void main() {
   SupabasePortalDisputeGateway gateway(
     SupabaseClient gatewayClient, {
     required EdgeFunctionInvoker invoke,
-  }) => SupabasePortalDisputeGateway(gatewayClient, invoker: invoke);
+    http.Client? httpClient,
+  }) => SupabasePortalDisputeGateway(
+    gatewayClient,
+    invoker: invoke,
+    httpClient: httpClient,
+  );
 
   group('submitEvidence — infra vs business classification', () {
     test('phase-1 503 → retryable PortalDisputeException', () async {
@@ -197,16 +202,20 @@ void main() {
   test('happy path with file: phase-1 200 + PUT 200 + finalize 200 → '
       'pendingAudit', () async {
     final mockClient = MockSupabaseClient();
-    final mockStorage = MockSupabaseStorageClient();
-    final mockFileApi = MockStorageFileApi();
+    final mockRest = MockPostgrestClient();
+    final mockHttp = MockHttpClient();
 
-    when(() => mockClient.storage).thenReturn(mockStorage);
+    when(() => mockClient.rest).thenReturn(mockRest);
+    when(() => mockRest.headers).thenReturn({'apikey': 'fake-key'});
+    when(() => mockRest.url).thenReturn('http://127.0.0.1:54321/rest/v1');
+
     when(
-      () => mockStorage.from('dispute-evidence-portal'),
-    ).thenReturn(mockFileApi);
-    when(
-      () => mockFileApi.uploadBinaryToSignedUrl(any(), any(), any()),
-    ).thenAnswer((_) async => '/path');
+      () => mockHttp.put(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => http.Response('', 200));
 
     final g = gateway(
       mockClient,
@@ -223,6 +232,7 @@ void main() {
         }
         return FunctionResponse(data: {'ok': true}, status: 200);
       },
+      httpClient: mockHttp,
     );
     final sha = base64Url.encode(List<int>.filled(32, 7));
     expect(
@@ -236,8 +246,17 @@ void main() {
     );
 
     verify(
-      () =>
-          mockFileApi.uploadBinaryToSignedUrl('sub-1', 'xyz123', staged.bytes),
+      () => mockHttp.put(
+        Uri.parse(
+          'http://127.0.0.1:54321/storage/v1/object/upload/sign/dispute-evidence-portal/sub-1?token=xyz123',
+        ),
+        headers: {
+          'apikey': 'fake-key',
+          'content-type': 'application/pdf',
+          'x-upsert': 'false',
+        },
+        body: staged.bytes,
+      ),
     ).called(1);
   });
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
@@ -24,14 +25,17 @@ typedef EdgeFunctionInvoker =
 class SupabasePortalDisputeGateway implements PortalDisputeGateway {
   final SupabaseClient _client;
   final EdgeFunctionInvoker _invoke;
+  final http.Client _httpClient;
 
   SupabasePortalDisputeGateway(
     SupabaseClient client, {
     @visibleForTesting EdgeFunctionInvoker? invoker,
+    @visibleForTesting http.Client? httpClient,
   }) : _client = client,
        _invoke =
            invoker ??
-           ((name, {body}) => client.functions.invoke(name, body: body));
+           ((name, {body}) => client.functions.invoke(name, body: body)),
+       _httpClient = httpClient ?? http.Client();
 
   @override
   Future<PortalSnapshot> read(String token) async {
@@ -185,23 +189,40 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
           throw const PortalDisputeException('URL de upload inválida.');
         }
 
-        final pathSegments = uri.pathSegments;
-        final bucketIndex = pathSegments.indexOf('dispute-evidence-portal');
-        if (bucketIndex == -1 || bucketIndex + 1 >= pathSegments.length) {
-          throw const PortalDisputeException('Caminho de upload inválido.');
-        }
-        final uploadPath = pathSegments.sublist(bucketIndex + 1).join('/');
-
-        await _client.storage
-            .from('dispute-evidence-portal')
-            .uploadBinaryToSignedUrl(uploadPath, uploadToken, file.bytes);
-      } on StorageException catch (e) {
-        throw PortalDisputeException(
-          'Falha no envio do arquivo.',
-          retryable:
-              e.statusCode != null && (int.tryParse(e.statusCode!) ?? 0) >= 500,
+        // To upload a file to a Storage signed URL while satisfying the bucket's
+        // MIME allow-list (INV-9), we MUST send the `content-type` header.
+        // The Dart Supabase SDK's `uploadBinaryToSignedUrl` lacks this capability.
+        // We use a manual HTTP PUT, injecting the Supabase global headers (apikey)
+        // to pass Kong's CORS preflight requirements.
+        //
+        // [DEV] The Edge Function mints the signedUrl using its internal SUPABASE_URL
+        // (http://kong:8000). To avoid net::ERR_NAME_NOT_RESOLVED in the browser,
+        // we override the scheme/host/port using the frontend's configured REST URL.
+        final clientUri = Uri.parse(_client.rest.url);
+        final targetUri = uri.replace(
+          scheme: clientUri.scheme,
+          host: clientUri.host,
+          port: clientUri.port,
         );
-      } catch (_) {
+
+        final headers = Map<String, String>.from(_client.rest.headers);
+        headers['content-type'] = file.mimeType;
+        headers['x-upsert'] = 'false';
+
+        final putRes = await _httpClient.put(
+          targetUri,
+          headers: headers,
+          body: file.bytes,
+        );
+
+        if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
+          throw PortalDisputeException(
+            'Falha no envio do arquivo: (HTTP ${putRes.statusCode})',
+            retryable: putRes.statusCode >= 500,
+          );
+        }
+      } catch (e) {
+        if (e is PortalDisputeException) rethrow;
         throw const PortalDisputeException(
           'Falha no envio do arquivo. Tente novamente.',
           retryable: true,
