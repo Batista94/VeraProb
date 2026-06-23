@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(32);
+SELECT plan(27);
 
 -- =============================================================================
 -- pgTAP: portal_submission_rpcs_ledger — Sprint A M5
@@ -196,47 +196,7 @@ SELECT is(
     WHERE type='PORTAL_EVIDENCE_HASH_MISMATCH' AND payload->>'submission_id'=current_setting('t.sub2')),
   1, 'FP4: PORTAL_EVIDENCE_HASH_MISMATCH ledger fact logged');
 
--- =============================================================================
--- audit_portal_submission (authenticated)
--- =============================================================================
--- Finalize sub3 so it is PENDING_AUDIT, then auditor rejects it.
-DO $$ BEGIN
-  PERFORM public.register_portal_evidence(
-    current_setting('t.sub3')::uuid, repeat('b',64),'application/pdf',2048);
-END $$;
 
-SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims =
-  '{"role":"authenticated","sub":"00000000-0000-0000-0000-00000dad5b01","app_metadata":{"org_id":"00000000-0000-0000-0000-00000dad5a01","role":"TENANT_ADMIN"}}';
--- AP1: accept sub1
-SELECT lives_ok(
-  $$ SELECT public.audit_portal_submission('00000000-0000-0000-0000-00000dad5a01',
-       current_setting('t.sub1')::uuid,'accept','00000000-0000-0000-0000-00000dad5b01') $$,
-  'AP1: auditor accepts a PENDING_AUDIT submission');
--- AP2: reject sub3
-SELECT lives_ok(
-  $$ SELECT public.audit_portal_submission('00000000-0000-0000-0000-00000dad5a01',
-       current_setting('t.sub3')::uuid,'reject','00000000-0000-0000-0000-00000dad5b01') $$,
-  'AP2: auditor rejects a PENDING_AUDIT submission');
-RESET ROLE;
-
-SELECT is(
-  (SELECT status FROM public.portal_evidence_submissions WHERE id=current_setting('t.sub1')::uuid),
-  'ACCEPTED', 'AP3: accepted submission → ACCEPTED');
-SELECT is(
-  (SELECT count(*)::int FROM public.dispute_evidence_attachments
-    WHERE submission_id=current_setting('t.sub3')::uuid AND deleted_at IS NOT NULL),
-  1, 'AP4: rejected submission soft-deletes its attachment');
-
--- AP5: cross-org auditor blocked (42501, INV-22)
-SET LOCAL ROLE authenticated;
-SET LOCAL request.jwt.claims =
-  '{"role":"authenticated","sub":"00000000-0000-0000-0000-00000dad5b01","app_metadata":{"org_id":"00000000-0000-0000-0000-00000dad5a02","role":"TENANT_ADMIN"}}';
-SELECT throws_ok(
-  $$ SELECT public.audit_portal_submission('00000000-0000-0000-0000-00000dad5a01',
-       current_setting('t.sub1')::uuid,'accept','00000000-0000-0000-0000-00000dad5b01') $$,
-  '42501', NULL, 'AP5: cross-org audit rejected (INV-22/26)');
-RESET ROLE;
 
 -- =============================================================================
 -- acknowledge_via_portal (hash-bound)

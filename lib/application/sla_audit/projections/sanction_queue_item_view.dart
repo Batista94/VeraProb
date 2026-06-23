@@ -70,6 +70,10 @@ class SanctionQueueItemView extends Equatable {
   /// Drives the [DisputeSlaChip] countdown / overdue signal on disputed cards.
   final DateTime? resolutionDueAtUtc;
 
+  /// Write-once signal: when the carrier submitted a portal defense (file/text).
+  /// Drives the "DEFESA RECEBIDA" badge and top-sort in the Disputed lane.
+  final DateTime? defenseSubmittedAt;
+
   /// Transport-agnostic alias for the bound asset identifier (INV-14).
   /// Today resolves to the vehicle plate; stays stable if the asset model
   /// generalizes beyond road vehicles.
@@ -98,6 +102,7 @@ class SanctionQueueItemView extends Equatable {
     this.disputedAtUtc,
     this.disputedBy,
     this.resolutionDueAtUtc,
+    this.defenseSubmittedAt,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -156,6 +161,9 @@ class SanctionQueueItemView extends Equatable {
       resolutionDueAtUtc: row['resolution_due_at'] != null
           ? DateTime.parse(row['resolution_due_at'] as String)
           : null,
+      defenseSubmittedAt: row['defense_submitted_at'] != null
+          ? DateTime.parse(row['defense_submitted_at'] as String)
+          : null,
     );
   }
 
@@ -206,5 +214,6 @@ class SanctionQueueItemView extends Equatable {
     disputedAtUtc,
     disputedBy,
     resolutionDueAtUtc,
+    defenseSubmittedAt,
   ];
 }

@@ -566,14 +566,25 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         fill: 0.2,
         bordered: false,
       ),
-      SanctionReviewStatus.disputed => (
-        color: VeraProbColors.warning,
-        icon: Icons.hourglass_empty_outlined,
-        label: 'AGUARDANDO EVIDÊNCIA',
-        tooltip: 'Evidência submetida. Resolva abaixo.',
-        fill: 0.2,
-        bordered: false,
-      ),
+      SanctionReviewStatus.disputed =>
+        item.defenseSubmittedAt != null
+            ? (
+                color: VeraProbColors.warning,
+                icon: Icons.mark_email_read_outlined,
+                label: 'DEFESA RECEBIDA',
+                tooltip:
+                    'Transportadora enviou defesa — veredito do auditor pendente',
+                fill: 0.2,
+                bordered: false,
+              )
+            : (
+                color: VeraProbColors.warning,
+                icon: Icons.hourglass_empty_outlined,
+                label: 'AGUARDANDO EVIDÊNCIA',
+                tooltip: 'Evidência submetida. Resolva abaixo.',
+                fill: 0.2,
+                bordered: false,
+              ),
       SanctionReviewStatus.pendingPeerReview => (
         color: VeraProbColors.primary,
         icon: Icons.groups_2_outlined,
@@ -2320,56 +2331,8 @@ class _PortalSubmissionsZone extends ConsumerStatefulWidget {
 
 class _PortalSubmissionsZoneState
     extends ConsumerState<_PortalSubmissionsZone> {
-  String? _busySubmissionId;
-
   ({String orgId, String queueEntryId}) get _key =>
       (orgId: widget.organizationId, queueEntryId: widget.queueEntryId);
-
-  Future<void> _audit(String submissionId, PortalAuditDecision decision) async {
-    final messenger = ScaffoldMessenger.of(context);
-    final auditedBy = ref.read(currentOperatorIdProvider);
-    if (auditedBy == null || auditedBy.isEmpty) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Sessão expirada. Faça login novamente.'),
-          backgroundColor: VeraProbColors.error,
-        ),
-      );
-      return;
-    }
-    setState(() => _busySubmissionId = submissionId);
-    try {
-      await ref
-          .read(portalSubmissionAuditGatewayProvider)
-          .audit(
-            organizationId: widget.organizationId,
-            submissionId: submissionId,
-            decision: decision,
-            auditedByUserId: auditedBy,
-          );
-      if (!mounted) return;
-      ref.invalidate(pendingPortalSubmissionsProvider(_key));
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            decision == PortalAuditDecision.accept
-                ? 'Evidência aceita e anexada à disputa.'
-                : 'Evidência rejeitada e removida do conjunto.',
-          ),
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível concluir a auditoria da evidência.'),
-          backgroundColor: VeraProbColors.error,
-        ),
-      );
-    } finally {
-      if (mounted) setState(() => _busySubmissionId = null);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -2419,28 +2382,33 @@ class _PortalSubmissionsZoneState
                 color: VeraProbColors.primary,
               ),
               const SizedBox(width: 6),
-              Text(
-                'CONTRAPROVA DO PORTAL ($total)',
-                style: VeraProbTypography.badge.copyWith(
-                  color: VeraProbColors.primary,
-                  fontSize: 9,
-                  letterSpacing: 0.8,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'EVIDÊNCIAS DA DEFESA ($total)',
+                      style: VeraProbTypography.badge.copyWith(
+                        color: VeraProbColors.primary,
+                        fontSize: 9,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Revisar antes de emitir veredito',
+                      style: VeraProbTypography.caption.copyWith(
+                        color: VeraProbColors.textDisabled,
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
-          ...files.map(
-            (s) => _PortalSubmissionTile(
-              summary: s,
-              isBusy: _busySubmissionId == s.submissionId,
-              anyBusy: _busySubmissionId != null,
-              onAccept: () =>
-                  _audit(s.submissionId, PortalAuditDecision.accept),
-              onReject: () =>
-                  _audit(s.submissionId, PortalAuditDecision.reject),
-            ),
-          ),
+          ...files.map((s) => _PortalSubmissionTile(summary: s)),
           ...testimonies.map((j) => _PortalJustificationTile(summary: j)),
         ],
       ),
@@ -2494,18 +2462,8 @@ class _PortalProvenanceBadge extends StatelessWidget {
 
 class _PortalSubmissionTile extends StatelessWidget {
   final PortalSubmissionSummary summary;
-  final bool isBusy;
-  final bool anyBusy;
-  final VoidCallback onAccept;
-  final VoidCallback onReject;
 
-  const _PortalSubmissionTile({
-    required this.summary,
-    required this.isBusy,
-    required this.anyBusy,
-    required this.onAccept,
-    required this.onReject,
-  });
+  const _PortalSubmissionTile({required this.summary});
 
   String _humanSize(int? bytes) {
     if (bytes == null) return '—';
@@ -2576,45 +2534,6 @@ class _PortalSubmissionTile extends StatelessWidget {
             const SizedBox(height: 8),
             _TestimonyBlock(text: t),
           ],
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: anyBusy ? null : onReject,
-                  icon: const Icon(Icons.close, size: 14),
-                  label: const Text('Rejeitar'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: VeraProbColors.error,
-                    side: BorderSide(
-                      color: VeraProbColors.error.withValues(alpha: 0.5),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    textStyle: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: anyBusy ? null : onAccept,
-                  icon: isBusy
-                      ? const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.check, size: 14),
-                  label: const Text('Aceitar'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: VeraProbColors.success,
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    textStyle: const TextStyle(fontSize: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

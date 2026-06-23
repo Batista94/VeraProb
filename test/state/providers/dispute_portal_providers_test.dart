@@ -6,7 +6,6 @@ import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 class _FakeAuditGateway implements PortalSubmissionAuditGateway {
   final List<PortalSubmissionSummary> pending;
   final List<PortalJustificationSummary> pendingJustifications;
-  PortalAuditDecision? lastDecision;
   _FakeAuditGateway(this.pending, {this.pendingJustifications = const []});
 
   @override
@@ -20,16 +19,6 @@ class _FakeAuditGateway implements PortalSubmissionAuditGateway {
     required String organizationId,
     required String queueEntryId,
   }) async => pendingJustifications;
-
-  @override
-  Future<void> audit({
-    required String organizationId,
-    required String submissionId,
-    required PortalAuditDecision decision,
-    required String auditedByUserId,
-  }) async {
-    lastDecision = decision;
-  }
 }
 
 PortalSubmissionSummary _summary() => const PortalSubmissionSummary(

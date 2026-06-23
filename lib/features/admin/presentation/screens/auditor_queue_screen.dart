@@ -265,17 +265,33 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
           child: Text(
             overdueOnly
                 ? 'Nenhuma disputa vencida.'
-                : 'Nenhuma sanção aguardando evidência.',
+                : 'Nenhuma sanção em disputa.',
             style: const TextStyle(color: VeraProbColors.textSecondary),
           ),
         ),
       );
     }
 
+    final sortedItems = List<SanctionQueueItemView>.from(items)
+      ..sort((a, b) {
+        if (a.defenseSubmittedAt != null && b.defenseSubmittedAt == null) {
+          return -1;
+        }
+        if (a.defenseSubmittedAt == null && b.defenseSubmittedAt != null) {
+          return 1;
+        }
+        if (a.resolutionDueAtUtc == null && b.resolutionDueAtUtc == null) {
+          return 0;
+        }
+        if (a.resolutionDueAtUtc == null) return 1;
+        if (b.resolutionDueAtUtc == null) return -1;
+        return a.resolutionDueAtUtc!.compareTo(b.resolutionDueAtUtc!);
+      });
+
     final list = ListView.separated(
-      itemCount: items.length,
+      itemCount: sortedItems.length,
       separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (_, i) => SanctionVerdictCard(item: items[i]),
+      itemBuilder: (_, i) => SanctionVerdictCard(item: sortedItems[i]),
     );
 
     if (!overdueOnly) return list;
@@ -594,8 +610,8 @@ class _AuditorTabs extends StatelessWidget {
               value: AuditorQueueFilter.disputed,
               icon: Icons.hourglass_empty_outlined,
               label: isNarrow
-                  ? 'Aguardando ($disputedCount)'
-                  : 'Aguardando Evidência ($disputedCount)',
+                  ? 'Disputa ($disputedCount)'
+                  : 'Em Disputa ($disputedCount)',
               isSelected: selectedFilter == AuditorQueueFilter.disputed,
               onTap: () => onFilterChanged(AuditorQueueFilter.disputed),
             ),

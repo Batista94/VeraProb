@@ -60,26 +60,4 @@ class SupabasePortalSubmissionAuditGateway extends BasePostgresRepository
       throw mapPostgrestToDomainException(e);
     }
   }
-
-  @override
-  Future<void> audit({
-    required String organizationId,
-    required String submissionId,
-    required PortalAuditDecision decision,
-    required String auditedByUserId,
-  }) async {
-    try {
-      await client.rpc<dynamic>(
-        'audit_portal_submission',
-        params: {
-          'p_organization_id': organizationId,
-          'p_submission_id': submissionId,
-          'p_decision': decision.rpcValue,
-          'p_audited_by': auditedByUserId,
-        },
-      );
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e);
-    }
-  }
 }

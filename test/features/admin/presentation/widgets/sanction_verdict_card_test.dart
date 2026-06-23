@@ -251,7 +251,6 @@ class _MockSanctionActionNotifier extends SanctionActionNotifier {
 /// realtime tick triggered a re-fetch (call #2) that surfaces the contraprova.
 class _CountingAuditGateway implements PortalSubmissionAuditGateway {
   int listCalls = 0;
-  int auditCalls = 0;
 
   @override
   Future<List<PortalSubmissionSummary>> listPending({
@@ -281,16 +280,6 @@ class _CountingAuditGateway implements PortalSubmissionAuditGateway {
     required String organizationId,
     required String queueEntryId,
   }) async => const [];
-
-  @override
-  Future<void> audit({
-    required String organizationId,
-    required String submissionId,
-    required PortalAuditDecision decision,
-    required String auditedByUserId,
-  }) async {
-    auditCalls++;
-  }
 }
 
 SanctionQueueItemView _makeItem({
@@ -998,7 +987,7 @@ void _portalRealtimeTests() {
 
       // listPending #1 → empty → the contraprova zone stays hidden.
       expect(gateway.listCalls, 1);
-      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsNothing);
+      expect(find.textContaining('EVIDÊNCIAS DA DEFESA'), findsNothing);
 
       // Baseline realtime snapshot (no attachments yet), then a NEW attachment
       // for THIS dispute → count 0→1 must invalidate + re-fetch.
@@ -1008,7 +997,7 @@ void _portalRealtimeTests() {
       await tester.pumpAndSettle();
 
       expect(gateway.listCalls, 2);
-      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsOneWidget);
+      expect(find.textContaining('EVIDÊNCIAS DA DEFESA'), findsOneWidget);
       expect(find.text('contraprova.jpg'), findsOneWidget);
     });
 
@@ -1099,7 +1088,7 @@ void _portalRealtimeTests() {
       await tester.pumpAndSettle();
 
       expect(gateway.listCalls, 1);
-      expect(find.textContaining('CONTRAPROVA DO PORTAL'), findsNothing);
+      expect(find.textContaining('EVIDÊNCIAS DA DEFESA'), findsNothing);
     });
   });
 }

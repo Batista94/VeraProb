@@ -129,11 +129,4 @@ void main() {
       );
     });
   });
-
-  group('PortalAuditDecision.rpcValue', () {
-    test('maps to the exact audit_portal_submission contract values', () {
-      expect(PortalAuditDecision.accept.rpcValue, 'accept');
-      expect(PortalAuditDecision.reject.rpcValue, 'reject');
-    });
-  });
 }

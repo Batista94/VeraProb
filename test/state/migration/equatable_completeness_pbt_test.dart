@@ -79,6 +79,7 @@ const _entitySpecs = <EntitySpec>[
       'disputedAtUtc',
       'disputedBy',
       'resolutionDueAtUtc',
+      'defenseSubmittedAt',
     ],
     // UI-enriched fields resolved asynchronously — not DB identity.
     excludedFields: ['contractName', 'windowStartUtc', 'windowEndUtc'],

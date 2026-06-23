@@ -3017,6 +3017,7 @@ export type Database = {
         Row: {
           contract_id: string;
           created_at: string;
+          defense_submitted_at: string | null;
           dispute_round: number;
           disputed_at: string | null;
           disputed_by: string | null;
@@ -3046,6 +3047,7 @@ export type Database = {
         Insert: {
           contract_id: string;
           created_at?: string;
+          defense_submitted_at?: string | null;
           dispute_round?: number;
           disputed_at?: string | null;
           disputed_by?: string | null;
@@ -3075,6 +3077,7 @@ export type Database = {
         Update: {
           contract_id?: string;
           created_at?: string;
+          defense_submitted_at?: string | null;
           dispute_round?: number;
           disputed_at?: string | null;
           disputed_by?: string | null;
@@ -5193,15 +5196,6 @@ export type Database = {
           p_uploaded_by: string;
         };
         Returns: string;
-      };
-      audit_portal_submission: {
-        Args: {
-          p_audited_by: string;
-          p_decision: string;
-          p_organization_id: string;
-          p_submission_id: string;
-        };
-        Returns: undefined;
       };
       batch_update_contracts: { Args: { p_updates: Json }; Returns: Json };
       batch_update_vehicles: { Args: { p_updates: Json }; Returns: Json };

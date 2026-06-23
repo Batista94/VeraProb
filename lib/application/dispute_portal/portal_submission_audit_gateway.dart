@@ -107,17 +107,6 @@ class PortalJustificationSummary extends Equatable {
   ];
 }
 
-/// Auditor verdict on a single portal submission.
-enum PortalAuditDecision { accept, reject }
-
-extension PortalAuditDecisionRpc on PortalAuditDecision {
-  /// RPC contract value (`audit_portal_submission(p_decision)`).
-  String get rpcValue => switch (this) {
-    PortalAuditDecision.accept => 'accept',
-    PortalAuditDecision.reject => 'reject',
-  };
-}
-
 /// Authenticated (JWT-bound) gateway for the auditor PENDING_AUDIT review panel.
 /// Backed by `list_portal_submissions` + `audit_portal_submission` SECURITY
 /// DEFINER RPCs (org + TENANT_ADMIN/AUDITOR gated server-side; INV-22/26).
@@ -132,12 +121,5 @@ abstract class PortalSubmissionAuditGateway {
   Future<List<PortalJustificationSummary>> listPendingJustifications({
     required String organizationId,
     required String queueEntryId,
-  });
-
-  Future<void> audit({
-    required String organizationId,
-    required String submissionId,
-    required PortalAuditDecision decision,
-    required String auditedByUserId,
   });
 }

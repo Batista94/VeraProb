@@ -8,8 +8,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'package:veraprob/application/dispute_portal/portal_submission_audit_gateway.dart';
-import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_submission_audit_gateway.dart';
 
 import '../postgres/postgres_test_config.dart';
@@ -48,23 +46,6 @@ void main() async {
       } catch (_) {
         // Mapped opaque domain failure acceptable.
       }
-    },
-  );
-
-  test(
-    'audit without authority → SovereigntyViolationException (no raw infra leak)',
-    skip: isRunning ? null : skipReason,
-    () async {
-      final gw = SupabasePortalSubmissionAuditGateway(client);
-      await expectLater(
-        gw.audit(
-          organizationId: const Uuid().v4(),
-          submissionId: const Uuid().v4(),
-          decision: PortalAuditDecision.accept,
-          auditedByUserId: const Uuid().v4(),
-        ),
-        throwsA(isA<SovereigntyViolationException>()),
-      );
     },
   );
 }
