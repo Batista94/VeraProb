@@ -134,6 +134,16 @@ class _MockPortalTokenNotifier extends DisputePortalTokenNotifier {
   }
 }
 
+/// Portal token notifier that already holds a (now-stale) minted token. Proves
+/// the defense-submitted seal wins even when an active token is still in memory
+/// (Bug 2-B): the link affordance must vanish regardless of the live token.
+class _StaleTokenNotifier extends DisputePortalTokenNotifier {
+  _StaleTokenNotifier() : super('test-id-001');
+
+  @override
+  AsyncValue<String?> build() => const AsyncData('tok-stale-999');
+}
+
 class _LoadingActionNotifier extends SanctionActionNotifier {
   _LoadingActionNotifier() : super('test-id');
 
@@ -1196,6 +1206,62 @@ void _resolutionSealAndA11yTests() {
 
       addTearDown(tester.view.resetPhysicalSize);
     });
+
+    testWidgets(
+      'defense submitted: link sealed (no GERAR/no Cancelar), DEFESA RECEBIDA, '
+      'verdict actions stay (Bug 2-A/2-B regression guard)',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 1400);
+        tester.view.devicePixelRatio = 1.0;
+
+        // A stale in-memory token must NOT keep the link affordance alive once
+        // the carrier defense is on file (token is revoked server-side).
+        final item = _makeItem(
+          status: SanctionReviewStatus.disputed,
+          defenseSubmittedAt: DateTime.utc(2026, 6, 23),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              ..._baseOverrides(
+                item: item,
+                notifier: _MockSanctionActionNotifier(),
+              ),
+              disputePortalTokenProvider.overrideWith2(
+                (_) => _StaleTokenNotifier(),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(
+                body: SingleChildScrollView(
+                  child: SanctionVerdictCard(item: item),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Bug 2-A: the card is back for the auditor's verdict, flagged received.
+        expect(find.text('DEFESA RECEBIDA'), findsOneWidget);
+        expect(find.text('AGUARDANDO EVIDÊNCIA'), findsNothing);
+
+        // Bug 2-B: every link-management affordance disappears; sealed state only.
+        expect(find.text('Defesa recebida — link encerrado'), findsOneWidget);
+        expect(find.text('GERAR LINK DE DISPUTA'), findsNothing);
+        expect(find.byKey(const ValueKey('dispute-portal-url')), findsNothing);
+        expect(find.text('Copiar Link'), findsNothing);
+        expect(find.text('Regerar'), findsNothing);
+        expect(find.text('Cancelar solicitação'), findsNothing);
+
+        // The auditor can still seal a verdict on the received defense.
+        expect(find.text('CONFIRMAR INFRAÇÃO'), findsOneWidget);
+        expect(find.text('ANULAR INFRAÇÃO'), findsOneWidget);
+
+        addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
 
     testWidgets(
       'ANULAR MULTA: confirm requires reason code AND a mandatory comment (5.4)',

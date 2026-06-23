@@ -88,6 +88,29 @@ String humanizeLedgerEventType(String type) {
   }
 }
 
+/// Resolves the auditor's free-text justification from a ledger fact payload.
+///
+/// Verdict-sealing RPCs persist the note under DIFFERENT keys depending on the
+/// transition: `reviewer_reason` (approve_sanction), `rejection_reason`
+/// (reject_sanction), `resolution_reason` (resolve_dispute), plus `notes`
+/// (off-band acknowledgment) and the generic `reason`. The investigation
+/// timeline must surface whichever one is present so the justification is never
+/// silently dropped. Returns null when no note key carries a non-empty string.
+String? resolveLedgerReasonText(Map<String, dynamic> payload) {
+  const keys = [
+    'reason',
+    'reviewer_reason',
+    'rejection_reason',
+    'resolution_reason',
+    'notes',
+  ];
+  for (final key in keys) {
+    final value = payload[key];
+    if (value is String && value.trim().isNotEmpty) return value;
+  }
+  return null;
+}
+
 /// Maps raw dispute/rejection reason codes to Portuguese operator labels.
 ///
 /// Mirrors the seed data from migration 20260813000004_dispute_reason_codes.

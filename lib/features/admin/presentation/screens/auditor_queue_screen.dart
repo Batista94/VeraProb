@@ -13,6 +13,21 @@ import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 /// Responsive breakpoint: below this width, the map becomes a Drawer.
 const _kMapBreakpoint = 1200.0;
 
+/// Ordering for the `disputed` lane. A card whose carrier already submitted a
+/// defense (`defenseSubmittedAt != null`) is the one actually awaiting the
+/// auditor's verdict, so it floats to the top ("DEFESA RECEBIDA"). Among peers
+/// with the same defense state, the soonest `resolutionDueAtUtc` (SLA deadline)
+/// comes first; rows without a deadline sink to the bottom. Pure + total so it
+/// can be unit-tested in isolation (Bug 2-A regression guard).
+int compareDisputedLane(SanctionQueueItemView a, SanctionQueueItemView b) {
+  if (a.defenseSubmittedAt != null && b.defenseSubmittedAt == null) return -1;
+  if (a.defenseSubmittedAt == null && b.defenseSubmittedAt != null) return 1;
+  if (a.resolutionDueAtUtc == null && b.resolutionDueAtUtc == null) return 0;
+  if (a.resolutionDueAtUtc == null) return 1;
+  if (b.resolutionDueAtUtc == null) return -1;
+  return a.resolutionDueAtUtc!.compareTo(b.resolutionDueAtUtc!);
+}
+
 /// Tribunal de Auditoria — Human-in-the-Loop review of engine-recommended sanctions.
 ///
 /// **WS-5 (Telemetry Map-Sync):** Split-pane layout on wide screens (≥1200px)
@@ -273,20 +288,7 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
     }
 
     final sortedItems = List<SanctionQueueItemView>.from(items)
-      ..sort((a, b) {
-        if (a.defenseSubmittedAt != null && b.defenseSubmittedAt == null) {
-          return -1;
-        }
-        if (a.defenseSubmittedAt == null && b.defenseSubmittedAt != null) {
-          return 1;
-        }
-        if (a.resolutionDueAtUtc == null && b.resolutionDueAtUtc == null) {
-          return 0;
-        }
-        if (a.resolutionDueAtUtc == null) return 1;
-        if (b.resolutionDueAtUtc == null) return -1;
-        return a.resolutionDueAtUtc!.compareTo(b.resolutionDueAtUtc!);
-      });
+      ..sort(compareDisputedLane);
 
     final list = ListView.separated(
       itemCount: sortedItems.length,

@@ -67,7 +67,38 @@ void main() {
       expect(humanizeLedgerEventType('SOME_FUTURE_CODE'), 'SOME_FUTURE_CODE');
       expect(humanizeLedgerEventType(''), '');
     });
+  });
 
+  group('resolveLedgerReasonText', () {
+    test('reads each transition-specific note key', () {
+      expect(resolveLedgerReasonText({'reason': 'r'}), 'r');
+      expect(resolveLedgerReasonText({'reviewer_reason': 'rv'}), 'rv');
+      expect(resolveLedgerReasonText({'rejection_reason': 'rj'}), 'rj');
+      expect(resolveLedgerReasonText({'resolution_reason': 'rs'}), 'rs');
+      expect(resolveLedgerReasonText({'notes': 'nt'}), 'nt');
+    });
+
+    test('precedence: generic reason wins over the specific keys', () {
+      expect(
+        resolveLedgerReasonText({
+          'reason': 'first',
+          'reviewer_reason': 'second',
+        }),
+        'first',
+      );
+    });
+
+    test('returns null when no note key carries a non-empty string', () {
+      expect(resolveLedgerReasonText(const {}), isNull);
+      expect(resolveLedgerReasonText({'reason': '   '}), isNull);
+      expect(resolveLedgerReasonText({'reason': ''}), isNull);
+      expect(resolveLedgerReasonText({'reason_code': 'SENSOR_FAULT'}), isNull);
+      // Non-string values are ignored (no type leak / no crash).
+      expect(resolveLedgerReasonText({'reviewer_reason': 42}), isNull);
+    });
+  });
+
+  group('humanizeLedgerEventType (completeness)', () {
     test('never returns an empty label for a non-empty known code', () {
       const knownCodes = [
         'SANCTION_RECOMMENDED',

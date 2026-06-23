@@ -19,9 +19,14 @@ import 'package:veraprob/state/providers/dispute_portal_providers.dart';
 class _RetryFakeGateway implements PortalDisputeGateway {
   final int failuresBeforeSuccess;
   final bool retryable;
+  final PortalSubmissionOutcome outcome;
   int submitCalls = 0;
 
-  _RetryFakeGateway({this.failuresBeforeSuccess = 0, this.retryable = true});
+  _RetryFakeGateway({
+    this.failuresBeforeSuccess = 0,
+    this.retryable = true,
+    this.outcome = PortalSubmissionOutcome.pendingAudit,
+  });
 
   @override
   Future<PortalSubmissionOutcome> submitEvidence({
@@ -34,7 +39,7 @@ class _RetryFakeGateway implements PortalDisputeGateway {
     if (submitCalls <= failuresBeforeSuccess) {
       throw PortalDisputeException('infra down', retryable: retryable);
     }
-    return PortalSubmissionOutcome.pendingAudit;
+    return outcome;
   }
 
   @override
@@ -140,4 +145,56 @@ void main() {
     );
     expect(h.states.whereType<PortalSubmissionRetrying>(), isEmpty);
   });
+
+  // ── Verification-verdict honoring (Bug A regression guard) ────────────────
+  // A 2xx transport with a server-side rejection outcome is NOT a success:
+  // defense_submitted_at is never set, so the carrier MUST be told (anti
+  // false-positive), never shown the success screen.
+  test('pendingAudit outcome → PortalSubmissionSuccess', () async {
+    final gateway = _RetryFakeGateway(
+      outcome: PortalSubmissionOutcome.pendingAudit,
+    );
+    final h = harness(gateway);
+    final notifier = h.container.read(
+      portalDisputeSubmissionNotifierProvider.notifier,
+    );
+
+    notifier.setJustification(justification);
+    await notifier.submit('tok');
+
+    expect(
+      h.container.read(portalDisputeSubmissionNotifierProvider),
+      isA<PortalSubmissionSuccess>(),
+    );
+  });
+
+  for (final outcome in const [
+    PortalSubmissionOutcome.mimeMismatch,
+    PortalSubmissionOutcome.hashMismatch,
+    PortalSubmissionOutcome.rejected,
+  ]) {
+    test('$outcome outcome → PortalSubmissionError (never success)', () async {
+      final gateway = _RetryFakeGateway(outcome: outcome);
+      final h = harness(gateway);
+      final notifier = h.container.read(
+        portalDisputeSubmissionNotifierProvider.notifier,
+      );
+
+      notifier.setJustification(justification);
+      await notifier.submit('tok');
+
+      final state = h.container.read(portalDisputeSubmissionNotifierProvider);
+      expect(state, isA<PortalSubmissionError>());
+      expect(
+        h.states.whereType<PortalSubmissionSuccess>(),
+        isEmpty,
+        reason: 'a rejected attachment must never surface as success',
+      );
+      // Justification preserved so the carrier can drop the file and re-submit.
+      expect(
+        (state as PortalSubmissionError).recoverable.justification,
+        justification,
+      );
+    });
+  }
 }

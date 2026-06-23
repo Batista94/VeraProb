@@ -314,6 +314,54 @@ void main() {
     );
 
     testWidgets(
+      'renders the auditor justification block when provenance carries a note '
+      '(Bug 1 regression guard)',
+      (tester) async {
+        await tester.pumpWidget(
+          buildModal(
+            repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+            logger: _MockSecurityIncidentLogger(),
+            initialTab: ForensicDossierTab.custody,
+            provenance: (
+              actorEmail: 'auditor@tenant.com',
+              actorUserId: 'user-001',
+              sealedAtUtc: DateTime.utc(2026, 1, 15, 15),
+              auditorNote: 'Laudo técnico anexo comprova a falha do sensor.',
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('JUSTIFICATIVA DO AUDITOR'), findsOneWidget);
+        expect(
+          find.text('Laudo técnico anexo comprova a falha do sensor.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('omits the auditor justification block when no note exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildModal(
+          repository: _MockSnapshotRepo(mockSnapshot: _makeMockSnapshot()),
+          logger: _MockSecurityIncidentLogger(),
+          initialTab: ForensicDossierTab.custody,
+          provenance: (
+            actorEmail: 'auditor@tenant.com',
+            actorUserId: 'user-001',
+            sealedAtUtc: DateTime.utc(2026, 1, 15, 15),
+            auditorNote: null,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('JUSTIFICATIVA DO AUDITOR'), findsNothing);
+    });
+
+    testWidgets(
       'authentic snapshot degrades to short UUID when email missing',
       (tester) async {
         await tester.pumpWidget(

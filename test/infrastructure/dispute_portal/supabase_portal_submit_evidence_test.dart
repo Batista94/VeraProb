@@ -199,6 +199,41 @@ void main() {
     );
   });
 
+  // ── Justification-only response shape (Bug C regression guard) ────────────
+  // The text-only edge path returns { justificationSubmissionId } and has
+  // ALREADY stamped defense_submitted_at server-side. The gateway must treat
+  // that as pendingAudit and MUST NOT attempt a finalize (there is no upload).
+  test(
+    'justification-only response → pendingAudit, no finalize invoked',
+    () async {
+      final invokedNames = <String>[];
+      final g = gateway(
+        client,
+        invoke: (name, {body}) async {
+          invokedNames.add(name);
+          if (name == 'portal-submit-request') {
+            return FunctionResponse(
+              data: {'justificationSubmissionId': 'just-1'},
+              status: 200,
+            );
+          }
+          throw StateError('unexpected edge invocation: $name');
+        },
+      );
+
+      expect(
+        await g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        PortalSubmissionOutcome.pendingAudit,
+      );
+      expect(invokedNames, ['portal-submit-request']);
+    },
+  );
+
   test('happy path with file: phase-1 200 + PUT 200 + finalize 200 → '
       'pendingAudit', () async {
     final mockClient = MockSupabaseClient();

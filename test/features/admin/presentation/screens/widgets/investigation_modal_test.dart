@@ -94,6 +94,7 @@ SlaLedgerEntry _buildLedgerEntry({
   String? eventId,
   String type = 'PLAN_DECLARED',
   DateTime? occurredAtUtc,
+  Map<String, dynamic> payload = const {},
 }) {
   return SlaLedgerEntry(
     eventId: eventId,
@@ -103,6 +104,7 @@ SlaLedgerEntry _buildLedgerEntry({
     contractId: _kContractId,
     planVersion: 1,
     occurredAtUtc: occurredAtUtc ?? _kNow,
+    payload: payload,
   );
 }
 
@@ -331,6 +333,46 @@ void main() {
         expect(find.text('EXECUTION_BOUND'), findsOneWidget);
       },
     );
+  });
+
+  group('InvestigationModal — Auditor justification (Bug 1 regression guard)', () {
+    // The verdict RPCs persist the auditor's free-text under transition-specific
+    // payload keys; the timeline must surface each one (key-mismatch was the bug).
+    for (final (label, key) in const [
+      ('Veredito Confirmado (reviewer_reason)', 'reviewer_reason'),
+      ('Veredito Recusado (rejection_reason)', 'rejection_reason'),
+      ('Disputa Resolvida (resolution_reason)', 'resolution_reason'),
+    ]) {
+      testWidgets('renders justification from payload key: $label', (
+        tester,
+      ) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        const note = 'Laudo técnico anexo comprova a falha do sensor.';
+        final trace = _buildTrace(triggeringEventId: 'evt-trigger-001');
+        final ledger = [
+          _buildLedgerEntry(
+            eventId: 'evt-verdict-001',
+            type: 'VERDICT_SEALED',
+            payload: {'actor_email': 'auditor@tenant.com', key: note},
+          ),
+        ];
+
+        await tester.pumpWidget(
+          _buildModal(
+            traces: AsyncValue.data([trace]),
+            ledger: AsyncValue.data(ledger),
+            execution: const AsyncValue.data(null),
+          ),
+        );
+        await _openModal(tester);
+        await tester.pumpAndSettle();
+
+        expect(find.text(note), findsOneWidget);
+      });
+    }
   });
 
   group('InvestigationModal — 1-Click Proof Rule (INV-15)', () {

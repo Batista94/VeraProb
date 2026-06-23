@@ -4,7 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/application/sla_audit/projections/sanction_queue_item_view.dart';
 import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart';
+import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
+import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
 import 'package:veraprob/features/admin/presentation/screens/auditor_queue_screen.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_contract_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_repository.dart';
@@ -240,6 +244,88 @@ void main() {
         );
 
         addTearDown(tester.view.resetPhysicalSize);
+      },
+    );
+  });
+
+  // ── Disputed-lane ordering (Bug 2-A regression guard) ─────────────────────
+  group('compareDisputedLane', () {
+    SanctionQueueItemView item({
+      required String id,
+      DateTime? defenseSubmittedAt,
+      DateTime? resolutionDueAtUtc,
+    }) {
+      return SanctionQueueItemView(
+        id: id,
+        organizationId: 'org-001',
+        ledgerEntryId: 'ledger-001',
+        setId: 'set-001',
+        contractId: 'contract-001',
+        verdictEvidence: VerdictEvidence.create(
+          clauseRef: 'ATR-01',
+          ruleId: 'rule-001',
+          ruleVersion: 1,
+          primaryEvidenceLat: -23.5,
+          primaryEvidenceLng: -46.6,
+          primaryEvidenceTimestampUtc: DateTime.utc(2026, 1, 15, 10),
+          deltaValue: 5,
+          thresholdValue: 0,
+          fineCents: const Money(150000),
+          confidenceScore: 95,
+        ),
+        status: SanctionReviewStatus.disputed,
+        createdAtUtc: DateTime.utc(2026, 1, 15, 10),
+        defenseSubmittedAt: defenseSubmittedAt,
+        resolutionDueAtUtc: resolutionDueAtUtc,
+      );
+    }
+
+    test('a defended card floats above one still awaiting evidence', () {
+      final defended = item(
+        id: 'defended',
+        defenseSubmittedAt: DateTime.utc(2026, 6, 23),
+        resolutionDueAtUtc: DateTime.utc(2026, 7, 1),
+      );
+      final awaiting = item(
+        id: 'awaiting',
+        resolutionDueAtUtc: DateTime.utc(2026, 6, 24),
+      );
+
+      // Defended wins regardless of the earlier deadline on the awaiting card.
+      expect(compareDisputedLane(defended, awaiting), -1);
+      expect(compareDisputedLane(awaiting, defended), 1);
+    });
+
+    test('sorting puts every defended card before the awaiting ones', () {
+      final items = [
+        item(id: 'a-awaiting', resolutionDueAtUtc: DateTime.utc(2026, 6, 20)),
+        item(
+          id: 'b-defended',
+          defenseSubmittedAt: DateTime.utc(2026, 6, 23),
+          resolutionDueAtUtc: DateTime.utc(2026, 7, 5),
+        ),
+        item(id: 'c-awaiting', resolutionDueAtUtc: DateTime.utc(2026, 6, 18)),
+      ]..sort(compareDisputedLane);
+
+      expect(items.first.id, 'b-defended');
+    });
+
+    test(
+      'among same defense state, soonest deadline first; null sinks last',
+      () {
+        final soon = item(
+          id: 'soon',
+          resolutionDueAtUtc: DateTime.utc(2026, 6, 18),
+        );
+        final later = item(
+          id: 'later',
+          resolutionDueAtUtc: DateTime.utc(2026, 6, 25),
+        );
+        final noDeadline = item(id: 'none');
+
+        expect(compareDisputedLane(soon, later), lessThan(0));
+        expect(compareDisputedLane(soon, noDeadline), -1);
+        expect(compareDisputedLane(noDeadline, soon), 1);
       },
     );
   });

@@ -763,6 +763,7 @@ class _CustodyAuthenticView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provenance = ref.watch(verdictProvenanceProvider(queueEntryId)).value;
     final actorEmail = provenance?.actorEmail;
+    final auditorNote = provenance?.auditorNote?.trim();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,6 +841,47 @@ class _CustodyAuthenticView extends ConsumerWidget {
             ],
           ),
         ),
+        if (auditorNote != null && auditorNote.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Text(
+            'JUSTIFICATIVA DO AUDITOR',
+            style: VeraProbTypography.caption.copyWith(
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: VeraProbColors.border),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.format_quote,
+                  size: 16,
+                  color: VeraProbColors.textDisabled,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SelectableText(
+                    auditorNote,
+                    style: VeraProbTypography.bodyMedium.copyWith(
+                      color: VeraProbColors.textPrimary,
+                      fontStyle: FontStyle.italic,
+                      height: 1.4,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
         const SizedBox(height: 24),
         Text(
           'VERIFICAÇÃO CRIPTOGRÁFICA',

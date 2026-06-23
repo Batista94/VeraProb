@@ -406,6 +406,10 @@ class _TimelineEvent extends StatelessWidget {
         ? VeraProbColors.primary
         : VeraProbColors.border;
 
+    // The auditor's justification lives under transition-specific payload keys
+    // (reviewer_reason / rejection_reason / resolution_reason / notes / reason).
+    final reasonText = resolveLedgerReasonText(entry.payload);
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -509,7 +513,7 @@ class _TimelineEvent extends StatelessWidget {
                       (entry.operatorId != 'SYSTEM' &&
                           entry.operatorId.isNotEmpty) ||
                       entry.payload['reason_code'] != null ||
-                      entry.payload['reason'] != null) ...[
+                      reasonText != null) ...[
                     const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.all(10),
@@ -547,14 +551,12 @@ class _TimelineEvent extends StatelessWidget {
                                   (entry.operatorId != 'SYSTEM' &&
                                       entry.operatorId.isNotEmpty)) &&
                               (entry.payload['reason_code'] != null ||
-                                  entry.payload['reason'] != null))
+                                  reasonText != null))
                             const SizedBox(height: 8),
                           if (entry.payload['reason_code'] != null)
                             Padding(
                               padding: EdgeInsets.only(
-                                bottom: entry.payload['reason'] != null
-                                    ? 4.0
-                                    : 0,
+                                bottom: reasonText != null ? 4.0 : 0,
                               ),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,7 +582,7 @@ class _TimelineEvent extends StatelessWidget {
                                 ],
                               ),
                             ),
-                          if (entry.payload['reason'] != null)
+                          if (reasonText != null)
                             Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -592,7 +594,7 @@ class _TimelineEvent extends StatelessWidget {
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    entry.payload['reason'] as String,
+                                    reasonText,
                                     style: VeraProbTypography.caption.copyWith(
                                       color: VeraProbColors.textSecondary,
                                       fontStyle: FontStyle.italic,

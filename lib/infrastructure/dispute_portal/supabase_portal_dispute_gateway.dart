@@ -174,6 +174,16 @@ class SupabasePortalDisputeGateway implements PortalDisputeGateway {
     if (reqData is! Map) {
       throw const PortalDisputeException('Resposta inválida do servidor.');
     }
+
+    // Justification-only contest (no file): portal-submit-request already ran
+    // submit_portal_justification_only, persisting the testimony AND stamping
+    // defense_submitted_at server-side. The response carries
+    // `justificationSubmissionId` (NOT `submissionId`/`signedUrl`) — there is no
+    // upload or finalize step, so the defense is already on file for the auditor.
+    if (reqData['justificationSubmissionId'] is String) {
+      return PortalSubmissionOutcome.pendingAudit;
+    }
+
     final submissionId = reqData['submissionId'] as String?;
     final signedUrl = reqData['signedUrl'] as String?;
     if (submissionId == null) {

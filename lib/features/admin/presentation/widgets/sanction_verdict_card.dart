@@ -499,6 +499,8 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                     _PortalLinkZone(
                                       organizationId: item.organizationId,
                                       queueEntryId: item.id,
+                                      defenseSubmittedAt:
+                                          item.defenseSubmittedAt,
                                     ),
                                     const SizedBox(height: 12),
                                     _PortalSubmissionsZone(
@@ -2183,9 +2185,17 @@ class _RetractionProvenanceZone extends ConsumerWidget {
 class _PortalLinkZone extends ConsumerStatefulWidget {
   final String organizationId;
   final String queueEntryId;
+
+  /// Write-once instant the carrier submitted a portal defense. When non-null
+  /// the link is permanently sealed server-side (token revoked on submit), so
+  /// the management affordance (copy/regenerate/generate) must disappear — the
+  /// only honest state is read-only "defesa recebida — link encerrado".
+  final DateTime? defenseSubmittedAt;
+
   const _PortalLinkZone({
     required this.organizationId,
     required this.queueEntryId,
+    required this.defenseSubmittedAt,
   });
 
   @override
@@ -2236,6 +2246,40 @@ class _PortalLinkZoneState extends ConsumerState<_PortalLinkZone> {
 
   @override
   Widget build(BuildContext context) {
+    // Defense already on file → the portal link is sealed (token revoked on
+    // submit). Render a read-only terminal state and suppress every link
+    // affordance, regardless of any stale in-memory token (Bug 2-B). This also
+    // closes the anti-forensic vector of re-issuing/cancelling a link to mask a
+    // received defense (mirrors the write-once DB guard).
+    if (widget.defenseSubmittedAt != null) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.surfaceElevated,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: VeraProbColors.border),
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.lock_outline,
+              size: 16,
+              color: VeraProbColors.textDisabled,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Defesa recebida — link encerrado',
+                style: VeraProbTypography.bodySmall.copyWith(
+                  color: VeraProbColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     final tokenState = ref.watch(
       disputePortalTokenProvider(widget.queueEntryId),
     );
