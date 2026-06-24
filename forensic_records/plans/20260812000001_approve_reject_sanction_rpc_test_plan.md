@@ -38,6 +38,20 @@ geram dois fatos no ledger.
 20. Cross-tenant (JWT Org B, alvo Org A) → `42501` (anti-oracle, INV-26).
 21. Role OPERATOR → `42501` (RBAC server-side; só TENANT_ADMIN/AUDITOR).
 
+## Concorrência real (multi-sessão)
+
+pgTAP roda em sessão única — não prova paralelismo verdadeiro. A corrida real
+(dois auditores distintos aprovando a MESMA penalidade pendente ao mesmo tempo)
+é coberta por `test/integration/approve_sanction_concurrency_test.dart`, que
+dispara dois `approve_sanction` autenticados via `Future.wait` contra o Supabase
+local (duas sessões reais). Garante: o lock `FOR UPDATE` + re-check de status
+serializa os aprovadores → exatamente **1** selo (`applied`) + **1**
+`IdempotencyProcessingException`, **1** fato `VERDICT_SEALED`, `approved_by_user_id`
+= o vencedor da corrida. O contrato usa threshold dual-control alto (`100000000`)
+para o veredito selar TERMINAL e não bifurcar — isola o TOCTOU do quatro-olhos.
+Auto-skip se o Supabase local não estiver up (espelha
+`dual_control_confirm_concurrency_test.dart`).
+
 ## Notas
 
 - A identidade do revisor vem do JWT `sub` e é casada contra `p_reviewed_by_user_id`

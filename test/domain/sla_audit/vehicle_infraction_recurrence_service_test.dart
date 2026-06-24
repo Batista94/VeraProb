@@ -17,11 +17,14 @@ class _FakeRepository implements VehicleInfractionRecurrenceRepository {
     required String vehiclePlate,
     required DateTime referenceUtc,
     required String excludeQueueEntryId,
+    required DateTime beforeUtc,
   }) async {
     return _data
         .where(
           (e) =>
-              e.organizationId == organizationId && e.id != excludeQueueEntryId,
+              e.organizationId == organizationId &&
+              e.id != excludeQueueEntryId &&
+              e.createdAtUtc.isBefore(beforeUtc),
         )
         .toList();
   }
@@ -188,6 +191,77 @@ void main() {
         currentQueueEntryId: 'curr-1',
       );
       expect(result!.vehiclePlate, 'XYZ-9999');
+    });
+
+    // ── Sequence-number regression (Bug 2) ───────────────────────────────────
+    // When a driver has N infractions in the same month, each card must show
+    // its chronological rank (1ª, 2ª, … Nª), NOT the current total N.
+    // Root cause: beforeUtc filter was missing — future cards counted as priors.
+    group('infraction sequence number', () {
+      DateTime t(int h) => DateTime.utc(2026, 4, 1, h, 0);
+
+      late SanctionReviewQueueEntry card1, card2, card3, card4, card5;
+      setUp(() {
+        card1 = entry(id: 'e1', clauseRef: 'VEL-01', createdAt: t(10));
+        card2 = entry(id: 'e2', clauseRef: 'VEL-01', createdAt: t(11));
+        card3 = entry(id: 'e3', clauseRef: 'VEL-01', createdAt: t(12));
+        card4 = entry(id: 'e4', clauseRef: 'VEL-01', createdAt: t(13));
+        card5 = entry(id: 'e5', clauseRef: 'VEL-01', createdAt: t(14));
+      });
+
+      test('card 1 shows 1ª when 4 later cards exist', () async {
+        final svc = VehicleInfractionRecurrenceService(
+          repository: _FakeRepository([card1, card2, card3, card4, card5]),
+        );
+        final r = await svc.computeRecurrence(
+          organizationId: 'org-1',
+          vehiclePlate: 'ABC-1234',
+          referenceUtc: card1.createdAtUtc,
+          currentQueueEntryId: 'e1',
+        );
+        expect(
+          r!.infractionNumberThisMonth,
+          1,
+          reason: 'no priors before first card — must show 1ª, not 5ª',
+        );
+        expect(r.priorInfractions, isEmpty);
+      });
+
+      test('card 3 shows 3ª', () async {
+        final svc = VehicleInfractionRecurrenceService(
+          repository: _FakeRepository([card1, card2, card3, card4, card5]),
+        );
+        final r = await svc.computeRecurrence(
+          organizationId: 'org-1',
+          vehiclePlate: 'ABC-1234',
+          referenceUtc: card3.createdAtUtc,
+          currentQueueEntryId: 'e3',
+        );
+        expect(
+          r!.infractionNumberThisMonth,
+          3,
+          reason: 'two priors before card 3',
+        );
+        expect(r.priorInfractions, hasLength(2));
+      });
+
+      test('card 5 shows 5ª', () async {
+        final svc = VehicleInfractionRecurrenceService(
+          repository: _FakeRepository([card1, card2, card3, card4, card5]),
+        );
+        final r = await svc.computeRecurrence(
+          organizationId: 'org-1',
+          vehiclePlate: 'ABC-1234',
+          referenceUtc: card5.createdAtUtc,
+          currentQueueEntryId: 'e5',
+        );
+        expect(
+          r!.infractionNumberThisMonth,
+          5,
+          reason: 'four priors before card 5',
+        );
+        expect(r.priorInfractions, hasLength(4));
+      });
     });
   });
 }

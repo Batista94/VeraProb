@@ -1,0 +1,155 @@
+/// Presentation util: maps raw `sla_audit_ledger` event type codes to
+/// audit-grade Portuguese labels for the investigation timeline.
+///
+/// The raw enum is NEVER discarded — callers render this human label as the
+/// primary line and keep the raw code as a monospace forensic subtitle
+/// (MODO AUDITORIA citability). Unmapped codes fall back to the raw string so a
+/// new event type degrades gracefully instead of vanishing.
+String humanizeLedgerEventType(String type) {
+  switch (type) {
+    // ── Sanction verdict lifecycle ──────────────────────────────────────────
+    case 'SANCTION_RECOMMENDED':
+      return 'Infração Detectada pela Telemetria';
+    case 'VERDICT_SEALED':
+      return 'Veredito Confirmado pelo Auditor';
+    case 'VERDICT_REFUSED':
+      return 'Veredito Recusado (Isenção)';
+
+    // ── Dispute lifecycle ───────────────────────────────────────────────────
+    case 'SANCTION_DISPUTED':
+      return 'Contestação Aberta';
+    case 'DISPUTE_ACCEPTED':
+      return 'Contestação Aceita (Multa Anulada)';
+    case 'DISPUTE_OVERTURNED':
+      return 'Contestação Negada (Multa Mantida)';
+    case 'DISPUTE_RETRACTED':
+      return 'Contestação Retratada';
+    case 'DISPUTE_EVIDENCE_ATTACHED':
+      return 'Evidência Anexada à Contestação';
+    case 'EVIDENCE_HASH_MISMATCH':
+      return 'Divergência de Assinatura Criptográfica';
+
+    // ── Peer Review (Dual Control) ──────────────────────────────────────────
+    case 'PEER_REVIEW_REQUESTED':
+      return 'Revisão por Pares Solicitada (Duplo Controle)';
+    case 'PEER_REVIEW_DECLINED':
+      return 'Revisão por Pares Recusada';
+    case 'PEER_REVIEW_CONFIRMED':
+      return 'Revisão por Pares Confirmada';
+
+    // ── Justification lifecycle ─────────────────────────────────────────────
+    case 'JUSTIFICATION_SUBMITTED':
+      return 'Justificativa Enviada';
+    case 'JUSTIFICATION_APPROVED':
+      return 'Justificativa Aprovada';
+    case 'JUSTIFICATION_REJECTED':
+      return 'Justificativa Rejeitada';
+    case 'SLA_JUSTIFICATION_SUBMITTED':
+      return 'Justificativa de SLA Enviada';
+    case 'SLA_JUSTIFICATION_EXPIRED':
+      return 'Prazo de Justificativa de SLA Expirado';
+
+    // ── Execution lifecycle ─────────────────────────────────────────────────
+    case 'OCCURRENCE_REGISTERED':
+      return 'Ocorrência Registrada';
+    case 'EXECUTION_BOUND':
+      return 'Execução Vinculada ao Ativo';
+    case 'EXECUTION_INHIBITED':
+      return 'Execução Inibida';
+    case 'TRANSIT_STARTED':
+      return 'Trânsito Iniciado';
+    case 'TRIP_INTERRUPTED':
+      return 'Viagem Interrompida';
+    case 'TRIP_CANCELLED':
+      return 'Viagem Cancelada';
+    case 'NO_SHOW_DECLARED':
+      return 'Não Comparecimento Declarado';
+    case 'COMPLETED_WITH_GAPS':
+      return 'Concluído com Lacunas de Evidência';
+    case 'EVIDENCE_GAP_DECLARED':
+      return 'Lacuna de Evidência Declarada';
+
+    // ── Contract lifecycle ──────────────────────────────────────────────────
+    case 'PLAN_DECLARED':
+      return 'Plano Declarado';
+    case 'CONTRACT_CREATED':
+      return 'Contrato Criado';
+    case 'CONTRACT_SUBMITTED_FOR_APPROVAL':
+      return 'Contrato Enviado para Aprovação';
+    case 'CONTRACT_ACCEPTED_BY_CONTRACTOR':
+      return 'Contrato Aceito pelo Transportador';
+    case 'CONTRACT_ACTIVATED':
+      return 'Contrato Ativado';
+    case 'CONTRACT_CLOSED':
+      return 'Contrato Encerrado';
+
+    default:
+      return type;
+  }
+}
+
+/// Resolves the auditor's free-text justification from a ledger fact payload.
+///
+/// Verdict-sealing RPCs persist the note under DIFFERENT keys depending on the
+/// transition: `reviewer_reason` (approve_sanction), `rejection_reason`
+/// (reject_sanction), `resolution_reason` (resolve_dispute), plus `notes`
+/// (off-band acknowledgment) and the generic `reason`. The investigation
+/// timeline must surface whichever one is present so the justification is never
+/// silently dropped. Returns null when no note key carries a non-empty string.
+String? resolveLedgerReasonText(Map<String, dynamic> payload) {
+  const keys = [
+    'reason',
+    'reviewer_reason',
+    'rejection_reason',
+    'resolution_reason',
+    'notes',
+  ];
+  for (final key in keys) {
+    final value = payload[key];
+    if (value is String && value.trim().isNotEmpty) return value;
+  }
+  return null;
+}
+
+/// Maps raw dispute/rejection reason codes to Portuguese operator labels.
+///
+/// Mirrors the seed data from migration 20260813000004_dispute_reason_codes.
+/// Unmapped codes fall back to the raw string (forward-compat for new codes).
+String humanizeReasonCode(String code) {
+  switch (code) {
+    case 'FORCE_MAJEURE':
+      return 'Força Maior';
+    case 'SENSOR_FAULT':
+      return 'Falha de Sensor';
+    case 'GPS_SIGNAL_LOSS':
+      return 'Perda de Sinal GPS';
+    case 'CONTRACT_EXCEPTION':
+      return 'Exceção Contratual';
+    case 'ROUTE_DEVIATION':
+      return 'Desvio de Rota Autorizado';
+    case 'WEATHER_EVENT':
+      return 'Evento Climático';
+    case 'TRAFFIC_INCIDENT':
+      return 'Acidente/Interdição de Via';
+    case 'ASSET_BREAKDOWN':
+      return 'Pane do Ativo (Veículo)';
+    case 'OPERATOR_EMERGENCY':
+      return 'Emergência do Operador';
+    case 'REGULATORY_INTERVENTION':
+      return 'Intervenção Regulatória (Blitz)';
+    case 'COMMUNICATION_FAILURE':
+      return 'Falha de Comunicação';
+    case 'SCHEDULING_ERROR':
+      return 'Erro de Programação';
+    case 'THIRD_PARTY_INCIDENT':
+      return 'Incidente com Terceiro';
+    case 'INFRASTRUCTURE_FAULT':
+      return 'Falha de Infraestrutura';
+    case 'OTHER':
+      return 'Outro';
+    case 'LEGACY_UNCLASSIFIED':
+      return 'Legado Não Classificado';
+    default:
+      return code;
+  }
+}

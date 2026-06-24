@@ -6,7 +6,7 @@
 //
 // Suítes:
 //   1. Outlier Filter       (Kinematic Guard [INV-17])
-//   2. State Machine         (TransiçÃµes Legais)
+//   2. State Machine         (Transições Legais)
 //   3. Chronological Determinism [INV-9/10]
 //   4. Idempotent Ingest     [INV-11] + stateChangedAt Imutável
 //   5. Data-Driven Stability (100+ pings, Blackout V4)
@@ -324,11 +324,11 @@ OperationalStateNormalizer makeNormalizer({
   clock: clock,
 );
 
-// ── SUÃTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) ──────────────────────
+// ── SUÍTE 1: OUTLIER FILTER (Kinematic Guard [INV-17]) ──────────────────────
 void main() {
   final kEpoch = DateTime.utc(2026, 4, 7, 12, 0, 0);
 
-  group('SUÃTE 1: Outlier Filter (Kinematic Guard [INV-17])', () {
+  group('SUÍTE 1: Outlier Filter (Kinematic Guard [INV-17])', () {
     test('1.1: Impossible speed spike (0â†’300km/h in 2s) is smoothed out', () {
       final clock = FakeDateTimeProvider(kEpoch);
       final normalizer = makeNormalizer(clock: clock);
@@ -546,8 +546,8 @@ void main() {
     );
   });
 
-  // ── SUÃTE 2: STATE MACHINE (TransiçÃµes Legais) ──────────────────────────
-  group('SUÃTE 2: State Machine (TransiçÃµes Legais)', () {
+  // ── SUÍTE 2: STATE MACHINE (Transições Legais) ──────────────────────────
+  group('SUÍTE 2: State Machine (Transições Legais)', () {
     test(
       '2.1: Valid sequence — moving transitions when speed drops and timer',
       () {
@@ -662,8 +662,8 @@ void main() {
     });
   });
 
-  // ── SUÃTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] ──────────────────────
-  group('SUÃTE 3: Chronological Determinism [INV-9/10]', () {
+  // ── SUÍTE 3: CHRONOLOGICAL DETERMINISM [INV-9/10] ──────────────────────
+  group('SUÍTE 3: Chronological Determinism [INV-9/10]', () {
     test(
       '3.1: Determinism — same batch processed twice yields identical output',
       () {
@@ -793,8 +793,8 @@ void main() {
     });
   });
 
-  // ── SUÃTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE ──────
-  group('SUÃTE 4: Idempotent Ingest [INV-11] + stateChangedAt Imutável', () {
+  // ── SUÍTE 4: IDEMPOTENT INGEST [INV-11] + stateChangedAt IMUTABLE ──────
+  group('SUÍTE 4: Idempotent Ingest [INV-11] + stateChangedAt Imutável', () {
     test('4.1: Exact duplicate batch produces identical states', () {
       final clock = FakeDateTimeProvider(kEpoch);
 
@@ -936,8 +936,8 @@ void main() {
     );
   });
 
-  // ── SUÃTE 5: DATA-DRIVEN STABILITY + BLACKOUT ──────────────────────────
-  group('SUÃTE 5: Data-Driven Stability + Blackout', () {
+  // ── SUÍTE 5: DATA-DRIVEN STABILITY + BLACKOUT ──────────────────────────
+  group('SUÍTE 5: Data-Driven Stability + Blackout', () {
     test(
       '5.1: Urban trip (120 pings, 30min) — zero crashes, confidence > 0.7',
       () {
@@ -1106,8 +1106,8 @@ void main() {
     );
   });
 
-  // ── SUÃTE 6: V4 INTERPOLATION COMPATIBILITY ────────────────────────────
-  group('SUÃTE 6: V4 Interpolation Compatibility', () {
+  // ── SUÍTE 6: V4 INTERPOLATION COMPATIBILITY ────────────────────────────
+  group('SUÍTE 6: V4 Interpolation Compatibility', () {
     test(
       '6.1: Trajectory interpolable post-blackout — connectivity restores',
       () {

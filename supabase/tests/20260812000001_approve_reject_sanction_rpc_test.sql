@@ -39,10 +39,26 @@ VALUES
    '00000000-0000-0000-0000-0000000008f6', 'set-role',
    '00000000-0000-0000-0000-0000000008aa', '{}'::jsonb, 'pending');
 
+-- Rule set required by approve_sanction terminal path (_persist_evidence_snapshot).
+INSERT INTO public.contract_rule_sets (id, organization_id, contract_id)
+VALUES ('00000000-0000-0000-0000-0000000008bb',
+        '00000000-0000-0000-0000-0000000008a1',
+        '00000000-0000-0000-0000-0000000008aa')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.contract_rule_versions
+  (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
+   active_from_utc, active_to_utc, created_at_utc)
+VALUES ('00000000-0000-0000-0000-0000000008cc',
+        '00000000-0000-0000-0000-0000000008bb',
+        'MAX_TOLERANCE_DELAY', '{"threshold_minutes": 30}'::jsonb, 1, 0,
+        '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z')
+ON CONFLICT DO NOTHING;
+
 -- 1. approve_sanction exists with the expected signature.
 SELECT has_function(
   'public', 'approve_sanction',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'timestamp with time zone'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'timestamp with time zone', 'text', 'text'],
   'approve_sanction exists with the expected signature'
 );
 
@@ -56,7 +72,7 @@ SELECT is(
 -- 3. reject_sanction exists with the expected signature.
 SELECT has_function(
   'public', 'reject_sanction',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'text', 'timestamp with time zone'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'text', 'text', 'timestamp with time zone'],
   'reject_sanction exists with the expected signature'
 );
 
@@ -70,7 +86,7 @@ SELECT is(
 -- 5. authenticated may execute approve.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'authenticated may execute approve_sanction'
 );
@@ -78,7 +94,7 @@ SELECT ok(
 -- 6. anon may NOT execute approve (Max hardening).
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'anon may NOT execute approve_sanction'
 );
@@ -86,7 +102,7 @@ SELECT ok(
 -- 7. service_role may NOT execute approve (no Data-API bypass path).
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone)',
+    'public.approve_sanction(uuid, uuid, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'service_role may NOT execute approve_sanction'
 );
@@ -94,7 +110,7 @@ SELECT ok(
 -- 8. authenticated may execute reject.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'authenticated may execute reject_sanction'
 );
@@ -102,7 +118,7 @@ SELECT ok(
 -- 9. anon may NOT execute reject.
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'anon may NOT execute reject_sanction'
 );
@@ -110,7 +126,7 @@ SELECT ok(
 -- 10. service_role may NOT execute reject.
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.reject_sanction(uuid, uuid, uuid, text, text, timestamp with time zone)',
+    'public.reject_sanction(uuid, uuid, uuid, text, text, text, timestamp with time zone)',
     'EXECUTE'),
   'service_role may NOT execute reject_sanction'
 );
@@ -170,7 +186,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000008a1',
        '00000000-0000-0000-0000-0000000008e2',
        '00000000-0000-0000-0000-0000000008b9', 'auditor@test.com',
-       'GPS evidence was inconclusive for this route.',
+       'GPS evidence was inconclusive for this route.', 'FORCE_MAJEURE',
        '2026-08-12T12:10:00Z'
      ) $$,
   'reject_sanction executes for an authenticated auditor'
@@ -194,18 +210,20 @@ SELECT is(
   'reject appends exactly one VERDICT_REFUSED fact'
 );
 
--- 18. Reject with an empty reason is rejected (fail-closed, opaque 42501).
+-- 18. Reject with an empty reason_code is rejected (fail-closed, opaque 42501).
+-- Post-taxonomy (008): the structured reason_code is the mandatory field; free
+-- text is an optional complement, so the gate moved from reason → reason_code.
 SELECT throws_ok(
   $$ SELECT public.reject_sanction(
        '00000000-0000-0000-0000-0000000008a1',
        '00000000-0000-0000-0000-0000000008e3',
        '00000000-0000-0000-0000-0000000008b9', 'auditor@test.com',
-       '    ',
+       '    ', '   ',
        '2026-08-12T12:12:00Z'
      ) $$,
   '42501',
   NULL,
-  'reject with an empty reason fails closed (42501)'
+  'reject with an empty reason_code fails closed (42501)'
 );
 
 -- 19. Reviewer spoofing: p_reviewed_by_user_id <> JWT sub is rejected (42501).

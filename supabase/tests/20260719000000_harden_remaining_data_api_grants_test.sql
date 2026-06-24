@@ -23,17 +23,17 @@ SELECT table_privs_are('public', 'telegram_status_queries', 'service_role', ARRA
 -- 4. contractors_view
 SELECT table_privs_are('public', 'contractors_view', 'anon', ARRAY[]::text[], 'anon has no privileges on contractors_view');
 SELECT table_privs_are('public', 'contractors_view', 'authenticated', ARRAY['SELECT'], 'authenticated has SELECT on contractors_view');
-SELECT table_privs_are('public', 'contractors_view', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has SELECT and other privileges on contractors_view');
+SELECT table_privs_are('public', 'contractors_view', 'service_role', ARRAY['SELECT'], 'service_role has SELECT only on contractors_view (read-only PII view, least privilege — 20260815000002)');
 
 -- 5. invitations_view
 SELECT table_privs_are('public', 'invitations_view', 'anon', ARRAY[]::text[], 'anon has no privileges on invitations_view');
 SELECT table_privs_are('public', 'invitations_view', 'authenticated', ARRAY['SELECT'], 'authenticated has SELECT on invitations_view');
-SELECT table_privs_are('public', 'invitations_view', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has SELECT and other privileges on invitations_view');
+SELECT table_privs_are('public', 'invitations_view', 'service_role', ARRAY['SELECT'], 'service_role has SELECT only on invitations_view (read-only PII view, least privilege — 20260815000002)');
 
 -- 6. v_roi_summary
 SELECT table_privs_are('public', 'v_roi_summary', 'anon', ARRAY[]::text[], 'anon has no privileges on v_roi_summary');
 SELECT table_privs_are('public', 'v_roi_summary', 'authenticated', ARRAY['SELECT'], 'authenticated has SELECT on v_roi_summary');
-SELECT table_privs_are('public', 'v_roi_summary', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has SELECT and other privileges on v_roi_summary');
+SELECT table_privs_are('public', 'v_roi_summary', 'service_role', ARRAY['SELECT'], 'service_role has SELECT only on v_roi_summary (read-only summary view, least privilege — 20260815000002)');
 
 SELECT * FROM finish();
 ROLLBACK;

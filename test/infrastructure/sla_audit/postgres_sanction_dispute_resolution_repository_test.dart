@@ -27,6 +27,7 @@ void main() {
         queueEntryId: 'entry-1',
         resolution: 'DISPUTE_ACCEPTED',
         resolutionReason: 'Contractor proved force majeure.',
+        reasonCode: 'THIRD_PARTY_INCIDENT',
         resolvedByUserId: 'auditor-1',
         actorEmail: 'auditor@veraprob.com',
         occurredAtUtc: DateTime.utc(2026, 8, 9, 12),

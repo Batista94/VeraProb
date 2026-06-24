@@ -9,6 +9,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 /// Wraps the SuperAdmin shell to monitor for user inactivity.
 /// Shows a warning dialog after 5 minutes of idle time.
 /// Forces logout after 7 minutes of idle time.
+/// Proactively refreshes the JWT every 50 minutes to prevent silent expiry.
 class SuperAdminSessionTimeout extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -23,11 +24,16 @@ class _SuperAdminSessionTimeoutState
     extends ConsumerState<SuperAdminSessionTimeout> {
   Timer? _idleTimer;
   Timer? _logoutTimer;
+  Timer? _refreshTimer;
   bool _isWarningOpen = false;
+
+  /// Refresh the JWT token every 50 minutes (JWT expires at 60 min).
+  static const _refreshInterval = Duration(minutes: 50);
 
   @override
   void initState() {
     super.initState();
+    _startRefreshTimer();
     _resetTimers();
   }
 
@@ -35,6 +41,23 @@ class _SuperAdminSessionTimeoutState
     if (_isWarningOpen) return;
     _resetTimers();
   }
+
+  // ── Proactive Token Refresh ──────────────────────────────────────────────
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) => _refreshSession());
+  }
+
+  Future<void> _refreshSession() async {
+    try {
+      await ref.read(authRepositoryProvider).refreshSession();
+    } catch (_) {
+      // If refresh fails, the router's auth redirect will bounce to /login
+    }
+  }
+
+  // ── Idle Detection ───────────────────────────────────────────────────────
 
   void _resetTimers() {
     _idleTimer?.cancel();
@@ -63,6 +86,8 @@ class _SuperAdminSessionTimeoutState
               if (mounted) {
                 setState(() => _isWarningOpen = false);
                 _resetTimers();
+                // Proactively refresh when user confirms they're active
+                _refreshSession();
               }
             },
             child: const Text('Continuar Logado'),
@@ -73,6 +98,7 @@ class _SuperAdminSessionTimeoutState
   }
 
   Future<void> _forceLogout() async {
+    _refreshTimer?.cancel();
     _idleTimer?.cancel();
     _logoutTimer?.cancel();
 
@@ -93,6 +119,7 @@ class _SuperAdminSessionTimeoutState
   void dispose() {
     _idleTimer?.cancel();
     _logoutTimer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 

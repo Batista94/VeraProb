@@ -45,6 +45,7 @@ export 'package:veraprob/domain/sla_audit/sla_penalties.dart';
 export 'package:veraprob/domain/sla_audit/justification/justification_submission_token.dart';
 export 'package:veraprob/domain/admin/invitation.dart';
 export 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
+export 'package:veraprob/domain/sla_audit/evidence_payload.dart';
 export 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 export 'package:veraprob/domain/sla_audit/heartbeat_classification.dart';
 export 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';

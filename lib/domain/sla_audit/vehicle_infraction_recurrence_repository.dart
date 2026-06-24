@@ -16,10 +16,14 @@ abstract class VehicleInfractionRecurrenceRepository {
   /// Results are ordered ascending by `created_at`.
   ///
   /// INV-1: Implementations MUST filter by [organizationId].
+  /// INV-9: [beforeUtc] MUST be UTC. Only entries with `created_at < beforeUtc`
+  /// are returned — callers pass the current card's own `createdAtUtc` so that
+  /// future cards in the same month do not inflate the sequence number.
   Future<List<SanctionReviewQueueEntry>> findByPlateInMonth({
     required String organizationId,
     required String vehiclePlate,
     required DateTime referenceUtc,
     required String excludeQueueEntryId,
+    required DateTime beforeUtc,
   });
 }

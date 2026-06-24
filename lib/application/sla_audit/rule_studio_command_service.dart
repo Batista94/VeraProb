@@ -17,5 +17,19 @@ abstract class RuleStudioCommandService {
     required SlaRuleType ruleType,
     required Map<String, dynamic> newConfig,
     required int evaluationOrder,
+    required DateTime effectiveAtUtc,
   });
+
+  Future<String> scheduleRule({
+    required String contractId,
+    required String? oldRuleId,
+    required SlaRuleType ruleType,
+    required Map<String, dynamic> newConfig,
+    required int evaluationOrder,
+    required DateTime effectiveAtUtc,
+  });
+
+  Future<void> activateScheduledRule({required String ruleId});
+
+  Future<void> retireRule({required String ruleId});
 }

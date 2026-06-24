@@ -90,6 +90,8 @@ class ApproveSanctionHandler {
       reviewedByUserId: command.approvedByUserId,
       actorEmail: command.actorEmail,
       occurredAtUtc: _dateTimeProvider.nowUtc(),
+      reasonCode: command.reasonCode,
+      reviewerReason: command.reviewerReason,
     );
   }
 }

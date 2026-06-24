@@ -24,12 +24,12 @@ VALUES ('00000000-0000-0000-0000-0000000009c1',
 
 INSERT INTO public.contract_rule_versions
   (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
-   active_from_utc, active_to_utc)
+   active_from_utc, active_to_utc, created_at_utc)
 VALUES
   ('00000000-0000-0000-0000-0000000009d1',
    '00000000-0000-0000-0000-0000000009c1',
    'NO_SHOW_PENALTY', '{"penalty_amount_cents": 50000}'::jsonb, 1, 0,
-   '2026-01-01T00:00:00Z', NULL);
+   '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z');
 
 -- Four disputed queue entries (one per arc/exploit scenario).
 INSERT INTO public.sanction_review_queue
@@ -52,7 +52,7 @@ VALUES
 SELECT has_function(
   'public', 'resolve_dispute',
   ARRAY['uuid', 'uuid', 'text', 'text', 'uuid', 'text',
-        'timestamp with time zone', 'text'],
+        'timestamp with time zone', 'text', 'text'],
   'resolve_dispute exists with the expected signature'
 );
 
@@ -66,7 +66,7 @@ SELECT is(
 -- 3. authenticated may execute.
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'authenticated may execute resolve_dispute'
 );
@@ -74,7 +74,7 @@ SELECT ok(
 -- 4. anon may NOT execute (Max hardening).
 SELECT ok(
   NOT has_function_privilege('anon',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'anon may NOT execute resolve_dispute'
 );
@@ -82,7 +82,7 @@ SELECT ok(
 -- 5. service_role may NOT execute (Max hardening — no Data-API bypass path).
 SELECT ok(
   NOT has_function_privilege('service_role',
-    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text)',
+    'public.resolve_dispute(uuid, uuid, text, text, uuid, text, timestamp with time zone, text, text)',
     'EXECUTE'),
   'service_role may NOT execute resolve_dispute'
 );
@@ -103,7 +103,8 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000009e1',
        'DISPUTE_ACCEPTED', 'Contractor proved force majeure.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:00:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:00:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'resolve_dispute (accept) executes for an authenticated auditor'
 );
@@ -133,7 +134,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e1',
        'DISPUTE_ACCEPTED', 'Contractor proved force majeure.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:05:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:05:00Z', '00000000-0000-0000-0000-0000000009e1:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'P0001',
   NULL,
@@ -147,7 +149,8 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000009e2',
        'DISPUTE_OVERTURNED', 'Evidence reinstated after appeal.',
        '00000000-0000-0000-0000-0000000009b9', 'auditor@test.com',
-       '2026-08-09T12:10:00Z', '00000000-0000-0000-0000-0000000009e2:DISPUTE_OVERTURNED:SNAPSHOT'
+       '2026-08-09T12:10:00Z', '00000000-0000-0000-0000-0000000009e2:DISPUTE_OVERTURNED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   'resolve_dispute (overturn) executes and seals inline'
 );
@@ -173,7 +176,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e3',
        'DISPUTE_ACCEPTED', 'cross tenant attempt here',
        '00000000-0000-0000-0000-0000000009b9', 'evil@test.com',
-       '2026-08-09T12:15:00Z', '00000000-0000-0000-0000-0000000009e3:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:15:00Z', '00000000-0000-0000-0000-0000000009e3:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   '42501',
   NULL,
@@ -191,7 +195,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000009e4',
        'DISPUTE_ACCEPTED', 'operator escalation attempt',
        '00000000-0000-0000-0000-0000000009b9', 'op@test.com',
-       '2026-08-09T12:20:00Z', '00000000-0000-0000-0000-0000000009e4:DISPUTE_ACCEPTED:SNAPSHOT'
+       '2026-08-09T12:20:00Z', '00000000-0000-0000-0000-0000000009e4:DISPUTE_ACCEPTED:SNAPSHOT',
+       'FORCE_MAJEURE'
      ) $$,
   '42501',
   NULL,
@@ -201,16 +206,20 @@ SELECT throws_ok(
 RESET ROLE;
 
 -- 14. Defense-in-depth: a direct duplicate resolution INSERT raises 23505.
+-- The cycle index is keyed (org, queue_entry_id, dispute_round); the e1 entry was
+-- seeded directly as 'disputed' (dispute_round default 0), so resolve_dispute
+-- (test #6) wrote the DISPUTE_ACCEPTED fact with dispute_round=0. The duplicate
+-- MUST embed the SAME dispute_round to genuinely collide (no false positive).
 SELECT throws_ok(
   $$ INSERT INTO public.sla_audit_ledger_v2
        (organization_id, type, contract_id, plan_version, occurred_at_utc, payload)
      VALUES
        ('00000000-0000-0000-0000-0000000009a1', 'DISPUTE_ACCEPTED',
         '00000000-0000-0000-0000-0000000009aa', 0, '2026-08-09T12:25:00Z',
-        '{"queue_entry_id":"00000000-0000-0000-0000-0000000009e1"}'::jsonb) $$,
+        '{"queue_entry_id":"00000000-0000-0000-0000-0000000009e1","dispute_round":0}'::jsonb) $$,
   '23505',
   NULL,
-  'direct duplicate resolution fact is blocked by the per-partition unique index'
+  'direct duplicate resolution fact is blocked by the per-partition cycle index'
 );
 
 SELECT * FROM finish();

@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Sprint B SLA Versioning plan, approved 2026-06-12):
+// rule lifecycle scheduling/retirement + financial amendments (INV-3/4/15/21).
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
@@ -29,11 +32,18 @@ class PostgresContractualRuleRepository
       }
 
       final ruleSetId = ruleSetMap['id'];
+      // INV-21: somente regras CORRENTES — agendadas (is_scheduled) também têm
+      // active_to_utc NULL e NÃO podem vazar no snapshot da declaração.
+      // INV-15: ordenação determinística (evaluation_order, id) garante
+      // serialização byte-estável do snapshot em replays.
       final activeRulesRaw = await _client
           .from('contract_rule_versions')
           .select()
           .eq('rule_set_id', ruleSetId)
-          .isFilter('active_to_utc', null);
+          .eq('is_scheduled', false)
+          .isFilter('active_to_utc', null)
+          .order('evaluation_order', ascending: true)
+          .order('id', ascending: true);
 
       final activeRules = activeRulesRaw as List;
 

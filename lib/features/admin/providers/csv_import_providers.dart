@@ -15,6 +15,7 @@ import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/features/admin/presentation/utils/csv_target_field_labels.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/session_recovery.dart';
 
 // ── Sealed state ──────────────────────────────────────────────────────────────
 
@@ -352,7 +353,7 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     }).toList();
   }
 
-  void validate() {
+  Future<void> validate() async {
     var current = state;
     if (current is CsvImportError && current.previousState != null) {
       current = current.previousState!;
@@ -369,7 +370,8 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       return;
     }
 
-    final orgId = ref.read(currentOrganizationIdProvider);
+    // Resilient session recovery: attempt token refresh before giving up
+    final orgId = await SessionRecovery.ensureOrgId(ref);
     if (orgId == null) {
       _setError('Sessão expirada. Faça login novamente.');
       return;
@@ -442,9 +444,9 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
     }
     if (current is! CsvImportValidated) return;
 
-    final orgId = ref.read(currentOrganizationIdProvider);
-    final sessionId = ref.read(currentSessionIdProvider);
-    if (orgId == null || sessionId == null) {
+    // Resilient session recovery: attempt token refresh before giving up
+    final session = await SessionRecovery.ensureSession(ref);
+    if (session == null) {
       _setError('Sessão expirada. Faça login novamente.');
       return;
     }
@@ -470,8 +472,8 @@ class CsvImportFlowNotifier extends Notifier<CsvImportFlowState> {
       );
 
       final command = ImportCsvCommand(
-        sessionId: sessionId,
-        organizationId: orgId,
+        sessionId: session.sessionId,
+        organizationId: session.orgId,
         targetEntity: current.targetEntity,
         templateId: current.selectedTemplateId,
         rawBytes: current.rawBytes,

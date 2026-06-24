@@ -49,6 +49,10 @@ class VeraProbColors {
   static const warning = delayed;
   static const error = critical;
   static const info = scheduled;
+
+  /// Forensic verdict action — ONLY for CONFIRMAR/ANULAR verdict buttons.
+  /// Violet: no positive/negative financial semantic in this codebase (INV-23).
+  static const Color verdictAction = Color(0xFF7C3AED);
 }
 
 /// Spacing constants based on an 8px grid.

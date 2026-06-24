@@ -56,11 +56,13 @@ class ContractualExecutionState {
 
   // ── Binding Evidence ──────────────────────────────────────
   String? _boundVehicleId;
+  String? _boundOperatorId;
   DateTime? _bindingTimestampUtc;
   double? _bindingLatitude; // Physical Metric - Double Required
   double? _bindingLongitude; // Physical Metric - Double Required
 
   String? get boundVehicleId => _boundVehicleId;
+  String? get boundOperatorId => _boundOperatorId;
   DateTime? get bindingTimestampUtc => _bindingTimestampUtc;
   double? get bindingLatitude =>
       _bindingLatitude; // Physical Metric - Double Required
@@ -119,6 +121,7 @@ class ContractualExecutionState {
     required double startLongitude, // Physical Metric - Double Required
     required int startRadiusMeters,
     String? plannedVehicleId,
+    String? boundOperatorId,
     required Money contractualValue,
     required int noShowPenaltyBps,
     required DateTime windowStartUtc,
@@ -139,7 +142,7 @@ class ContractualExecutionState {
     final now =
         StaticDateTimeProvider.instance?.nowUtc() ?? DateTime.now().toUtc();
 
-    return ContractualExecutionState._(
+    final state = ContractualExecutionState._(
       id: const Uuid().v4(),
       organizationId: organizationId,
       setId: setId,
@@ -158,6 +161,8 @@ class ContractualExecutionState {
       lastEvaluatedAtUtc: now,
       statusLastUpdatedAtUtc: now,
     );
+    state._boundOperatorId = boundOperatorId;
+    return state;
   }
 
   // ── State Transitions ─────────────────────────────────────
@@ -347,6 +352,7 @@ class ContractualExecutionState {
     required DateTime statusLastUpdatedAtUtc,
     DateTime? finalizedAtUtc,
     String? boundVehicleId,
+    String? boundOperatorId,
     DateTime? bindingTimestampUtc,
     double? bindingLatitude, // Physical Metric - Double Required
     double? bindingLongitude, // Physical Metric - Double Required
@@ -372,6 +378,7 @@ class ContractualExecutionState {
     );
     state._finalizedAtUtc = finalizedAtUtc;
     state._boundVehicleId = boundVehicleId;
+    state._boundOperatorId = boundOperatorId;
     state._bindingTimestampUtc = bindingTimestampUtc;
     state._bindingLatitude = bindingLatitude;
     state._bindingLongitude = bindingLongitude;

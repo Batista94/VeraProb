@@ -1,5 +1,6 @@
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
@@ -10,7 +11,7 @@ import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 
 /// In-memory implementation of [SanctionReviewCommandRepository].
 ///
-/// Mirrors the `approve_sanction` / `reject_sanction` SECURITY DEFINER RPCs
+/// Mirrors the `approve_sanction` / `reject_sanction` / `dispute_sanction` SECURITY DEFINER RPCs
 /// against the in-memory queue + ledger so in-memory persistence mode (and
 /// handler unit tests) exercise the SAME atomic semantics as Postgres:
 ///   look up (locked) → status re-check → ledger append → queue flip.
@@ -42,7 +43,11 @@ class InMemorySanctionReviewCommandRepository
   final int? _thresholdCents;
   final int _ttlHours;
 
-  static const _verdictTypes = {'VERDICT_SEALED', 'VERDICT_REFUSED'};
+  static const _verdictTypes = {
+    'VERDICT_SEALED',
+    'VERDICT_REFUSED',
+    'SANCTION_DISPUTED',
+  };
 
   @override
   Future<SanctionReviewResult> approveSanction({
@@ -51,6 +56,8 @@ class InMemorySanctionReviewCommandRepository
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     final entry = await _lockPending(organizationId, queueEntryId);
 
@@ -66,6 +73,8 @@ class InMemorySanctionReviewCommandRepository
       );
     }
 
+    final trimmedCode = reasonCode?.trim();
+    final trimmedReason = reviewerReason?.trim();
     final ledgerEntryId = await _ledger.append(
       SlaLedgerEntry(
         organizationId: organizationId,
@@ -79,6 +88,12 @@ class InMemorySanctionReviewCommandRepository
           'queue_entry_id': queueEntryId,
           'approved_by_user_id': reviewedByUserId,
           'actor_email': actorEmail,
+          'reason_code': (trimmedCode == null || trimmedCode.isEmpty)
+              ? null
+              : trimmedCode,
+          'reviewer_reason': (trimmedReason == null || trimmedReason.isEmpty)
+              ? null
+              : trimmedReason,
           'verdict_evidence': entry.verdictEvidence.toJson(),
         },
       ),
@@ -99,17 +114,67 @@ class InMemorySanctionReviewCommandRepository
   }
 
   @override
+  Future<DisputeSanctionResult> disputeSanction({
+    required String organizationId,
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  }) async {
+    final entry = await _lockPending(organizationId, queueEntryId);
+
+    // SLA logic mocked for in-memory (e.g. + 5 days)
+    final resolutionDue = occurredAtUtc.add(const Duration(days: 5));
+
+    final ledgerEntryId = await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: 'SANCTION_DISPUTED',
+        operatorId: disputedByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: occurredAtUtc,
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'disputed_by_user_id': disputedByUserId,
+          'actor_email': actorEmail,
+          'verdict_evidence': entry.verdictEvidence.toJson(),
+          'resolution_due_at': resolutionDue.toIso8601String(),
+          'dispute_sla_days': 5,
+        },
+      ),
+    );
+
+    await _queue.updateStatus(
+      entry.copyWith(
+        status: SanctionReviewStatus.disputed,
+        reviewedAtUtc: occurredAtUtc,
+        reviewedByUserId: disputedByUserId,
+      ),
+    );
+
+    return DisputeSanctionResult(
+      ledgerEntryId: ledgerEntryId,
+      finalQueueStatus: 'disputed',
+      resolutionDueAtUtc: resolutionDue,
+    );
+  }
+
+  @override
   Future<SanctionReviewResult> rejectSanction({
     required String organizationId,
     required String queueEntryId,
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   }) async {
     final reason = rejectionReason.trim();
-    if (reason.isEmpty) {
-      // Mirrors the RPC's fail-closed empty-reason guard (opaque, INV-26).
+    if (reason.isEmpty || reasonCode.trim().isEmpty) {
+      // Mirrors the RPC's fail-closed empty-reason / empty-code guard
+      // (opaque, INV-26).
       throw SovereigntyViolationException(
         payloadOrgId: organizationId,
         jwtOrgId: organizationId,
@@ -145,6 +210,7 @@ class InMemorySanctionReviewCommandRepository
           'rejected_by_user_id': reviewedByUserId,
           'actor_email': actorEmail,
           'rejection_reason': reason,
+          'reason_code': reasonCode.trim(),
           'verdict_evidence': entry.verdictEvidence.toJson(),
         },
       ),
@@ -272,6 +338,62 @@ class InMemorySanctionReviewCommandRepository
     );
   }
 
+  @override
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    final entry = await _queue.findById(
+      queueEntryId,
+      organizationId: organizationId,
+    );
+    if (entry == null) {
+      // Anti-oracle (INV-26): not-found and wrong-org are indistinguishable.
+      throw SovereigntyViolationException(
+        payloadOrgId: organizationId,
+        jwtOrgId: organizationId,
+        message: 'Dispute portal token rejected.',
+      );
+    }
+    if (entry.status != SanctionReviewStatus.disputed &&
+        entry.status != SanctionReviewStatus.applied) {
+      throw IdempotencyProcessingException(
+        idempotencyKey: queueEntryId,
+        commandPath: 'generate_dispute_portal_token',
+        message: 'A portal link can only be issued for a contested sanction.',
+      );
+    }
+
+    final token = _nextPortalToken();
+    await _ledger.append(
+      SlaLedgerEntry(
+        organizationId: organizationId,
+        type: 'DISPUTE_PORTAL_TOKEN_GENERATED',
+        operatorId: createdByUserId,
+        setId: entry.setId,
+        contractId: entry.contractId,
+        planVersion: 0,
+        occurredAtUtc: DateTime.now().toUtc(),
+        payload: {
+          'queue_entry_id': queueEntryId,
+          'created_by_user_id': createdByUserId,
+          'token': token,
+        },
+      ),
+    );
+    return token;
+  }
+
+  int _portalTokenSeq = 0;
+
+  /// Deterministic UUID-shaped token for in-memory mode (tests). Monotonic so
+  /// repeated generations never collide, mirroring the DB's UNIQUE token.
+  String _nextPortalToken() {
+    final seq = (++_portalTokenSeq).toRadixString(16).padLeft(12, '0');
+    return '00000000-0000-4000-8000-$seq';
+  }
+
   bool _exceedsThreshold(SanctionReviewQueueEntry entry) {
     final threshold = _thresholdCents;
     return threshold != null &&
@@ -393,5 +515,15 @@ class InMemorySanctionReviewCommandRepository
     }
 
     return entry;
+  }
+
+  @override
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    // Generate a dummy UUID-like string for in-memory testing
+    return 'in-memory-token-${DateTime.now().toUtc().millisecondsSinceEpoch}';
   }
 }

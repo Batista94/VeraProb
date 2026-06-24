@@ -73,6 +73,7 @@ void main() {
   Future<dynamic> resolve({
     String resolution = 'DISPUTE_ACCEPTED',
     String? reason = 'Contractor proved force majeure.',
+    String? reasonCode = 'THIRD_PARTY_INCIDENT',
     String organizationId = 'org-1',
   }) {
     return repo.resolveDispute(
@@ -80,6 +81,7 @@ void main() {
       queueEntryId: 'entry-001',
       resolution: resolution,
       resolutionReason: reason,
+      reasonCode: reasonCode,
       resolvedByUserId: 'auditor-1',
       actorEmail: 'auditor@veraprob.com',
       occurredAtUtc: DateTime.utc(2026, 4, 6, 10, 7),

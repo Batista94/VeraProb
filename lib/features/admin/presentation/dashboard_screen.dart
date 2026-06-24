@@ -8,9 +8,15 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.dart';
+import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
+import 'package:veraprob/state/providers/sla_financial_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/contractor_providers.dart';
+import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 /// Tier-1 OCC dashboard: an asymmetric Bento grid prioritising actionable
 /// financial signal over decoration. Left pane = financial KPIs (1-tap
@@ -219,11 +225,22 @@ class _DevSeedButton extends ConsumerWidget {
     if (organizationId == null) return;
     try {
       final repository = ref.read(dataSeedingRepositoryProvider);
+      await repository.seedCsvData(organizationId);
       await repository.seedDrivers(organizationId);
       await repository.seedRoutes(organizationId);
       await repository.seedHistoricalData(organizationId);
       await repository.seedActiveSanctions(organizationId);
       await repository.seedPhase9(organizationId);
+
+      // Invalidate cached providers so the onboarding checklist updates
+      ref.invalidate(contractorListProvider);
+      ref.invalidate(operationalZonesProvider);
+      ref.invalidate(contractListProvider);
+      ref.invalidate(slaTemplatesProvider);
+      ref.invalidate(financialImpactProvider);
+      ref.invalidate(dashboardRiskFeedProvider);
+      ref.invalidate(activeAlertsProvider);
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Dados de teste inseridos.')),

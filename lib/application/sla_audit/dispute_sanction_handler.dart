@@ -3,12 +3,10 @@ import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
-import 'package:veraprob/domain/sla_audit/execution_events.dart';
+import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
-import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'dispute_sanction_command.dart';
-import 'sla_ledger_mapper.dart';
 
 /// Application handler for [DisputeSanctionCommand].
 ///
@@ -16,27 +14,35 @@ import 'sla_ledger_mapper.dart';
 /// 1. **Confidentiality:** Scopes queue retrieval to [command.organizationId] and asserts tenant identity.
 /// 2. **Integrity:** Enforces RBAC roles and prevents changing states of already finalized entries.
 /// 3. **Availability:** Ensures predictable execution transitions.
+///
+/// **Concurrency + atomicity (DB-enforced):** the write path is a single call to
+/// [SanctionReviewCommandRepository.disputeSanction], backed by the
+/// `dispute_sanction` SECURITY DEFINER RPC. The RPC row-locks the queue entry,
+/// re-checks the `pending` status (closing the TOCTOU race), appends the
+/// `SANCTION_DISPUTED` ledger fact (INV-3), flips the queue, and seals the
+/// dispute provenance (disputed_at/disputed_by/resolution_due_at) inline.
 class DisputeSanctionHandler {
   final TenantValidationService _tenantValidator;
   final SanctionReviewQueueRepository _queueRepo;
-  final SlaAuditLedgerRepository _ledger;
+  final SanctionReviewCommandRepository _reviewRepo;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
 
   DisputeSanctionHandler({
     required TenantValidationService tenantValidator,
     required SanctionReviewQueueRepository queueRepo,
-    required SlaAuditLedgerRepository ledger,
+    required SanctionReviewCommandRepository reviewRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
-       _ledger = ledger,
+       _reviewRepo = reviewRepo,
        _rbac = rbac,
        _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
 
   /// Transitions a pending queue entry to `disputed` (Hold / Waiting for Evidence).
-  /// Appends a `SANCTION_DISPUTED` entry to the immutable ledger for audit traceability.
+  /// Appends a `SANCTION_DISPUTED` entry to the immutable ledger for audit traceability,
+  /// atomically sealing the SLA timers inline.
   Future<void> handle(DisputeSanctionCommand command) async {
     // 1. Fail-Fast Tenant Sync (INV-1, INV-22)
     await _tenantValidator.assertTenantMatches(
@@ -67,28 +73,13 @@ class DisputeSanctionHandler {
       );
     }
 
-    final now = _dateTimeProvider.nowUtc();
-
-    // 5. Build domain event
-    final event = SanctionDisputedEvent(
-      organizationId: entry.organizationId,
-      occurredAtUtc: now,
-      setId: entry.setId,
-      contractId: entry.contractId,
-      planVersion: 0,
-      queueEntryId: entry.id,
-      verdictEvidence: entry.verdictEvidence,
+    // 5. Atomic write (lock → re-check → ledger append → queue flip → seal timers)
+    await _reviewRepo.disputeSanction(
+      organizationId: command.organizationId,
+      queueEntryId: command.queueEntryId,
+      disputedByUserId: command.disputedByUserId,
+      actorEmail: command.actorEmail,
+      occurredAtUtc: _dateTimeProvider.nowUtc(),
     );
-
-    // 6. Append SANCTION_DISPUTED to the ledger (INV-1, Pillar C)
-    await _ledger.append(SlaLedgerMapper.mapToEntry(event));
-
-    // 7. Update queue entry status to disputed
-    final updated = entry.copyWith(
-      status: SanctionReviewStatus.disputed,
-      reviewedAtUtc: now,
-      reviewedByUserId: command.disputedByUserId,
-    );
-    await _queueRepo.updateStatus(updated);
   }
 }

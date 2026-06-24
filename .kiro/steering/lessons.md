@@ -177,3 +177,16 @@ Future<void> _save() async {
 ```
 
 **Scope:** Any `ConsumerStatefulWidget` or `StatefulWidget` that opens a dialog with `barrierDismissible: false` and calls `Navigator.pop` inside an async method. Apply to ALL form dialogs (ContractorFormDialog, SlaTemplateEditorDialog, CreateExecutionDialog, etc.).
+
+---
+
+## 9. AUTOMATED TEST SYNCHRONIZATION (TEST-SYNC-MANDATORY)
+
+**Rule:** Whenever any part of the system is modified (domain, infrastructure, presentation, edge functions, database schema/migrations, or UI layouts), the developer MUST verify if it is necessary to adjust the automated tests (unit, widget, integration, E2E, pgTAP) to prevent false positives, stale assertions, and regressions. Do not merge code changes without verifying and updating affected tests.
+
+**Why:** Outdated tests are the leading cause of CI pipeline failures and stale regressions. Code mutations (such as changing UI labels, changing DB constraints, or refactoring domain exceptions) without corresponding test synchronization generate false positives, broken E2E flows, or hide real regression bugs.
+
+**How to apply:**
+1. Map downstream test dependencies before modifying the target component (e.g., check `test/` or `supabase/tests/` for references to the changed types, database fields, or UI labels).
+2. When altering a widget or screen, review corresponding widget/E2E test files for hardcoded strings/labels.
+3. Run `make test-all` or `make test-full` locally to validate test sync before committing.

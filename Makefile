@@ -34,10 +34,14 @@ TEST_UNIT_DIRS := test/application test/compliance test/core test/domain \
                   test/validation test/widget
 
 help: ## Mostra este menu de ajuda
+ifeq ($(OS),Windows_NT)
+	@powershell -NoProfile -ExecutionPolicy Bypass -Command "[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; Write-Output 'VeraProb - Comandos Disponiveis:'; Write-Output '-----------------------------------------------------------------------------'; $$lines = Get-Content -Encoding UTF8 Makefile | ForEach-Object { if ($$_ -match '^([a-zA-Z0-9_-]+):\s*##\s*(.*)$$') { [PSCustomObject]@{ Target = $$Matches[1]; Desc = $$Matches[2] } } } | Sort-Object Target; foreach ($$l in $$lines) { [Console]::Write([char]27 + '[36m'); [Console]::Write('{0,-20}' -f $$l.Target); [Console]::Write([char]27 + '[0m '); [Console]::WriteLine($$l.Desc) }; Write-Output '-----------------------------------------------------------------------------'"
+else
 	@echo "VeraProb — Comandos Disponíveis:"
 	@echo "-----------------------------------------------------------------------------"
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 	@echo "-----------------------------------------------------------------------------"
+endif
 
 # ── Desenvolvimento ───────────────────────────────────────────────────────────
 

@@ -25,6 +25,7 @@ class SanctionQueueItemView extends Equatable {
   final DateTime? reviewedAtUtc;
   final String? reviewedByUserId;
   final String? rejectionReason;
+  final String? rejectionReasonCode;
 
   /// Human-readable contract name resolved asynchronously from the UI layer.
   /// Null until enriched via [contractNameProvider]. Never stored in the DB row.
@@ -57,6 +58,23 @@ class SanctionQueueItemView extends Equatable {
   /// TTL deadline after which the peer review reverts to its origin status.
   final DateTime? peerReviewExpiresAtUtc;
 
+  /// When the dispute was opened (`pending → disputed`). Sealed once at open
+  /// (INV-15). NEVER cleared — survives a retract so provenance stays auditable
+  /// (INV-23). A `pending` item carrying a non-null [disputedAtUtc] was disputed
+  /// and later retracted.
+  final DateTime? disputedAtUtc;
+
+  /// Actor who opened the dispute. NEVER cleared on retract (INV-23).
+  final String? disputedBy;
+
+  /// Business-day deadline to resolve the dispute (Componente 3 SLA timer).
+  /// Drives the [DisputeSlaChip] countdown / overdue signal on disputed cards.
+  final DateTime? resolutionDueAtUtc;
+
+  /// Write-once signal: when the carrier submitted a portal defense (file/text).
+  /// Drives the "DEFESA RECEBIDA" badge and top-sort in the Disputed lane.
+  final DateTime? defenseSubmittedAt;
+
   /// Transport-agnostic alias for the bound asset identifier (INV-14).
   /// Today resolves to the vehicle plate; stays stable if the asset model
   /// generalizes beyond road vehicles.
@@ -74,6 +92,7 @@ class SanctionQueueItemView extends Equatable {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.rejectionReasonCode,
     this.contractName,
     this.windowStartUtc,
     this.windowEndUtc,
@@ -82,6 +101,10 @@ class SanctionQueueItemView extends Equatable {
     this.firstReviewerId,
     this.peerReviewProposedAction,
     this.peerReviewExpiresAtUtc,
+    this.disputedAtUtc,
+    this.disputedBy,
+    this.resolutionDueAtUtc,
+    this.defenseSubmittedAt,
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
@@ -126,12 +149,23 @@ class SanctionQueueItemView extends Equatable {
           : null,
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
+      rejectionReasonCode: row['rejection_reason_code'] as String?,
       vehiclePlate: row['vehicle_plate'] as String?,
       operatorName: row['operator_name'] as String?,
       firstReviewerId: row['first_reviewer_id'] as String?,
       peerReviewProposedAction: row['peer_review_proposed_action'] as String?,
       peerReviewExpiresAtUtc: row['peer_review_expires_at'] != null
           ? DateTime.parse(row['peer_review_expires_at'] as String)
+          : null,
+      disputedAtUtc: row['disputed_at'] != null
+          ? DateTime.parse(row['disputed_at'] as String)
+          : null,
+      disputedBy: row['disputed_by'] as String?,
+      resolutionDueAtUtc: row['resolution_due_at'] != null
+          ? DateTime.parse(row['resolution_due_at'] as String)
+          : null,
+      defenseSubmittedAt: row['defense_submitted_at'] != null
+          ? DateTime.parse(row['defense_submitted_at'] as String)
           : null,
     );
   }
@@ -149,6 +183,7 @@ class SanctionQueueItemView extends Equatable {
       reviewedAtUtc: entry.reviewedAtUtc,
       reviewedByUserId: entry.reviewedByUserId,
       rejectionReason: entry.rejectionReason,
+      rejectionReasonCode: entry.rejectionReasonCode,
       vehiclePlate: entry.vehiclePlate,
       operatorName: entry.operatorName,
       firstReviewerId: entry.firstReviewerId,
@@ -175,10 +210,15 @@ class SanctionQueueItemView extends Equatable {
     reviewedAtUtc,
     reviewedByUserId,
     rejectionReason,
+    rejectionReasonCode,
     vehiclePlate,
     operatorName,
     firstReviewerId,
     peerReviewProposedAction,
     peerReviewExpiresAtUtc,
+    disputedAtUtc,
+    disputedBy,
+    resolutionDueAtUtc,
+    defenseSubmittedAt,
   ];
 }

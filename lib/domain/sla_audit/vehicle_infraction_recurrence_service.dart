@@ -37,6 +37,7 @@ class VehicleInfractionRecurrenceService {
       vehiclePlate: vehiclePlate,
       referenceUtc: referenceUtc,
       excludeQueueEntryId: currentQueueEntryId,
+      beforeUtc: referenceUtc,
     );
 
     final dots = priors.map(_toDot).toList();

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contract_detail_view.dart';
@@ -15,7 +16,9 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
+import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/widgets/contract_amendments_timeline.dart';
 
 import 'declare_contract_plan_form.dart';
 
@@ -223,6 +226,12 @@ class _DetailViewState extends ConsumerState<_DetailView> {
             actions: [
               _StatusChip(status: s.status),
               const SizedBox(width: VeraProbSpacing.md),
+              OutlinedButton.icon(
+                icon: const Icon(Icons.tune_rounded, size: 16),
+                label: const Text('Regras SLA'),
+                onPressed: () => context.go(AppRoutes.contractRules(s.id)),
+              ),
+              const SizedBox(width: VeraProbSpacing.sm),
               if (canSubmitForApproval)
                 OutlinedButton.icon(
                   icon: _submitting
@@ -363,6 +372,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                         ),
                         _FinancialTab(
                           financialSummary: widget.detail.financialSummary,
+                          contractId: s.id,
                         ),
                       ],
                     ),
@@ -565,42 +575,55 @@ class _ExecutionsTabState extends ConsumerState<_ExecutionsTab> {
 
 class _FinancialTab extends StatelessWidget {
   final SlaExecutionSummary financialSummary;
+  final String contractId;
 
-  const _FinancialTab({required this.financialSummary});
+  const _FinancialTab({
+    required this.financialSummary,
+    required this.contractId,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 16,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _KpiCard(
-            label: 'Receita Protegida',
-            value: financialSummary.protectedRevenue,
-            color: VeraProbColors.onTime,
-            icon: Icons.check_circle_outline,
+          Wrap(
+            spacing: 16,
+            runSpacing: 16,
+            children: [
+              _KpiCard(
+                label: 'Receita Protegida',
+                value: financialSummary.protectedRevenue,
+                color: VeraProbColors.onTime,
+                icon: Icons.check_circle_outline,
+              ),
+              _KpiCard(
+                label: 'Receita em Risco',
+                value: financialSummary.revenueAtRisk,
+                color: VeraProbColors.warning,
+                icon: Icons.warning_amber_outlined,
+              ),
+              _KpiCard(
+                label: 'Receita Perdida',
+                value: financialSummary.lostRevenue,
+                color: VeraProbColors.error,
+                icon: Icons.money_off_outlined,
+              ),
+              _CountCard(
+                label: 'Execuções',
+                executed: financialSummary.totalCompleted,
+                pending: financialSummary.totalPlanned,
+                noShow: financialSummary.totalFailed,
+                gap: financialSummary.totalCompletedWithGaps,
+              ),
+            ],
           ),
-          _KpiCard(
-            label: 'Receita em Risco',
-            value: financialSummary.revenueAtRisk,
-            color: VeraProbColors.warning,
-            icon: Icons.warning_amber_outlined,
-          ),
-          _KpiCard(
-            label: 'Receita Perdida',
-            value: financialSummary.lostRevenue,
-            color: VeraProbColors.error,
-            icon: Icons.money_off_outlined,
-          ),
-          _CountCard(
-            label: 'Execuções',
-            executed: financialSummary.totalCompleted,
-            pending: financialSummary.totalPlanned,
-            noShow: financialSummary.totalFailed,
-            gap: financialSummary.totalCompletedWithGaps,
-          ),
+          const SizedBox(height: 24),
+          const Divider(color: VeraProbColors.border, height: 1),
+          const SizedBox(height: 20),
+          ContractAmendmentsTimeline(contractId: contractId),
         ],
       ),
     );

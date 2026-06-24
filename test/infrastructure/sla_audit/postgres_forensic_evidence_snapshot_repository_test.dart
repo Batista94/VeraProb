@@ -106,6 +106,9 @@ void main() async {
           'rule_version': 1,
           'evaluation_order': 0,
           'active_from_utc': '2026-01-01T00:00:00Z',
+          // chk_crv_no_backdate (Sprint B): historical fixtures must declare a
+          // creation timestamp consistent with active_from (honest provenance).
+          'created_at_utc': '2026-01-01T00:00:00Z',
           'active_to_utc': null,
         });
         return contractId;

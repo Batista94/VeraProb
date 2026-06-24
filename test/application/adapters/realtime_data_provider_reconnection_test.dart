@@ -95,7 +95,7 @@ void main() {
           provider.connect();
           async.flushMicrotasks();
 
-          // Simular 6 reconexÃµes
+          // Simular 6 reconexões
           // Tentativa 1: ~1000ms (2^0 * 1000)
           async.elapse(const Duration(milliseconds: 1200));
 
@@ -114,7 +114,7 @@ void main() {
           // Tentativa 6: ~30000ms (max cap)
           async.elapse(const Duration(milliseconds: 30200));
 
-          // Assert - verificar que houve 7 tentativas (1 inicial + 6 reconexÃµes)
+          // Assert - verificar que houve 7 tentativas (1 inicial + 6 reconexões)
           expect(subscribeCallCount, equals(7));
 
           // Verificar intervalos aproximados (com tolerância para jitter Â±100ms)
@@ -148,7 +148,7 @@ void main() {
           subscribeCallCount++;
           reconnectTimestamps.add(async.elapsed.inMilliseconds);
 
-          // Sempre falhar para forçar reconexÃµes
+          // Sempre falhar para forçar reconexões
           throw Exception('Connection failed');
         });
 
@@ -284,7 +284,7 @@ void main() {
         provider.connect();
         async.flushMicrotasks();
 
-        // Simular 15 reconexÃµes (circuit breaker deve parar)
+        // Simular 15 reconexões (circuit breaker deve parar)
         for (int i = 0; i < 15; i++) {
           async.elapse(const Duration(seconds: 35)); // Avançar tempo suficiente
         }
@@ -293,7 +293,7 @@ void main() {
         expect(
           subscribeCallCount,
           lessThanOrEqualTo(16),
-        ); // 1 inicial + 15 reconexÃµes
+        ); // 1 inicial + 15 reconexões
         expect(statuses.last, equals(ConnectionStatus.failed));
       });
     });

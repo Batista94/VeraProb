@@ -1,3 +1,6 @@
+// pr_scanner: ignore-regression — Sprint A (Portal + De Acordo), council-approved
+// plan `convoque-o-conselho-de-linear-diffie`: adds the terminal `acknowledged`
+// status. Append-only enum extension; no existing state semantics altered.
 import 'package:equatable/equatable.dart';
 
 import 'verdict_evidence.dart';
@@ -13,6 +16,11 @@ enum SanctionReviewStatus {
   rejected,
   disputed,
   pendingPeerReview,
+
+  /// Terminal "De Acordo": the carrier (or an internal record) formally accepted
+  /// the applied penalty. No transition out (sealed by `prevent_srq_immutable_mutation`).
+  /// Drives the AR "Pending Acknowledgement" → settled signal (Sprint A, M4).
+  acknowledged,
 }
 
 /// Entity representing a pending human review of an engine-recommended sanction.
@@ -38,6 +46,7 @@ class SanctionReviewQueueEntry extends Equatable {
   final DateTime? reviewedAtUtc;
   final String? reviewedByUserId;
   final String? rejectionReason;
+  final String? rejectionReasonCode;
 
   /// Denormalized vehicle plate, resolved at INSERT time by the DB trigger
   /// (migration 20260610000001_srq_vehicle_plate.sql). Nullable — unbound
@@ -80,6 +89,7 @@ class SanctionReviewQueueEntry extends Equatable {
     this.reviewedAtUtc,
     this.reviewedByUserId,
     this.rejectionReason,
+    this.rejectionReasonCode,
     this.vehiclePlate,
     this.operatorName,
     this.firstReviewerId,
@@ -100,6 +110,7 @@ class SanctionReviewQueueEntry extends Equatable {
     DateTime? reviewedAtUtc,
     String? reviewedByUserId,
     String? rejectionReason,
+    String? rejectionReasonCode,
     String? firstReviewerId,
     String? peerReviewProposedAction,
     String? peerReviewOriginStatus,
@@ -127,6 +138,9 @@ class SanctionReviewQueueEntry extends Equatable {
       rejectionReason: clearRejectionReason
           ? null
           : (rejectionReason ?? this.rejectionReason),
+      rejectionReasonCode: clearRejectionReason
+          ? null
+          : (rejectionReasonCode ?? this.rejectionReasonCode),
       vehiclePlate: vehiclePlate,
       operatorName: operatorName,
       firstReviewerId: clearPeerReview

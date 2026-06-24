@@ -71,6 +71,13 @@ mixin PostgresErrorInterceptor {
       ResourceNotFoundException(
         resourceType: resourceType,
         resourceId: resourceId,
+        message: 'Registro não encontrado ou indisponível.',
+      ),
+
+      'P0002' => ResourceNotFoundException(
+        resourceType: resourceType,
+        resourceId: resourceId,
+        message: 'Regras de contrato ou evidências não encontradas.',
       ),
 
       // Business Logic: RAISE EXCEPTION from Postgres functions/triggers

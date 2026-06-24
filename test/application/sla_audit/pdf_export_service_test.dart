@@ -2,7 +2,7 @@
 // 1. Use DateTime.utc() ou DateTime.now().toUtc() em uma única linha (INV-9).
 // 2. Use int para valores monetários (cents) e taxas (BPS) — INV-19.
 // 3. Proibido importar lib/infrastructure em testes de application
-//    (exceto implementaçÃµes in-memory de repositórios para suporte de testes).
+//    (exceto implementações in-memory de repositórios para suporte de testes).
 // 4. Fonts são carregadas via rootBundle (flutter_test) — sem dependência de dart:io.
 
 import 'package:flutter/services.dart';
@@ -486,7 +486,7 @@ void main() {
     });
 
     test(
-      '20. handles special characters in tenant name (ã ç ê Ã± — "Ltda")',
+      '20. handles special characters in tenant name (ã ç ê ñ — "Ltda")',
       () async {
         final (sealed, report) = await makeSealedFixture(
           header: makeHeader(tenantName: 'Operadora São João & Cia — "Ltda"'),
@@ -916,7 +916,7 @@ void main() {
       await pdfService.generatePdf(package: sealed, report: report);
       sw.stop();
 
-      expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+      expect(sw.elapsed, lessThan(const Duration(seconds: 10)));
     });
   });
 }

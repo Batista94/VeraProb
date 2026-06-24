@@ -112,7 +112,7 @@ void main() async {
         'user_id': id,
         'organization_id': _orgId,
         'role': 'AUDITOR',
-      }, onConflict: 'user_id');
+      }, onConflict: 'user_id,organization_id');
     }
 
     reviewer1 = await _signIn(_reviewer1Email);

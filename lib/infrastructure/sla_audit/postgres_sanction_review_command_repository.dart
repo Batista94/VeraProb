@@ -1,6 +1,11 @@
+// pr_scanner: ignore-regression
+// Council-reviewed (Phase 10.6 v3 council-remediated plan, 2026-06-12):
+// dispute reality core — evidence/reason-code/command contracts (INV-1/3/9).
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
+import 'package:veraprob/domain/shared/concurrent_modification_exception.dart';
+import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_result.dart';
@@ -31,6 +36,8 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     required String reviewedByUserId,
     required String actorEmail,
     required DateTime occurredAtUtc,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     try {
       final result = await client.rpc<Map<String, dynamic>>(
@@ -41,6 +48,8 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
           'p_reviewed_by_user_id': reviewedByUserId,
           'p_actor_email': actorEmail,
           'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+          'p_reason_code': reasonCode,
+          'p_reviewer_reason': reviewerReason,
         },
       );
       return SanctionReviewResult.fromJson(result);
@@ -56,6 +65,7 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     required String reviewedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required DateTime occurredAtUtc,
   }) async {
     try {
@@ -67,6 +77,7 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
           'p_reviewed_by_user_id': reviewedByUserId,
           'p_actor_email': actorEmail,
           'p_rejection_reason': rejectionReason,
+          'p_reason_code': reasonCode,
           'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
         },
       );
@@ -129,6 +140,73 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     }
   }
 
+  @override
+  Future<DisputeSanctionResult> disputeSanction({
+    required String organizationId,
+    required String queueEntryId,
+    required String disputedByUserId,
+    required String actorEmail,
+    required DateTime occurredAtUtc,
+  }) async {
+    try {
+      final result = await client.rpc<Map<String, dynamic>>(
+        'dispute_sanction',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_disputed_by_user_id': disputedByUserId,
+          'p_actor_email': actorEmail,
+          'p_occurred_at_utc': occurredAtUtc.toUtc().toIso8601String(),
+        },
+      );
+      return DisputeSanctionResult.fromJson(result);
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'dispute_sanction');
+    }
+  }
+
+  @override
+  Future<String> generateDisputePortalToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    try {
+      final token = await client.rpc<String>(
+        'generate_dispute_portal_token',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_created_by': createdByUserId,
+        },
+      );
+      return token;
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'generate_dispute_portal_token');
+    }
+  }
+
+  @override
+  Future<String> generatePortalSubmitToken({
+    required String organizationId,
+    required String queueEntryId,
+    required String createdByUserId,
+  }) async {
+    try {
+      final token = await client.rpc<String>(
+        'generate_portal_submit_token',
+        params: {
+          'p_organization_id': organizationId,
+          'p_queue_entry_id': queueEntryId,
+          'p_created_by': createdByUserId,
+        },
+      );
+      return token;
+    } on PostgrestException catch (e) {
+      throw _mapError(e, queueEntryId, 'generate_portal_submit_token');
+    }
+  }
+
   Object _mapError(
     PostgrestException e,
     String queueEntryId,
@@ -137,6 +215,9 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     final detail = e.details?.toString() ?? '';
     // Distinct governance guard: surface a clear message (caller is a valid
     // auditor of the right tenant; this is NOT an anti-oracle rejection).
+    if (e.code == '55P03') {
+      return const ConcurrentModificationException();
+    }
     if (e.code == 'P0001' &&
         detail.contains('DualControlSelfApprovalException')) {
       return DualControlSelfApprovalException(

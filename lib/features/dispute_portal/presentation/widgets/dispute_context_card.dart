@@ -1,0 +1,216 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:veraprob/application/dispute_portal/infraction_context_projection.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/shared/widgets/reverse_geocoded_address.dart';
+
+class DisputeContextCard extends StatelessWidget {
+  final InfractionContextProjection contextData;
+
+  const DisputeContextCard({super.key, required this.contextData});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: VeraProbColors.surfaceElevated,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: VeraProbColors.border),
+      ),
+      child: Padding(
+        padding: VeraProbSpacing.sectionPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('DADOS DA INFRAÇÃO', style: VeraProbTypography.fieldLabel),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(
+                      color: VeraProbColors.warning.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Text(
+                    'DADOS IMUTÁVEIS',
+                    style: VeraProbTypography.badge.copyWith(
+                      color: VeraProbColors.warning,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: VeraProbSpacing.md),
+            _buildDataRow(
+              'Ativo',
+              contextData.assetIdentifier ?? 'Oculto',
+              'Data (Horário de Brasília)',
+              contextData.formattedOccurredAtBrt,
+            ),
+            const SizedBox(height: VeraProbSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Localização', style: VeraProbTypography.fieldLabel),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      if (contextData.primaryEvidenceCoordinate != null)
+                        ReverseGeocodedAddress(
+                          lat: contextData.primaryEvidenceCoordinate!.latitude,
+                          lng: contextData.primaryEvidenceCoordinate!.longitude,
+                        )
+                      else
+                        Text(
+                          contextData.locationLabel ?? 'Oculto',
+                          style: VeraProbTypography.dataValue,
+                        ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Valor', style: VeraProbTypography.fieldLabel),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      Text(
+                        contextData.formattedPenaltyValue,
+                        style: VeraProbTypography.dataValue.copyWith(
+                          color: VeraProbColors.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: VeraProbSpacing.sm),
+            _buildDataRow(
+              'Medido',
+              contextData.formattedMeasuredValue,
+              'Limite',
+              contextData.formattedThresholdValue,
+            ),
+            const SizedBox(height: VeraProbSpacing.sm),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Excesso', style: VeraProbTypography.fieldLabel),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      Text(
+                        contextData.formattedExceededBy,
+                        style: VeraProbTypography.dataValue.copyWith(
+                          color: VeraProbColors.warning,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'ID do Registro',
+                        style: VeraProbTypography.fieldLabel,
+                      ),
+                      const SizedBox(height: VeraProbSpacing.xs),
+                      InkWell(
+                        onTap: () {
+                          Clipboard.setData(
+                            ClipboardData(text: contextData.recordId),
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'ID copiado para a área de transferência',
+                              ),
+                            ),
+                          );
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                contextData.recordId,
+                                overflow: TextOverflow.ellipsis,
+                                style: VeraProbTypography.dataValue.copyWith(
+                                  fontFamily: 'Courier',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: VeraProbSpacing.xs),
+                            const Icon(
+                              Icons.copy,
+                              size: 14,
+                              color: VeraProbColors.primary,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataRow(
+    String label1,
+    String value1,
+    String label2,
+    String value2, {
+    Color? value2Color,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label1, style: VeraProbTypography.fieldLabel),
+              const SizedBox(height: VeraProbSpacing.xs),
+              Text(value1, style: VeraProbTypography.dataValue),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label2, style: VeraProbTypography.fieldLabel),
+              const SizedBox(height: VeraProbSpacing.xs),
+              Text(
+                value2,
+                style: VeraProbTypography.dataValue.copyWith(
+                  color: value2Color ?? VeraProbColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

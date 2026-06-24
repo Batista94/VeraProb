@@ -6,6 +6,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/investigation_providers.dart';
 import 'package:veraprob/features/admin/presentation/screens/widgets/investigation_map_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/widgets/ledger_event_humanizer.dart';
 
 final _timeFormat = DateFormat('HH:mm:ss');
 final _dateFormat = DateFormat('dd/MM/yyyy HH:mm:ss');
@@ -25,9 +26,6 @@ class InvestigationModal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tracesAsync = ref.watch(evaluationTracesProvider(setId));
-    final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
-
     return Dialog(
       backgroundColor: VeraProbColors.background,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -93,80 +91,152 @@ class InvestigationModal extends ConsumerWidget {
 
             // ── Fixed Body (Internal Scrolling) ─────────────────────────
             Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
+              child: InvestigationDossierBody(
+                setId: setId,
+                contractId: contractId,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Reusable decision-reconstruction body: context chips, execution map +
+/// operational ledger timeline, and the engine evaluation traces.
+///
+/// Extracted from [InvestigationModal] so the consolidated `ForensicDossierModal`
+/// can host the same "Decisões" surface as a tab without the standalone dialog
+/// chrome.
+class InvestigationDossierBody extends ConsumerWidget {
+  final String setId;
+  final String contractId;
+  final bool showTraces;
+
+  const InvestigationDossierBody({
+    super.key,
+    required this.setId,
+    required this.contractId,
+    this.showTraces = true,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Evaluation traces are fetched, but we only use them to find the triggeringEventId.
+    // The panel itself has been moved to Evidência tab to kill duplication.
+    final tracesAsync = ref.watch(evaluationTracesProvider(setId));
+    final ledgerAsync = ref.watch(ledgerEntriesProvider(setId));
+
+    final mainContent = showTraces
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: Map Panel & Ledger Timeline
+              Expanded(
+                flex: 1,
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Context Header ────────────────────────────
-                    _ContextHeader(setId: setId, contractId: contractId),
-                    const SizedBox(height: 24),
-
-                    // ── Main Content ──────────────────────────────
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final stateAsync = ref.watch(
+                          executionStateProvider(setId),
+                        );
+                        return switch (stateAsync) {
+                          AsyncData(:final value) => () {
+                            if (value == null) return const SizedBox();
+                            return InvestigationMapPanel(execution: value);
+                          }(),
+                          AsyncLoading() => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          AsyncError() => const SizedBox(),
+                        };
+                      },
+                    ),
+                    const SizedBox(height: 16),
                     Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Left: Map Panel & Ledger Timeline
-                          Expanded(
-                            flex: 1,
-                            child: Column(
-                              children: [
-                                Consumer(
-                                  builder: (context, ref, child) {
-                                    final stateAsync = ref.watch(
-                                      executionStateProvider(setId),
-                                    );
-                                    return switch (stateAsync) {
-                                      AsyncData(:final value) => () {
-                                        if (value == null) {
-                                          return const SizedBox();
-                                        }
-                                        return InvestigationMapPanel(
-                                          execution: value,
-                                        );
-                                      }(),
-                                      AsyncLoading() => const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
-                                      AsyncError() => const SizedBox(),
-                                    };
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-                                Expanded(
-                                  child: _LedgerTimelinePanel(
-                                    ledgerAsync: ledgerAsync,
-                                    triggeringEventId: switch (tracesAsync) {
-                                      AsyncData(:final value) =>
-                                        value.isNotEmpty
-                                            ? value.first.triggeringEventId
-                                            : null,
-                                      _ => null,
-                                    },
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 24),
-
-                          // Right: Evaluation Trace
-                          Expanded(
-                            flex: 2,
-                            child: _EvaluationTracePanel(
-                              tracesAsync: tracesAsync,
-                            ),
-                          ),
-                        ],
+                      child: _LedgerTimelinePanel(
+                        ledgerAsync: ledgerAsync,
+                        triggeringEventId: switch (tracesAsync) {
+                          AsyncData(:final value) =>
+                            value.isNotEmpty
+                                ? value.first.triggeringEventId
+                                : null,
+                          _ => null,
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
-        ),
+              const SizedBox(width: 24),
+
+              // Right: Evaluation Trace
+              Expanded(
+                flex: 2,
+                child: _EvaluationTracePanel(tracesAsync: tracesAsync),
+              ),
+            ],
+          )
+        : Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Left: Ledger Timeline (Primary Forensic Spine)
+              Expanded(
+                flex: 2,
+                child: _LedgerTimelinePanel(
+                  ledgerAsync: ledgerAsync,
+                  triggeringEventId: switch (tracesAsync) {
+                    AsyncData(:final value) =>
+                      value.isNotEmpty ? value.first.triggeringEventId : null,
+                    _ => null,
+                  },
+                ),
+              ),
+              const SizedBox(width: 24),
+
+              // Right: Map Panel (Secondary Context)
+              Expanded(
+                flex: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Consumer(
+                      builder: (context, ref, child) {
+                        final stateAsync = ref.watch(
+                          executionStateProvider(setId),
+                        );
+                        return switch (stateAsync) {
+                          AsyncData(:final value) => () {
+                            if (value == null) return const SizedBox();
+                            return InvestigationMapPanel(execution: value);
+                          }(),
+                          AsyncLoading() => const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                          AsyncError() => const SizedBox(),
+                        };
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Context Header ────────────────────────────
+          _ContextHeader(setId: setId, contractId: contractId),
+          const SizedBox(height: 24),
+
+          // ── Main Content ──────────────────────────────
+          Expanded(child: mainContent),
+        ],
       ),
     );
   }
@@ -336,6 +406,10 @@ class _TimelineEvent extends StatelessWidget {
         ? VeraProbColors.primary
         : VeraProbColors.border;
 
+    // The auditor's justification lives under transition-specific payload keys
+    // (reviewer_reason / rejection_reason / resolution_reason / notes / reason).
+    final reasonText = resolveLedgerReasonText(entry.payload);
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -418,12 +492,121 @@ class _TimelineEvent extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 6),
+                  // Human label primary — the dispatcher reads plain language.
                   Text(
-                    entry.type,
+                    humanizeLedgerEventType(entry.type),
                     style: VeraProbTypography.bodyMedium.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  // Raw enum kept as forensic subtitle (MODO AUDITORIA citability).
+                  Text(
+                    entry.type,
+                    style: VeraProbTypography.caption.copyWith(
+                      fontFamily: 'monospace',
+                      color: VeraProbColors.textSecondary,
+                    ),
+                  ),
+                  // Forensic payload (Identity and Reason)
+                  if (entry.payload['actor_email'] != null ||
+                      (entry.operatorId != 'SYSTEM' &&
+                          entry.operatorId.isNotEmpty) ||
+                      entry.payload['reason_code'] != null ||
+                      reasonText != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: VeraProbColors.background,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: VeraProbColors.border),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (entry.payload['actor_email'] != null ||
+                              (entry.operatorId != 'SYSTEM' &&
+                                  entry.operatorId.isNotEmpty))
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_outline,
+                                  size: 14,
+                                  color: VeraProbColors.textSecondary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    (entry.payload['actor_email'] as String?) ??
+                                        entry.operatorId,
+                                    style: VeraProbTypography.caption.copyWith(
+                                      color: VeraProbColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          if ((entry.payload['actor_email'] != null ||
+                                  (entry.operatorId != 'SYSTEM' &&
+                                      entry.operatorId.isNotEmpty)) &&
+                              (entry.payload['reason_code'] != null ||
+                                  reasonText != null))
+                            const SizedBox(height: 8),
+                          if (entry.payload['reason_code'] != null)
+                            Padding(
+                              padding: EdgeInsets.only(
+                                bottom: reasonText != null ? 4.0 : 0,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Código de Fundamentação: ',
+                                    style: VeraProbTypography.caption.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: VeraProbColors.textPrimary,
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Text(
+                                      humanizeReasonCode(
+                                        entry.payload['reason_code'] as String,
+                                      ),
+                                      style: VeraProbTypography.caption
+                                          .copyWith(
+                                            color: VeraProbColors.textSecondary,
+                                          ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (reasonText != null)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.format_quote,
+                                  size: 14,
+                                  color: VeraProbColors.textSecondary,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    reasonText,
+                                    style: VeraProbTypography.caption.copyWith(
+                                      color: VeraProbColors.textSecondary,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -701,7 +884,7 @@ class _DecisionRow extends StatelessWidget {
           Row(
             children: [
               Text(
-                'Regra: ${decision.ruleId.substring(0, 8)}…',
+                'Regra: ${decision.ruleId.length > 8 ? decision.ruleId.substring(0, 8) : decision.ruleId}…',
                 style: VeraProbTypography.caption,
               ),
               const SizedBox(width: 16),

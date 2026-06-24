@@ -20,10 +20,21 @@ class ResolveDisputeCommand {
   final String resolvedByUserId;
   final String actorEmail;
 
-  /// Rationale for the resolution. Required (>= 10 chars after trim) for
-  /// [DisputeResolution.accept] and [DisputeResolution.overturn]; optional for
-  /// [DisputeResolution.retract].
+  /// OPTIONAL free-text complement for any arc. The structured [reasonCode] is
+  /// the mandatory field for [DisputeResolution.accept] and
+  /// [DisputeResolution.overturn] (Q2). For `OTHER` codes it becomes mandatory
+  /// again (>= 10 chars) as the human-readable description.
   final String? resolutionReason;
+
+  /// Structured taxonomy code from the closed `dispute_reason_codes` catalogue.
+  /// Required (non-null) for accept/overturn; null for [DisputeResolution.retract].
+  /// Authoritative catalogue validation happens server-side (anti-oracle, H5).
+  final String? reasonCode;
+
+  /// Attached evidence UUIDs to surface in the ledger fact. The RPC re-collects
+  /// verified, non-deleted evidence authoritatively; this carries the UI's
+  /// selection forward (H6).
+  final List<String> evidenceIds;
 
   final UserRole callerRole;
   final String organizationId;
@@ -36,7 +47,9 @@ class ResolveDisputeCommand {
     required this.resolution,
     required this.resolvedByUserId,
     required this.actorEmail,
-    required this.resolutionReason,
+    this.resolutionReason,
+    required this.reasonCode,
+    this.evidenceIds = const [],
     required this.callerRole,
     required this.organizationId,
     required this.sessionId,

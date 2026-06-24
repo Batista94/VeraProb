@@ -1,0 +1,305 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mocktail/mocktail.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:veraprob/application/dispute_portal/portal_snapshot.dart';
+import 'package:veraprob/application/dispute_portal/staged_file.dart';
+import 'package:veraprob/infrastructure/dispute_portal/supabase_portal_dispute_gateway.dart';
+
+/// Unit coverage for [SupabasePortalDisputeGateway.submitEvidence]. The real
+/// `functions.invoke` returns a 2xx [FunctionResponse] or THROWS
+/// [FunctionException] for any non-2xx; these tests drive that contract through
+/// the [EdgeFunctionInvoker] seam (the gateway's only previously-untested path).
+class MockSupabaseClient extends Mock implements SupabaseClient {}
+
+class MockPostgrestClient extends Mock implements PostgrestClient {}
+
+class MockHttpClient extends Mock implements http.Client {}
+
+void main() {
+  setUpAll(() {
+    registerFallbackValue(Uint8List(0));
+    registerFallbackValue(const FileOptions());
+    registerFallbackValue(Uri.parse(''));
+  });
+  const portalToken = 'a0000000-0000-4000-8000-000000000000';
+  const validJustification = 'Justificativa de contestacao valida e completa.';
+
+  final staged = StagedFile(
+    name: 'evidence.pdf',
+    sizeBytes: 4,
+    mimeType: 'application/pdf',
+    bytes: Uint8List.fromList([1, 2, 3, 4]),
+  );
+
+  // SupabaseClient is unused on the seam path; a throwing stub guards against any
+  // accidental real call leaking past the injected invoker.
+  final SupabaseClient client = _UnusableClient();
+
+  SupabasePortalDisputeGateway gateway(
+    SupabaseClient gatewayClient, {
+    required EdgeFunctionInvoker invoke,
+    http.Client? httpClient,
+  }) => SupabasePortalDisputeGateway(
+    gatewayClient,
+    invoker: invoke,
+    httpClient: httpClient,
+  );
+
+  group('submitEvidence — infra vs business classification', () {
+    test('phase-1 503 → retryable PortalDisputeException', () async {
+      final g = gateway(
+        client,
+        invoke: (name, {body}) async =>
+            throw const FunctionException(status: 503),
+      );
+      await expectLater(
+        g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        throwsA(
+          isA<PortalDisputeException>().having(
+            (e) => e.retryable,
+            'retryable',
+            isTrue,
+          ),
+        ),
+      );
+    });
+
+    test(
+      'phase-1 404 → NON-retryable PortalDisputeException (INV-26)',
+      () async {
+        final g = gateway(
+          client,
+          invoke: (name, {body}) async =>
+              throw const FunctionException(status: 404),
+        );
+        await expectLater(
+          g.submitEvidence(
+            token: portalToken,
+            justification: validJustification,
+            file: null,
+            sha256Client: null,
+          ),
+          throwsA(
+            isA<PortalDisputeException>().having(
+              (e) => e.retryable,
+              'retryable',
+              isFalse,
+            ),
+          ),
+        );
+      },
+    );
+  });
+
+  group('submitEvidence — finalize outcome mapping', () {
+    Future<FunctionResponse> Function(String, {Object? body}) twoPhase(
+      Future<FunctionResponse> Function() finalize,
+    ) {
+      return (name, {body}) {
+        if (name == 'portal-submit-request') {
+          return Future.value(
+            FunctionResponse(
+              data: {'submissionId': 'sub-1', 'signedUrl': null},
+              status: 200,
+            ),
+          );
+        }
+        return finalize();
+      };
+    }
+
+    test('finalize 200 → pendingAudit', () async {
+      final g = gateway(
+        client,
+        invoke: twoPhase(
+          () async => FunctionResponse(data: {'ok': true}, status: 200),
+        ),
+      );
+      expect(
+        await g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        PortalSubmissionOutcome.pendingAudit,
+      );
+    });
+
+    test('finalize 422 hash mismatch → hashMismatch', () async {
+      final g = gateway(
+        client,
+        invoke: twoPhase(
+          () async => throw const FunctionException(
+            status: 422,
+            details: {'error': 'Hash mismatch'},
+          ),
+        ),
+      );
+      expect(
+        await g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        PortalSubmissionOutcome.hashMismatch,
+      );
+    });
+
+    test('finalize 422 content-type mismatch → mimeMismatch', () async {
+      final g = gateway(
+        client,
+        invoke: twoPhase(
+          () async => throw const FunctionException(
+            status: 422,
+            details: {'error': 'Content type mismatch'},
+          ),
+        ),
+      );
+      expect(
+        await g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        PortalSubmissionOutcome.mimeMismatch,
+      );
+    });
+
+    test(
+      'finalize 404 → pendingAudit (idempotent: already promoted)',
+      () async {
+        final g = gateway(
+          client,
+          invoke: twoPhase(
+            () async => throw const FunctionException(status: 404),
+          ),
+        );
+        expect(
+          await g.submitEvidence(
+            token: portalToken,
+            justification: validJustification,
+            file: null,
+            sha256Client: null,
+          ),
+          PortalSubmissionOutcome.pendingAudit,
+        );
+      },
+    );
+  });
+
+  // ── Justification-only response shape (Bug C regression guard) ────────────
+  // The text-only edge path returns { justificationSubmissionId } and has
+  // ALREADY stamped defense_submitted_at server-side. The gateway must treat
+  // that as pendingAudit and MUST NOT attempt a finalize (there is no upload).
+  test(
+    'justification-only response → pendingAudit, no finalize invoked',
+    () async {
+      final invokedNames = <String>[];
+      final g = gateway(
+        client,
+        invoke: (name, {body}) async {
+          invokedNames.add(name);
+          if (name == 'portal-submit-request') {
+            return FunctionResponse(
+              data: {'justificationSubmissionId': 'just-1'},
+              status: 200,
+            );
+          }
+          throw StateError('unexpected edge invocation: $name');
+        },
+      );
+
+      expect(
+        await g.submitEvidence(
+          token: portalToken,
+          justification: validJustification,
+          file: null,
+          sha256Client: null,
+        ),
+        PortalSubmissionOutcome.pendingAudit,
+      );
+      expect(invokedNames, ['portal-submit-request']);
+    },
+  );
+
+  test('happy path with file: phase-1 200 + PUT 200 + finalize 200 → '
+      'pendingAudit', () async {
+    final mockClient = MockSupabaseClient();
+    final mockRest = MockPostgrestClient();
+    final mockHttp = MockHttpClient();
+
+    when(() => mockClient.rest).thenReturn(mockRest);
+    when(() => mockRest.headers).thenReturn({'apikey': 'fake-key'});
+    when(() => mockRest.url).thenReturn('http://127.0.0.1:54321/rest/v1');
+
+    when(
+      () => mockHttp.put(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => http.Response('', 200));
+
+    final g = gateway(
+      mockClient,
+      invoke: (name, {body}) async {
+        if (name == 'portal-submit-request') {
+          return FunctionResponse(
+            data: {
+              'submissionId': 'sub-1',
+              'signedUrl':
+                  'http://127.0.0.1:54321/storage/v1/object/upload/sign/dispute-evidence-portal/sub-1?token=xyz123',
+            },
+            status: 200,
+          );
+        }
+        return FunctionResponse(data: {'ok': true}, status: 200);
+      },
+      httpClient: mockHttp,
+    );
+    final sha = base64Url.encode(List<int>.filled(32, 7));
+    expect(
+      await g.submitEvidence(
+        token: portalToken,
+        justification: validJustification,
+        file: staged,
+        sha256Client: sha,
+      ),
+      PortalSubmissionOutcome.pendingAudit,
+    );
+
+    verify(
+      () => mockHttp.put(
+        Uri.parse(
+          'http://127.0.0.1:54321/storage/v1/object/upload/sign/dispute-evidence-portal/sub-1?token=xyz123',
+        ),
+        headers: {
+          'apikey': 'fake-key',
+          'content-type': 'application/pdf',
+          'x-upsert': 'false',
+        },
+        body: staged.bytes,
+      ),
+    ).called(1);
+  });
+}
+
+/// Throws on any member access — proves the seam never falls through to a real
+/// Supabase call in these tests.
+class _UnusableClient implements SupabaseClient {
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('real SupabaseClient must not be used in this test');
+}

@@ -20,6 +20,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:convert';
+import 'package:veraprob/domain/sla_audit/contractual_rule_repository.dart';
+import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/sla_audit/rule_snapshot.dart';
 
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -276,6 +279,7 @@ void main() {
       );
 
       declareHandler = DeclareContractualPlanHandler(
+        ruleRepository: _StubRuleRepository(),
         tenantValidator: tenantValidator,
         repository: planRepo,
         ledger: ledgerRepo,
@@ -901,4 +905,14 @@ void main() {
       );
     },
   );
+}
+
+class _StubRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async => const RuleSnapshot([]);
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

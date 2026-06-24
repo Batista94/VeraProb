@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart' show listEquals, debugPrint;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/application/sla_audit/acknowledge_sanction_internal_command.dart';
+import 'package:veraprob/application/sla_audit/acknowledge_sanction_internal_handler.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/approve_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/confirm_peer_review_command.dart';
@@ -116,6 +118,141 @@ final peerReviewSanctionsCountProvider = Provider.autoDispose<int>((ref) {
   };
 });
 
+// ── SLA aging: overdue / expiring disputes (Componente 4.6) ──────────────────
+
+/// Disputes approaching their deadline are flagged this many days in advance.
+const int kDisputeSlaWarningDays = 2;
+
+/// Disputed items already PAST their `resolution_due_at` deadline.
+///
+/// Derived client-side from [disputedSanctionsStreamProvider] (the row already
+/// carries `resolution_due_at`) — no extra query. Recomputes on every stream
+/// emission; "now" is sampled per emission, which is precise enough for the
+/// breach badge + drill-down.
+final overdueDisputesProvider =
+    Provider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      final now = DateTime.now().toUtc();
+      return switch (ref.watch(disputedSanctionsStreamProvider)) {
+        AsyncData(:final value) =>
+          value
+              .where(
+                (i) =>
+                    i.resolutionDueAtUtc != null &&
+                    i.resolutionDueAtUtc!.isBefore(now),
+              )
+              .toList(),
+        _ => const <SanctionQueueItemView>[],
+      };
+    });
+
+/// Count of overdue disputes — drives the [SlaBreachBadge] (hidden when 0).
+final overdueDisputesCountProvider = Provider.autoDispose<int>(
+  (ref) => ref.watch(overdueDisputesProvider).length,
+);
+
+/// Disputed items within [kDisputeSlaWarningDays] of the deadline but not yet
+/// overdue — the amber "expiring soon" cohort.
+final expiringDisputesProvider =
+    Provider.autoDispose<List<SanctionQueueItemView>>((ref) {
+      final now = DateTime.now().toUtc();
+      final horizon = now.add(const Duration(days: kDisputeSlaWarningDays));
+      return switch (ref.watch(disputedSanctionsStreamProvider)) {
+        AsyncData(:final value) => value.where((i) {
+          final due = i.resolutionDueAtUtc;
+          return due != null && !due.isBefore(now) && due.isBefore(horizon);
+        }).toList(),
+        _ => const <SanctionQueueItemView>[],
+      };
+    });
+
+// ── Retraction provenance enrichment (INV-23) ────────────────────────────────
+
+/// Who cancelled a dispute and when, read from the latest `DISPUTE_RETRACTED`
+/// ledger fact. The queue row keeps `disputed_by`/`disputed_at` (who opened —
+/// never cleared), but the canceller lives only in the fact.
+typedef RetractionProvenance = ({
+  String? retractedBy,
+  DateTime? retractedAtUtc,
+});
+
+/// Lazily resolves the retraction fact for a queue item that returned to
+/// `pending` after a retract. Null when no retraction fact exists. RLS scopes
+/// the ledger read to the caller's org.
+final disputeRetractionProvenanceProvider = FutureProvider.autoDispose
+    .family<RetractionProvenance?, String>((ref, queueEntryId) async {
+      final row = await ref
+          .watch(supabaseClientProvider)
+          .from('sla_audit_ledger_v2')
+          .select('payload, occurred_at_utc')
+          .eq('type', 'DISPUTE_RETRACTED')
+          .eq('payload->>queue_entry_id', queueEntryId)
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (row == null) return null;
+      final payload = row['payload'] as Map<String, dynamic>?;
+      final occurred = row['occurred_at_utc'] as String?;
+      return (
+        retractedBy: payload?['retracted_by_user_id'] as String?,
+        retractedAtUtc: occurred == null
+            ? null
+            : DateTime.parse(occurred).toUtc(),
+      );
+    });
+
+// ── Verdict provenance enrichment (INV-21) ───────────────────────────────────
+
+/// Who sealed/annulled a terminal verdict and when, read from the latest
+/// `VERDICT_SEALED` / `VERDICT_REFUSED` ledger fact. The queue row carries only
+/// `reviewed_by` (UUID); the human-readable [actorEmail] lives in the fact
+/// payload, closing the SOX/SOC2 accountability gap (confirming a wrong fine is
+/// equal liability to annulling a valid one).
+typedef VerdictProvenance = ({
+  String? actorEmail,
+  String? actorUserId,
+  DateTime? sealedAtUtc,
+  String? auditorNote,
+});
+
+/// Lazily resolves the sealing/annulment fact for a terminal queue item. Null
+/// when no verdict fact exists. RLS scopes the ledger read to the caller's org.
+final verdictProvenanceProvider = FutureProvider.autoDispose
+    .family<VerdictProvenance?, String>((ref, queueEntryId) async {
+      final row = await ref
+          .watch(supabaseClientProvider)
+          .from('sla_audit_ledger_v2')
+          .select('payload, occurred_at_utc')
+          .inFilter('type', const [
+            'VERDICT_SEALED',
+            'VERDICT_REFUSED',
+            'DISPUTE_ACCEPTED',
+            'DISPUTE_OVERTURNED',
+          ])
+          .eq('payload->>queue_entry_id', queueEntryId)
+          .order('occurred_at_utc', ascending: false)
+          .limit(1)
+          .maybeSingle();
+      if (row == null) return null;
+      final payload = row['payload'] as Map<String, dynamic>?;
+      final occurred = row['occurred_at_utc'] as String?;
+      final actorId =
+          (payload?['approved_by_user_id'] ??
+                  payload?['rejected_by_user_id'] ??
+                  payload?['resolved_by_user_id'])
+              as String?;
+      final note =
+          (payload?['reviewer_reason'] ??
+                  payload?['rejection_reason'] ??
+                  payload?['resolution_reason'])
+              as String?;
+      return (
+        actorEmail: payload?['actor_email'] as String?,
+        actorUserId: actorId,
+        sealedAtUtc: occurred == null ? null : DateTime.parse(occurred).toUtc(),
+        auditorNote: note,
+      );
+    });
+
 // ── Contract name enrichment ──────────────────────────────────────────────────
 
 /// Resolves the human-readable contract name for a given [contractId].
@@ -161,20 +298,25 @@ final sanctionWindowProvider = FutureProvider.autoDispose
 
 /// Computes the monthly recurrence context for a vehicle plate.
 ///
-/// Key format: "$queueEntryId|$vehiclePlate|$organizationId"
+/// Key format: "$queueEntryId|$vehiclePlate|$organizationId|$createdAtIso"
+///
+/// The 4th segment is the card's own `createdAtUtc.toIso8601String()` — used
+/// as `referenceUtc` so the month range and the `beforeUtc` upper-bound both
+/// anchor to when *this* infraction occurred, not the current wall-clock time.
 ///
 /// Returns null when [vehiclePlate] is empty (no plate = no recurrence context).
 final vehicleInfractionRecurrenceProvider = FutureProvider.autoDispose
     .family<InfractionRecurrenceReport?, String>((ref, key) async {
       final parts = key.split('|');
-      if (parts.length != 3 || parts[1].isEmpty) return null;
+      if (parts.length != 4 || parts[1].isEmpty) return null;
+      final createdAt = DateTime.parse(parts[3]).toUtc();
       final service = VehicleInfractionRecurrenceService(
         repository: ref.watch(vehicleInfractionRecurrenceRepositoryProvider),
       );
       return service.computeRecurrence(
         organizationId: parts[2],
         vehiclePlate: parts[1],
-        referenceUtc: DateTime.now().toUtc(),
+        referenceUtc: createdAt,
         currentQueueEntryId: parts[0],
       );
     });
@@ -205,6 +347,14 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     rbac: RbacService(),
   );
 
+  AcknowledgeSanctionInternalHandler get _acknowledgeInternalHandler =>
+      AcknowledgeSanctionInternalHandler(
+        tenantValidator: ref.watch(tenantValidationServiceProvider),
+        queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
+        ackRepo: ref.watch(sanctionAcknowledgementCommandRepositoryProvider),
+        rbac: RbacService(),
+      );
+
   RejectSanctionHandler get _rejectHandler => RejectSanctionHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
@@ -216,7 +366,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
   DisputeSanctionHandler get _disputeHandler => DisputeSanctionHandler(
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
-    ledger: ref.watch(slaAuditLedgerRepositoryProvider),
+    reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
     rbac: RbacService(),
   );
 
@@ -274,6 +424,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     required String resolvedByUserId,
     required String actorEmail,
     String? resolutionReason,
+    String? reasonCode,
+    List<String> evidenceIds = const [],
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
@@ -286,6 +438,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           resolvedByUserId: resolvedByUserId,
           actorEmail: actorEmail,
           resolutionReason: resolutionReason,
+          reasonCode: reasonCode,
+          evidenceIds: evidenceIds,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,
@@ -301,6 +455,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
+    String? reasonCode,
+    String? reviewerReason,
   }) async {
     await guardedAction(
       () => _approveHandler.handle(
@@ -311,6 +467,8 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,
+          reasonCode: reasonCode,
+          reviewerReason: reviewerReason,
         ),
       ),
     );
@@ -321,6 +479,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     required String rejectedByUserId,
     required String actorEmail,
     required String rejectionReason,
+    required String reasonCode,
     required UserRole callerRole,
     required String organizationId,
     required String sessionId,
@@ -332,6 +491,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
           rejectedByUserId: rejectedByUserId,
           actorEmail: actorEmail,
           rejectionReason: rejectionReason,
+          reasonCode: reasonCode,
           callerRole: callerRole,
           organizationId: organizationId,
           sessionId: sessionId,
@@ -390,11 +550,36 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
       ),
     );
   }
+
+  /// Records an off-band "De Acordo" (carrier accepted the penalty via
+  /// email/phone) for an `applied` sanction. TENANT_ADMIN-only; flips the entry
+  /// to the terminal `acknowledged` status server-side.
+  Future<void> acknowledgeInternal({
+    required String queueEntryId,
+    required String acknowledgedByUserId,
+    String? notes,
+    required UserRole callerRole,
+    required String organizationId,
+    required String sessionId,
+  }) async {
+    await guardedAction(
+      () => _acknowledgeInternalHandler.handle(
+        AcknowledgeSanctionInternalCommand(
+          queueEntryId: queueEntryId,
+          acknowledgedByUserId: acknowledgedByUserId,
+          notes: notes,
+          callerRole: callerRole,
+          organizationId: organizationId,
+          sessionId: sessionId,
+        ),
+      ),
+    );
+  }
 }
 
 // ── Filter and Sealed Sanctions Pagination (Enterprise Hardening) ───────────
 
-enum AuditorQueueFilter { pending, disputed, sealed }
+enum AuditorQueueFilter { pending, disputed, sealed, acknowledged }
 
 class AuditorQueueFilterNotifier extends Notifier<AuditorQueueFilter> {
   @override
@@ -409,6 +594,21 @@ final auditorQueueFilterProvider =
       AuditorQueueFilterNotifier,
       AuditorQueueFilter
     >(AuditorQueueFilterNotifier.new);
+
+/// When true, the `disputed` lane shows ONLY overdue items (resolution_due_at <
+/// now). Toggled on by the [SlaBreachBadge] drill-down; reset when the auditor
+/// changes the segmented filter.
+class DisputeOverdueOnlyNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void set(bool value) => state = value;
+}
+
+final disputeOverdueOnlyProvider =
+    NotifierProvider.autoDispose<DisputeOverdueOnlyNotifier, bool>(
+      DisputeOverdueOnlyNotifier.new,
+    );
 
 class SealedSanctionsState {
   final List<SanctionQueueItemView> items;
@@ -442,7 +642,26 @@ class SealedSanctionsState {
   }
 }
 
+/// Terminal sanction lanes — both append-only end states that grow unbounded,
+/// so each is paginated + date-filtered (never a live realtime stream).
+/// [statuses] maps a lane to the `status` values it surfaces.
+enum TerminalLane {
+  /// Sealed verdicts: `applied` (fine upheld) + `rejected` (fine refused).
+  verdicts(['applied', 'rejected']),
+
+  /// "De Acordo": carrier-acknowledged penalties (off-band acceptance).
+  acknowledged(['acknowledged']);
+
+  const TerminalLane(this.statuses);
+
+  final List<String> statuses;
+}
+
 class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
+  SealedSanctionsNotifier(this.lane);
+
+  final TerminalLane lane;
+
   static const int _pageSize = 20;
 
   @override
@@ -490,7 +709,7 @@ class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
           .from('sanction_review_queue')
           .select()
           .eq('organization_id', orgId)
-          .inFilter('status', const ['applied', 'rejected'])
+          .inFilter('status', lane.statuses)
           .gte('created_at', state.startDate.toIso8601String())
           .lte('created_at', state.endDate.toIso8601String())
           .order('created_at', ascending: false)
@@ -515,8 +734,8 @@ class SealedSanctionsNotifier extends Notifier<SealedSanctionsState> {
   }
 }
 
-final sealedSanctionsNotifierProvider =
-    NotifierProvider.autoDispose<SealedSanctionsNotifier, SealedSanctionsState>(
+final sealedSanctionsNotifierProvider = NotifierProvider.autoDispose
+    .family<SealedSanctionsNotifier, SealedSanctionsState, TerminalLane>(
       SealedSanctionsNotifier.new,
     );
 

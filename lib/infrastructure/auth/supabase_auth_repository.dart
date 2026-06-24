@@ -30,11 +30,22 @@ class SupabaseAuthRepository
   SupabaseAuthRepository(this._client);
 
   @override
-  bool get isAuthenticated => _client.auth.currentSession != null;
+  bool get isAuthenticated {
+    final session = _client.auth.currentSession;
+    return session != null &&
+        (!session.isExpired ||
+            (session.refreshToken != null && session.refreshToken!.isNotEmpty));
+  }
 
   @override
-  Stream<bool> get authStatusStream =>
-      _client.auth.onAuthStateChange.map((state) => state.session != null);
+  Stream<bool> get authStatusStream => _client.auth.onAuthStateChange.map((
+    state,
+  ) {
+    final session = state.session;
+    return session != null &&
+        (!session.isExpired ||
+            (session.refreshToken != null && session.refreshToken!.isNotEmpty));
+  });
 
   @override
   Future<String> signInWithPassword({

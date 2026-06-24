@@ -1,5 +1,6 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/alert_derivation_service.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/evaluation_trace.dart';
@@ -70,6 +71,7 @@ void main() {
         state: makeState(ExecutionStatus.failed),
         decisions: [],
         evaluatedAtUtc: now,
+        driverId: 'driver-test',
       );
       expect(alert, isNotNull);
       expect(alert!.alertType, 'NO_SHOW');
@@ -81,6 +83,7 @@ void main() {
         state: makeState(ExecutionStatus.completedWithGaps),
         decisions: [],
         evaluatedAtUtc: now,
+        driverId: 'driver-test',
       );
       expect(alert, isNotNull);
       expect(alert!.alertType, 'EVIDENCE_GAP');
@@ -92,6 +95,7 @@ void main() {
         state: makeState(ExecutionStatus.completed),
         decisions: [makeDecision(penaltyCents: 15000)],
         evaluatedAtUtc: now,
+        driverId: 'driver-test',
       );
       expect(alert, isNotNull);
       expect(alert!.alertType, 'PENALTY_APPLIED');
@@ -124,6 +128,7 @@ void main() {
         evaluatedAtUtc: now,
         triggeringEventId: 'evt-1',
         traceId: 'trace-1',
+        driverId: 'driver-test',
       );
       expect(alert!.organizationId, state.organizationId);
       expect(alert.contractId, state.contractId);
@@ -143,15 +148,26 @@ void main() {
       expect(alert.context['driver_name'], 'João Silva');
     });
 
-    test('context omits driver fields when null', () {
-      final alert = AlertDerivationService.deriveFrom(
-        state: makeState(ExecutionStatus.failed),
-        decisions: [],
-        evaluatedAtUtc: now,
-      );
-      expect(alert!.context.containsKey('driver_id'), isFalse);
-      expect(alert.context.containsKey('driver_name'), isFalse);
-    });
+    test(
+      'driver-bound type without driverId throws IntegrityException (INV-18)',
+      () {
+        expect(
+          () => AlertDerivationService.deriveFrom(
+            state: makeState(ExecutionStatus.failed),
+            decisions: [],
+            evaluatedAtUtc: now,
+            // driverId intentionally omitted
+          ),
+          throwsA(
+            isA<IntegrityException>().having(
+              (e) => e.field,
+              'field',
+              'driver_id',
+            ),
+          ),
+        );
+      },
+    );
 
     test('driver enrichment works for all alert types', () {
       final gap = AlertDerivationService.deriveFrom(

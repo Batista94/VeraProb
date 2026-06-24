@@ -4,4 +4,5 @@ abstract class DataSeedingRepository {
   Future<void> seedHistoricalData(String organizationId);
   Future<void> seedActiveSanctions(String organizationId);
   Future<void> seedPhase9(String organizationId);
+  Future<void> seedCsvData(String organizationId);
 }

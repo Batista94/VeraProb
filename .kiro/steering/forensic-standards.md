@@ -55,6 +55,7 @@ This document is the **Single Source of Truth** for the VeraProb Council. It con
     *   Write a failing test (`IntegrityException` or logic) first.
     *   Implement minimal code to pass.
     *   Refactor with the Council's sign-off.
+    *   **LAZY-TEST-BYPASS PROHIBITED:** Tests (especially pgTAP) must simulate realistic tenant data and assert state mutations or specific errors (42501). Mock/empty tests that just return true to bypass CI are severe integrity violations.
 3.  **PR Scanner Pre-Flight:**
     *   Self-audit for `DateTime.now()` and unannotated `double`.
     *   Run `bash scripts/pr_full_scanner.sh`.

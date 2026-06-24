@@ -18,6 +18,17 @@ class GenerateForensicDossierCommand {
   final num mapLng;
   final List<int>? telegramImageBytes;
 
+  /// One-Click Dossier state machine: identifies the verdict status
+  /// (applied / annulled / acknowledged). Drives the specific taxonomy stamp
+  /// and the sealed-only sections. `preliminary` produces a "PRELIMINAR" document.
+  final DossierClassification classification;
+
+  /// Sealed-only metadata mirroring the exact verdict state (INV-21).
+  final String? verdictOutcomeLabel;
+  final String? auditorReasonCode;
+  final String? auditorNote;
+  final String? verdictSealHash;
+
   const GenerateForensicDossierCommand({
     required this.sessionId,
     required this.operatorId,
@@ -28,6 +39,11 @@ class GenerateForensicDossierCommand {
     required this.mapLat,
     required this.mapLng,
     this.telegramImageBytes,
+    this.classification = DossierClassification.preliminary,
+    this.verdictOutcomeLabel,
+    this.auditorReasonCode,
+    this.auditorNote,
+    this.verdictSealHash,
   });
 }
 
@@ -75,20 +91,35 @@ class GenerateForensicDossierHandler {
       );
     }
 
+    // 3. MapTiler Static API capture — best-effort enrichment ONLY.
+    // A transient map outage must NEVER deny the operator their dossier (Tier-1
+    // availability — the export button is always actionable). The document
+    // degrades to a "map unavailable" placeholder instead of failing; the
+    // SHA-256 custody seal still covers exactly the bytes that were embedded
+    // (INV-9), so the certificate never lies about what it contains.
+    List<int> mapImageBytes;
     try {
-      // 3. MapTiler Static API capture
-      final mapImageBytes = await _staticMapService.getStaticMap(
+      mapImageBytes = await _staticMapService.getStaticMap(
         lat: command.mapLat,
         lng: command.mapLng,
         zoom: 16,
       );
+    } catch (_) {
+      mapImageBytes = const <int>[];
+    }
 
-      // 4. Assemble Domain Entity
+    try {
+      // 4. Assemble Domain Entity — stamped with the exact queue state (INV-21).
       final dossier = ForensicDossier(
         ledgerEntry: command.ledgerEntry,
         mapImageBytes: mapImageBytes,
         telegramImageBytes: command.telegramImageBytes,
         savingsCents: command.savingsCents,
+        classification: command.classification,
+        verdictOutcomeLabel: command.verdictOutcomeLabel,
+        auditorReasonCode: command.auditorReasonCode,
+        auditorNote: command.auditorNote,
+        verdictSealHash: command.verdictSealHash,
       );
 
       // 5. Generate PDF via Infrastructure Port

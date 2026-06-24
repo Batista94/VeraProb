@@ -145,6 +145,12 @@ void main() {
     // Initialize the real client
     client = SupabaseClient(supabaseUrl, supabaseKey);
 
+    // Clean up forensic/test data from previous runs to ensure isolation
+    await client.rpc<void>(
+      'test_cleanup_forensic_data',
+      params: {'p_org_id': '00000000-0000-0000-0000-000000000001'},
+    );
+
     // Instantiate Data Access Layer
     planRepo = PostgresPlanDeclarationRepository(client);
     executionRepo = PostgresContractualExecutionStateRepository(
@@ -166,6 +172,7 @@ void main() {
     final tenantValidator = TenantValidationService(authRepository: mockAuth);
 
     declarationHandler = DeclareContractualPlanHandler(
+      ruleRepository: _StubRuleRepository(),
       tenantValidator: tenantValidator,
       repository: planRepo,
       ledger: ledgerRepo,
@@ -639,6 +646,16 @@ void main() {
       );
       expect(executedList.first.boundVehicleId, vehicleId);
 
+      // Seed a sanction in the review queue to be read by the live aggregates RPC
+      await client.from('sanction_review_queue').insert({
+        'organization_id': '00000000-0000-0000-0000-000000000001',
+        'ledger_entry_id': const Uuid().v4(),
+        'set_id': sharedSetId,
+        'contract_id': contractId,
+        'status': 'applied',
+        'verdict_evidence': {'fine_cents': 10000},
+      });
+
       // 2. Verify Financial Impact projections
       // Pass the operational date window so the query service filters correctly.
       final windowStart = testBaseTimeUtc.subtract(const Duration(days: 31));
@@ -786,6 +803,7 @@ void main() {
         );
 
         final handlerWithNoZones = DeclareContractualPlanHandler(
+          ruleRepository: _StubRuleRepository(),
           tenantValidator: TenantValidationService(authRepository: mockAuthT09),
           repository: planRepo,
           ledger: ledgerRepo,
@@ -1015,4 +1033,14 @@ class _StubZoneRepository implements OperationalZoneRepository {
 
   @override
   Future<void> save(OperationalZone zone) async {}
+}
+
+class _StubRuleRepository implements ContractualRuleRepository {
+  @override
+  Future<RuleSnapshot> getActiveSnapshotForContract(
+    String orgId,
+    String contractId,
+  ) async => const RuleSnapshot([]);
+  @override
+  Future<void> saveRule(ContractualRule rule) async {}
 }

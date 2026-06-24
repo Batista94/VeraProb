@@ -6,7 +6,7 @@
 // Invariants verified:
 //   INV-1  — organizationId is enforced; never derived from auth.uid()
 //   INV-3  — INSERT only (append-only forensic audit trail)
-//   INV-15 — Unique constraint prevents duplicate log for same (org, entry, hash)
+//   INV-15 — 23505 unique constraint treated as idempotent success (custody already logged)
 //   INV-22 — Tenant-A NEVER reads Tenant-B log entries
 //   INV-26 — PostgresErrorInterceptor maps DB error codes to domain exceptions
 
@@ -17,7 +17,6 @@ import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
-import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/reporting/postgres_pdf_dossier_log_repository.dart';
 
 import '../postgres/postgres_test_config.dart';
@@ -217,7 +216,7 @@ void main() {
     // ── GRUPO B: INV-15 — Idempotency / Unique Constraint ────────────────────
 
     test(
-      'LOG-B1 [INV-15]: duplicate (org, entry, hash) throws IntegrityException',
+      'LOG-B1 [INV-15]: duplicate (org, entry, hash) is idempotent — no exception',
       () async {
         final isRunning = await PostgresTestConfig.isSupabaseRunning();
         if (!isRunning || !_migrationApplied) {
@@ -240,15 +239,16 @@ void main() {
           operatorId: _opA1,
         );
 
-        // Second insert with same (org, entry, hash) must throw IntegrityException.
+        // Second insert with same (org, entry, hash) must NOT throw — idempotent
+        // (INV-15: custody entry already exists; PDF was already delivered).
         await expectLater(
-          repoA.logGeneration(
+          () => repoA.logGeneration(
             organizationId: _orgAId,
             slaLedgerEntryId: entryId,
             documentHash: hash,
             operatorId: _opA2,
           ),
-          throwsA(isA<IntegrityException>()),
+          returnsNormally,
         );
       },
     );

@@ -19,6 +19,7 @@ void main() {
       evaluationOrder: evaluationOrder,
       activeFromUtc: baseTime,
       activeToUtc: activeToUtc,
+      createdAtUtc: baseTime,
     );
   }
 
@@ -131,6 +132,7 @@ void main() {
         ruleVersion: 3,
         evaluationOrder: 2,
         activeFromUtc: baseTime,
+        createdAtUtc: baseTime,
       );
       expect(rule.config['speed_limit_kmh'], 80);
       expect(rule.config['penalty_cents'], 5000);

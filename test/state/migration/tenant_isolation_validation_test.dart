@@ -57,6 +57,7 @@ const _orgScopedProviders = <String, _OrgIdSource>{
 /// These are acceptable if the doc comment documents INV-1 compliance.
 const _familyParameterProviders = <String>[
   'lib/state/providers/heartbeat_monitor_providers.dart',
+  'lib/state/providers/dispute_portal_providers.dart',
 ];
 
 /// Provider files where notifier methods receive `organizationId` as a
@@ -65,6 +66,7 @@ const _familyParameterProviders = <String>[
 const _callerPassedProviders = <String>[
   'lib/state/providers/auditor_queue_providers.dart', // SanctionActionNotifier
   'lib/state/providers/justification_providers.dart', // JustificationActionNotifier
+  'lib/state/providers/dispute_portal_token_providers.dart', // DisputePortalTokenNotifier
 ];
 
 /// Super admin providers that intentionally operate across tenants.
@@ -228,6 +230,24 @@ void main() {
               reason:
                   'Justification caller must read orgId from '
                   'currentOrganizationIdProvider (INV-1)',
+            );
+          },
+        );
+
+        test(
+          'DisputePortalTokenNotifier callers read orgId from currentOrganizationIdProvider',
+          () {
+            final callerFile = File(
+              'lib/features/admin/presentation/widgets/sanction_verdict_card.dart',
+            );
+            expect(callerFile.existsSync(), isTrue);
+
+            final content = callerFile.readAsStringSync();
+            expect(
+              content.contains('organizationId'),
+              isTrue,
+              reason:
+                  'Caller must pass organizationId to DisputePortalTokenNotifier',
             );
           },
         );

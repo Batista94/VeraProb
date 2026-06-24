@@ -131,6 +131,10 @@ OperationalAlert _buildAlert({
   String? triggeringEventId,
   String? traceId,
 }) {
+  final effectiveContext = Map<String, dynamic>.from(context);
+  if (!effectiveContext.containsKey('driver_id')) {
+    effectiveContext['driver_id'] = _uuid.v4();
+  }
   return OperationalAlert(
     id: id ?? _uuid.v4(),
     organizationId: orgId,
@@ -141,7 +145,7 @@ OperationalAlert _buildAlert({
     triggeredAtUtc: DateTime.now().toUtc(),
     triggeringEventId: triggeringEventId,
     traceId: traceId,
-    context: context,
+    context: effectiveContext,
     status: status,
   );
 }
@@ -357,6 +361,7 @@ void main() {
             status: 'ACKNOWLEDGED',
             acknowledgedAtUtc: DateTime.now().toUtc(),
             acknowledgedByUserId: 'attacker-user',
+            context: {'driver_id': _uuid.v4()},
           );
 
           // The repository has Defense-in-Depth (.eq organization_id) AND
@@ -612,7 +617,7 @@ void main() {
             triggeredAtUtc: now,
             triggeringEventId: _uuid.v4(),
             traceId: _traceIdA,
-            context: {'key': 'value'},
+            context: {'key': 'value', 'driver_id': _uuid.v4()},
             status: 'ACTIVE',
           );
 

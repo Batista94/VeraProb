@@ -16,6 +16,11 @@ class RuleVersionHistoryEntry extends Equatable {
   final DateTime? activeToUtc;
   final bool isActive;
 
+  /// `true` for a version whose `active_from_utc` is in the future and has not
+  /// yet been activated (Sprint B rule scheduling). Mutually exclusive with
+  /// [isActive] — a scheduled version is pending, not live.
+  final bool isScheduled;
+
   const RuleVersionHistoryEntry({
     required this.id,
     required this.ruleType,
@@ -25,6 +30,7 @@ class RuleVersionHistoryEntry extends Equatable {
     required this.activeFromUtc,
     this.activeToUtc,
     required this.isActive,
+    this.isScheduled = false,
   });
 
   factory RuleVersionHistoryEntry.fromJson(Map<String, dynamic> json) {
@@ -39,6 +45,7 @@ class RuleVersionHistoryEntry extends Equatable {
           ? DateTime.parse(json['active_to_utc'] as String).toUtc()
           : null,
       isActive: json['is_active'] as bool,
+      isScheduled: (json['is_scheduled'] as bool?) ?? false,
     );
   }
 
@@ -53,5 +60,5 @@ class RuleVersionHistoryEntry extends Equatable {
   };
 
   @override
-  List<Object?> get props => [id, ruleVersion, isActive];
+  List<Object?> get props => [id, ruleVersion, isActive, isScheduled];
 }

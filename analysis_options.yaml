@@ -8,6 +8,8 @@
 include: package:flutter_lints/flutter.yaml
 
 analyzer:
+  exclude:
+    - "scratch/**"
   errors:
     # Treat missing return statements as errors, not warnings.
     missing_return: error

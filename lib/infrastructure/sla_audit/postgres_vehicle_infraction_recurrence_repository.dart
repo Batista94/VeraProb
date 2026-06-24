@@ -24,6 +24,7 @@ class PostgresVehicleInfractionRecurrenceRepository
     required String vehiclePlate,
     required DateTime referenceUtc,
     required String excludeQueueEntryId,
+    required DateTime beforeUtc,
   }) async {
     try {
       final monthStart = DateTime.utc(referenceUtc.year, referenceUtc.month, 1);
@@ -40,6 +41,7 @@ class PostgresVehicleInfractionRecurrenceRepository
           .eq('vehicle_plate', vehiclePlate)
           .gte('created_at', monthStart.toIso8601String())
           .lt('created_at', monthEnd.toIso8601String())
+          .lt('created_at', beforeUtc.toIso8601String())
           .neq('id', excludeQueueEntryId)
           .order('created_at', ascending: true)
           .limit(100);

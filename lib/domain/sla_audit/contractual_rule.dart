@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:equatable/equatable.dart';
 
 enum SlaRuleType {
@@ -34,6 +35,8 @@ class ContractualRule extends Equatable {
   final int evaluationOrder;
   final DateTime activeFromUtc;
   final DateTime? activeToUtc;
+  final bool isScheduled;
+  final DateTime createdAtUtc;
 
   const ContractualRule({
     required this.id,
@@ -44,9 +47,11 @@ class ContractualRule extends Equatable {
     required this.evaluationOrder,
     required this.activeFromUtc,
     this.activeToUtc,
+    this.isScheduled = false,
+    required this.createdAtUtc,
   });
 
-  bool get isActive => activeToUtc == null;
+  bool get isActive => activeToUtc == null && !isScheduled;
 
   @override
   List<Object?> get props => [
@@ -58,5 +63,7 @@ class ContractualRule extends Equatable {
     evaluationOrder,
     activeFromUtc,
     activeToUtc,
+    isScheduled,
+    createdAtUtc,
   ];
 }

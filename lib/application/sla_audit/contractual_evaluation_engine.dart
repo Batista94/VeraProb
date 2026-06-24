@@ -738,6 +738,7 @@ class ContractualEvaluationEngine {
         evaluatedAtUtc: now,
         triggeringEventId: triggeringEventId,
         traceId: trace.id,
+        driverId: state.boundOperatorId,
       );
       if (alert != null) {
         await _alertRepo.save(alert);

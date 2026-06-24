@@ -24,12 +24,12 @@ VALUES ('00000000-0000-0000-0000-0000000000c1',
 -- Seed active rule version
 INSERT INTO public.contract_rule_versions
   (id, rule_set_id, rule_type, rule_config, rule_version, evaluation_order,
-   active_from_utc, active_to_utc)
+   active_from_utc, active_to_utc, created_at_utc)
 VALUES
   ('00000000-0000-0000-0000-0000000000d1',
    '00000000-0000-0000-0000-0000000000c1',
    'NO_SHOW_PENALTY', '{"penalty_amount_cents": 50000}'::jsonb, 2, 0,
-   '2026-01-01T00:00:00Z', NULL);
+   '2026-01-01T00:00:00Z', NULL, '2026-01-01T00:00:00Z');
 
 -- Seed pre-existing ledger entry
 INSERT INTO public.sla_audit_ledger_v2 (id, organization_id, type, contract_id, plan_version, occurred_at_utc, payload)
@@ -39,7 +39,7 @@ VALUES ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000
 SELECT has_function(
   'public',
   'seal_dispute_resolution_snapshot',
-  ARRAY['uuid', 'uuid', 'uuid', 'text', 'integer', 'timestamp with time zone', 'uuid', 'text'],
+  ARRAY['uuid', 'uuid', 'uuid', 'text', 'integer', 'timestamp with time zone', 'uuid', 'text', 'uuid'],
   'Function seal_dispute_resolution_snapshot exists with correct signature'
 );
 
@@ -53,7 +53,7 @@ SELECT is(
 -- 3. Execute privilege for authenticated
 SELECT ok(
   has_function_privilege('authenticated',
-    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text)',
+    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text, uuid)',
     'EXECUTE'),
   'authenticated may execute seal_dispute_resolution_snapshot'
 );
@@ -61,7 +61,7 @@ SELECT ok(
 -- 4. Execute privilege for service_role
 SELECT ok(
   has_function_privilege('service_role',
-    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text)',
+    'public.seal_dispute_resolution_snapshot(uuid, uuid, uuid, text, integer, timestamp with time zone, uuid, text, uuid)',
     'EXECUTE'),
   'service_role may execute seal_dispute_resolution_snapshot'
 );
@@ -79,7 +79,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1', NULL::UUID
      ) $$,
   'seal_dispute_resolution_snapshot executes successfully on happy path'
 );
@@ -100,7 +100,7 @@ SELECT is(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-1', NULL::UUID
    ) ->> 'idempotency_key'),
   'idem-dispute-1',
   'Idempotency key replay returns the existing snapshot record'
@@ -116,7 +116,7 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000000e1',
        '00000000-0000-0000-0000-0000000000aa',
        'set-1', 1, '2026-08-01T12:00:00Z',
-       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-evil'
+       '00000000-0000-0000-0000-0000000000f1', 'idem-dispute-evil', NULL::UUID
      ) $$,
   '42501',
   NULL,

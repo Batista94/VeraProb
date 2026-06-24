@@ -182,5 +182,100 @@ void main() {
         );
       },
     );
+
+    // ── Suspect B regression tests (INV-15 idempotency) ────────────────────
+
+    test(
+      'B1 [INV-15]: logRepository returning normally (23505 idempotent) does not block PDF return',
+      () async {
+        // Simulates the fixed behavior: repo already swallowed the 23505 unique
+        // constraint and returned normally — handler must propagate PDF bytes.
+        when(
+          () => mockMapService.getStaticMap(
+            lat: any(named: 'lat'),
+            lng: any(named: 'lng'),
+            zoom: any(named: 'zoom'),
+          ),
+        ).thenAnswer((_) async => [1, 2, 3]);
+
+        when(
+          () => mockLogRepo.logGeneration(
+            organizationId: any(named: 'organizationId'),
+            slaLedgerEntryId: any(named: 'slaLedgerEntryId'),
+            documentHash: any(named: 'documentHash'),
+            operatorId: any(named: 'operatorId'),
+          ),
+        ).thenAnswer((_) async {}); // idempotent success
+
+        when(
+          () => mockPdfGenerator.generateDossier(any()),
+        ).thenAnswer((_) async => [7, 8, 9]);
+
+        final command = GenerateForensicDossierCommand(
+          sessionId: 'session-123',
+          operatorId: 'operator-123',
+          jwtOrganizationId: 'org-valid',
+          requestedOrganizationId: 'org-valid',
+          ledgerEntry: baseEntry,
+          savingsCents: 150050,
+          mapLat: -23.5505,
+          mapLng: -46.6333,
+        );
+
+        final result = await handler.handle(command);
+
+        expect(result, equals([7, 8, 9]));
+        verify(() => mockPdfGenerator.generateDossier(any())).called(1);
+      },
+    );
+
+    test(
+      'B2 [INV-10]: non-idempotent logRepository failure is wrapped as IntegrityException',
+      () async {
+        // Simulates a real storage failure (e.g. FK violation, connection error)
+        // that the repo converts to a domain exception — handler must wrap it.
+        when(
+          () => mockMapService.getStaticMap(
+            lat: any(named: 'lat'),
+            lng: any(named: 'lng'),
+            zoom: any(named: 'zoom'),
+          ),
+        ).thenAnswer((_) async => [1, 2, 3]);
+
+        when(
+          () => mockLogRepo.logGeneration(
+            organizationId: any(named: 'organizationId'),
+            slaLedgerEntryId: any(named: 'slaLedgerEntryId'),
+            documentHash: any(named: 'documentHash'),
+            operatorId: any(named: 'operatorId'),
+          ),
+        ).thenThrow(
+          const IntegrityException(
+            'FK violation on pdf_dossier_logs',
+            field: 'sla_ledger_entry_id',
+          ),
+        );
+
+        when(
+          () => mockPdfGenerator.generateDossier(any()),
+        ).thenAnswer((_) async => [7, 8, 9]);
+
+        final command = GenerateForensicDossierCommand(
+          sessionId: 'session-123',
+          operatorId: 'operator-123',
+          jwtOrganizationId: 'org-valid',
+          requestedOrganizationId: 'org-valid',
+          ledgerEntry: baseEntry,
+          savingsCents: 150050,
+          mapLat: -23.5505,
+          mapLng: -46.6333,
+        );
+
+        await expectLater(
+          handler.handle(command),
+          throwsA(isA<IntegrityException>()),
+        );
+      },
+    );
   });
 }

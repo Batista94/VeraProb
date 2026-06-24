@@ -1,9 +1,11 @@
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_permissions.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
+import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'rule_studio_command_service.dart';
 import 'update_contractual_rule_command.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Application handler for [UpdateContractualRuleCommand].
 ///
@@ -19,14 +21,17 @@ class UpdateContractualRuleHandler {
   final TenantValidationService _tenantValidator;
   final RuleStudioCommandService _commandService;
   final RbacService _rbac;
+  final IDateTimeProvider _clock;
 
   UpdateContractualRuleHandler({
     required TenantValidationService tenantValidator,
     required RuleStudioCommandService commandService,
     required RbacService rbac,
+    required IDateTimeProvider clock,
   }) : _tenantValidator = tenantValidator,
        _commandService = commandService,
-       _rbac = rbac;
+       _rbac = rbac,
+       _clock = clock;
 
   /// Returns the UUID of the newly created rule version.
   ///
@@ -48,6 +53,16 @@ class UpdateContractualRuleHandler {
     // 2. Validate config keys match engine contract (mirrors DB constraint)
     _validateConfig(command);
 
+    // INV-10 / Sprint B: Guarda de backdating no application layer
+    final now = _clock.nowUtc();
+    final fiveMinsAgo = now.subtract(const Duration(minutes: 5));
+    if (command.effectiveAtUtc.isBefore(fiveMinsAgo)) {
+      throw const IntegrityException(
+        'Anti-backdating violation: effective_at_utc is too far in the past',
+        field: 'effectiveAtUtc',
+      );
+    }
+
     // 3. Atomic close + insert via RPC (atomicity guaranteed by Postgres)
     return _commandService.updateRule(
       contractId: command.contractId,
@@ -55,6 +70,7 @@ class UpdateContractualRuleHandler {
       ruleType: command.ruleType,
       newConfig: command.newConfig,
       evaluationOrder: command.evaluationOrder,
+      effectiveAtUtc: command.effectiveAtUtc,
     );
   }
 

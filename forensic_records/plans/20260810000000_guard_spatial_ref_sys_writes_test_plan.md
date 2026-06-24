@@ -114,7 +114,7 @@ make test-db
 | GD-05 | postgres DELETE | permitido (no-op) | `[x]` |
 | GD-06 | sem coluna org_id | 0 | `[x]` |
 | GD-07 | contagem >= 8300 | true | `[x]` |
-| GD-08 | suíte pgTAP | PASS | `[ ]` |
+| GD-08 | suíte pgTAP | PASS | `[x]` |
 
 ---
 

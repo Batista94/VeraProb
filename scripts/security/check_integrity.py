@@ -30,7 +30,16 @@ def check_file(filepath):
             
             # 2. Check for UTF-8 validity
             try:
-                content.decode('utf-8')
+                text = content.decode('utf-8')
+                # 3. Check for double encoding artifacts (Ã followed by cp1252 interpretations of utf-8 continuation bytes)
+                prefix = chr(195) # 'Ã'
+                suffixes = ['\xa1', '\xa2', '\xa3', '\xa7', '\xa9', '\xaa', '\xad', '\xb3', '\xb4', '\xb5', '\xba', 
+                            '\x81', '\x82', '\x87', '\x89', '\x8a', '\x8d', '\x93', '\x94', '\x95', '\x9a']
+                bad_chars = [prefix + s for s in suffixes]
+                for bc in bad_chars:
+                    if bc in text:
+                        issues.append(f"Double-encoding corruption detected (Found artifact from UTF-8 -> Windows-1252 -> UTF-8 cycle)")
+                        break
             except UnicodeDecodeError:
                 issues.append("Invalid UTF-8 encoding (Possible legacy Windows-1252/Latin-1)")
                 

@@ -88,6 +88,7 @@ void main() {
             rejectedByUserId: 'user-op',
             actorEmail: 'op@test.com',
             rejectionReason: 'GPS data was inconclusive.',
+            reasonCode: 'SENSOR_FAULT',
             callerRole: UserRole.operator,
             organizationId: 'org-1',
             sessionId: 'session-1',
@@ -109,6 +110,7 @@ void main() {
             rejectedByUserId: 'auditor-1',
             actorEmail: 'auditor@test.com',
             rejectionReason: 'too short', // 9 chars
+            reasonCode: 'SENSOR_FAULT',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
             sessionId: 'session-1',
@@ -128,12 +130,41 @@ void main() {
             rejectedByUserId: 'auditor-1',
             actorEmail: 'auditor@test.com',
             rejectionReason: '          ', // 10 spaces, trims to empty
+            reasonCode: 'SENSOR_FAULT',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
             sessionId: 'session-1',
           ),
         ),
         throwsA(isA<DomainException>()),
+      );
+    });
+
+    test('throws DomainException when reasonCode is empty (BUG-01)', () async {
+      await queueRepo.enqueue(makePendingEntry());
+
+      expect(
+        () => handler.handle(
+          const RejectSanctionCommand(
+            queueEntryId: 'entry-001',
+            rejectedByUserId: 'auditor-1',
+            actorEmail: 'auditor@test.com',
+            rejectionReason: 'GPS data was inconclusive for this route.',
+            reasonCode: '   ', // trims to empty
+            callerRole: UserRole.auditor,
+            organizationId: 'org-1',
+            sessionId: 'session-1',
+          ),
+        ),
+        // Assert the SPECIFIC guard fires — reason is valid here, so a generic
+        // DomainException match would falsely pass if RBAC/reason fired instead.
+        throwsA(
+          isA<DomainException>().having(
+            (e) => e.message,
+            'message',
+            contains('reasonCode'),
+          ),
+        ),
       );
     });
 
@@ -147,6 +178,7 @@ void main() {
             rejectedByUserId: 'auditor-1',
             actorEmail: 'auditor@test.com',
             rejectionReason: '  1234567890  ', // 10 non-whitespace chars
+            reasonCode: 'SENSOR_FAULT',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
             sessionId: 'session-1',
@@ -179,6 +211,7 @@ void main() {
             rejectedByUserId: 'auditor-1',
             actorEmail: 'auditor@test.com',
             rejectionReason: 'GPS data was inconclusive for this route.',
+            reasonCode: 'SENSOR_FAULT',
             callerRole: UserRole.auditor,
             organizationId: 'org-1',
             sessionId: 'session-1',
@@ -199,6 +232,7 @@ void main() {
           rejectedByUserId: 'auditor-1',
           actorEmail: 'auditor@veraprob.com',
           rejectionReason: 'GPS data was inconclusive for this route.',
+          reasonCode: 'SENSOR_FAULT',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
           sessionId: 'session-1',
@@ -214,6 +248,8 @@ void main() {
       );
       expect(entries.first.payload['verdict_evidence'], isNotNull);
       expect(entries.first.payload['actor_email'], 'auditor@veraprob.com');
+      // BUG-01: the structured reason code is sealed alongside the free text.
+      expect(entries.first.payload['reason_code'], 'SENSOR_FAULT');
     });
 
     test('updates queue entry status to rejected', () async {
@@ -225,6 +261,7 @@ void main() {
           rejectedByUserId: 'auditor-1',
           actorEmail: 'auditor@veraprob.com',
           rejectionReason: 'GPS data was inconclusive for this route.',
+          reasonCode: 'SENSOR_FAULT',
           callerRole: UserRole.auditor,
           organizationId: 'org-1',
           sessionId: 'session-1',

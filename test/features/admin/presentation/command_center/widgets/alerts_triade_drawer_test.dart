@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/sla_audit/quick_reconciliation_service.dart';
 import 'package:veraprob/infrastructure/audio/alert_sound_service.dart';
@@ -18,6 +19,7 @@ import 'package:veraprob/features/admin/presentation/shared/evidence_category_ch
 import 'package:veraprob/features/admin/presentation/shared/evidence_link_source_chip.dart';
 import 'package:veraprob/infrastructure/shared/evidence_url_service.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
@@ -67,6 +69,10 @@ class _FakeEvidenceUrlService implements EvidenceUrlService {
   @override
   String getProxyUrl(String evidenceId) =>
       'https://test.local/evidence/$evidenceId';
+
+  @override
+  String getDisputeAttachmentProxyUrl(String attachmentId) =>
+      'https://test.local/dispute-evidence/$attachmentId';
 }
 
 // ── Fixture constants ──────────────────────────────────────────────────────────
@@ -152,6 +158,35 @@ OperationalAlert alertTelegramOrphan({
   triggeredAtUtc: DateTime.utc(2026, 5, 11, 9, 0),
   context: <String, Object>{'driver_id': driverId, 'evidence_ids': evidenceIds},
   viewedByUserIds: viewedByUserIds,
+);
+
+/// DISPUTE_DEFENSE_SUBMITTED fixture — carrier portal contestation surfaced in
+/// triage. Context is metadata-only (no raw justification text): the auditor
+/// deep-links to the disputed lane to read it. INV-7: strictly typed context.
+OperationalAlert alertDisputeDefense({
+  String id = 'alert-dispute-01',
+  String vehiclePlate = 'TST-0001',
+  String driverName = 'Carlos',
+  int fineCents = 150000,
+  String defenseType = 'file',
+  String? filename = 'contraprova.jpg',
+}) => OperationalAlert(
+  id: id,
+  organizationId: _kOrgId,
+  entityId: vehiclePlate,
+  contractId: _kContractId,
+  alertType: 'DISPUTE_DEFENSE_SUBMITTED',
+  severity: 'HIGH',
+  triggeredAtUtc: DateTime.utc(2026, 5, 11, 11, 0),
+  context: <String, Object>{
+    'queue_entry_id': 'queue-test-01',
+    'vehicle_plate': vehiclePlate,
+    'driver_name': driverName,
+    'fine_amount_cents': fineCents,
+    'defense_type': defenseType,
+    'filename': ?filename,
+  },
+  viewedByUserIds: const [],
 );
 
 // ── Main ───────────────────────────────────────────────────────────────────────
@@ -379,14 +414,14 @@ void main() {
       expect(find.text('Maria'), findsOneWidget);
     });
 
-    testWidgets('exibe "Operador Não Identificado" para alerta sem driver_id', (
+    testWidgets('exibe "Motorista Não Identificado" para alerta sem driver_id', (
       tester,
     ) async {
       await buildHost(tester);
       // alertLow has no driver_id in context → '_unknown' group → null driverName
       alertStreamController.add([alertLow()]);
       await tester.pump();
-      expect(find.text('Operador Não Identificado'), findsOneWidget);
+      expect(find.text('Motorista Não Identificado'), findsOneWidget);
     });
   });
 
@@ -883,6 +918,132 @@ void main() {
       await tester.pump();
       final drawerSize = tester.getSize(find.byType(AlertsTriadeDrawer));
       expect(drawerSize.width, lessThanOrEqualTo(400.0));
+    });
+  });
+
+  // ── Carrier defense (DISPUTE_DEFENSE_SUBMITTED) → deep-link to disputed lane ──
+  group('Contestação do transportador (Bug 1c — triagem)', () {
+    /// Router-backed host: the defense CTA calls `context.go`, so the drawer
+    /// needs a real GoRouter ancestor. Returns the [ProviderContainer] so the
+    /// test can read [auditorQueueFilterProvider]/[isAlertsDrawerOpenProvider]
+    /// state after the tap.
+    Future<ProviderContainer> buildRoutedHost(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1280, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final container = ProviderContainer(
+        overrides: [
+          activeAlertsStreamProvider.overrideWith(
+            () => _FakeActiveAlertsNotifier(alertStreamController),
+          ),
+          alertSoundServiceProvider.overrideWithValue(soundService),
+          operationalAlertRepositoryProvider.overrideWithValue(alertRepo),
+          quickReconciliationServiceProvider.overrideWithValue(
+            reconciliationService,
+          ),
+          currentOperatorIdProvider.overrideWithValue(_kUserId),
+          currentOrganizationIdProvider.overrideWithValue(_kOrgId),
+          currentSessionIdProvider.overrideWithValue(_kSessionToken),
+          evidenceUrlServiceProvider.overrideWithValue(
+            const _FakeEvidenceUrlService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Base page + pushed drawer page: mirrors production where the triage
+      // drawer is an overlay route on top of the command center, so the CTA's
+      // Navigator.pop() has a page to remove before context.go navigates.
+      final router = GoRouter(
+        initialLocation: '/home',
+        routes: [
+          GoRoute(
+            path: '/home',
+            builder: (_, _) => const Scaffold(body: Text('HOME')),
+          ),
+          GoRoute(
+            path: '/triage',
+            builder: (_, _) => const Scaffold(body: AlertsTriadeDrawer()),
+          ),
+          GoRoute(
+            path: '/admin/auditor-queue',
+            builder: (_, _) =>
+                const Scaffold(body: Text('AUDITOR_QUEUE_SCREEN')),
+          ),
+        ],
+      );
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(routerConfig: router),
+        ),
+      );
+      unawaited(router.push('/triage'));
+      // Advance the push transition with fixed pumps — pumpAndSettle would hang
+      // on the drawer's loading LinearProgressIndicator (no alerts added yet).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      return container;
+    }
+
+    testWidgets('renders a CONTESTAÇÃO card with file metadata only', (
+      tester,
+    ) async {
+      await buildRoutedHost(tester);
+      alertStreamController.add([alertDisputeDefense()]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('CONTESTAÇÃO'), findsOneWidget);
+      expect(find.text('TST-0001'), findsOneWidget);
+      expect(
+        find.textContaining('Multa em risco: R\$ 1.500,00'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Anexo: contraprova.jpg'), findsOneWidget);
+      expect(find.text('IR PARA DISPUTA →'), findsOneWidget);
+    });
+
+    testWidgets('textual defense shows "Defesa textual" (no filename)', (
+      tester,
+    ) async {
+      await buildRoutedHost(tester);
+      alertStreamController.add([
+        alertDisputeDefense(defenseType: 'text', filename: null),
+      ]);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Defesa textual'), findsOneWidget);
+      expect(find.textContaining('Anexo:'), findsNothing);
+    });
+
+    testWidgets('CTA deep-links to disputed lane (filter + close + navigate)', (
+      tester,
+    ) async {
+      final container = await buildRoutedHost(tester);
+      alertStreamController.add([alertDisputeDefense()]);
+      await tester.pumpAndSettle();
+
+      // Pin the autoDispose filter notifier with a listener so its state
+      // survives the drawer disposing on navigation (in production the queue
+      // screen watches it; here the destination is a bare placeholder).
+      final sub = container.listen(auditorQueueFilterProvider, (_, _) {});
+      addTearDown(sub.close);
+
+      // Pre-condition: filter defaults to pending, drawer flagged open.
+      container.read(isAlertsDrawerOpenProvider.notifier).set(true);
+      expect(sub.read(), AuditorQueueFilter.pending);
+
+      await tester.tap(find.text('IR PARA DISPUTA →'));
+      await tester.pumpAndSettle();
+
+      // Filter switched to disputed, drawer closed, route changed to the queue.
+      expect(sub.read(), AuditorQueueFilter.disputed);
+      expect(container.read(isAlertsDrawerOpenProvider), isFalse);
+      expect(find.text('AUDITOR_QUEUE_SCREEN'), findsOneWidget);
     });
   });
 }

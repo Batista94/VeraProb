@@ -66,6 +66,13 @@ class RejectSanctionHandler {
       );
     }
 
+    // 3b. Structured reason code is mandatory (closed taxonomy). The RPC
+    //     re-validates against `dispute_reason_codes`; this is the fail-fast UX
+    //     guard so the auditor never submits a verdict the DB would reject.
+    if (command.reasonCode.trim().isEmpty) {
+      throw const DomainException('reasonCode is required.');
+    }
+
     // 4. Load queue entry — scoped to organizationId (tenant isolation, INV-1).
     //    Fail-fast UX guard only; the authoritative lock lives in the RPC.
     final entry = await _queueRepo.findById(
@@ -93,6 +100,7 @@ class RejectSanctionHandler {
       reviewedByUserId: command.rejectedByUserId,
       actorEmail: command.actorEmail,
       rejectionReason: command.rejectionReason.trim(),
+      reasonCode: command.reasonCode.trim(),
       occurredAtUtc: _clock.nowUtc(),
     );
   }

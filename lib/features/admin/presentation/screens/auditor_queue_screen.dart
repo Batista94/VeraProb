@@ -6,11 +6,27 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sanction_verdict_card.dart';
+import 'package:veraprob/features/admin/presentation/widgets/sla_breach_badge.dart';
 import 'package:veraprob/features/admin/presentation/shared/widgets/telemetry_sync_map.dart';
 import 'package:veraprob/state/providers/sanction_focus_provider.dart';
 
 /// Responsive breakpoint: below this width, the map becomes a Drawer.
 const _kMapBreakpoint = 1200.0;
+
+/// Ordering for the `disputed` lane. A card whose carrier already submitted a
+/// defense (`defenseSubmittedAt != null`) is the one actually awaiting the
+/// auditor's verdict, so it floats to the top ("DEFESA RECEBIDA"). Among peers
+/// with the same defense state, the soonest `resolutionDueAtUtc` (SLA deadline)
+/// comes first; rows without a deadline sink to the bottom. Pure + total so it
+/// can be unit-tested in isolation (Bug 2-A regression guard).
+int compareDisputedLane(SanctionQueueItemView a, SanctionQueueItemView b) {
+  if (a.defenseSubmittedAt != null && b.defenseSubmittedAt == null) return -1;
+  if (a.defenseSubmittedAt == null && b.defenseSubmittedAt != null) return 1;
+  if (a.resolutionDueAtUtc == null && b.resolutionDueAtUtc == null) return 0;
+  if (a.resolutionDueAtUtc == null) return 1;
+  if (b.resolutionDueAtUtc == null) return -1;
+  return a.resolutionDueAtUtc!.compareTo(b.resolutionDueAtUtc!);
+}
 
 /// Tribunal de Auditoria — Human-in-the-Loop review of engine-recommended sanctions.
 ///
@@ -165,6 +181,8 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
       };
     } else if (filter == AuditorQueueFilter.disputed) {
       final sanctionsAsync = ref.watch(disputedSanctionsStreamProvider);
+      final overdueOnly = ref.watch(disputeOverdueOnlyProvider);
+      final now = DateTime.now().toUtc();
       return switch (sanctionsAsync) {
         AsyncLoading() => const Center(child: CircularProgressIndicator()),
         AsyncError(:final error) => Center(
@@ -173,38 +191,43 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
             style: const TextStyle(color: VeraProbColors.error),
           ),
         ),
-        AsyncData(:final value) =>
-          value.isEmpty
-              ? const Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Text(
-                      'Nenhuma sanção aguardando evidência.',
-                      style: TextStyle(color: VeraProbColors.textSecondary),
-                    ),
-                  ),
-                )
-              : ListView.separated(
-                  itemCount: value.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 12),
-                  itemBuilder: (_, i) => SanctionVerdictCard(item: value[i]),
-                ),
+        AsyncData(:final value) => _buildDisputedList(
+          ref,
+          overdueOnly
+              ? value
+                    .where(
+                      (i) =>
+                          i.resolutionDueAtUtc != null &&
+                          i.resolutionDueAtUtc!.isBefore(now),
+                    )
+                    .toList()
+              : value,
+          overdueOnly: overdueOnly,
+        ),
       };
     } else {
-      final sealedState = ref.watch(sealedSanctionsNotifierProvider);
+      final lane = filter == AuditorQueueFilter.acknowledged
+          ? TerminalLane.acknowledged
+          : TerminalLane.verdicts;
+      final sealedState = ref.watch(sealedSanctionsNotifierProvider(lane));
+      final emptyMessage = lane == TerminalLane.acknowledged
+          ? 'Nenhuma penalidade em "De Acordo" neste período.'
+          : 'Nenhum veredito selado encontrado neste período.';
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _DateFilterBar(),
+          _DateFilterBar(lane: lane),
           const SizedBox(height: 12),
           Expanded(
             child: sealedState.items.isEmpty && !sealedState.isLoading
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
+                      padding: const EdgeInsets.symmetric(vertical: 40),
                       child: Text(
-                        'Nenhum veredito selado encontrado neste período.',
-                        style: TextStyle(color: VeraProbColors.textSecondary),
+                        emptyMessage,
+                        style: const TextStyle(
+                          color: VeraProbColors.textSecondary,
+                        ),
                       ),
                     ),
                   )
@@ -223,8 +246,9 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
                                 : OutlinedButton(
                                     onPressed: () => ref
                                         .read(
-                                          sealedSanctionsNotifierProvider
-                                              .notifier,
+                                          sealedSanctionsNotifierProvider(
+                                            lane,
+                                          ).notifier,
                                         )
                                         .fetchNextPage(),
                                     child: const Text('CARREGAR MAIS'),
@@ -239,6 +263,97 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
         ],
       );
     }
+  }
+
+  /// Renders the `disputed` lane, optionally narrowed to the overdue cohort by
+  /// the [SlaBreachBadge] drill-down. When the drill-down is active a dismissible
+  /// banner makes the implicit filter explicit (Lesson #5: no silent state).
+  Widget _buildDisputedList(
+    WidgetRef ref,
+    List<SanctionQueueItemView> items, {
+    required bool overdueOnly,
+  }) {
+    if (items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 40),
+          child: Text(
+            overdueOnly
+                ? 'Nenhuma disputa vencida.'
+                : 'Nenhuma sanção em disputa.',
+            style: const TextStyle(color: VeraProbColors.textSecondary),
+          ),
+        ),
+      );
+    }
+
+    final sortedItems = List<SanctionQueueItemView>.from(items)
+      ..sort(compareDisputedLane);
+
+    final list = ListView.separated(
+      itemCount: sortedItems.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => SanctionVerdictCard(item: sortedItems[i]),
+    );
+
+    if (!overdueOnly) return list;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _OverdueFilterBanner(
+          count: items.length,
+          onClear: () =>
+              ref.read(disputeOverdueOnlyProvider.notifier).set(false),
+        ),
+        const SizedBox(height: 12),
+        Expanded(child: list),
+      ],
+    );
+  }
+}
+
+// ── Overdue drill-down banner ─────────────────────────────────────────────────
+
+/// Explicit indicator that the `disputed` lane is filtered to overdue items
+/// only (via the [SlaBreachBadge]). Tapping clears the filter back to all
+/// disputes.
+class _OverdueFilterBanner extends StatelessWidget {
+  final int count;
+  final VoidCallback onClear;
+
+  const _OverdueFilterBanner({required this.count, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    const red = VeraProbColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: red.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: red.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.alarm_outlined, size: 16, color: red),
+          const SizedBox(width: 10),
+          Text(
+            'Filtrando $count disputa(s) com SLA vencido',
+            style: const TextStyle(fontSize: 12, color: red),
+          ),
+          const Spacer(),
+          TextButton(
+            onPressed: onClear,
+            style: TextButton.styleFrom(
+              foregroundColor: red,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            ),
+            child: const Text('LIMPAR'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -375,115 +490,238 @@ class _Header extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Lesson #3: narrow panel — short labels + tooltip on segments
-        final isNarrow = constraints.maxWidth < 900;
-        return Row(
+        // Adapt layout at 720px width to keep actions clean
+        final isNarrow = constraints.maxWidth < 720;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.gavel_rounded, color: VeraProbColors.primary),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                'Tribunal de Auditoria',
-                style: VeraProbTypography.sectionTitle,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // Segmented filter toggle — Expanded prevents right overflow
-            Expanded(
-              flex: 3,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SegmentedButton<AuditorQueueFilter>(
-                  segments: [
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.pending,
-                      // Lesson #3: short label on narrow, full label on wide
-                      label: isNarrow
-                          ? Tooltip(
-                              message: 'Pendentes ($count)',
-                              child: Text('($count)'),
-                            )
-                          : Text('Pendentes ($count)'),
-                      icon: const Icon(
-                        Icons.pending_actions_outlined,
-                        size: 14,
-                      ),
+            // Row 1: Title and Actions
+            Row(
+              children: [
+                const Icon(
+                  Icons.gavel_rounded,
+                  color: VeraProbColors.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Tribunal de Auditoria',
+                    style: VeraProbTypography.sectionTitle.copyWith(
+                      fontSize: 16,
                     ),
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.disputed,
-                      label: isNarrow
-                          ? Tooltip(
-                              message: 'Aguardando Evidência ($disputedCount)',
-                              child: Text('($disputedCount)'),
-                            )
-                          : Text('Aguardando Evidência ($disputedCount)'),
-                      icon: const Icon(
-                        Icons.hourglass_empty_outlined,
-                        size: 14,
-                      ),
-                    ),
-                    ButtonSegment<AuditorQueueFilter>(
-                      value: AuditorQueueFilter.sealed,
-                      label: isNarrow
-                          ? const Tooltip(
-                              message: 'Concluídos',
-                              child: SizedBox.shrink(),
-                            )
-                          : const Text('Concluídos'),
-                      icon: const Icon(Icons.verified_user_outlined, size: 14),
-                    ),
-                  ],
-                  selected: {filter},
-                  onSelectionChanged: (newSelection) {
-                    ref
-                        .read(auditorQueueFilterProvider.notifier)
-                        .setFilter(newSelection.first);
-                  },
-                  style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: VeraProbColors.primary.withValues(
-                      alpha: 0.15,
-                    ),
-                    selectedForegroundColor: VeraProbColors.primary,
-                    foregroundColor: VeraProbColors.textSecondary,
-                    side: const BorderSide(color: VeraProbColors.border),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
-
-            const Spacer(),
-            // WS-5: Map toggle for narrow screens
-            if (showMapToggle)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Tooltip(
-                  message: 'Mapa Forense',
-                  child: OutlinedButton.icon(
-                    onPressed: onMapToggle,
-                    icon: const Icon(Icons.map_outlined, size: 16),
-                    label: isNarrow
-                        ? const SizedBox.shrink()
-                        : const Text('Mapa Forense'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: VeraProbColors.primary,
-                      side: BorderSide(
-                        color: VeraProbColors.primary.withValues(alpha: 0.5),
-                      ),
-                      textStyle: const TextStyle(fontSize: 12),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
+                const Spacer(),
+                if (showMapToggle) ...[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Tooltip(
+                      message: 'Mapa Forense',
+                      child: OutlinedButton.icon(
+                        onPressed: onMapToggle,
+                        icon: const Icon(Icons.map_outlined, size: 14),
+                        label: isNarrow
+                            ? const SizedBox.shrink()
+                            : const Text('Mapa Forense'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: VeraProbColors.primary,
+                          side: BorderSide(
+                            color: VeraProbColors.primary.withValues(
+                              alpha: 0.5,
+                            ),
+                          ),
+                          textStyle: const TextStyle(fontSize: 12),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: const Size(36, 36),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-            _SimulateButton(isNarrow: isNarrow),
+                ],
+                const SlaBreachBadge(),
+                _SimulateButton(isNarrow: isNarrow),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // Row 2: Premium Custom Sliding Tabs
+            _AuditorTabs(
+              selectedFilter: filter,
+              pendingCount: count,
+              disputedCount: disputedCount,
+              isNarrow: isNarrow,
+              onFilterChanged: (newFilter) {
+                // Manual filter change clears the breach-badge drill-down.
+                ref.read(disputeOverdueOnlyProvider.notifier).set(false);
+                ref
+                    .read(auditorQueueFilterProvider.notifier)
+                    .setFilter(newFilter);
+              },
+            ),
           ],
         );
       },
+    );
+  }
+}
+
+class _AuditorTabs extends StatelessWidget {
+  final AuditorQueueFilter selectedFilter;
+  final int pendingCount;
+  final int disputedCount;
+  final bool isNarrow;
+  final ValueChanged<AuditorQueueFilter> onFilterChanged;
+
+  const _AuditorTabs({
+    required this.selectedFilter,
+    required this.pendingCount,
+    required this.disputedCount,
+    required this.isNarrow,
+    required this.onFilterChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _TabItem(
+              value: AuditorQueueFilter.pending,
+              icon: Icons.pending_actions_outlined,
+              label: 'Pendentes ($pendingCount)',
+              isSelected: selectedFilter == AuditorQueueFilter.pending,
+              onTap: () => onFilterChanged(AuditorQueueFilter.pending),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.disputed,
+              icon: Icons.hourglass_empty_outlined,
+              label: isNarrow
+                  ? 'Disputa ($disputedCount)'
+                  : 'Em Disputa ($disputedCount)',
+              isSelected: selectedFilter == AuditorQueueFilter.disputed,
+              onTap: () => onFilterChanged(AuditorQueueFilter.disputed),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.sealed,
+              icon: Icons.verified_user_outlined,
+              label: 'Concluídos',
+              isSelected: selectedFilter == AuditorQueueFilter.sealed,
+              onTap: () => onFilterChanged(AuditorQueueFilter.sealed),
+            ),
+            const SizedBox(width: 4),
+            _TabItem(
+              value: AuditorQueueFilter.acknowledged,
+              icon: Icons.handshake_outlined,
+              label: 'De Acordo',
+              isSelected: selectedFilter == AuditorQueueFilter.acknowledged,
+              onTap: () => onFilterChanged(AuditorQueueFilter.acknowledged),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TabItem extends StatefulWidget {
+  final AuditorQueueFilter value;
+  final IconData icon;
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TabItem({
+    required this.value,
+    required this.icon,
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  State<_TabItem> createState() => _TabItemState();
+}
+
+class _TabItemState extends State<_TabItem> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    const activeColor = VeraProbColors.primary;
+    const inactiveColor = VeraProbColors.textSecondary;
+
+    final textColor = widget.isSelected
+        ? activeColor
+        : (_isHovered ? VeraProbColors.textPrimary : inactiveColor);
+
+    final iconColor = widget.isSelected
+        ? activeColor
+        : (_isHovered ? VeraProbColors.textPrimary : inactiveColor);
+
+    final bgAlpha = widget.isSelected ? 0.15 : (_isHovered ? 0.05 : 0.0);
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: widget.isSelected
+                ? activeColor.withValues(alpha: bgAlpha)
+                : (_isHovered
+                      ? Colors.white.withValues(alpha: bgAlpha)
+                      : Colors.transparent),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: widget.isSelected
+                  ? activeColor.withValues(alpha: 0.3)
+                  : Colors.transparent,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(widget.icon, size: 14, color: iconColor),
+              const SizedBox(width: 8),
+              AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 200),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 12,
+                  fontWeight: widget.isSelected
+                      ? FontWeight.w700
+                      : FontWeight.w500,
+                  fontFamily: VeraProbTypography.base.fontFamily,
+                ),
+                child: Text(widget.label),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -527,11 +765,12 @@ class _EmptyState extends StatelessWidget {
 // ── Date Filter Bar ───────────────────────────────────────────────────────────
 
 class _DateFilterBar extends ConsumerWidget {
-  const _DateFilterBar();
+  final TerminalLane lane;
+  const _DateFilterBar({required this.lane});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(sealedSanctionsNotifierProvider);
+    final state = ref.watch(sealedSanctionsNotifierProvider(lane));
     String format(DateTime d) =>
         '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
@@ -568,7 +807,7 @@ class _DateFilterBar extends ConsumerWidget {
               );
               if (picked != null) {
                 await ref
-                    .read(sealedSanctionsNotifierProvider.notifier)
+                    .read(sealedSanctionsNotifierProvider(lane).notifier)
                     .updateDateFilter(picked.start, picked.end);
               }
             },

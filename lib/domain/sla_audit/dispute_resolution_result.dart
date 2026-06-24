@@ -20,23 +20,37 @@ class DisputeResolutionResult extends Equatable {
   /// (INV-21). Null for accept/retract.
   final Map<String, dynamic>? snapshot;
 
+  /// Verified SHA-256 hashes of the evidence embedded in the resolution fact,
+  /// when the RPC surfaces them. Null when the transaction returns none.
+  final List<String>? evidenceHashes;
+
   const DisputeResolutionResult({
     required this.ledgerEntryId,
     required this.finalQueueStatus,
     this.snapshot,
+    this.evidenceHashes,
   });
 
   factory DisputeResolutionResult.fromJson(Map<String, dynamic> json) {
     final snapshotOpt = json['snapshot'];
+    final hashesOpt = json['evidence_hashes'];
     return DisputeResolutionResult(
       ledgerEntryId: json['ledger_entry_id'] as String,
       finalQueueStatus: json['status'] as String,
       snapshot: snapshotOpt != null
           ? Map<String, dynamic>.from(snapshotOpt as Map)
           : null,
+      evidenceHashes: hashesOpt != null
+          ? (hashesOpt as List).map((e) => e as String).toList()
+          : null,
     );
   }
 
   @override
-  List<Object?> get props => [ledgerEntryId, finalQueueStatus, snapshot];
+  List<Object?> get props => [
+    ledgerEntryId,
+    finalQueueStatus,
+    snapshot,
+    evidenceHashes,
+  ];
 }

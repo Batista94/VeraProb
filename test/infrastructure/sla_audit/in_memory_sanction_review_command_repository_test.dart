@@ -79,9 +79,99 @@ void main() {
         reviewedByUserId: 'auditor-1',
         actorEmail: 'auditor@test.com',
         rejectionReason: '   ',
+        reasonCode: 'SENSOR_FAULT',
         occurredAtUtc: now,
       ),
       throwsA(isA<SovereigntyViolationException>()),
+    );
+  });
+
+  test('reject with empty reasonCode fails closed (BUG-01)', () async {
+    await queueRepo.enqueue(pendingEntry());
+
+    expect(
+      () => repo.rejectSanction(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-1',
+        actorEmail: 'auditor@test.com',
+        rejectionReason: 'GPS data was inconclusive for this route.',
+        reasonCode: '   ',
+        occurredAtUtc: now,
+      ),
+      throwsA(isA<SovereigntyViolationException>()),
+    );
+  });
+
+  test(
+    'reject seals VERDICT_REFUSED with the structured reason_code',
+    () async {
+      await queueRepo.enqueue(pendingEntry());
+
+      final result = await repo.rejectSanction(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        reviewedByUserId: 'auditor-1',
+        actorEmail: 'auditor@test.com',
+        rejectionReason: 'GPS data was inconclusive for this route.',
+        reasonCode: 'SENSOR_FAULT',
+        occurredAtUtc: now,
+      );
+
+      expect(result.finalQueueStatus, 'rejected');
+      final refused = ledger.entries.firstWhere(
+        (e) => e.type == 'VERDICT_REFUSED',
+      );
+      expect(refused.payload['reason_code'], 'SENSOR_FAULT');
+    },
+  );
+
+  group('generateDisputePortalToken (BUG-02)', () {
+    test('mints a token + logs the fact for a disputed entry', () async {
+      await queueRepo.enqueue(
+        pendingEntry().copyWith(status: SanctionReviewStatus.disputed),
+      );
+
+      final token = await repo.generateDisputePortalToken(
+        organizationId: 'org-1',
+        queueEntryId: 'entry-1',
+        createdByUserId: 'auditor-1',
+      );
+
+      expect(token, isNotEmpty);
+      expect(
+        ledger.entries
+            .where((e) => e.type == 'DISPUTE_PORTAL_TOKEN_GENERATED')
+            .length,
+        1,
+      );
+    });
+
+    test('rejects a still-pending entry (not contested)', () async {
+      await queueRepo.enqueue(pendingEntry());
+
+      expect(
+        () => repo.generateDisputePortalToken(
+          organizationId: 'org-1',
+          queueEntryId: 'entry-1',
+          createdByUserId: 'auditor-1',
+        ),
+        throwsA(isA<IdempotencyProcessingException>()),
+      );
+    });
+
+    test(
+      'missing entry is indistinguishable from wrong-org (INV-26)',
+      () async {
+        expect(
+          () => repo.generateDisputePortalToken(
+            organizationId: 'org-1',
+            queueEntryId: 'does-not-exist',
+            createdByUserId: 'auditor-1',
+          ),
+          throwsA(isA<SovereigntyViolationException>()),
+        );
+      },
     );
   });
 

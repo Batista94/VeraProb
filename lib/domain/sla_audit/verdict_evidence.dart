@@ -159,7 +159,7 @@ class VerdictEvidence extends Equatable {
         json['primary_evidence_timestamp_utc'] as String,
       ),
       evidenceHash: json['evidence_hash'] as String,
-      deltaValue: (json['delta_value'] as num).toDouble(),
+      deltaValue: _parseDeltaValue(json),
       thresholdValue: (json['threshold_value'] as num).toDouble(),
       fineCents: Money(json['fine_cents'] as int),
       confidenceScore: json['confidence_score'] as int,
@@ -167,6 +167,21 @@ class VerdictEvidence extends Equatable {
       geofenceCenterLng: (json['geofence_center_lng'] as num?)?.toDouble(),
       geofenceRadiusMeters: (json['geofence_radius_meters'] as num?)
           ?.toDouble(),
+    );
+  }
+
+  static double _parseDeltaValue(Map<String, dynamic> json) {
+    // Physical Metric - Double Required
+    if (json['delta_value'] != null) {
+      return (json['delta_value'] as num).toDouble();
+    }
+    if (json['measured_value'] != null && json['threshold_value'] != null) {
+      return ((json['measured_value'] as num) -
+              (json['threshold_value'] as num))
+          .toDouble();
+    }
+    throw const DomainException(
+      'Missing both delta_value and measured_value in payload',
     );
   }
 
