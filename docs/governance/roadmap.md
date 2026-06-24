@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-06-12
+**Revision:** 2026-06-24
 **Current Status:** Phase 10.6 (Core delivered) · [NEXT: validar CI E2E green + priorizar próximos itens BIZ]
 
 ---
@@ -9,12 +9,12 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 824 passing · 63 files · `make test-db` ✅ |
-| Migrations | 264 applied ✅ (Phase 10.6 = 16) |
+| DB Tests (pgTAP) | 1343 passing · 115 files · `make test-db` ✅ |
+| Migrations | 316 applied ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
-| CI Regression | MFA RPC `42501` → resolvido por `20260815000000` (re-run E2E pendente) ✅ |
+| CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
-> **Regressão crítica fechada (2026-06-12):** `20260717000002` revogou `EXECUTE FROM PUBLIC` nas RPCs `record_mfa_failure`/`reset_mfa_lockout`/`check_mfa_lockout` sem re-grant explícito → `service_role` + `authenticated` perderam acesso. Quebrava login MFA do app (`SupabaseMfaRepository`) E `super-admin-proxy` (gate `check_mfa_lockout` em toda chamada → 500 → cascata de 85 falhas E2E + 9 integração). Fix `20260815000000` re-concede `EXECUTE` a `authenticated`+`service_role`; `anon` permanece revogado (intenção de segurança preservada). pgTAP 9/9.
+> **Regressão crítica fechada (2026-06-24):** Correção de vazamento de estado (`disputed_by` não era limpo em retração) via `20260901000001`; Enforcement de `NOWAIT` concurrency lock nas filas do portal via `20260901000002`; Hardening do Zero-Trust (`read_infraction_context` ocultando dados para inquilinos em disputas abertas) via `20260901000003` e `000004`. Testes forenses refatorados para manter compliance com a Enterprise Directive e INV-23. pgTAP 100% verde (1343 tests).
 
 ---
 
@@ -24,11 +24,11 @@
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
-- [ ] **Custom RBAC:** Support for basic view isolation between Legal and Financial roles.
+- [ ] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
+- [ ] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
+- [ ] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
-- [ ] **Financial Guard:** 'Stop-Loss' logic available in contract and penalty setup.
-- [ ] **Legal Gate:** System access block pending specific telemetry LGPD acceptance.
 
 ---
 
@@ -67,17 +67,14 @@
 - [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
 - [ ] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
 - [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
+- [ ] **[BIZ] Data Extract & Reporting API:** Criação de endpoints de exportação de dados agregados (CSV/JSON) e chaves de API Read-Only para que o C-Level do cliente possa conectar seus painéis do PowerBI diretamente às Views de ROI (`v_roi_summary`) e `contractual_financial_snapshot`.
 
 ### [ ] Phase 10.8 — Shadow Processing & ROI Proving
 
 - [ ] **SLA Sandbox (ROI Simulator):** Lógica em SQL/Edge Functions para simular 'E se...' (What-if analysis) rodando novos modelos de SLA contra dados históricos para provar economia financeira.
-- [ ] **Financial Guard:** 'Stop-Loss' logic available in contract and penalty setup.
-- [ ] **[BIZ] Penalty Stop-Loss Cap:** Maximum penalty limit field per event for legal and financial risk protection.
 
 ### [ ] Phase 10.9 — Governance, Legal & Anti-Fraud
 
-- [ ] **Legal Gate:** System access block pending specific telemetry LGPD acceptance.
-- [ ] **Terms of Use (LGPD):** Terms of Use and Privacy Policy (LGPD) integrated into Onboarding.
 - [ ] **Self-Service Onboarding:** Tenant creation flow with automated limit configuration.
 - [ ] **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
 - [ ] **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
@@ -93,18 +90,10 @@
 
 ### [ ] Phase 10.10 — Bulk Operations & Convenience (Conveniência e Ações em Massa)
 
-- [ ] **[BIZ] Bulk SLA Rule Importer (CSV):** Implementar funcionalidade de importação em massa para parâmetros de regras de SLA vinculadas a contratos (multas, limites de tolerância), evitando a necessidade de cadastro manual individual pós-importação de contratos.
 - [ ] **[BIZ] Rule Update Consent Flow (Contractor Sign-off):** Implementar fluxo de consentimento/aceite digital por parte da transportadora quando regras ou penalidades de SLA forem alteradas ou renegociadas no Rule Studio, mitigando riscos de alegações de alteração unilateral de regras em auditorias futuras.
-- [ ] **[BIZ] Bulk Contract Importer (CSV):** Implementar motor de carga em massa para contratos com etapa de Pre-flight Validation (exibe erros de formatação antes de gravar no banco).
 - [ ] **[UX] Bulk Action Mode:** Seleção múltipla de infrações na Fila Auditora para tratamento em massa (Batch Processing).
-- [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards).
 - [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente.
 - [ ] **Resolução em lote + filtros:** Auditor com fila grande precisa de bulk-resolve e filtros (clausula/veículo/contrato/valor) na aba Concluídos — reduz custo operacional (margem do cliente final).
-- [ ] **[UX] Smart Defaulting:** Sistema de preenchimento inteligente de formulários baseado nos últimos registros inseridos (Redução de 60% no tempo de cadastro).
-
-### [ ] Phase 10.11 — Automated Enterprise Showcase (Seed & Provisioning)
-
-- [ ] **SuperAdmin Provisioning Script:** Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
 
 ---
 
@@ -124,3 +113,9 @@
 ## Phase 11+ — VeraProb Enterprise: Scale & Integrations
 
 API/Webhooks (SAP/Oracle), Passive Capture (OCR/SDK), JIT Signature.
+
+- [ ] **[BIZ] Bulk SLA Rule Importer (CSV):** Implementar funcionalidade de importação em massa para parâmetros de regras de SLA vinculadas a contratos (multas, limites de tolerância), evitando a necessidade de cadastro manual individual pós-importação de contratos.
+- [ ] **[BIZ] Bulk Contract Importer (CSV):** Implementar motor de carga em massa para contratos com etapa de Pre-flight Validation (exibe erros de formatação antes de gravar no banco).
+- [ ] **WS-8: Keyboard-First Navigation:** Implementar atalhos de teclado para navegação ultra-rápida na Fila Auditora (Focus Management entre cards).
+- [ ] **[UX] Smart Defaulting:** Sistema de preenchimento inteligente de formulários baseado nos últimos registros inseridos (Redução de 60% no tempo de cadastro).
+- [ ] **SuperAdmin Provisioning Script:** Desenvolvimento de script robusto de provisionamento automatizado (`make seed-enterprise`) para instanciar um Tenant isolado contendo volume real de veículos, contratos, zonas e telemetria pré-calculada para fins de demonstração de portfólio.
