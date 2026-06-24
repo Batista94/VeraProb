@@ -81,8 +81,8 @@ class DisputePortalPage extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           PortalHeader(
-            orgDisplayName: contextData.orgDisplayName,
-            orgCnpj: contextData.orgCnpj,
+            orgDisplayName: contextData.orgDisplayName ?? 'Oculto',
+            orgCnpj: contextData.orgCnpj ?? 'Oculto',
           ),
           const SizedBox(height: VeraProbSpacing.lg),
           DisputeSuccessView(
@@ -97,8 +97,8 @@ class DisputePortalPage extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         PortalHeader(
-          orgDisplayName: contextData.orgDisplayName,
-          orgCnpj: contextData.orgCnpj,
+          orgDisplayName: contextData.orgDisplayName ?? 'Oculto',
+          orgCnpj: contextData.orgCnpj ?? 'Oculto',
         ),
         const SizedBox(height: VeraProbSpacing.lg),
         DisputeContextCard(contextData: contextData),

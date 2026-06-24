@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
+import 'package:veraprob/domain/shared/concurrent_modification_exception.dart';
 import 'package:veraprob/domain/sla_audit/dispute_resolution_result.dart';
 import 'package:veraprob/domain/sla_audit/sanction_dispute_resolution_repository.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
@@ -51,6 +52,9 @@ class PostgresSanctionDisputeResolutionRepository extends BasePostgresRepository
       );
       return DisputeResolutionResult.fromJson(result);
     } on PostgrestException catch (e) {
+      if (e.code == '55P03') {
+        throw const ConcurrentModificationException();
+      }
       if (e.code == 'P0001' &&
           (e.details?.toString().contains('IdempotencyProcessingException') ??
               false)) {

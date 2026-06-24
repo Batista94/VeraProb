@@ -4,6 +4,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
+import 'package:veraprob/domain/shared/concurrent_modification_exception.dart';
 import 'package:veraprob/domain/sla_audit/dispute_sanction_result.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
@@ -214,6 +215,9 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     final detail = e.details?.toString() ?? '';
     // Distinct governance guard: surface a clear message (caller is a valid
     // auditor of the right tenant; this is NOT an anti-oracle rejection).
+    if (e.code == '55P03') {
+      return const ConcurrentModificationException();
+    }
     if (e.code == 'P0001' &&
         detail.contains('DualControlSelfApprovalException')) {
       return DualControlSelfApprovalException(

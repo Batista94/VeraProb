@@ -51,7 +51,7 @@ class DisputeContextCard extends StatelessWidget {
             const SizedBox(height: VeraProbSpacing.md),
             _buildDataRow(
               'Ativo',
-              contextData.assetIdentifier,
+              contextData.assetIdentifier ?? 'Oculto',
               'Data (Horário de Brasília)',
               contextData.formattedOccurredAtBrt,
             ),
@@ -72,7 +72,7 @@ class DisputeContextCard extends StatelessWidget {
                         )
                       else
                         Text(
-                          contextData.locationLabel,
+                          contextData.locationLabel ?? 'Oculto',
                           style: VeraProbTypography.dataValue,
                         ),
                     ],

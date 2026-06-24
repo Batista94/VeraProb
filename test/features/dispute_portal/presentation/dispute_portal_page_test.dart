@@ -33,6 +33,7 @@ PortalSnapshot _snapshot({
 
 InfractionContextProjection _context() {
   return InfractionContextProjection(
+    status: 'disputed',
     assetIdentifier: 'ABC-1234',
     penaltyValueCents: 15000,
     measuredValue: 35,

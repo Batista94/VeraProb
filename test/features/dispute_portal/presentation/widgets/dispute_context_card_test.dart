@@ -9,6 +9,7 @@ void main() {
       WidgetTester tester,
     ) async {
       final contextData = InfractionContextProjection(
+        status: 'disputed',
         recordId: 'test-record-id',
         assetIdentifier: 'TST-0001',
         orgDisplayName: 'Org Alpha',
@@ -43,6 +44,7 @@ void main() {
     ) async {
       // Cria projeção com um ID de registro muito longo
       final contextData = InfractionContextProjection(
+        status: 'disputed',
         recordId: 'req_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa_aaaa',
         assetIdentifier: 'VTR-001',
         orgDisplayName: 'Test Org',

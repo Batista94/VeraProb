@@ -36,6 +36,7 @@ class _FakeGateway implements PortalDisputeGateway {
   Future<InfractionContextProjection> readInfractionContext(
     String token,
   ) async => InfractionContextProjection(
+    status: 'disputed',
     assetIdentifier: 'ABC-1234',
     penaltyValueCents: 15000,
     occurredAtUtc: DateTime.now().toUtc(),

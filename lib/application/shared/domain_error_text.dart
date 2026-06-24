@@ -4,6 +4,7 @@ import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
+import 'package:veraprob/domain/shared/concurrent_modification_exception.dart';
 import 'package:veraprob/domain/sla_audit/dual_control_self_approval_exception.dart';
 
 /// Maps a captured action error to a clean, auditor-facing message.
@@ -19,6 +20,7 @@ String humanizeDomainError(Object? error) => switch (error) {
   SovereigntyViolationException(:final message) => message,
   ResourceNotFoundException(:final message) => message,
   IdempotencyProcessingException(:final message) => message,
+  ConcurrentModificationException(:final message) => message,
   DualControlSelfApprovalException(:final message) => message,
   _ => 'Erro Desconhecido: ${error?.toString() ?? "null"}',
 };
