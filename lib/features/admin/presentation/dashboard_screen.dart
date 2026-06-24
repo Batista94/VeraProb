@@ -11,6 +11,7 @@ import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.d
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
 import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -231,6 +232,9 @@ class _DevSeedButton extends ConsumerWidget {
       await repository.seedHistoricalData(organizationId);
       await repository.seedActiveSanctions(organizationId);
       await repository.seedPhase9(organizationId);
+      await ref
+          .read(simulationSeedServiceProvider)
+          .seedFinancialSnapshots(organizationId);
 
       // Invalidate cached providers so the onboarding checklist updates
       ref.invalidate(contractorListProvider);
@@ -238,6 +242,7 @@ class _DevSeedButton extends ConsumerWidget {
       ref.invalidate(contractListProvider);
       ref.invalidate(slaTemplatesProvider);
       ref.invalidate(financialImpactProvider);
+      ref.invalidate(financialSparklineProvider);
       ref.invalidate(dashboardRiskFeedProvider);
       ref.invalidate(activeAlertsProvider);
 
