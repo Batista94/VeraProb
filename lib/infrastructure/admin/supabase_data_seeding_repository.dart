@@ -369,18 +369,6 @@ class SupabaseDataSeedingRepository
           .eq('organization_id', organizationId)
           .limit(1)
           .maybeSingle();
-      final vehicle = await _supabase
-          .from('vehicles')
-          .select('id, plate')
-          .eq('organization_id', organizationId)
-          .limit(1)
-          .maybeSingle();
-      if (vehicle != null) {
-        // Pass vehicle data to the mock payload
-        driver ??= {}; // Ensure driver is not null for next steps
-        driver['vehicle_id'] = vehicle['id'];
-        driver['vehicle_plate'] = vehicle['plate'];
-      }
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
@@ -391,8 +379,6 @@ class SupabaseDataSeedingRepository
 
     final contract = contracts.first;
     final now = _dateTimeProvider.nowUtc();
-
-    await _insertSanctionRecommendation(organizationId, contract, now, driver);
 
     await _seedOperationalAlerts(organizationId, contract, now, driver);
   }
@@ -433,53 +419,6 @@ class SupabaseDataSeedingRepository
       } catch (_) {
         // Ignore conflict if already exists
       }
-    }
-  }
-
-  Future<void> _insertSanctionRecommendation(
-    String organizationId,
-    Map<String, dynamic> contract,
-    DateTime now,
-    Map<String, dynamic>? driver,
-  ) async {
-    final setId = 'sim-set-${now.millisecondsSinceEpoch}';
-
-    try {
-      await _supabase.from('sla_audit_ledger_v2').insert({
-        'organization_id': organizationId,
-        'contract_id': contract['id'],
-        'occurred_at_utc': now.toIso8601String(),
-        'type': 'SANCTION_RECOMMENDED',
-        'set_id': setId,
-        'operator_id': 'system_seeder',
-        'payload': {
-          'rule_id': 'rule-speed-v1',
-          'verdict_evidence': {
-            'clause_ref': 'VEL-01',
-            'rule_id': 'rule-speed-v1',
-            'rule_version': 1,
-            'primary_evidence_lat': -23.5505,
-            'primary_evidence_lng': -46.6333,
-            'primary_evidence_timestamp_utc': now.toIso8601String(),
-            'evidence_hash':
-                'seed000000000000000000000000000000000000000000000000000000000001',
-            'delta_value': 8.5,
-            'threshold_value': 80.0,
-            'fine_cents': 150000,
-            'confidence_score': 99,
-            if (driver != null && driver.containsKey('vehicle_id')) ...{
-              'vehicle_id': driver['vehicle_id'],
-              'vehicle_plate': driver['vehicle_plate'],
-            },
-            if (driver != null && driver.containsKey('full_name')) ...{
-              'driver_id': driver['id'],
-              'driver_name': driver['full_name'],
-            },
-          },
-        },
-      });
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'data_seed');
     }
   }
 
