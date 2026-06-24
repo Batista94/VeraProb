@@ -59,7 +59,7 @@
 - [ ] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures. *(DIFERIDO — completar WS-9 Signal Integrity primeiro; reusa o scoring de confiança.)*
 - [x] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles. *(Sprint A — `acknowledge_via_portal` hash-bound + `acknowledge_sanction_internal`; status terminal `acknowledged`; fato ledger `SANCTION_ACKNOWLEDGED`.)*
 - [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
-- [ ] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
+- [x] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
 - [ ] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
 
 ### [ ] Phase 10.7 — Enterprise Integration & Event Dispatch
