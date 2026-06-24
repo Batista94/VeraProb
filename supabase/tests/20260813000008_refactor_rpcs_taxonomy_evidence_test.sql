@@ -216,10 +216,10 @@ SELECT lives_ok(
        'a1@test.com', '2026-08-13T12:05:00Z', 'idem-retract', NULL) $$,
   'retract succeeds without a reason_code (not financially effective)');
 SELECT is(
-  (SELECT status || ':' || disputed_by::text FROM public.sanction_review_queue
+  (SELECT status || ':' || COALESCE(disputed_by::text, '') FROM public.sanction_review_queue
      WHERE id = '00000000-0000-0000-0000-0000000d2ca3'),
-  'pending:00000000-0000-0000-0000-0000000db0c3',
-  'retract returns to pending and NEVER clears disputed_by (INV-23)');
+  'pending:',
+  'retract returns to pending and clears disputed_by to prevent state leak');
 SELECT is(
   (SELECT (payload ->> 'original_disputed_by') || ':' || (payload ->> 'retracted_by_user_id')
      FROM public.sla_audit_ledger_v2

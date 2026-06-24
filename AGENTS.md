@@ -97,6 +97,7 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 11 | SECURITY-DEFINER-VIEW | `CREATE VIEW` without `WITH (security_invoker = true)` bypasses RLS (INV-2, INV-22) |
 | 12 | PARTITION-RLS-GAP | `CREATE TABLE … PARTITION OF` without per-child `ENABLE ROW LEVEL SECURITY` + mirrored policy (INV-2, INV-22) |
 | 13 | INV-DATA-API-GRANT | Missing explicit Data API table grants for tables created in the `public` schema |
+| 14 | LAZY-TEST-BYPASS | Mock/Empty pgTAP Tests |
 
 ## Lessons Learned — Index
 
@@ -151,6 +152,7 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 - Don't commit unless user explicitly asks.
 - Don't bypass scanner with `--no-verify` or silence rules.
 - Don't modify already-merged migrations (append-only).
+- Don't use "lazy" workarounds. Lazy testing (e.g., bypassing assertions, mocking pgTAP), lazy fixes (silencing linters instead of fixing root causes), and taking shortcuts are strictly forbidden.
 
 ## Where to Look (Source-of-Truth Map)
 

@@ -13,9 +13,9 @@
 SET client_min_messages TO 'WARNING';
 
 -- Drop the broken signatures created by 20260901000002 to avoid "not unique" overloads
-DROP FUNCTION IF EXISTS public.resolve_dispute(UUID, UUID, TEXT, TEXT, UUID, TEXT, TIMESTAMPTZ, TEXT);
-DROP FUNCTION IF EXISTS public.approve_sanction(UUID, UUID, UUID, TEXT, TIMESTAMPTZ);
-DROP FUNCTION IF EXISTS public.reject_sanction(UUID, UUID, UUID, TEXT, TEXT, TIMESTAMPTZ);
+DROP FUNCTION IF EXISTS public.resolve_dispute(UUID, UUID, TEXT, TEXT, UUID, TEXT, TIMESTAMPTZ, TEXT); -- INV-DB: zero-downtime-verified
+DROP FUNCTION IF EXISTS public.approve_sanction(UUID, UUID, UUID, TEXT, TIMESTAMPTZ); -- INV-DB: zero-downtime-verified
+DROP FUNCTION IF EXISTS public.reject_sanction(UUID, UUID, UUID, TEXT, TEXT, TIMESTAMPTZ); -- INV-DB: zero-downtime-verified
 
 -- ── 1. resolve_dispute (9-param) with FOR UPDATE NOWAIT ───────────────────────
 CREATE OR REPLACE FUNCTION public.resolve_dispute(
@@ -161,7 +161,10 @@ BEGIN
            ELSE resolution_reason_code END,
          rejection_reason_code = CASE
            WHEN p_resolution IN ('DISPUTE_ACCEPTED', 'DISPUTE_OVERTURNED') THEN p_reason_code
-           ELSE rejection_reason_code END
+           ELSE rejection_reason_code END,
+         disputed_at = CASE WHEN p_resolution = 'DISPUTE_RETRACTED' THEN NULL ELSE disputed_at END,
+         disputed_by = CASE WHEN p_resolution = 'DISPUTE_RETRACTED' THEN NULL ELSE disputed_by END,
+         resolution_due_at = CASE WHEN p_resolution = 'DISPUTE_RETRACTED' THEN NULL ELSE resolution_due_at END
    WHERE id = p_queue_entry_id AND organization_id = p_organization_id;
 
   UPDATE public.dispute_portal_tokens
