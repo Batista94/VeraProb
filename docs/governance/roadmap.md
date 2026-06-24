@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
 **Revision:** 2026-06-24
-**Current Status:** Phase 10.6 (Core delivered) · [NEXT: validar CI E2E green + priorizar próximos itens BIZ]
+**Current Status:** Phase 10.6 (Core + Ingestion Health Monitor delivered) · [NEXT: commitar feature/sparklines + validar CI E2E green + priorizar próximos itens BIZ]
 
 ---
 
@@ -9,8 +9,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1343 passing · 115 files · `make test-db` ✅ |
-| Migrations | 316 applied ✅ |
+| DB Tests (pgTAP) | 1354+ passing · 117 files · `make test-db` ✅ (2 new test files on feature/sparklines pending commit) |
+| Migrations | 317 committed + 2 pending commit on `feature/sparklines` = 319 files ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -56,7 +56,7 @@
 - [x] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
 - [x] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
 - [x] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual. *(Sprint C — `mv_carrier_performance` MV + pg_cron horário + `get_carrier_performance_ranking` RPC SECURITY DEFINER; `CarrierRankTable`.)*
-- [ ] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures. *(DIFERIDO — completar WS-9 Signal Integrity primeiro; reusa o scoring de confiança.)*
+- [x] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures. *(Entregue 2026-06-24 — `get_fleet_health_status` RPC SECURITY DEFINER, `IngestionHealthScreen`, `FleetHealthSummaryBar`, `VehicleHealthCard`, `fleet_health_providers`, `SupabaseFleetHealthQueryService`. `HardwareStatusView` INV-13 VO; `fleetActiveRatioBps` int bps convention. Migrations `20260902000001`+`20260902000002`. Branch `feature/sparklines`.)*
 - [x] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles. *(Sprint A — `acknowledge_via_portal` hash-bound + `acknowledge_sanction_internal`; status terminal `acknowledged`; fato ledger `SANCTION_ACKNOWLEDGED`.)*
 - [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 - [x] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
