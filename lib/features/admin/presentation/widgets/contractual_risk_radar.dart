@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/sla_audit/projections/dashboard_risk_feed_node.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
 import 'package:veraprob/state/providers/sla_financial_providers.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
@@ -76,6 +77,8 @@ class FinancialKpiRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final impactAsync = ref.watch(financialImpactProvider);
+    final window = ref.watch(sparklineWindowProvider);
+    final series = ref.watch(financialSparklineProvider(window)).asData?.value;
     // Provenance: every KPI is one tap from the raw impact ledger.
     void drillDown() => context.go(AdminNav.financialImpact.path);
 
@@ -89,36 +92,60 @@ class FinancialKpiRow extends ConsumerWidget {
           color: VeraProbColors.error,
         ),
       ),
-      AsyncData(:final value) => Row(
+      AsyncData(:final value) => Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Expanded(
-            child: _KpiCard(
-              title: 'Receita Protegida',
-              value: 'R\$ ${(value.protectedRevenue / 100).toStringAsFixed(2)}',
-              color: VeraProbColors.success,
-              icon: Icons.shield,
-              onTap: drillDown,
+          SegmentedButton<int>(
+            segments: const [
+              ButtonSegment<int>(value: 7, label: Text('7d')),
+              ButtonSegment<int>(value: 30, label: Text('30d')),
+            ],
+            selected: {window},
+            onSelectionChanged: (s) =>
+                ref.read(sparklineWindowProvider.notifier).set(s.first),
+            style: const ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _KpiCard(
-              title: 'Receita em Risco (Atrasos)',
-              value: 'R\$ ${(value.revenueAtRisk / 100).toStringAsFixed(2)}',
-              color: VeraProbColors.warning,
-              icon: Icons.warning_amber_rounded,
-              onTap: drillDown,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _KpiCard(
-              title: 'SLA Violado (Penalty)',
-              value: 'R\$ ${(value.lostRevenue / 100).toStringAsFixed(2)}',
-              color: VeraProbColors.error,
-              icon: Icons.gavel,
-              onTap: drillDown,
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: _KpiCard(
+                  title: 'Receita Protegida',
+                  value:
+                      'R\$ ${(value.protectedRevenue / 100).toStringAsFixed(2)}',
+                  color: VeraProbColors.success,
+                  icon: Icons.shield,
+                  onTap: drillDown,
+                  sparkline: series?.protectedCents,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _KpiCard(
+                  title: 'Receita em Risco (Atrasos)',
+                  value:
+                      'R\$ ${(value.revenueAtRisk / 100).toStringAsFixed(2)}',
+                  color: VeraProbColors.warning,
+                  icon: Icons.warning_amber_rounded,
+                  onTap: drillDown,
+                  sparkline: series?.atRiskCents,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _KpiCard(
+                  title: 'SLA Violado (Penalty)',
+                  value: 'R\$ ${(value.lostRevenue / 100).toStringAsFixed(2)}',
+                  color: VeraProbColors.error,
+                  icon: Icons.gavel,
+                  onTap: drillDown,
+                  sparkline: series?.lostCents,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -132,6 +159,7 @@ class _KpiCard extends StatelessWidget {
   final Color color;
   final IconData icon;
   final VoidCallback? onTap;
+  final List<int>? sparkline;
 
   const _KpiCard({
     required this.title,
@@ -139,6 +167,7 @@ class _KpiCard extends StatelessWidget {
     required this.color,
     required this.icon,
     this.onTap,
+    this.sparkline,
   });
 
   @override
@@ -189,6 +218,10 @@ class _KpiCard extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                if (sparkline != null && sparkline!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  SparklineWidget(values: sparkline!, color: color),
+                ],
               ],
             ),
           ),

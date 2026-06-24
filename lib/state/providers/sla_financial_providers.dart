@@ -8,6 +8,9 @@ import 'package:veraprob/application/sla_audit/projections/contractual_financial
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_impact_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/contractual_financial_trend_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/financial_sparkline_query_service.dart';
+import 'package:veraprob/application/sla_audit/projections/financial_sparkline_query_service_in_memory.dart';
+import 'package:veraprob/application/sla_audit/projections/financial_sparkline_series.dart';
 import 'package:veraprob/domain/sla_audit/contractual_financial_snapshot_repository.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
@@ -15,6 +18,7 @@ import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart'
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_impact_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_contractual_financial_trend_query_service.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_financial_sparkline_query_service.dart';
 
 // ── Snapshot Repository ─────────────────────────────────────
 
@@ -83,4 +87,43 @@ final financialTrendQueryServiceProvider =
       return ContractualFinancialTrendQueryServiceInMemory(
         snapshotRepo: snapshotRepo,
       );
+    });
+
+// ── Sparkline ───────────────────────────────────────────────
+
+final financialSparklineQueryServiceProvider =
+    Provider<FinancialSparklineQueryService>((ref) {
+      final mode = ref.watch(persistenceModeProvider);
+
+      if (mode == PersistenceMode.postgres) {
+        final client = ref.watch(supabaseClientProvider);
+        return PostgresFinancialSparklineQueryService(client);
+      }
+
+      final snapshotRepo = ref.watch(financialSnapshotRepositoryProvider);
+      return FinancialSparklineQueryServiceInMemory(snapshotRepo: snapshotRepo);
+    });
+
+/// 7-day default; toggled to 30 via segmented control on the KPI row.
+class _SparklineWindowNotifier extends Notifier<int> {
+  @override
+  int build() => 7;
+
+  void set(int days) => state = days;
+}
+
+final sparklineWindowProvider = NotifierProvider<_SparklineWindowNotifier, int>(
+  _SparklineWindowNotifier.new,
+);
+
+/// Keyed by [days]; kept-alive so 7↔30 toggle is instant after first load.
+final financialSparklineProvider =
+    FutureProvider.family<FinancialSparklineSeries, int>((ref, days) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return FinancialSparklineSeries.empty;
+
+      final service = ref.watch(financialSparklineQueryServiceProvider);
+      return service
+          .getSparkline(organizationId: organizationId, days: days)
+          .withProviderTimeout();
     });
