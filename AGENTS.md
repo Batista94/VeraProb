@@ -113,6 +113,7 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 | 6 | E2E Test Protocols — dart-defines, selectors, HttpOverrides, modal cancel, CNPJ factory |
 | 7 | Regression Ack Discipline — `// pr_scanner: ignore-regression` only after Council review |
 | 8 | Flutter Web Wasm Async Context — capture `Navigator.of(context)` + `ScaffoldMessenger.of(context)` BEFORE first `await` in dialogs; add `_isSaving` guard to prevent ClickDebouncer loop (CT02) |
+| 9 | Automated Test Synchronization — update automated tests when code is modified to prevent stale test errors |
 
 ## Database Governance
 
