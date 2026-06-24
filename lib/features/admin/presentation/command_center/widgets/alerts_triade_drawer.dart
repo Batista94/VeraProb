@@ -491,14 +491,26 @@ class _RichEvidenceCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Reconciliar',
+                  label:
+                      (alert.alertType == 'TELEMETRY_SILENT' ||
+                          alert.alertType == 'EVIDENCE_GAP')
+                      ? 'Diagnóstico'
+                      : 'Reconciliar',
                   icon: Icons.open_in_new_rounded,
                   onPressed: () {
-                    ref
-                        .read(selectedContractIdProvider.notifier)
-                        .set(alert.contractId);
-                    Navigator.of(context).pop();
-                    context.go(AdminNav.slaAudit.path);
+                    if (alert.alertType == 'TELEMETRY_SILENT' ||
+                        alert.alertType == 'EVIDENCE_GAP') {
+                      Navigator.of(context).pop();
+                      context.go(
+                        AppRoutes.ingestionHealthVehicle(alert.entityId),
+                      );
+                    } else {
+                      ref
+                          .read(selectedContractIdProvider.notifier)
+                          .set(alert.contractId);
+                      Navigator.of(context).pop();
+                      context.go(AdminNav.slaAudit.path);
+                    }
                   },
                 ),
               ),

@@ -42,6 +42,7 @@ import 'package:veraprob/features/admin/presentation/screens/sla_template_librar
 import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/evidence_reconciliation_screen.dart';
 import 'package:veraprob/presentation/shell/settings_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/ingestion_health_screen.dart';
 
 // ── Super-admin shell + branch screens ──
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
@@ -203,6 +204,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'fleet-risk',
                     builder: (context, state) =>
                         const FleetRiskAnalyticsScreen(),
+                  ),
+                  // `/admin/hub/ingestion-health` — Ingestion Health Monitor,
+                  // shell-preserving so the Administração pillar stays selected.
+                  // Supports `?vehicleId=` query param for drill-down from alerts.
+                  GoRoute(
+                    path: 'ingestion-health',
+                    builder: (context, state) {
+                      final vehicleId = state.uri.queryParameters['vehicleId'];
+                      return IngestionHealthScreen(
+                        preselectedVehicleId: vehicleId,
+                      );
+                    },
                   ),
                 ],
               ),
