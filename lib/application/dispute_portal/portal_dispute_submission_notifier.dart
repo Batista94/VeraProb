@@ -186,73 +186,18 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
 
     _isSubmitting = true;
     try {
-      String? sha256Client;
       final file = currentState.file;
+      final sha256Client = file != null ? await _hashFile(file) : null;
 
-      if (file != null) {
-        state = const PortalSubmissionHashing();
-        final hasher = ref.read(fileHasherProvider);
-        sha256Client = await hasher.sha256Hex(file.bytes);
-      }
+      final outcome = await _uploadWithRetry(
+        token: token,
+        justification: currentState.justification.trim(),
+        file: file,
+        sha256Client: sha256Client,
+      );
 
-      final gateway = ref.read(portalDisputeGatewayProvider);
-      final policy = ref.read(portalRetryPolicyProvider);
-
-      // Retry only genuine infra unavailability (PortalDisputeException.retryable,
-      // i.e. edge-fn 503 / transient transport). A re-submit reuses the existing
-      // QUARANTINE row by (token, sha256) — no extra slot consumed (idempotency,
-      // migration 20260825000001). Business rejections (INV-26) are NOT retried.
-      late final PortalSubmissionOutcome outcome;
-      for (var attempt = 1; ; attempt++) {
-        state = const PortalSubmissionUploading();
-        try {
-          outcome = await gateway.submitEvidence(
-            token: token,
-            justification: currentState.justification.trim(),
-            file: file,
-            sha256Client: sha256Client,
-          );
-          break;
-        } on PortalDisputeException catch (e) {
-          if (!e.retryable || attempt >= policy.maxAttempts) rethrow;
-          state = PortalSubmissionRetrying(
-            attempt: attempt,
-            maxAttempts: policy.maxAttempts,
-          );
-          await Future<void>.delayed(policy.delayAfterAttempt(attempt));
-          if (_disposed) return;
-        }
-      }
-
-      // INV-9/INV-26: a 2xx transport is NOT a success — only the server's
-      // verification verdict is. A rejected attachment (corrupt bytes, wrong
-      // magic-byte signature, or hash drift) NEVER set defense_submitted_at, so
-      // reporting success here would strand the dispute (the auditor card never
-      // re-labels "DEFESA RECEBIDA") and silently bury the carrier's testimony.
-      switch (outcome) {
-        case PortalSubmissionOutcome.pendingAudit:
-          break;
-        case PortalSubmissionOutcome.mimeMismatch:
-        case PortalSubmissionOutcome.hashMismatch:
-          state = PortalSubmissionError(
-            const PortalDisputeException(
-              'O arquivo anexado é inválido ou está corrompido (não foi '
-              'possível validar o conteúdo). Remova o anexo e tente novamente, '
-              'ou envie apenas a justificativa por escrito.',
-            ),
-            currentState,
-          );
-          return;
-        case PortalSubmissionOutcome.rejected:
-          state = PortalSubmissionError(
-            const PortalDisputeException(
-              'Não foi possível validar o anexo enviado. Remova o arquivo e '
-              'tente novamente, ou envie apenas a justificativa por escrito.',
-            ),
-            currentState,
-          );
-          return;
-      }
+      if (outcome == null) return;
+      if (_processOutcomeAndCheckError(outcome, currentState)) return;
 
       final now = DateTime.now().toUtc();
       final pseudoHash =
@@ -271,6 +216,81 @@ class PortalDisputeSubmissionNotifier extends Notifier<PortalSubmissionState> {
       state = PortalSubmissionError(cause, currentState);
     } finally {
       _isSubmitting = false;
+    }
+  }
+
+  Future<String> _hashFile(StagedFile file) async {
+    state = const PortalSubmissionHashing();
+    final hasher = ref.read(fileHasherProvider);
+    return await hasher.sha256Hex(file.bytes);
+  }
+
+  Future<PortalSubmissionOutcome?> _uploadWithRetry({
+    required String token,
+    required String justification,
+    required StagedFile? file,
+    required String? sha256Client,
+  }) async {
+    final gateway = ref.read(portalDisputeGatewayProvider);
+    final policy = ref.read(portalRetryPolicyProvider);
+
+    // Retry only genuine infra unavailability (PortalDisputeException.retryable,
+    // i.e. edge-fn 503 / transient transport). A re-submit reuses the existing
+    // QUARANTINE row by (token, sha256) — no extra slot consumed (idempotency,
+    // migration 20260825000001). Business rejections (INV-26) are NOT retried.
+    for (var attempt = 1; ; attempt++) {
+      state = const PortalSubmissionUploading();
+      try {
+        return await gateway.submitEvidence(
+          token: token,
+          justification: justification,
+          file: file,
+          sha256Client: sha256Client,
+        );
+      } on PortalDisputeException catch (e) {
+        if (!e.retryable || attempt >= policy.maxAttempts) rethrow;
+        state = PortalSubmissionRetrying(
+          attempt: attempt,
+          maxAttempts: policy.maxAttempts,
+        );
+        await Future<void>.delayed(policy.delayAfterAttempt(attempt));
+        if (_disposed) return null;
+      }
+    }
+  }
+
+  bool _processOutcomeAndCheckError(
+    PortalSubmissionOutcome outcome,
+    PortalSubmissionStaging currentState,
+  ) {
+    // INV-9/INV-26: a 2xx transport is NOT a success — only the server's
+    // verification verdict is. A rejected attachment (corrupt bytes, wrong
+    // magic-byte signature, or hash drift) NEVER set defense_submitted_at, so
+    // reporting success here would strand the dispute (the auditor card never
+    // re-labels "DEFESA RECEBIDA") and silently bury the carrier's testimony.
+    switch (outcome) {
+      case PortalSubmissionOutcome.pendingAudit:
+        return false;
+      case PortalSubmissionOutcome.mimeMismatch:
+      case PortalSubmissionOutcome.hashMismatch:
+        state = PortalSubmissionError(
+          const PortalDisputeException(
+            'O arquivo anexado é inválido ou está corrompido (não foi '
+            'possível validar o conteúdo). Remova o anexo e tente novamente, '
+            'ou envie apenas a justificativa por escrito.',
+          ),
+          currentState,
+        );
+        return true;
+      case PortalSubmissionOutcome.rejected:
+        state = PortalSubmissionError(
+          const PortalDisputeException(
+            'Não foi possível validar o anexo enviado. Remova o arquivo e '
+            'tente novamente, ou envie apenas a justificativa por escrito.',
+          ),
+          currentState,
+        );
+        return true;
     }
   }
 
