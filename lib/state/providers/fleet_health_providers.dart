@@ -95,7 +95,7 @@ final fleetHealthPollingProvider = StreamProvider.autoDispose<FleetHealthView>((
 
 // ── Drill-Down Selection ─────────────────────────────────────────────────────
 
-class _SelectedHealthVehicleIdNotifier extends Notifier<String?> {
+class SelectedHealthVehicleIdNotifier extends Notifier<String?> {
   @override
   String? build() => null;
 
@@ -107,6 +107,29 @@ class _SelectedHealthVehicleIdNotifier extends Notifier<String?> {
 /// Set by the alert tap handler or by clicking a vehicle in the grid.
 /// `null` means no vehicle is selected (detail panel collapsed).
 final selectedHealthVehicleIdProvider =
-    NotifierProvider<_SelectedHealthVehicleIdNotifier, String?>(
-      _SelectedHealthVehicleIdNotifier.new,
+    NotifierProvider<SelectedHealthVehicleIdNotifier, String?>(
+      SelectedHealthVehicleIdNotifier.new,
     );
+
+// ── Preselection Validation ──────────────────────────────────────────────────
+
+/// Validates [candidateId] against the org's loaded fleet (INV-22 / INV-26).
+///
+/// Returns [candidateId] when found in the fleet; `null` when data is still
+/// pending (stream not yet emitted) OR when the id is absent from the org's
+/// fleet. Callers distinguish the two cases by reading
+/// [fleetHealthPollingProvider] separately — Anti-Oracle compliance requires
+/// that "pending" and "absent" produce identical UI (no id in error messages).
+final resolvedPreselectionProvider = Provider.family<String?, String?>((
+  ref,
+  candidateId,
+) {
+  if (candidateId == null || candidateId.isEmpty) return null;
+  final view = ref.watch(fleetHealthPollingProvider).asData?.value;
+  if (view == null) return null;
+  final ids = <String>{
+    for (final e in view.vehicles)
+      if ((e.vehicleId ?? e.deviceId) != null) e.vehicleId ?? e.deviceId!,
+  };
+  return ids.contains(candidateId) ? candidateId : null;
+});

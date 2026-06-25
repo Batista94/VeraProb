@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthResponse, AuthState;
 
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/routing_utils.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
@@ -108,7 +109,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.login,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: refresh,
-    observers: [SentryNavigatorObserver()],
+    observers: [
+      SentryNavigatorObserver(
+        routeNameExtractor: (s) {
+          final name = s?.name;
+          if (name == null) return s;
+          return RouteSettings(name: Uri.tryParse(name)?.path ?? name);
+        },
+      ),
+    ],
     redirect: (context, state) {
       final session = client.auth.currentSession;
       final hasSession =
@@ -211,7 +220,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'ingestion-health',
                     builder: (context, state) {
-                      final vehicleId = state.uri.queryParameters['vehicleId'];
+                      final vehicleId = parseVehicleIdParam(
+                        state.uri.queryParameters['vehicleId'],
+                      );
                       return IngestionHealthScreen(
                         preselectedVehicleId: vehicleId,
                       );

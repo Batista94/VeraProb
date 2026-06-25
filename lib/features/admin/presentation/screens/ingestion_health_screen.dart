@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/sla_audit/projections/fleet_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart';
 import 'package:veraprob/features/admin/presentation/widgets/fleet_health_summary_bar.dart';
+import 'package:veraprob/features/admin/presentation/widgets/health_display_helpers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/vehicle_health_card.dart';
 import 'package:veraprob/state/providers/fleet_health_providers.dart';
 
@@ -17,15 +19,14 @@ final _dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 ///
 /// **URL:** `/admin/hub/ingestion-health[?vehicleId=<uuid>]`
 ///
-/// The optional `vehicleId` query parameter pre-selects a vehicle and opens
-/// the detail panel (used for drill-down from `TELEMETRY_SILENT` /
-/// `EVIDENCE_GAP` alerts in the Command Center).
+/// The optional `vehicleId` query param pre-selects a vehicle, scrolls it into
+/// view, and opens the detail panel (drill-down from `TELEMETRY_SILENT` /
+/// `EVIDENCE_GAP` alerts in the Command Center drawer).
 ///
 /// INV-1: org-scoped via `currentOrganizationIdProvider`.
-/// INV-16: 60s polling via `fleetHealthPollingProvider` (no Realtime on
-///         `canonical_facts` — connection budget protection).
+/// INV-16: 60s polling (no Realtime on `canonical_facts` — connection budget).
+/// INV-22/INV-26: vehicleId validated against org fleet before acting.
 class IngestionHealthScreen extends ConsumerStatefulWidget {
-  /// Pre-selected vehicle ID for drill-down navigation.
   final String? preselectedVehicleId;
 
   const IngestionHealthScreen({super.key, this.preselectedVehicleId});
@@ -36,25 +37,117 @@ class IngestionHealthScreen extends ConsumerStatefulWidget {
 }
 
 class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
+  final _scrollTrigger = ValueNotifier<String?>(null);
+  String? _resolvedPreselectionId;
+  bool _preselectionHandled = false;
+  ProviderSubscription<String?>? _preselectionSub;
+  ProviderSubscription<AsyncValue<FleetHealthView>>? _fleetSub;
+  // Stored in initState so dispose() can call .set(null) without ref (Riverpod rule).
+  late final SelectedHealthVehicleIdNotifier _selectionNotifier;
+
   @override
   void initState() {
     super.initState();
-    // Apply drill-down preselection after first frame.
+    _selectionNotifier = ref.read(selectedHealthVehicleIdProvider.notifier);
     if (widget.preselectedVehicleId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        ref
-            .read(selectedHealthVehicleIdProvider.notifier)
-            .set(widget.preselectedVehicleId);
+        // Capture before any async gap (Lesson 8).
+        _listenForPreselection(ScaffoldMessenger.of(context));
       });
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    final AsyncValue<FleetHealthView> healthAsync = ref.watch(
-      fleetHealthPollingProvider,
+  void dispose() {
+    _preselectionSub?.close();
+    _fleetSub?.close();
+    _scrollTrigger.dispose();
+    _selectionNotifier.set(null);
+    super.dispose();
+  }
+
+  void _listenForPreselection(ScaffoldMessengerState messenger) {
+    // Immediate check: maybe fleet data already in cache.
+    final immediate = ref.read(
+      resolvedPreselectionProvider(widget.preselectedVehicleId),
     );
+    if (immediate != null) {
+      _resolvePreselection(immediate);
+      return;
+    }
+    if (ref.read(fleetHealthPollingProvider).asData != null) {
+      _showAbsentNotice(messenger);
+      return;
+    }
+
+    // Data still loading: watch for id resolution (null → uuid).
+    _preselectionSub = ref.listenManual(
+      resolvedPreselectionProvider(widget.preselectedVehicleId),
+      (_, id) {
+        if (_preselectionHandled || id == null) return;
+        _cancelPreselectionSubs();
+        _resolvePreselection(id);
+      },
+    );
+
+    // Also watch fleet load: if data arrives but id stays null, it's absent.
+    _fleetSub = ref.listenManual(fleetHealthPollingProvider, (_, next) {
+      if (_preselectionHandled || next.asData == null) return;
+      final id = ref.read(
+        resolvedPreselectionProvider(widget.preselectedVehicleId),
+      );
+      if (id != null) return; // _preselectionSub will handle this case.
+      _cancelPreselectionSubs();
+      if (mounted) _showAbsentNotice(messenger);
+    });
+  }
+
+  void _cancelPreselectionSubs() {
+    _preselectionHandled = true;
+    _preselectionSub?.close();
+    _preselectionSub = null;
+    _fleetSub?.close();
+    _fleetSub = null;
+  }
+
+  void _resolvePreselection(String id) {
+    _preselectionHandled = true;
+    _selectionNotifier.set(id);
+    if (!mounted) return;
+    setState(() => _resolvedPreselectionId = id);
+    _scrollTrigger.value = id;
+    // Clear after pulse duration so subsequent poll rebuilds don't re-pulse.
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (mounted) setState(() => _resolvedPreselectionId = null);
+    });
+  }
+
+  void _showAbsentNotice(ScaffoldMessengerState messenger) {
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Este registro não está mais disponível no monitor.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onBack() {
+    if (widget.preselectedVehicleId != null) {
+      context.go(AppRoutes.adminHub);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(isAlertsDrawerOpenProvider.notifier).set(true);
+      });
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.adminHub);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final healthAsync = ref.watch(fleetHealthPollingProvider);
     final selectedId = ref.watch(selectedHealthVehicleIdProvider);
 
     return Padding(
@@ -62,79 +155,54 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header ──
-          Row(
-            children: [
-              IconButton(
-                tooltip: 'Voltar',
-                onPressed: () => context.canPop()
-                    ? context.pop()
-                    : context.go(AppRoutes.adminHub),
-                icon: const Icon(
-                  Icons.arrow_back,
-                  color: VeraProbColors.textPrimary,
-                ),
-              ),
-              const SizedBox(width: VeraProbSpacing.xs),
-              const Icon(
-                Icons.monitor_heart_outlined,
-                color: VeraProbColors.primary,
-              ),
-              const SizedBox(width: VeraProbSpacing.sm),
-              Flexible(
-                child: Text(
-                  'Monitor de Saúde da Ingestão',
-                  style: VeraProbTypography.sectionTitle,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const Spacer(),
-              // Polling indicator
-              healthAsync.when(
-                data: (_) => Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: VeraProbColors.onTime,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Atualização: 60s',
-                      style: VeraProbTypography.kpiLabel.copyWith(fontSize: 10),
-                    ),
-                  ],
-                ),
-                loading: () => const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VeraProbColors.primary,
-                  ),
-                ),
-                error: (error, stack) => const Icon(
-                  Icons.error_outline,
-                  color: VeraProbColors.critical,
-                  size: 16,
-                ),
-              ),
-            ],
-          ),
+          _IngestionHealthHeader(healthAsync: healthAsync, onBack: _onBack),
           const SizedBox(height: VeraProbSpacing.md),
-
-          // ── Content ──
           Expanded(
             child: healthAsync.when(
-              data: (view) => _buildContent(view, selectedId),
+              data: (view) => Column(
+                children: [
+                  FleetHealthSummaryBar(healthView: view),
+                  const SizedBox(height: VeraProbSpacing.md),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: _VehicleListPanel(
+                            view: view,
+                            selectedId: selectedId,
+                            preselectedId: _resolvedPreselectionId,
+                            scrollTrigger: _scrollTrigger,
+                            onSelect: (id) => ref
+                                .read(selectedHealthVehicleIdProvider.notifier)
+                                .set(id),
+                          ),
+                        ),
+                        if (selectedId != null) ...[
+                          const SizedBox(width: VeraProbSpacing.md),
+                          Expanded(
+                            flex: 2,
+                            child: _IngestionHealthDetailPanel(
+                              view: view,
+                              selectedId: selectedId,
+                              onClose: () => ref
+                                  .read(
+                                    selectedHealthVehicleIdProvider.notifier,
+                                  )
+                                  .set(null),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
               loading: () => const Center(
                 child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
-              error: (error, stack) => Center(
+              error: (_, _) => Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -159,36 +227,131 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
       ),
     );
   }
+}
 
-  Widget _buildContent(FleetHealthView view, String? selectedId) {
-    return Column(
+class _IngestionHealthHeader extends StatelessWidget {
+  final AsyncValue<FleetHealthView> healthAsync;
+  final VoidCallback onBack;
+
+  const _IngestionHealthHeader({
+    required this.healthAsync,
+    required this.onBack,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
       children: [
-        // KPI Summary Bar
-        FleetHealthSummaryBar(healthView: view),
-        const SizedBox(height: VeraProbSpacing.md),
-
-        // Master-Detail
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        IconButton(
+          tooltip: 'Voltar',
+          onPressed: onBack,
+          icon: const Icon(Icons.arrow_back, color: VeraProbColors.textPrimary),
+        ),
+        const SizedBox(width: VeraProbSpacing.xs),
+        const Icon(Icons.monitor_heart_outlined, color: VeraProbColors.primary),
+        const SizedBox(width: VeraProbSpacing.sm),
+        Flexible(
+          child: Text(
+            'Monitor de Saúde da Ingestão',
+            style: VeraProbTypography.sectionTitle,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        const Spacer(),
+        healthAsync.when(
+          data: (_) => Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Master: Vehicle Grid ──
-              Expanded(flex: 3, child: _buildVehicleList(view, selectedId)),
-
-              // ── Detail Panel (shown when a vehicle is selected) ──
-              if (selectedId != null) ...[
-                const SizedBox(width: VeraProbSpacing.md),
-                Expanded(flex: 2, child: _buildDetailPanel(view, selectedId)),
-              ],
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: VeraProbColors.onTime,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Atualização: 60s',
+                style: VeraProbTypography.kpiLabel.copyWith(fontSize: 10),
+              ),
             ],
+          ),
+          loading: () => const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: VeraProbColors.primary,
+            ),
+          ),
+          error: (_, _) => const Icon(
+            Icons.error_outline,
+            color: VeraProbColors.critical,
+            size: 16,
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildVehicleList(FleetHealthView view, String? selectedId) {
-    if (view.vehicles.isEmpty) {
+class _VehicleListPanel extends StatefulWidget {
+  final FleetHealthView view;
+  final String? selectedId;
+  final String? preselectedId;
+  final ValueNotifier<String?> scrollTrigger;
+  final void Function(String? id) onSelect;
+
+  const _VehicleListPanel({
+    required this.view,
+    required this.selectedId,
+    required this.preselectedId,
+    required this.scrollTrigger,
+    required this.onSelect,
+  });
+
+  @override
+  State<_VehicleListPanel> createState() => _VehicleListPanelState();
+}
+
+class _VehicleListPanelState extends State<_VehicleListPanel> {
+  // Stride = card vertical padding (sm*2=16) + icon height (36) + separator (xs=4)
+  static const double _kStride =
+      VeraProbSpacing.sm * 2 + 36.0 + VeraProbSpacing.xs; // 56.0
+
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.scrollTrigger.addListener(_onScrollTrigger);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollTrigger.removeListener(_onScrollTrigger);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScrollTrigger() {
+    final targetId = widget.scrollTrigger.value;
+    if (targetId == null || !_scrollController.hasClients) return;
+    final index = widget.view.vehicles.indexWhere(
+      (e) => (e.vehicleId ?? e.deviceId) == targetId,
+    );
+    if (index < 0) return;
+    _scrollController.animateTo(
+      (index * _kStride).clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.view.vehicles.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -216,39 +379,51 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
     }
 
     return ListView.separated(
-      itemCount: view.vehicles.length,
-      separatorBuilder: (context, index) =>
-          const SizedBox(height: VeraProbSpacing.xs),
-      itemBuilder: (context, index) {
-        final entry = view.vehicles[index];
+      controller: _scrollController,
+      itemCount: widget.view.vehicles.length,
+      separatorBuilder: (_, _) => const SizedBox(height: VeraProbSpacing.xs),
+      itemBuilder: (_, index) {
+        final entry = widget.view.vehicles[index];
         final entryId = entry.vehicleId ?? entry.deviceId ?? '';
         return VehicleHealthCard(
           entry: entry,
-          isSelected: selectedId == entryId,
-          onTap: () {
-            ref
-                .read(selectedHealthVehicleIdProvider.notifier)
-                .set(selectedId == entryId ? null : entryId);
-          },
+          isSelected: widget.selectedId == entryId,
+          isPreselected: widget.preselectedId == entryId,
+          onTap: () =>
+              widget.onSelect(widget.selectedId == entryId ? null : entryId),
         );
       },
     );
   }
+}
 
-  Widget _buildDetailPanel(FleetHealthView view, String selectedId) {
-    final entry = view.vehicles.where((v) {
-      final id = v.vehicleId ?? v.deviceId ?? '';
-      return id == selectedId;
-    }).firstOrNull;
+class _IngestionHealthDetailPanel extends StatelessWidget {
+  final FleetHealthView view;
+  final String selectedId;
+  final VoidCallback onClose;
+
+  const _IngestionHealthDetailPanel({
+    required this.view,
+    required this.selectedId,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = view.vehicles.firstWhereOrNull(
+      (v) => (v.vehicleId ?? v.deviceId ?? '') == selectedId,
+    );
+
+    final decoration = BoxDecoration(
+      color: VeraProbColors.surface,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: VeraProbColors.border),
+    );
 
     if (entry == null) {
       return Container(
         padding: VeraProbSpacing.sectionPadding,
-        decoration: BoxDecoration(
-          color: VeraProbColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: VeraProbColors.border),
-        ),
+        decoration: decoration,
         child: Center(
           child: Text(
             'Veículo não encontrado',
@@ -260,20 +435,17 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
       );
     }
 
-    final statusColor = _colorForStatus(entry.hardwareStatus);
+    final statusColor = HealthDisplayHelpers.colorForStatus(
+      entry.hardwareStatus,
+    );
 
     return Container(
       padding: VeraProbSpacing.sectionPadding,
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VeraProbColors.border),
-      ),
+      decoration: decoration,
       child: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Row(
               children: [
                 Icon(
@@ -295,23 +467,25 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                   icon: const Icon(Icons.close, size: 18),
                   color: VeraProbColors.textSecondary,
                   tooltip: 'Fechar',
-                  onPressed: () {
-                    ref
-                        .read(selectedHealthVehicleIdProvider.notifier)
-                        .set(null);
-                  },
+                  onPressed: onClose,
                 ),
               ],
             ),
             if (entry.model != null) ...[
               const SizedBox(height: VeraProbSpacing.xs),
-              Text(entry.model!, style: VeraProbTypography.kpiLabel),
+              Tooltip(
+                message: entry.model!,
+                child: Text(
+                  entry.model!,
+                  style: VeraProbTypography.kpiLabel,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
             ],
             const SizedBox(height: VeraProbSpacing.md),
             const Divider(color: VeraProbColors.border, height: 1),
             const SizedBox(height: VeraProbSpacing.md),
-
-            // Detail rows
             _DetailRow(label: 'Dispositivo', value: entry.deviceId ?? '—'),
             _DetailRow(
               label: 'Último Ping',
@@ -321,7 +495,7 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
             ),
             _DetailRow(
               label: 'Gap',
-              value: _formatGap(entry.gapSeconds),
+              value: HealthDisplayHelpers.formatGap(entry.gapSeconds),
               valueColor: statusColor,
             ),
             _DetailRow(
@@ -330,8 +504,6 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
               valueColor: statusColor,
             ),
             const SizedBox(height: VeraProbSpacing.md),
-
-            // Integrity score
             Text('Integridade do Sinal', style: VeraProbTypography.kpiLabel),
             const SizedBox(height: VeraProbSpacing.xs),
             Row(
@@ -340,13 +512,16 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(4),
                     child: LinearProgressIndicator(
+                      // Physical Metric - Double Required
                       value: (entry.integrityScoreBps / 10000.0).clamp(
                         0.0,
                         1.0,
                       ),
                       backgroundColor: VeraProbColors.surfaceElevated,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        _colorForScore(entry.integrityScoreBps),
+                        HealthDisplayHelpers.colorForScore(
+                          entry.integrityScoreBps,
+                        ),
                       ),
                       minHeight: 8,
                     ),
@@ -358,14 +533,14 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                   '${(entry.integrityScoreBps / 100.0).toStringAsFixed(1)}%',
                   style: VeraProbTypography.bodyMedium.copyWith(
                     fontWeight: FontWeight.w700,
-                    color: _colorForScore(entry.integrityScoreBps),
+                    color: HealthDisplayHelpers.colorForScore(
+                      entry.integrityScoreBps,
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: VeraProbSpacing.md),
-
-            // Anomalies
             _DetailRow(
               label: 'Anomalias (24h)',
               value: '${entry.anomalyCount24h}',
@@ -373,7 +548,6 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                   ? VeraProbColors.critical
                   : VeraProbColors.textSecondary,
             ),
-
             if (entry.isPhantom) ...[
               const SizedBox(height: VeraProbSpacing.md),
               Container(
@@ -411,28 +585,6 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
         ),
       ),
     );
-  }
-
-  static Color _colorForStatus(HardwareStatusView status) => switch (status) {
-    HardwareStatusView.healthy => VeraProbColors.onTime,
-    HardwareStatusView.delayed => VeraProbColors.delayed,
-    HardwareStatusView.offline => VeraProbColors.critical,
-    HardwareStatusView.neverSeen => VeraProbColors.neutral,
-  };
-
-  static Color _colorForScore(int bps) {
-    if (bps >= 7000) return VeraProbColors.onTime;
-    if (bps >= 4000) return VeraProbColors.delayed;
-    return VeraProbColors.critical;
-  }
-
-  static String _formatGap(int seconds) {
-    if (seconds >= 999999) return '—';
-    if (seconds < 60) return '${seconds}s';
-    if (seconds < 3600) return '${seconds ~/ 60}m';
-    final hours = seconds ~/ 3600;
-    final minutes = (seconds % 3600) ~/ 60;
-    return '${hours}h ${minutes}m';
   }
 }
 
