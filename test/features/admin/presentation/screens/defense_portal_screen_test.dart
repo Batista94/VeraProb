@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/features/admin/presentation/screens/defense_portal_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
@@ -35,7 +36,7 @@ void main() {
           ProviderScope(
             overrides: [
               justificationListStreamProvider.overrideWith(
-                (ref) => Stream.value([]),
+                (ref) => Stream.value(const <JustificationSummary>[]),
               ),
             ],
             child: const DefensePortalScreen(),
@@ -55,7 +56,7 @@ void main() {
       tester.view.physicalSize = const Size(1200, 800);
       tester.view.devicePixelRatio = 1.0;
 
-      final controller = StreamController<List<Map<String, dynamic>>>();
+      final controller = StreamController<List<JustificationSummary>>();
 
       await tester.pumpWidget(
         _buildScreen(
@@ -86,7 +87,7 @@ void main() {
           ProviderScope(
             overrides: [
               justificationListStreamProvider.overrideWith(
-                (ref) => Stream.value([]),
+                (ref) => Stream.value(const <JustificationSummary>[]),
               ),
             ],
             child: const DefensePortalScreen(),
@@ -110,7 +111,7 @@ void main() {
           ProviderScope(
             overrides: [
               justificationListStreamProvider.overrideWith(
-                (ref) => Stream.error(Exception('Simulated error')),
+                (ref) => throw Exception('Simulated error'),
               ),
             ],
             child: const DefensePortalScreen(),

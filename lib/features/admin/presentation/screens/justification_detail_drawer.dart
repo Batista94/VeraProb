@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
 import 'widgets/justification_status_badge.dart';
@@ -14,9 +15,9 @@ import 'widgets/justification_status_badge.dart';
 /// INV-22: actor ID + email carried in ledger entries via [JustificationActionNotifier].
 /// INV-24: opened via [showGeneralDialog] as an overlay.
 class JustificationDetailDrawer extends ConsumerStatefulWidget {
-  final Map<String, dynamic> row;
+  final JustificationSummary summary;
 
-  const JustificationDetailDrawer({super.key, required this.row});
+  const JustificationDetailDrawer({super.key, required this.summary});
 
   @override
   ConsumerState<JustificationDetailDrawer> createState() =>
@@ -36,8 +37,9 @@ class _JustificationDetailDrawerState
 
   @override
   Widget build(BuildContext context) {
-    final id = widget.row['id'] as String;
-    final status = JustificationStatus.fromDb(widget.row['status'] as String);
+    final summary = widget.summary;
+    final id = summary.id;
+    final status = summary.status;
     final role = ref.watch(currentUserRoleProvider);
     final canReview = RbacService().can(
       role,
@@ -71,42 +73,33 @@ class _JustificationDetailDrawerState
                     const SizedBox(height: 24),
                     _InfoField(
                       label: 'Contrato',
-                      value: widget.row['contract_id'] as String? ?? '-',
+                      value: summary.contractId ?? '-',
                     ),
-                    _InfoField(
-                      label: 'SET ID',
-                      value: widget.row['set_id'] as String? ?? '-',
-                    ),
+                    _InfoField(label: 'SET ID', value: summary.setId ?? '-'),
                     _InfoField(
                       label: 'Categoria',
-                      value: _categoryLabel(
-                        (widget.row['category'] as String? ?? '').toLowerCase(),
-                      ),
+                      value: summary.categoryLabel,
                     ),
                     const Divider(height: 40),
                     Text('DESCRIÇÃO', style: VeraProbTypography.caption),
                     const SizedBox(height: 8),
                     Text(
-                      widget.row['description'] as String? ?? '-',
+                      summary.description ?? '-',
                       style: VeraProbTypography.bodyMedium,
                     ),
                     const Divider(height: 40),
                     _InfoField(
                       label: 'Enviado em',
-                      value: _formatDate(
-                        widget.row['created_at_utc'] as String?,
-                      ),
+                      value: _formatDate(summary.createdAtUtc),
                     ),
-                    if (widget.row['reviewed_by_user_id'] != null) ...[
+                    if (summary.reviewedByUserId != null) ...[
                       _InfoField(
                         label: 'Revisado por',
-                        value: widget.row['reviewed_by_user_id'] as String,
+                        value: summary.reviewedByUserId!,
                       ),
                       _InfoField(
                         label: 'Revisado em',
-                        value: _formatDate(
-                          widget.row['reviewed_at_utc'] as String?,
-                        ),
+                        value: _formatDate(summary.reviewedAtUtc),
                       ),
                     ],
                     if (canReview && status.isPending) ...[
@@ -310,21 +303,9 @@ class _JustificationDetailDrawerState
     }
   }
 
-  String _categoryLabel(String raw) {
-    return switch (raw) {
-      'mechanical' => 'Mecânico',
-      'force_majeure' => 'Força Maior',
-      'traffic' => 'Trânsito',
-      'route_deviation' => 'Desvio de Rota',
-      'communication' => 'Comunicação',
-      _ => 'Outro',
-    };
-  }
-
-  String _formatDate(String? raw) {
-    if (raw == null) return '-';
-    final dt = DateTime.tryParse(raw)?.toLocal();
-    if (dt == null) return '-';
+  String _formatDate(DateTime? utc) {
+    if (utc == null) return '-';
+    final dt = utc.toLocal();
     return '${dt.day.toString().padLeft(2, '0')}/'
         '${dt.month.toString().padLeft(2, '0')}/'
         '${dt.year} '

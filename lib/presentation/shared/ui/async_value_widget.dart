@@ -51,6 +51,17 @@ class AsyncValueWidget<T> extends StatelessWidget {
     // during refresh automatically.
     final staleData = asyncValue.hasValue ? asyncValue.value : null;
 
+    // Surface errors even while the source still reports loading. A Riverpod
+    // StreamProvider whose stream errors before its first emission settles as
+    // `AsyncLoading(hasError: true)` — never a terminal `AsyncError` — so the
+    // `switch` below would otherwise show the loading widget forever.
+    if (asyncValue.hasError && staleData == null) {
+      return _buildError(
+        asyncValue.error!,
+        asyncValue.stackTrace ?? StackTrace.empty,
+      );
+    }
+
     return switch (asyncValue) {
       // Data available (includes refresh state with previous data)
       AsyncData(:final value) => _wrapWithRefreshIndicator(
