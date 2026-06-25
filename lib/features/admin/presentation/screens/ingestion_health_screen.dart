@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -42,6 +44,7 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
   bool _preselectionHandled = false;
   ProviderSubscription<String?>? _preselectionSub;
   ProviderSubscription<AsyncValue<FleetHealthView>>? _fleetSub;
+  Timer? _pulseClearTimer;
   // Stored in initState so dispose() can call .set(null) without ref (Riverpod rule).
   late final SelectedHealthVehicleIdNotifier _selectionNotifier;
 
@@ -60,10 +63,15 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
 
   @override
   void dispose() {
+    _pulseClearTimer?.cancel();
     _preselectionSub?.close();
     _fleetSub?.close();
     _scrollTrigger.dispose();
-    _selectionNotifier.set(null);
+    Future.microtask(() {
+      try {
+        _selectionNotifier.set(null);
+      } catch (_) {}
+    });
     super.dispose();
   }
 
@@ -118,7 +126,8 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
     setState(() => _resolvedPreselectionId = id);
     _scrollTrigger.value = id;
     // Clear after pulse duration so subsequent poll rebuilds don't re-pulse.
-    Future.delayed(const Duration(milliseconds: 1600), () {
+    _pulseClearTimer?.cancel();
+    _pulseClearTimer = Timer(const Duration(milliseconds: 1600), () {
       if (mounted) setState(() => _resolvedPreselectionId = null);
     });
   }
@@ -150,80 +159,91 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
     final healthAsync = ref.watch(fleetHealthPollingProvider);
     final selectedId = ref.watch(selectedHealthVehicleIdProvider);
 
-    return Padding(
-      padding: const EdgeInsets.all(VeraProbSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _IngestionHealthHeader(healthAsync: healthAsync, onBack: _onBack),
-          const SizedBox(height: VeraProbSpacing.md),
-          Expanded(
-            child: healthAsync.when(
-              data: (view) => Column(
-                children: [
-                  FleetHealthSummaryBar(healthView: view),
-                  const SizedBox(height: VeraProbSpacing.md),
-                  Expanded(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: _VehicleListPanel(
-                            view: view,
-                            selectedId: selectedId,
-                            preselectedId: _resolvedPreselectionId,
-                            scrollTrigger: _scrollTrigger,
-                            onSelect: (id) => ref
-                                .read(selectedHealthVehicleIdProvider.notifier)
-                                .set(id),
-                          ),
-                        ),
-                        if (selectedId != null) ...[
-                          const SizedBox(width: VeraProbSpacing.md),
+    return Scaffold(
+      backgroundColor: VeraProbColors.background,
+      body: Padding(
+        padding: const EdgeInsets.all(VeraProbSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _IngestionHealthHeader(
+              healthAsync: healthAsync,
+              onBack: _onBack,
+              isDrillDown: widget.preselectedVehicleId != null,
+            ),
+            const SizedBox(height: VeraProbSpacing.md),
+            Expanded(
+              child: healthAsync.when(
+                data: (view) => Column(
+                  children: [
+                    FleetHealthSummaryBar(healthView: view),
+                    const SizedBox(height: VeraProbSpacing.md),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Expanded(
-                            flex: 2,
-                            child: _IngestionHealthDetailPanel(
+                            flex: 3,
+                            child: _VehicleListPanel(
                               view: view,
                               selectedId: selectedId,
-                              onClose: () => ref
+                              preselectedId: _resolvedPreselectionId,
+                              scrollTrigger: _scrollTrigger,
+                              onSelect: (id) => ref
                                   .read(
                                     selectedHealthVehicleIdProvider.notifier,
                                   )
-                                  .set(null),
+                                  .set(id),
                             ),
                           ),
+                          if (selectedId != null) ...[
+                            const SizedBox(width: VeraProbSpacing.md),
+                            Expanded(
+                              flex: 2,
+                              child: _IngestionHealthDetailPanel(
+                                view: view,
+                                selectedId: selectedId,
+                                onClose: () => ref
+                                    .read(
+                                      selectedHealthVehicleIdProvider.notifier,
+                                    )
+                                    .set(null),
+                              ),
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              loading: () => const Center(
-                child: CircularProgressIndicator(color: VeraProbColors.primary),
-              ),
-              error: (_, _) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: VeraProbColors.critical,
-                      size: 48,
-                    ),
-                    const SizedBox(height: VeraProbSpacing.sm),
-                    Text(
-                      'Erro ao carregar dados de saúde',
-                      style: VeraProbTypography.bodyMedium.copyWith(
-                        color: VeraProbColors.critical,
                       ),
                     ),
                   ],
                 ),
+                loading: () => const Center(
+                  child: CircularProgressIndicator(
+                    color: VeraProbColors.primary,
+                  ),
+                ),
+                error: (_, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: VeraProbColors.critical,
+                        size: 48,
+                      ),
+                      const SizedBox(height: VeraProbSpacing.sm),
+                      Text(
+                        'Erro ao carregar dados de saúde',
+                        style: VeraProbTypography.bodyMedium.copyWith(
+                          color: VeraProbColors.critical,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -232,10 +252,12 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
 class _IngestionHealthHeader extends StatelessWidget {
   final AsyncValue<FleetHealthView> healthAsync;
   final VoidCallback onBack;
+  final bool isDrillDown;
 
   const _IngestionHealthHeader({
     required this.healthAsync,
     required this.onBack,
+    this.isDrillDown = false,
   });
 
   @override
@@ -243,7 +265,7 @@ class _IngestionHealthHeader extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          tooltip: 'Voltar',
+          tooltip: isDrillDown ? 'Voltar aos Alertas' : 'Voltar',
           onPressed: onBack,
           icon: const Icon(Icons.arrow_back, color: VeraProbColors.textPrimary),
         ),

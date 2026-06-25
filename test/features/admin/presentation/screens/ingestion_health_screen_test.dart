@@ -138,6 +138,9 @@ void main() {
       // Detail panel visible.
       expect(find.text('Integridade do Sinal'), findsOneWidget);
       expect(find.text('ABC-1234'), findsWidgets);
+
+      // Let the pulse timer expire so we don't fail !timersPending
+      await tester.pump(const Duration(seconds: 2));
     });
 
     testWidgets('shows absent snackbar when id is not in org fleet', (
@@ -168,6 +171,12 @@ void main() {
         findsOneWidget,
       );
       expect(find.textContaining(_kOtherVehicleId), findsNothing);
+
+      // Hide snackbar to clear its internal timer
+      ScaffoldMessenger.of(
+        tester.element(find.byType(Scaffold)),
+      ).hideCurrentSnackBar();
+      await tester.pump();
     });
 
     testWidgets('close button clears selected vehicle from provider', (
@@ -247,13 +256,52 @@ void main() {
       await tester.pumpWidget(_host(container, router));
       await tester.pumpAndSettle();
 
-      // Back arrow is the first icon in the header.
-      await tester.tap(find.byTooltip('Voltar'));
-      // Let navigation + post-frame callback fire.
-      await tester.pump();
-      await tester.pump();
+      // Drill-down mode shows contextual tooltip.
+      expect(find.byTooltip('Voltar aos Alertas'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Voltar aos Alertas'));
+      // Let navigation finish to unmount the screen and cancel timers.
+      await tester.pumpAndSettle();
 
       expect(container.read(isAlertsDrawerOpenProvider), isTrue);
+    });
+
+    testWidgets('non-drill-down mode shows generic Voltar tooltip', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final container = _container();
+      addTearDown(container.dispose);
+      final router = _router();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_host(container, router));
+      await tester.pumpAndSettle();
+
+      expect(find.byTooltip('Voltar'), findsOneWidget);
+      expect(find.byTooltip('Voltar aos Alertas'), findsNothing);
+    });
+
+    testWidgets('empty vehicleId treated as no preselection', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Empty string simulates malformed/cleared query param.
+      final container = _container();
+      addTearDown(container.dispose);
+      final router = _router(vehicleId: '');
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_host(container, router));
+      await tester.pumpAndSettle();
+
+      // No preselection → no detail panel, no selection.
+      expect(container.read(selectedHealthVehicleIdProvider), isNull);
+      expect(find.text('Integridade do Sinal'), findsNothing);
     });
   });
 }

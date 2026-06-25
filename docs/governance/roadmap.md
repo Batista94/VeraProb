@@ -38,7 +38,7 @@
 
 ### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima) (Concluído)
 
-### [/] Phase 10.6 — Forensic Operations & Dispute Reality
+### [x] Phase 10.6 — Forensic Operations & Dispute Reality
 
 > **Plano v3 (council-remediated) entregue 2026-06-12** — Componentes 1-5. Migrações `20260813000001`…`20260814000004` (15) + edge fns `verify-evidence-hash`, `notify-sla-breach`. `make test-db` 824 PASS. CI E2E pendente de re-run após fix do grant MFA (`20260815000000`).
 
@@ -60,7 +60,7 @@
 - [x] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles. *(Sprint A — `acknowledge_via_portal` hash-bound + `acknowledge_sanction_internal`; status terminal `acknowledged`; fato ledger `SANCTION_ACKNOWLEDGED`.)*
 - [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 - [x] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
-- [ ] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
+- [x] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
 
 ### [ ] Phase 10.7 — Enterprise Integration & Event Dispatch
 
