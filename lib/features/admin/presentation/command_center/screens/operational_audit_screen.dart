@@ -137,7 +137,7 @@ class _OperationalAuditScreenState
                             tabAlignment: TabAlignment.start,
                             tabs: [
                               Tab(text: '📋 Fila de Exceções'),
-                              Tab(text: '🔗 Triagem de Órfãos'),
+                              Tab(text: '🔗 Execuções Não Reconciliadas'),
                             ],
                           ),
                         ),

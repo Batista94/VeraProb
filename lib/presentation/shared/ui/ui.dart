@@ -10,6 +10,8 @@ export 'domain_chip_input.dart';
 export 'edge_ledger_status_badge.dart';
 export 'evidence_validation_checklist_widget.dart';
 export 'info_tooltip.dart';
+export 'kpi_sparkline_card.dart';
+export 'panel_container.dart';
 export 'skeleton_list_loader.dart';
 export 'status_badge.dart';
 export 'sparkline_widget.dart';

@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -110,8 +112,9 @@ void main() {
 
       expect(find.text('Monitor de Saúde da Ingestão'), findsOneWidget);
       expect(find.text('ABC-1234'), findsOneWidget);
-      // No drill-down → detail panel collapsed
-      expect(find.text('Integridade do Sinal'), findsNothing);
+      // 'Integridade do Sinal' was the old unsectioned label.
+      // The new detail panel uses section header 'Integridade' + label 'Pontuação do Sinal'.
+      expect(find.text('Pontuação do Sinal'), findsNothing);
       // No vehicle selected in provider
       expect(container.read(selectedHealthVehicleIdProvider), isNull);
     });
@@ -136,7 +139,7 @@ void main() {
       // Provider updated with the resolved id.
       expect(container.read(selectedHealthVehicleIdProvider), _kOrgVehicleId);
       // Detail panel visible.
-      expect(find.text('Integridade do Sinal'), findsOneWidget);
+      expect(find.text('Pontuação do Sinal'), findsOneWidget);
       expect(find.text('ABC-1234'), findsWidgets);
 
       // Let the pulse timer expire so we don't fail !timersPending
@@ -164,7 +167,7 @@ void main() {
       // Provider must NOT be set to the absent id.
       expect(container.read(selectedHealthVehicleIdProvider), isNull);
       // Detail panel collapsed.
-      expect(find.text('Integridade do Sinal'), findsNothing);
+      expect(find.text('Pontuação do Sinal'), findsNothing);
       // Snackbar visible with no id in message (Anti-Oracle).
       expect(
         find.text('Este registro não está mais disponível no monitor.'),
@@ -199,14 +202,14 @@ void main() {
       await tester.pumpWidget(_host(container, router));
       await tester.pumpAndSettle();
 
-      expect(find.text('Integridade do Sinal'), findsOneWidget);
+      expect(find.text('Pontuação do Sinal'), findsOneWidget);
 
       // Tap the close (×) button in the detail panel.
       await tester.tap(find.byTooltip('Fechar'));
       await tester.pump();
 
       expect(container.read(selectedHealthVehicleIdProvider), isNull);
-      expect(find.text('Integridade do Sinal'), findsNothing);
+      expect(find.text('Pontuação do Sinal'), findsNothing);
     });
 
     testWidgets('dispose clears selectedHealthVehicleIdProvider', (
@@ -239,6 +242,88 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(container.read(selectedHealthVehicleIdProvider), isNull);
+    });
+
+    testWidgets('filter chips render for all HardwareStatusView values', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final container = _container();
+      addTearDown(container.dispose);
+      final router = _router();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_host(container, router));
+      await tester.pumpAndSettle();
+
+      // All 4 status chips from HardwareStatusView must be visible
+      expect(find.text('Saudável'), findsWidgets);
+      expect(find.text('Atrasado'), findsWidgets);
+      expect(find.text('Offline'), findsWidgets);
+      expect(find.text('Nunca Visto'), findsWidgets);
+    });
+
+    testWidgets(
+      'column header row renders PLACA / STATUS / GAP / SCORE labels',
+      (tester) async {
+        tester.view.physicalSize = const Size(1400, 900);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+
+        final container = _container();
+        addTearDown(container.dispose);
+        final router = _router();
+        addTearDown(router.dispose);
+
+        await tester.pumpWidget(_host(container, router));
+        await tester.pumpAndSettle();
+
+        expect(find.text('PLACA'), findsOneWidget);
+        expect(find.text('STATUS'), findsOneWidget);
+        expect(find.text('GAP'), findsOneWidget);
+        expect(find.text('SCORE'), findsOneWidget);
+      },
+    );
+
+    testWidgets('plate search TextField is present', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      final container = _container();
+      addTearDown(container.dispose);
+      final router = _router();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_host(container, router));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TextField), findsOneWidget);
+      expect(find.widgetWithText(TextField, ''), findsOneWidget);
+    });
+
+    testWidgets('skeleton loader renders on loading state', (tester) async {
+      tester.view.physicalSize = const Size(1400, 900);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      // Never-completing stream = loading state
+      final controller = StreamController<FleetHealthView>();
+      addTearDown(controller.close);
+
+      final container = _container(healthStream: controller.stream);
+      addTearDown(container.dispose);
+      final router = _router();
+      addTearDown(router.dispose);
+
+      await tester.pumpWidget(_host(container, router));
+      await tester.pump(); // one frame
+
+      // ListView from SkeletonListLoader
+      expect(find.byType(ListView), findsOneWidget);
     });
 
     testWidgets('back button in drill-down mode reopens the alerts drawer', (
@@ -301,7 +386,7 @@ void main() {
 
       // No preselection → no detail panel, no selection.
       expect(container.read(selectedHealthVehicleIdProvider), isNull);
-      expect(find.text('Integridade do Sinal'), findsNothing);
+      expect(find.text('Pontuação do Sinal'), findsNothing);
     });
   });
 }

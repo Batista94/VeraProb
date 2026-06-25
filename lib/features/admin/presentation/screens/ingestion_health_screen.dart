@@ -1,21 +1,20 @@
 import 'dart:async';
 
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/application/sla_audit/projections/fleet_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade_drawer.dart';
+import 'package:veraprob/features/admin/presentation/screens/ingestion_health/widgets/ingestion_health_detail_panel.dart';
+import 'package:veraprob/features/admin/presentation/screens/ingestion_health/widgets/ingestion_health_header.dart';
+import 'package:veraprob/features/admin/presentation/screens/ingestion_health/widgets/vehicle_list_panel.dart';
 import 'package:veraprob/features/admin/presentation/widgets/fleet_health_summary_bar.dart';
-import 'package:veraprob/features/admin/presentation/widgets/health_display_helpers.dart';
-import 'package:veraprob/features/admin/presentation/widgets/vehicle_health_card.dart';
+import 'package:veraprob/presentation/shared/ui/async_value_widget.dart';
+import 'package:veraprob/presentation/shared/ui/skeleton_list_loader.dart';
 import 'package:veraprob/state/providers/fleet_health_providers.dart';
-
-final _dateFormat = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
 
 /// Ingestion Health Monitor — master-detail dashboard for fleet telemetry gaps.
 ///
@@ -166,14 +165,35 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _IngestionHealthHeader(
+            IngestionHealthHeader(
               healthAsync: healthAsync,
               onBack: _onBack,
               isDrillDown: widget.preselectedVehicleId != null,
             ),
             const SizedBox(height: VeraProbSpacing.md),
             Expanded(
-              child: healthAsync.when(
+              child: AsyncValueWidget<FleetHealthView>(
+                asyncValue: healthAsync,
+                loading: () => const SkeletonListLoader(itemCount: 6),
+                error: (err, _) => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: VeraProbColors.critical,
+                        size: 48,
+                      ),
+                      const SizedBox(height: VeraProbSpacing.sm),
+                      Text(
+                        'Falha ao carregar dados de telemetria',
+                        style: VeraProbTypography.bodyMedium.copyWith(
+                          color: VeraProbColors.critical,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 data: (view) => Column(
                   children: [
                     FleetHealthSummaryBar(healthView: view),
@@ -184,7 +204,7 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                         children: [
                           Expanded(
                             flex: 3,
-                            child: _VehicleListPanel(
+                            child: VehicleListPanel(
                               view: view,
                               selectedId: selectedId,
                               preselectedId: _resolvedPreselectionId,
@@ -200,7 +220,7 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                             const SizedBox(width: VeraProbSpacing.md),
                             Expanded(
                               flex: 2,
-                              child: _IngestionHealthDetailPanel(
+                              child: IngestionHealthDetailPanel(
                                 view: view,
                                 selectedId: selectedId,
                                 onClose: () => ref
@@ -216,422 +236,10 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                     ),
                   ],
                 ),
-                loading: () => const Center(
-                  child: CircularProgressIndicator(
-                    color: VeraProbColors.primary,
-                  ),
-                ),
-                error: (_, _) => Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.error_outline,
-                        color: VeraProbColors.critical,
-                        size: 48,
-                      ),
-                      const SizedBox(height: VeraProbSpacing.sm),
-                      Text(
-                        'Erro ao carregar dados de saúde',
-                        style: VeraProbTypography.bodyMedium.copyWith(
-                          color: VeraProbColors.critical,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _IngestionHealthHeader extends StatelessWidget {
-  final AsyncValue<FleetHealthView> healthAsync;
-  final VoidCallback onBack;
-  final bool isDrillDown;
-
-  const _IngestionHealthHeader({
-    required this.healthAsync,
-    required this.onBack,
-    this.isDrillDown = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        IconButton(
-          tooltip: isDrillDown ? 'Voltar aos Alertas' : 'Voltar',
-          onPressed: onBack,
-          icon: const Icon(Icons.arrow_back, color: VeraProbColors.textPrimary),
-        ),
-        const SizedBox(width: VeraProbSpacing.xs),
-        const Icon(Icons.monitor_heart_outlined, color: VeraProbColors.primary),
-        const SizedBox(width: VeraProbSpacing.sm),
-        Flexible(
-          child: Text(
-            'Monitor de Saúde da Ingestão',
-            style: VeraProbTypography.sectionTitle,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const Spacer(),
-        healthAsync.when(
-          data: (_) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: VeraProbColors.onTime,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'Atualização: 60s',
-                style: VeraProbTypography.kpiLabel.copyWith(fontSize: 10),
-              ),
-            ],
-          ),
-          loading: () => const SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: VeraProbColors.primary,
-            ),
-          ),
-          error: (_, _) => const Icon(
-            Icons.error_outline,
-            color: VeraProbColors.critical,
-            size: 16,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _VehicleListPanel extends StatefulWidget {
-  final FleetHealthView view;
-  final String? selectedId;
-  final String? preselectedId;
-  final ValueNotifier<String?> scrollTrigger;
-  final void Function(String? id) onSelect;
-
-  const _VehicleListPanel({
-    required this.view,
-    required this.selectedId,
-    required this.preselectedId,
-    required this.scrollTrigger,
-    required this.onSelect,
-  });
-
-  @override
-  State<_VehicleListPanel> createState() => _VehicleListPanelState();
-}
-
-class _VehicleListPanelState extends State<_VehicleListPanel> {
-  // Stride = card vertical padding (sm*2=16) + icon height (36) + separator (xs=4)
-  static const double _kStride =
-      VeraProbSpacing.sm * 2 + 36.0 + VeraProbSpacing.xs; // 56.0
-
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    widget.scrollTrigger.addListener(_onScrollTrigger);
-  }
-
-  @override
-  void dispose() {
-    widget.scrollTrigger.removeListener(_onScrollTrigger);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScrollTrigger() {
-    final targetId = widget.scrollTrigger.value;
-    if (targetId == null || !_scrollController.hasClients) return;
-    final index = widget.view.vehicles.indexWhere(
-      (e) => (e.vehicleId ?? e.deviceId) == targetId,
-    );
-    if (index < 0) return;
-    _scrollController.animateTo(
-      (index * _kStride).clamp(0.0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.view.vehicles.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.sensors_off_outlined,
-              color: VeraProbColors.neutral.withValues(alpha: 0.5),
-              size: 64,
-            ),
-            const SizedBox(height: VeraProbSpacing.md),
-            Text(
-              'Nenhum veículo ou dispositivo encontrado',
-              style: VeraProbTypography.bodyMedium.copyWith(
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: VeraProbSpacing.xs),
-            Text(
-              'Cadastre veículos e configure provedores de telemetria',
-              style: VeraProbTypography.kpiLabel,
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.separated(
-      controller: _scrollController,
-      itemCount: widget.view.vehicles.length,
-      separatorBuilder: (_, _) => const SizedBox(height: VeraProbSpacing.xs),
-      itemBuilder: (_, index) {
-        final entry = widget.view.vehicles[index];
-        final entryId = entry.vehicleId ?? entry.deviceId ?? '';
-        return VehicleHealthCard(
-          entry: entry,
-          isSelected: widget.selectedId == entryId,
-          isPreselected: widget.preselectedId == entryId,
-          onTap: () =>
-              widget.onSelect(widget.selectedId == entryId ? null : entryId),
-        );
-      },
-    );
-  }
-}
-
-class _IngestionHealthDetailPanel extends StatelessWidget {
-  final FleetHealthView view;
-  final String selectedId;
-  final VoidCallback onClose;
-
-  const _IngestionHealthDetailPanel({
-    required this.view,
-    required this.selectedId,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final entry = view.vehicles.firstWhereOrNull(
-      (v) => (v.vehicleId ?? v.deviceId ?? '') == selectedId,
-    );
-
-    final decoration = BoxDecoration(
-      color: VeraProbColors.surface,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: VeraProbColors.border),
-    );
-
-    if (entry == null) {
-      return Container(
-        padding: VeraProbSpacing.sectionPadding,
-        decoration: decoration,
-        child: Center(
-          child: Text(
-            'Veículo não encontrado',
-            style: VeraProbTypography.bodyMedium.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-        ),
-      );
-    }
-
-    final statusColor = HealthDisplayHelpers.colorForStatus(
-      entry.hardwareStatus,
-    );
-
-    return Container(
-      padding: VeraProbSpacing.sectionPadding,
-      decoration: decoration,
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.local_shipping_outlined,
-                  color: statusColor,
-                  size: 20,
-                ),
-                const SizedBox(width: VeraProbSpacing.sm),
-                Expanded(
-                  child: Text(
-                    entry.displayPlate,
-                    style: VeraProbTypography.sectionTitle.copyWith(
-                      fontSize: 16,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close, size: 18),
-                  color: VeraProbColors.textSecondary,
-                  tooltip: 'Fechar',
-                  onPressed: onClose,
-                ),
-              ],
-            ),
-            if (entry.model != null) ...[
-              const SizedBox(height: VeraProbSpacing.xs),
-              Tooltip(
-                message: entry.model!,
-                child: Text(
-                  entry.model!,
-                  style: VeraProbTypography.kpiLabel,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-            ],
-            const SizedBox(height: VeraProbSpacing.md),
-            const Divider(color: VeraProbColors.border, height: 1),
-            const SizedBox(height: VeraProbSpacing.md),
-            _DetailRow(label: 'Dispositivo', value: entry.deviceId ?? '—'),
-            _DetailRow(
-              label: 'Último Ping',
-              value: entry.lastPingUtc != null
-                  ? '${_dateFormat.format(entry.lastPingUtc!)} UTC'
-                  : 'Nunca',
-            ),
-            _DetailRow(
-              label: 'Gap',
-              value: HealthDisplayHelpers.formatGap(entry.gapSeconds),
-              valueColor: statusColor,
-            ),
-            _DetailRow(
-              label: 'Status',
-              value: entry.hardwareStatus.label,
-              valueColor: statusColor,
-            ),
-            const SizedBox(height: VeraProbSpacing.md),
-            Text('Integridade do Sinal', style: VeraProbTypography.kpiLabel),
-            const SizedBox(height: VeraProbSpacing.xs),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      // Physical Metric - Double Required
-                      value: (entry.integrityScoreBps / 10000.0).clamp(
-                        0.0,
-                        1.0,
-                      ),
-                      backgroundColor: VeraProbColors.surfaceElevated,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        HealthDisplayHelpers.colorForScore(
-                          entry.integrityScoreBps,
-                        ),
-                      ),
-                      minHeight: 8,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: VeraProbSpacing.sm),
-                Text(
-                  // Physical Metric - Double Required
-                  '${(entry.integrityScoreBps / 100.0).toStringAsFixed(1)}%',
-                  style: VeraProbTypography.bodyMedium.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: HealthDisplayHelpers.colorForScore(
-                      entry.integrityScoreBps,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: VeraProbSpacing.md),
-            _DetailRow(
-              label: 'Anomalias (24h)',
-              value: '${entry.anomalyCount24h}',
-              valueColor: entry.anomalyCount24h > 0
-                  ? VeraProbColors.critical
-                  : VeraProbColors.textSecondary,
-            ),
-            if (entry.isPhantom) ...[
-              const SizedBox(height: VeraProbSpacing.md),
-              Container(
-                padding: VeraProbSpacing.cardPadding,
-                decoration: BoxDecoration(
-                  color: VeraProbColors.secondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: VeraProbColors.secondary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.sensors_off_outlined,
-                      color: VeraProbColors.secondary,
-                      size: 16,
-                    ),
-                    const SizedBox(width: VeraProbSpacing.sm),
-                    Expanded(
-                      child: Text(
-                        'Dispositivo fantasma — transmitindo sem veículo '
-                        'cadastrado. Chip M2M gerando custo cego.',
-                        style: VeraProbTypography.kpiLabel.copyWith(
-                          color: VeraProbColors.secondary,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRow({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: VeraProbSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(child: Text(label, style: VeraProbTypography.kpiLabel)),
-          Text(
-            value,
-            style: VeraProbTypography.bodyMedium.copyWith(
-              color: valueColor ?? VeraProbColors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
       ),
     );
   }

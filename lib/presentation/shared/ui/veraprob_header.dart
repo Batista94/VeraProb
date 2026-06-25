@@ -5,12 +5,18 @@ import 'package:veraprob/core/theme/app_theme.dart';
 ///
 /// Ensures mathematical alignment between icon, title, and actions.
 /// Follows the 8px grid system defined in [VeraProbSpacing].
+///
+/// [leading] renders to the left of the icon (e.g. a back-button).
+/// Nullable → existing callers are unaffected.
 class VeraProbHeader extends StatelessWidget {
   final IconData icon;
   final String title;
   final String? subtitle;
   final List<Widget>? actions;
   final Color? iconColor;
+  // Renders before the icon (e.g. an IconButton back-button).
+  // Nullable so all existing call-sites remain unaffected.
+  final Widget? leading;
 
   const VeraProbHeader({
     super.key,
@@ -19,6 +25,7 @@ class VeraProbHeader extends StatelessWidget {
     this.subtitle,
     this.actions,
     this.iconColor,
+    this.leading,
   });
 
   @override
@@ -26,6 +33,10 @@ class VeraProbHeader extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        if (leading != null) ...[
+          leading!,
+          const SizedBox(width: VeraProbSpacing.xs),
+        ],
         Icon(icon, size: 28, color: iconColor ?? VeraProbColors.primary),
         const SizedBox(width: VeraProbSpacing.md),
         Expanded(
