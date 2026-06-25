@@ -111,7 +111,7 @@ void main() async {
         'user_id': id,
         'organization_id': _orgId,
         'role': 'AUDITOR',
-      }, onConflict: 'user_id,organization_id');
+      }, onConflict: 'user_id');
     }
 
     approverA = await _signIn(_approverAEmail);
@@ -143,7 +143,7 @@ void main() async {
 
           // HIGH contract threshold (> 150000 fine) so approve seals TERMINAL
           // and never forks into peer review — isolates the TOCTOU race.
-          await seed.from('contracts').insert({
+          await seed.from('contracts').upsert({
             'id': contractId,
             'organization_id': _orgId,
             'name': 'Approve Concurrency Contract',
@@ -152,6 +152,25 @@ void main() async {
             'valid_until_utc': '2027-01-01T00:00:00Z',
             'status': 'active',
             'dual_control_threshold_cents': 100000000,
+          }, onConflict: 'organization_id,name,valid_from_utc');
+
+          // Seed mandatory forensic rule definitions. Without these, `_persist_evidence_snapshot`
+          // will correctly throw a P0002 (Hard-Fail) to prevent un-sealable verdicts.
+          final ruleSetId = _uuid.v4();
+          await seed.from('contract_rule_sets').insert({
+            'id': ruleSetId,
+            'organization_id': _orgId,
+            'contract_id': contractId,
+          });
+          await seed.from('contract_rule_versions').insert({
+            'id': _uuid.v4(),
+            'rule_set_id': ruleSetId,
+            'rule_type': 'MAX_TOLERANCE_DELAY',
+            'rule_config': {'threshold_minutes': 15},
+            'rule_version': 1,
+            'evaluation_order': 1,
+            'created_at_utc': '2026-01-01T00:00:00Z',
+            'active_from_utc': '2026-01-01T00:00:00Z',
           });
 
           // SANCTION_RECOMMENDED ledger → trigger auto-creates a pending queue row.
@@ -197,15 +216,22 @@ void main() async {
               .then<Object>((r) => r)
               .catchError((Object e) => e);
 
+          final jwtA = approverA.auth.currentSession?.accessToken;
+          if (jwtA != null) {
+            final payload = utf8.decode(
+              base64Url.decode(base64Url.normalize(jwtA.split('.')[1])),
+            );
+            print('JWT A PAYLOAD: $payload');
+          }
           final outcomes = await Future.wait([
             attempt(repoA, approverAId, _approverAEmail),
             attempt(repoB, approverBId, _approverBEmail),
           ]);
-
           final successes = outcomes.whereType<SanctionReviewResult>().toList();
           final idempotency = outcomes
               .whereType<IdempotencyProcessingException>()
               .toList();
+          print('OUTCOMES: $outcomes');
 
           expect(
             successes.length,
