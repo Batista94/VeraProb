@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'justification_detail_drawer.dart';
 import 'justification_submission_form.dart';
 import 'widgets/justification_status_badge.dart';
@@ -50,22 +51,15 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: switch (listAsync) {
-              AsyncData(:final value) => () {
+            child: AsyncValueWidget(
+              asyncValue: listAsync,
+              loading: () => const SkeletonListLoader(),
+              data: (value) {
                 final filtered = _applyFilters(value);
                 if (filtered.isEmpty) return const _EmptyState();
                 return _JustificationTable(rows: filtered);
-              }(),
-              AsyncLoading() => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              AsyncError(:final error) => Center(
-                child: Text(
-                  'Erro ao carregar justificativas: $error',
-                  style: const TextStyle(color: VeraProbColors.error),
-                ),
-              ),
-            },
+              },
+            ),
           ),
         ],
       ),
@@ -115,14 +109,13 @@ class _HeaderState extends ConsumerState<_Header> {
       AsyncLoading() => 0,
     };
 
-    return Row(
-      children: [
-        const Icon(Icons.shield_outlined, color: VeraProbColors.primary),
-        const SizedBox(width: 12),
-        Text('Portal Defesa', style: VeraProbTypography.sectionTitle),
-        const SizedBox(width: 12),
+    return VeraProbHeader(
+      icon: Icons.shield_outlined,
+      title: 'Portal Defesa',
+      actions: [
         if (pendingCount > 0)
           Container(
+            margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.12),
@@ -135,7 +128,6 @@ class _HeaderState extends ConsumerState<_Header> {
               ),
             ),
           ),
-        const Spacer(),
         FilledButton.icon(
           onPressed: () => showDialog<void>(
             context: context,
@@ -229,22 +221,25 @@ class _JustificationTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: DataTable(
-        headingTextStyle: VeraProbTypography.caption.copyWith(
-          color: VeraProbColors.textSecondary,
-          letterSpacing: 1.1,
+    return PanelContainer(
+      padding: EdgeInsets.zero,
+      child: SingleChildScrollView(
+        child: DataTable(
+          headingTextStyle: VeraProbTypography.caption.copyWith(
+            color: VeraProbColors.textSecondary,
+            letterSpacing: 1.1,
+          ),
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 48,
+          columns: const [
+            DataColumn(label: Text('CONTRATO')),
+            DataColumn(label: Text('SET ID')),
+            DataColumn(label: Text('CATEGORIA')),
+            DataColumn(label: Text('ENVIADO EM')),
+            DataColumn(label: Text('STATUS')),
+          ],
+          rows: rows.map((r) => _buildRow(context, r)).toList(),
         ),
-        dataRowMinHeight: 48,
-        dataRowMaxHeight: 48,
-        columns: const [
-          DataColumn(label: Text('CONTRATO')),
-          DataColumn(label: Text('SET ID')),
-          DataColumn(label: Text('CATEGORIA')),
-          DataColumn(label: Text('ENVIADO EM')),
-          DataColumn(label: Text('STATUS')),
-        ],
-        rows: rows.map((r) => _buildRow(context, r)).toList(),
       ),
     );
   }
