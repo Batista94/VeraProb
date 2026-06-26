@@ -94,7 +94,7 @@ class FakeInsertQueryBuilder extends Fake implements SupabaseQueryBuilder {
 
 void main() {
   setUpAll(() {
-    registerFallbackValue(const []);
+    registerFallbackValue(const <Map<String, dynamic>>[]);
   });
 
   group('SimulationSeedService', () {

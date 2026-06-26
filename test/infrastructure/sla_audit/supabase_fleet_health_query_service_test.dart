@@ -33,11 +33,11 @@ void main() {
 
     test('should return empty view when RPC returns empty list', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'get_fleet_health_status',
           params: any(named: 'params'),
         ),
-      ).thenAnswer((_) => FakePostgrestFilterBuilder([]));
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(<dynamic>[]));
 
       final result = await service.getFleetHealth(organizationId: 'org-123');
 
@@ -80,7 +80,7 @@ void main() {
         ];
 
         when(
-          () => mockClient.rpc(
+          () => mockClient.rpc<dynamic>(
             'get_fleet_health_status',
             params: {
               'p_organization_id': 'org-123',

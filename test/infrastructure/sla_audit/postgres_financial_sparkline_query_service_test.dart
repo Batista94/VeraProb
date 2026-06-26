@@ -33,11 +33,11 @@ void main() {
 
     test('should return empty series when RPC returns empty list', () async {
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'get_financial_trend_sparkline',
           params: any(named: 'params'),
         ),
-      ).thenAnswer((_) => FakePostgrestFilterBuilder([]));
+      ).thenAnswer((_) => FakePostgrestFilterBuilder(<dynamic>[]));
 
       final result = await service.getSparkline(
         organizationId: 'org-123',
@@ -64,7 +64,7 @@ void main() {
       ];
 
       when(
-        () => mockClient.rpc(
+        () => mockClient.rpc<dynamic>(
           'get_financial_trend_sparkline',
           params: {'p_org_id': 'org-123', 'p_days': 7},
         ),
