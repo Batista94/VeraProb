@@ -304,7 +304,7 @@ void main() {
         await buildHost(tester, alertsFactory: _ErrorActiveAlertsNotifier.new);
         await tester.pump();
         expect(
-          find.textContaining('Erro ao carregar alertas:'),
+          find.text('Não foi possível carregar os alertas.'),
           findsOneWidget,
         );
       },

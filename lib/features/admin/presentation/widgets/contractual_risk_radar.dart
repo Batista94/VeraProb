@@ -86,8 +86,8 @@ class FinancialKpiRow extends ConsumerWidget {
       AsyncLoading() => const Center(
         child: CircularProgressIndicator(color: VeraProbColors.primary),
       ),
-      AsyncError(:final error) => Text(
-        'Erro ao carregar KPIs financeiros: $error',
+      AsyncError() => Text(
+        'Não foi possível carregar os KPIs financeiros.',
         style: VeraProbTypography.bodySmall.copyWith(
           color: VeraProbColors.error,
         ),
@@ -290,46 +290,41 @@ class RiskFeedList extends ConsumerWidget {
                 child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
             ),
-            AsyncError(:final error) => Padding(
-              padding: const EdgeInsets.all(24.0),
+            AsyncError() => const Padding(
+              padding: EdgeInsets.all(24.0),
               child: Center(
                 child: Text(
-                  'Erro ao carregar feed: $error',
-                  style: VeraProbTypography.bodySmall.copyWith(
-                    color: VeraProbColors.error,
-                  ),
+                  'Não foi possível carregar o feed de risco.',
+                  style: TextStyle(color: VeraProbColors.error),
                 ),
               ),
             ),
-            AsyncData(:final value) => () {
-              if (value.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Center(
-                    child: Text(
-                      'Nenhuma viagem programada para hoje',
-                      style: VeraProbTypography.bodyMedium,
-                    ),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(24),
-                itemCount: value.length,
-                itemBuilder: (context, index) {
-                  return _FeedNodeItem(
-                    node: value[index],
-                    isLast: index == value.length - 1,
-                  );
-                },
-              );
-            }(),
+            AsyncData(:final value) => _buildFeedList(value),
           },
         ],
       ),
+    );
+  }
+
+  Widget _buildFeedList(List<DashboardRiskFeedNode> value) {
+    if (value.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: Text(
+            'Nenhuma viagem programada para hoje',
+            style: VeraProbTypography.bodyMedium,
+          ),
+        ),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(24),
+      itemCount: value.length,
+      itemBuilder: (_, index) =>
+          _FeedNodeItem(node: value[index], isLast: index == value.length - 1),
     );
   }
 }

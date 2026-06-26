@@ -18,45 +18,45 @@ class OrphanTriageTab extends ConsumerWidget {
 
     return switch (shadowsAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Text(
-          'Erro: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar os registros órfãos.',
+          style: TextStyle(color: VeraProbColors.error),
         ),
       ),
-      AsyncData(:final value) => () {
-        if (value.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 48,
-                  color: VeraProbColors.success,
-                ),
-                SizedBox(height: 12),
-                Text(
-                  '✅ Nenhum órfão pendente',
-                  style: TextStyle(
-                    color: VeraProbColors.success,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: value.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _ShadowCard(shadow: value[i]),
-        );
-      }(),
+      AsyncData(:final value) => _buildOrphanList(value),
     };
+  }
+
+  Widget _buildOrphanList(List<ShadowExecutionSummary> value) {
+    if (value.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              size: 48,
+              color: VeraProbColors.success,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '✅ Nenhum órfão pendente',
+              style: VeraProbTypography.dataValue.copyWith(
+                color: VeraProbColors.success,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: value.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, i) => _ShadowCard(shadow: value[i]),
+    );
   }
 }
 
@@ -128,45 +128,47 @@ class _ShadowCard extends ConsumerWidget {
               'Erro ao buscar candidatos',
               style: TextStyle(color: VeraProbColors.error, fontSize: 11),
             ),
-            AsyncData(:final value) => () {
-              if (value.isEmpty) {
-                return const Text(
-                  'Nenhuma viagem compatível (±30min)',
-                  style: TextStyle(
-                    color: VeraProbColors.textSecondary,
-                    fontSize: 11,
-                    fontStyle: FontStyle.italic,
-                  ),
-                );
-              }
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'SMART LINK — Viagens compatíveis:',
-                    style: TextStyle(
-                      color: VeraProbColors.primary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  ...value.map(
-                    (c) => _CandidateRow(
-                      setId: c['set_id'] as String,
-                      windowStart: c['window_start_utc'] as String,
-                      status: c['status'] as String? ?? '',
-                      shadowId: shadow.id,
-                      orgId: shadow.organizationId,
-                    ),
-                  ),
-                ],
-              );
-            }(),
+            AsyncData(:final value) => _buildCandidateList(value),
           },
         ],
       ),
+    );
+  }
+
+  Widget _buildCandidateList(List<Map<String, dynamic>> value) {
+    if (value.isEmpty) {
+      return const Text(
+        'Nenhuma viagem compatível (±30min)',
+        style: TextStyle(
+          color: VeraProbColors.textSecondary,
+          fontSize: 11,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'SMART LINK — Viagens compatíveis:',
+          style: TextStyle(
+            color: VeraProbColors.primary,
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        ...value.map(
+          (c) => _CandidateRow(
+            setId: c['set_id'] as String,
+            windowStart: c['window_start_utc'] as String,
+            status: c['status'] as String? ?? '',
+            shadowId: shadow.id,
+            orgId: shadow.organizationId,
+          ),
+        ),
+      ],
     );
   }
 }

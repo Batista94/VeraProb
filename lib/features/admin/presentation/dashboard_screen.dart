@@ -307,8 +307,10 @@ class _DevSeedButton extends ConsumerWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao inserir dados: $e'),
+          const SnackBar(
+            content: Text(
+              'Erro ao inserir dados de simulação. Tente novamente.',
+            ),
             backgroundColor: VeraProbColors.error,
           ),
         );

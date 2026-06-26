@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart'
     show OperationalCommand, UnauthorizedActionException;
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/authority_providers.dart';
 
 /// Centralized utility to dispatch operational commands from the UI.
@@ -30,7 +31,7 @@ class UiCommandDispatcher {
             'Ação autorizada e registrada.',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
           ),
-          backgroundColor: Color(0xFF2E7D32), // Green
+          backgroundColor: VeraProbColors.success,
           duration: Duration(milliseconds: 1500),
           behavior: SnackBarBehavior.floating,
         ),
@@ -38,7 +39,7 @@ class UiCommandDispatcher {
 
       return true; // Success
     } on UnauthorizedActionException catch (e) {
-      // Feedback for DENIED
+      // Feedback for DENIED — e.reason is a typed domain field, not raw exception
       scaffoldMessenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -48,22 +49,22 @@ class UiCommandDispatcher {
               fontWeight: FontWeight.w600,
             ),
           ),
-          backgroundColor: const Color(0xFFD32F2F), // Red
+          backgroundColor: VeraProbColors.error,
           duration: const Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
         ),
       );
       return false;
-    } catch (e) {
-      // Unexpected Runtime Crash
+    } catch (_) {
+      // Unexpected runtime error — do not expose internals to the UI
       scaffoldMessenger.showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text(
-            'Erro interno ao despachar comando: $e',
-            style: const TextStyle(color: Colors.white),
+            'Falha ao executar o comando operacional. Tente novamente.',
+            style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.black87,
-          duration: const Duration(seconds: 4),
+          duration: Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
         ),
       );

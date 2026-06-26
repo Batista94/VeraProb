@@ -5,9 +5,21 @@
 // INV-10: mismatch must throw SovereigntyViolationException (not silent skip).
 library;
 
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/sla_audit/telegram/telegram_binding_token.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/features/admin/presentation/widgets/telegram_binding_dialog.dart';
+import 'package:veraprob/state/providers/telegram_providers.dart';
+
+class _ErrorTelegramNotifier extends TelegramBindingNotifier {
+  _ErrorTelegramNotifier() : super('fake');
+
+  @override
+  AsyncValue<TelegramBindingToken?> build() =>
+      const AsyncError('network-fail', StackTrace.empty);
+}
 
 void main() {
   group('TelegramBindingDialog.assertOrgIdMatch (INV-1)', () {
@@ -87,5 +99,39 @@ void main() {
         expect(str, isNot(contains('org-attacker')));
       },
     );
+  });
+
+  group('TelegramBindingDialog error UI (UX-RAW-EXCEPTION guard)', () {
+    testWidgets('token error shows sanitised domain message', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            telegramBindingNotifierProvider(
+              'driver-1',
+            ).overrideWith(_ErrorTelegramNotifier.new),
+            driverHasActiveTelegramBindingProvider.overrideWith(
+              (ref, _) async => false,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: TelegramBindingDialog(
+                driverId: 'driver-1',
+                driverName: 'Motorista Teste',
+                organizationId: 'org-1',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Falha ao processar vínculo Telegram. Tente novamente.'),
+        findsOneWidget,
+      );
+      // Raw exception never surfaced.
+      expect(find.textContaining('network-fail'), findsNothing);
+    });
   });
 }

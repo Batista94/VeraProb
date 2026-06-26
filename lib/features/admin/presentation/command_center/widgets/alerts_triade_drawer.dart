@@ -115,14 +115,14 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
                 alertsAsync.hasValue && alertsAsync.value != null
                     ? _GroupedAlertsList(alerts: alertsAsync.value!)
                     : const _LoadingPlaceholder(),
-              AsyncError(:final error) =>
+              AsyncError() =>
                 alertsAsync.hasValue && alertsAsync.value != null
                     ? _GroupedAlertsList(alerts: alertsAsync.value!)
                     : Center(
                         child: Padding(
                           padding: const EdgeInsets.all(24),
                           child: Text(
-                            'Erro ao carregar alertas: $error',
+                            'Não foi possível carregar os alertas.',
                             style: VeraProbTypography.bodySmall.copyWith(
                               color: VeraProbColors.critical,
                             ),

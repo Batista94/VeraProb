@@ -39,5 +39,29 @@ void main() {
 
       expect(find.text('Autor / Sistema'), findsOneWidget);
     });
+
+    testWidgets(
+      'load error shows sanitised domain message (UX-RAW-EXCEPTION guard)',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              auditLogProjectionProvider.overrideWith(
+                (ref) => Future.error('audit-fail'),
+              ),
+              unlinkedShadowsProvider.overrideWith((ref) => []),
+            ],
+            child: const MaterialApp(home: OperationalAuditScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Não foi possível carregar os registros de auditoria.'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('audit-fail'), findsNothing);
+      },
+    );
   });
 }

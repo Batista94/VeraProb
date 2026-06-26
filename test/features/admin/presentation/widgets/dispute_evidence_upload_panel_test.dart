@@ -9,6 +9,13 @@ import 'package:veraprob/state/providers/dispute_evidence_providers.dart';
 
 const _queueEntryId = 'queue-001';
 
+class _ErrorUploadController extends DisputeEvidenceController {
+  _ErrorUploadController() : super('fake');
+
+  @override
+  AsyncValue<void> build() => const AsyncError('upload-fail', StackTrace.empty);
+}
+
 /// Default: the org has a contracted storage plan, so the uploader renders.
 /// The 5.2 gate tests override this to false / loading.
 final _storageEnabled = evidenceStorageEnabledProvider.overrideWithValue(
@@ -153,6 +160,28 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Remover evidência?'), findsNothing);
+  });
+
+  testWidgets('upload error shows sanitised domain message', (tester) async {
+    await tester.pumpWidget(
+      _host([
+        _storageEnabled,
+        disputeEvidenceListProvider.overrideWith(
+          (ref, key) async => const <DisputeEvidenceAttachment>[],
+        ),
+        disputeEvidenceControllerProvider(
+          _queueEntryId,
+        ).overrideWith(_ErrorUploadController.new),
+      ]),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Falha ao processar evidência. Tente novamente.'),
+      findsOneWidget,
+    );
+    // Raw exception text never exposed to user.
+    expect(find.textContaining('upload-fail'), findsNothing);
   });
 
   group('Storage plan gate (Componente 5.2)', () {

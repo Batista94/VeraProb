@@ -175,23 +175,20 @@ class DisputeEvidenceUploadPanel extends ConsumerWidget {
             ),
           ),
 
-          if (uploadState case AsyncError(:final error)) ...[
+          if (uploadState case AsyncError()) ...[
             const SizedBox(height: 8),
-            Row(
+            const Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   size: 14,
                   color: VeraProbColors.error,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Flexible(
                   child: Text(
-                    '$error',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: VeraProbColors.error,
-                    ),
+                    'Falha ao processar evidência. Tente novamente.',
+                    style: TextStyle(fontSize: 11, color: VeraProbColors.error),
                   ),
                 ),
               ],
