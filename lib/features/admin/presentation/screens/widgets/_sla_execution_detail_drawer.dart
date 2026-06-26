@@ -340,6 +340,7 @@ class _SolicitarDefesaButtonState
     if (hours == null || !mounted) return;
 
     setState(() => _loading = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final token = await ref
           .read(generateJustificationTokenHandlerProvider)
@@ -363,12 +364,12 @@ class _SolicitarDefesaButtonState
       );
       final link = uri.toString();
 
-      _showLinkDialog(context, link);
+      _showLinkDialog(context, link, messenger);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao gerar link: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível gerar o link de revisão.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -419,7 +420,11 @@ class _SolicitarDefesaButtonState
     );
   }
 
-  void _showLinkDialog(BuildContext context, String link) {
+  void _showLinkDialog(
+    BuildContext context,
+    String link,
+    ScaffoldMessengerState messenger,
+  ) {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -455,9 +460,9 @@ class _SolicitarDefesaButtonState
           TextButton(
             onPressed: () {
               Clipboard.setData(ClipboardData(text: link));
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('Link copiado!')));
+              messenger.showSnackBar(
+                const SnackBar(content: Text('Link copiado!')),
+              );
             },
             child: const Text('Copiar'),
           ),

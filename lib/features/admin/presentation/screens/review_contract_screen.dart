@@ -79,7 +79,8 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
       if (mounted) {
         setState(() {
           _accepting = false;
-          _error = e.toString().replaceAll('Exception: ', '');
+          _error =
+              'Erro ao processar o contrato. Verifique se o link é válido.';
         });
       }
     }

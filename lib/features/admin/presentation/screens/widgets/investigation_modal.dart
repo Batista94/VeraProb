@@ -143,10 +143,10 @@ class InvestigationDossierBody extends ConsumerWidget {
                           executionStateProvider(setId),
                         );
                         return switch (stateAsync) {
-                          AsyncData(:final value) => () {
-                            if (value == null) return const SizedBox();
-                            return InvestigationMapPanel(execution: value);
-                          }(),
+                          AsyncData(:final value) =>
+                            value == null
+                                ? const SizedBox()
+                                : InvestigationMapPanel(execution: value),
                           AsyncLoading() => const Center(
                             child: CircularProgressIndicator(),
                           ),
@@ -208,10 +208,10 @@ class InvestigationDossierBody extends ConsumerWidget {
                           executionStateProvider(setId),
                         );
                         return switch (stateAsync) {
-                          AsyncData(:final value) => () {
-                            if (value == null) return const SizedBox();
-                            return InvestigationMapPanel(execution: value);
-                          }(),
+                          AsyncData(:final value) =>
+                            value == null
+                                ? const SizedBox()
+                                : InvestigationMapPanel(execution: value),
                           AsyncLoading() => const Center(
                             child: CircularProgressIndicator(),
                           ),
@@ -343,39 +343,13 @@ class _LedgerTimelinePanel extends StatelessWidget {
           // Timeline Content
           Expanded(
             child: switch (ledgerAsync) {
-              AsyncData(:final value) => () {
-                if (value.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'Nenhum evento no ledger',
-                      style: VeraProbTypography.bodySmall,
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: value.length,
-                  itemBuilder: (context, index) {
-                    final entry = value[index];
-                    final isTriggering =
-                        triggeringEventId != null &&
-                        entry.eventId == triggeringEventId;
-
-                    return _TimelineEvent(
-                      entry: entry,
-                      isTriggering: isTriggering,
-                      isLast: index == value.length - 1,
-                    );
-                  },
-                );
-              }(),
+              AsyncData(:final value) => _buildLedgerList(value),
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
-              AsyncError(:final error) => Center(
+              AsyncError() => Center(
                 child: Text(
-                  'Erro ao carregar ledger: $error',
+                  'Não foi possível carregar o histórico operacional.',
                   style: VeraProbTypography.bodySmall.copyWith(
                     color: VeraProbColors.error,
                   ),
@@ -385,6 +359,33 @@ class _LedgerTimelinePanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLedgerList(List<SlaLedgerEntry> value) {
+    if (value.isEmpty) {
+      return Center(
+        child: Text(
+          'Nenhum evento no ledger',
+          style: VeraProbTypography.bodySmall,
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: value.length,
+      itemBuilder: (context, index) {
+        final entry = value[index];
+        final isTriggering =
+            triggeringEventId != null && entry.eventId == triggeringEventId;
+
+        return _TimelineEvent(
+          entry: entry,
+          isTriggering: isTriggering,
+          isLast: index == value.length - 1,
+        );
+      },
     );
   }
 }
@@ -662,25 +663,13 @@ class _EvaluationTracePanel extends StatelessWidget {
           // Trace Content
           Expanded(
             child: switch (tracesAsync) {
-              AsyncData(:final value) => () {
-                if (value.isEmpty) {
-                  return _NoTraceState();
-                }
-
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: value.length,
-                  itemBuilder: (context, index) {
-                    return _TraceCard(trace: value[index]);
-                  },
-                );
-              }(),
+              AsyncData(:final value) => _buildTraceList(value),
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(color: VeraProbColors.primary),
               ),
-              AsyncError(:final error) => Center(
+              AsyncError() => Center(
                 child: Text(
-                  'Erro ao carregar traces: $error',
+                  'Não foi possível carregar a rastreabilidade.',
                   style: VeraProbTypography.bodySmall.copyWith(
                     color: VeraProbColors.error,
                   ),
@@ -690,6 +679,20 @@ class _EvaluationTracePanel extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTraceList(List<EvaluationTrace> value) {
+    if (value.isEmpty) {
+      return _NoTraceState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: value.length,
+      itemBuilder: (context, index) {
+        return _TraceCard(trace: value[index]);
+      },
     );
   }
 }

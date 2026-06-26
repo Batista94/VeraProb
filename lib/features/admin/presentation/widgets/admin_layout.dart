@@ -426,10 +426,9 @@ class _LogoutButton extends ConsumerWidget {
       tooltip: 'Sair',
       color: VeraProbColors.textDisabled,
       onPressed: () async {
+        final router = GoRouter.of(context);
         await ref.read(authRepositoryProvider).signOut();
-        if (context.mounted) {
-          context.go(AppRoutes.login);
-        }
+        router.go(AppRoutes.login);
       },
     );
   }

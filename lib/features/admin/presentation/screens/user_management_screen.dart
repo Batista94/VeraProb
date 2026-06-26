@@ -174,10 +174,10 @@ class UserManagementScreen extends ConsumerWidget {
                     AsyncLoading() => const Center(
                       child: CircularProgressIndicator(),
                     ),
-                    AsyncError(:final error) => Center(
+                    AsyncError() => const Center(
                       child: Text(
-                        'Erro ao carregar membros: $error',
-                        style: const TextStyle(color: VeraProbColors.error),
+                        'Não foi possível carregar os membros da organização.',
+                        style: TextStyle(color: VeraProbColors.error),
                       ),
                     ),
                   },

@@ -168,7 +168,9 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
         setState(() => _errorMessage = result.errorMessage);
       }
     } catch (e) {
-      setState(() => _errorMessage = 'Erro inesperado: $e');
+      setState(
+        () => _errorMessage = 'Ocorreu um erro inesperado ao criar o contrato.',
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

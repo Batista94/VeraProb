@@ -69,6 +69,9 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
   }
 
   Future<void> _handleConfirm() async {
+    if (_isLoading) return;
+    final navigator = Navigator.of(context);
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -77,7 +80,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
     try {
       await widget.onConfirm(_selectedCode!, _textController.text.trim());
       if (mounted) {
-        Navigator.of(context).pop(true);
+        navigator.pop(true);
       }
     } catch (e) {
       if (mounted) {
@@ -304,7 +307,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: VeraProbColors.textPrimary,
                             ),
                           )
                         : const Icon(Icons.check, size: 16),

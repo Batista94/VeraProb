@@ -60,6 +60,9 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
 
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
+    if (_isSaving) return;
+
+    final messenger = ScaffoldMessenger.of(context);
 
     setState(() {
       _isSaving = true;
@@ -77,16 +80,20 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
       await ref.read(driverRepositoryProvider).addDriver(newDriver);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
+                Icon(
+                  Icons.check_circle,
+                  color: VeraProbColors.textPrimary,
+                  size: 20,
+                ),
                 SizedBox(width: 10),
                 Text('Motorista cadastrado com sucesso'),
               ],
             ),
-            backgroundColor: Color(0xFF2E7D32),
+            backgroundColor: VeraProbColors.success,
             duration: Duration(seconds: 3),
           ),
         );

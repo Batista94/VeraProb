@@ -211,8 +211,8 @@ class _SlaTemplateEditorDialogState
     } catch (e) {
       if (mounted) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
+          const SnackBar(
+            content: Text('Não foi possível salvar as alterações.'),
             backgroundColor: VeraProbColors.error,
           ),
         );

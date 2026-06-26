@@ -91,10 +91,10 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
                 AsyncLoading() => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                AsyncError(:final error) => Center(
+                AsyncError() => const Center(
                   child: Text(
-                    'Erro ao carregar configurações: $error',
-                    style: const TextStyle(color: VeraProbColors.error),
+                    'Não foi possível carregar as configurações da organização.',
+                    style: TextStyle(color: VeraProbColors.error),
                   ),
                 ),
               },

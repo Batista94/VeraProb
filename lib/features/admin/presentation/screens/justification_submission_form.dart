@@ -245,12 +245,13 @@ class _JustificationSubmissionFormState
   }
 
   Future<void> _pickFiles() async {
+    final messenger = ScaffoldMessenger.of(context);
     final service = ref.read(justificationFileServiceProvider);
     final result = await service.pickFiles();
 
     for (final name in result.oversized) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text('$name: arquivo maior que 10 MB. Ignorado.'),
             backgroundColor: VeraProbColors.error,
@@ -268,6 +269,9 @@ class _JustificationSubmissionFormState
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
 
     final hasFiles = _files.isNotEmpty;
 
@@ -407,13 +411,17 @@ class _JustificationSubmissionFormState
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+        navigator.pop();
+        messenger.showSnackBar(
           const SnackBar(content: Text('Justificativa enviada com sucesso.')),
         );
       }
     } catch (e) {
-      if (mounted) setState(() => _error = e.toString());
+      if (mounted) {
+        setState(
+          () => _error = 'Falha ao enviar justificativa. Tente novamente.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

@@ -81,10 +81,10 @@ class _SlaTemplateLibraryScreenState
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      AsyncError(:final error) => Center(
+                      AsyncError() => const Center(
                         child: Text(
-                          'Erro ao carregar modelos: $error',
-                          style: const TextStyle(color: VeraProbColors.error),
+                          'Não foi possível carregar os modelos de SLA.',
+                          style: TextStyle(color: VeraProbColors.error),
                         ),
                       ),
                     },

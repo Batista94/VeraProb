@@ -214,7 +214,7 @@ class _HubCardState extends State<_HubCard> {
                     border: Border.all(
                       color: _hovered
                           ? VeraProbColors.primary.withValues(alpha: 0.4)
-                          : const Color(0x0FFFFFFF),
+                          : VeraProbColors.border.withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(

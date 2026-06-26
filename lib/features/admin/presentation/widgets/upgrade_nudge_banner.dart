@@ -23,8 +23,8 @@ class UpgradeNudgeBanner extends ConsumerWidget {
         final color = highest.isCritical
             ? VeraProbColors.error
             : highest.isUrgent
-            ? Colors.orange
-            : VeraProbColors.warning;
+            ? VeraProbColors.warning
+            : VeraProbColors.info;
 
         return Container(
           width: double.infinity,

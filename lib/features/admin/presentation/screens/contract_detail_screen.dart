@@ -47,10 +47,10 @@ class ContractDetailScreen extends ConsumerWidget {
         return _DetailView(detail: value);
       }(),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Text(
-          'Erro ao carregar contrato: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar os detalhes do contrato.',
+          style: TextStyle(color: VeraProbColors.error),
         ),
       ),
     };
@@ -70,6 +70,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
   bool _submitting = false;
 
   Future<void> _submitForApproval(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final s = widget.detail.summary;
 
     final confirmed = await showDialog<bool>(
@@ -105,7 +106,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
       if (orgId == null || userId == null) {
         if (!context.mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Sessão inválida. Faça login novamente.'),
           ),
@@ -141,7 +142,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
 
       await showDialog<void>(
         context: context,
-        builder: (_) => AlertDialog(
+        builder: (dialogCtx) => AlertDialog(
           title: const Text('Link de Revisão Gerado'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -173,10 +174,10 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               label: const Text('Copiar Link'),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: reviewLink));
-                Navigator.pop(context);
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text('Link copiado!')));
+                Navigator.pop(dialogCtx);
+                messenger.showSnackBar(
+                  const SnackBar(content: Text('Link copiado!')),
+                );
               },
             ),
             TextButton(
@@ -192,9 +193,9 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           raw.contains('Unauthorized') || raw.contains('unauthorized');
       final msg = isUnauthorized
           ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
-          : raw.replaceAll('Exception: ', '');
+          : 'Não foi possível gerar o link do contrato.';
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
       );
     } finally {

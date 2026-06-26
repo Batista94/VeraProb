@@ -811,7 +811,7 @@ void main() {
 
       final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
       expect(snackBar.backgroundColor, VeraProbColors.error);
-      expect(find.textContaining('Erro ao salvar'), findsOneWidget);
+      expect(find.textContaining('Não foi possível salvar as alterações.'), findsOneWidget);
     });
 
     testWidgets('dialog permanece aberto após falha no handler', (
@@ -2474,7 +2474,7 @@ void main() {
           // Loading gone, SnackBar with error message and correct background
           expect(find.byType(CircularProgressIndicator), findsNothing);
           expect(
-            find.text('Erro ao salvar: Exception: Erro de Conexão'),
+            find.text('Não foi possível salvar as alterações.'),
             findsOneWidget,
           );
 

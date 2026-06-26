@@ -200,10 +200,10 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(),
               ),
-              AsyncError(:final error) => Center(
+              AsyncError() => const Center(
                 child: Text(
-                  'Erro ao carregar contratos: $error',
-                  style: const TextStyle(color: VeraProbColors.error),
+                  'Não foi possível carregar a lista de contratos.',
+                  style: TextStyle(color: VeraProbColors.error),
                 ),
               ),
             },
@@ -507,7 +507,8 @@ class _ContractTable extends ConsumerWidget {
                           });
                         } catch (e) {
                           setDialogState(() {
-                            errorMsg = 'Erro inesperado: $e';
+                            errorMsg =
+                                'Não foi possível concluir a exclusão do contrato.';
                             isSubmitting = false;
                           });
                         }

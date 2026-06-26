@@ -81,11 +81,11 @@ class DeclarePlanZonesStep extends ConsumerWidget {
           child: CircularProgressIndicator(),
         ),
       ),
-      AsyncError(:final error) => Padding(
-        padding: const EdgeInsets.all(16),
+      AsyncError() => const Padding(
+        padding: EdgeInsets.all(16),
         child: Text(
-          'Erro ao carregar zonas operacionais: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar as zonas operacionais.',
+          style: TextStyle(color: VeraProbColors.error),
         ),
       ),
     };

@@ -316,9 +316,9 @@ class _RawEvidenceTab extends ConsumerWidget {
         const SizedBox(height: 16),
         switch (evidenceAsync) {
           AsyncLoading() => const Center(child: CircularProgressIndicator()),
-          AsyncError(:final error) => Text(
-            'Erro ao carregar evidências: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+          AsyncError() => const Text(
+            'Não foi possível carregar as evidências anexadas.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
           AsyncData(:final value) =>
             value.isEmpty
@@ -354,26 +354,26 @@ class _RawEvidenceTab extends ConsumerWidget {
         const SizedBox(height: 16),
         switch (tracesAsync) {
           AsyncLoading() => const Center(child: CircularProgressIndicator()),
-          AsyncError(:final error) => Text(
-            'Erro ao carregar avaliação do motor: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+          AsyncError() => const Text(
+            'Não foi possível carregar a avaliação do motor.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
-          AsyncData(:final value) => () {
-            final decisions = value.expand((t) => t.decisions).toList();
-            if (decisions.isEmpty) {
-              return const Text(
-                'Sem telemetria',
-                style: TextStyle(color: VeraProbColors.textDisabled),
-              );
-            }
-            return Column(
-              children: decisions
-                  .map((d) => _RawEvidenceCard(decision: d))
-                  .toList(),
-            );
-          }(),
+          AsyncData(:final value) => _buildDecisionList(value),
         },
       ],
+    );
+  }
+
+  Widget _buildDecisionList(List<EvaluationTrace> value) {
+    final decisions = value.expand((t) => t.decisions).toList();
+    if (decisions.isEmpty) {
+      return const Text(
+        'Sem telemetria',
+        style: TextStyle(color: VeraProbColors.textDisabled),
+      );
+    }
+    return Column(
+      children: decisions.map((d) => _RawEvidenceCard(decision: d)).toList(),
     );
   }
 }
@@ -721,12 +721,12 @@ class _CustodyChainTab extends ConsumerWidget {
 
     return switch (verificationAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Text(
-            'Erro ao carregar evidência: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+            'Não foi possível carregar a evidência de integridade.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
         ),
       ),
@@ -964,12 +964,12 @@ class _FrozenRuleTab extends ConsumerWidget {
 
     return switch (verificationAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Text(
-            'Erro ao carregar regra: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+            'Não foi possível carregar as regras contratuais.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
         ),
       ),

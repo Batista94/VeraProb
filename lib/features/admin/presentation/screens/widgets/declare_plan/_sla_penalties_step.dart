@@ -87,18 +87,19 @@ class Step3SlaPenalties extends ConsumerWidget {
     if (orgId == null) return;
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
+    final messenger = ScaffoldMessenger.of(context);
     final name = await showDialog<String>(
       context: context,
       builder: (ctx) {
         final controller = TextEditingController();
         return AlertDialog(
-          title: const Text('Salvar como Modelo'),
+          title: const Text('Salvar Modelo'),
           content: TextField(
             controller: controller,
             autofocus: true,
             decoration: const InputDecoration(
               labelText: 'Nome do Modelo',
-              hintText: 'Ex: Fretamento Interurbano',
+              hintText: 'Ex: Default Motoboys',
             ),
           ),
           actions: [
@@ -106,7 +107,7 @@ class Step3SlaPenalties extends ConsumerWidget {
               onPressed: () => Navigator.pop(ctx),
               child: const Text('Cancelar'),
             ),
-            FilledButton(
+            ElevatedButton(
               onPressed: () => Navigator.pop(ctx, controller.text.trim()),
               child: const Text('Salvar'),
             ),
@@ -167,23 +168,19 @@ class Step3SlaPenalties extends ConsumerWidget {
 
       ref.invalidate(slaTemplatesProvider);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Modelo "$name" salvo.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Modelo "$name" salvo.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar modelo: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível salvar o modelo.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 
@@ -196,85 +193,85 @@ class Step3SlaPenalties extends ConsumerWidget {
       isScrollControlled: true,
       constraints: const BoxConstraints(maxHeight: 500),
       builder: (ctx) => switch (allTemplatesAsync) {
-        AsyncData(:final value) => () {
-          final templates = value;
-          if (templates.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(32),
-                child: Text('Nenhum modelo disponível'),
-              ),
-            );
-          }
-          final presets = templates
-              .where((t) => t.id.startsWith('preset:'))
-              .toList();
-          final orgTemplates = templates
-              .where((t) => !t.id.startsWith('preset:'))
-              .toList();
-
-          return ListView(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            children: [
-              if (presets.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-                  child: Text(
-                    'MODELOS DO SISTEMA',
-                    style: VeraProbTypography.badge.copyWith(
-                      color: VeraProbColors.textSecondary,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                ...presets.map(
-                  (t) => TemplateTile(
-                    template: t,
-                    onTap: () {
-                      _applyTemplate(t.penalties);
-                      Navigator.of(ctx).pop();
-                    },
-                  ),
-                ),
-              ],
-              if (orgTemplates.isNotEmpty) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-                  child: Text(
-                    'MEUS MODELOS',
-                    style: VeraProbTypography.badge.copyWith(
-                      color: VeraProbColors.textSecondary,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ),
-                ...orgTemplates.map(
-                  (t) => TemplateTile(
-                    template: t,
-                    onTap: () {
-                      _applyTemplate(t.penalties);
-                      Navigator.of(ctx).pop();
-                    },
-                  ),
-                ),
-              ],
-            ],
-          );
-        }(),
+        AsyncData(:final value) => _buildTemplateList(ctx, value),
         AsyncLoading() => const Center(
           child: Padding(
             padding: EdgeInsets.all(32),
             child: CircularProgressIndicator(),
           ),
         ),
-        AsyncError(:final error) => Padding(
-          padding: const EdgeInsets.all(16),
+        AsyncError() => const Padding(
+          padding: EdgeInsets.all(16),
           child: Text(
-            'Erro ao carregar modelos: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+            'Não foi possível carregar os modelos disponíveis.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
         ),
       },
+    );
+  }
+
+  Widget _buildTemplateList(BuildContext ctx, List<SlaTemplateView> value) {
+    final templates = value;
+    if (templates.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(32),
+          child: Text('Nenhum modelo disponível'),
+        ),
+      );
+    }
+    final presets = templates.where((t) => t.id.startsWith('preset:')).toList();
+    final orgTemplates = templates
+        .where((t) => !t.id.startsWith('preset:'))
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      children: [
+        if (presets.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Text(
+              'MODELOS DO SISTEMA',
+              style: VeraProbTypography.badge.copyWith(
+                color: VeraProbColors.textSecondary,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          ...presets.map(
+            (t) => TemplateTile(
+              template: t,
+              onTap: () {
+                _applyTemplate(t.penalties);
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ),
+        ],
+        if (orgTemplates.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              'MEUS MODELOS',
+              style: VeraProbTypography.badge.copyWith(
+                color: VeraProbColors.textSecondary,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          ...orgTemplates.map(
+            (t) => TemplateTile(
+              template: t,
+              onTap: () {
+                _applyTemplate(t.penalties);
+                Navigator.of(ctx).pop();
+              },
+            ),
+          ),
+        ],
+      ],
     );
   }
 

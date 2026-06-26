@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
+import 'package:veraprob/core/theme/app_theme.dart';
+
 /// Shared Industrial Dark color tokens for CSV importer widgets.
 /// Public so sub-files in the csv_importer/ directory can import it.
 abstract final class CsvT {
-  static const bgDeep = Color(0xFF0A0A0A);
-  static const bgCard = Color(0xFF0F172A);
-  static const bgSlate = Color(0xFF1A1A2E);
-  static const border = Color.fromRGBO(255, 255, 255, 0.06);
-  static const action = Color(0xFF00A3FF);
-  static const success = Color(0xFF34C759);
-  static const error = Color(0xFFFF3B30);
-  static const warning = Color(0xFFFFCC00);
-  static const textHi = Color(0xFFE5E5E5);
-  static const textLo = Color(0xFFA0A0A0);
+  static const bgDeep = VeraProbColors.background;
+  static const bgCard = VeraProbColors.surface;
+  static const bgSlate = VeraProbColors.surfaceElevated;
+  static const border = VeraProbColors.border;
+  static const action = VeraProbColors.primary;
+  static const success = VeraProbColors.success;
+  static const error = VeraProbColors.error;
+  static const warning = VeraProbColors.warning;
+  static const textHi = VeraProbColors.textPrimary;
+  static const textLo = VeraProbColors.textSecondary;
   static const radiusCard = 12.0;
   static const radiusChip = 8.0;
   static const animDuration = Duration(milliseconds: 200);

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/telegram/generate_telegram_binding_token_command.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
@@ -164,12 +165,12 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
+                      color: VeraProbColors.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.telegram,
-                      color: Color(0xFF0D47A1),
+                      color: VeraProbColors.primary,
                       size: 22,
                     ),
                   ),
@@ -187,9 +188,9 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                         ),
                         Text(
                           widget.driverName,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 13,
-                            color: Colors.grey.shade600,
+                            color: VeraProbColors.textSecondary,
                           ),
                         ),
                       ],
@@ -210,25 +211,27 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.orange.shade50,
+                        color: VeraProbColors.warning.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.orange.shade200),
+                        border: Border.all(
+                          color: VeraProbColors.warning.withValues(alpha: 0.3),
+                        ),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
                           Icon(
                             Icons.warning_amber_rounded,
                             size: 18,
-                            color: Colors.orange.shade700,
+                            color: VeraProbColors.warning,
                           ),
-                          const SizedBox(width: 8),
+                          SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               'Este motorista já possui vinculação ativa. '
                               'Gerar novo código irá desvincular o chat anterior.',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.orange.shade800,
+                                color: VeraProbColors.warning,
                               ),
                             ),
                           ),
@@ -265,7 +268,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     icon: const Icon(Icons.refresh, size: 18),
                     label: Text(value == null ? 'Gerar Código' : 'Novo Código'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D47A1),
+                      backgroundColor: VeraProbColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
@@ -285,7 +288,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     icon: const Icon(Icons.refresh, size: 18),
                     label: const Text('Tentar Novamente'),
                     style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF0D47A1),
+                      backgroundColor: VeraProbColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                   ),
@@ -299,7 +302,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
   }
 
   Widget _buildInstructions() {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -307,27 +310,30 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Colors.grey.shade800,
+            color: VeraProbColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 8),
-        const _Step(number: '1', text: 'Gere o código abaixo'),
-        const _Step(
+        SizedBox(height: 8),
+        _Step(number: '1', text: 'Gere o código abaixo'),
+        _Step(
           number: '2',
           text: 'Peça ao motorista para abrir o bot @VeraProbBot no Telegram',
         ),
-        const _Step(
+        _Step(
           number: '3',
           text: 'O motorista envia o código de 8 caracteres no chat',
         ),
-        const _Step(
+        _Step(
           number: '4',
           text: 'Vinculação confirmada — evidências podem ser enviadas',
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           'O código expira em 15 minutos.',
-          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+          style: TextStyle(
+            fontSize: 12,
+            color: VeraProbColors.textSecondary,
+          ),
         ),
       ],
     );
@@ -346,23 +352,23 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           decoration: BoxDecoration(
-            color: const Color(0xFF0D1B2A),
+            color: VeraProbColors.surfaceElevated,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isExpiringSoon
-                  ? Colors.orange.shade600
-                  : const Color(0xFF1565C0).withValues(alpha: 0.6),
+                  ? VeraProbColors.warning
+                  : VeraProbColors.primary.withValues(alpha: 0.6),
               width: 1.5,
             ),
           ),
           child: Column(
             children: [
-              Text(
+              const Text(
                 'CÓDIGO DE VINCULAÇÃO',
                 style: TextStyle(
                   fontSize: 10,
                   letterSpacing: 2,
-                  color: Colors.grey.shade500,
+                  color: VeraProbColors.textSecondary,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -375,8 +381,8 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                   fontFamily: 'monospace',
                   letterSpacing: 8,
                   color: isExpiringSoon
-                      ? Colors.orange.shade400
-                      : const Color(0xFF64B5F6),
+                      ? VeraProbColors.warning
+                      : VeraProbColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -387,8 +393,8 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     Icons.timer_outlined,
                     size: 14,
                     color: isExpiringSoon
-                        ? Colors.orange.shade400
-                        : Colors.grey.shade500,
+                        ? VeraProbColors.warning
+                        : VeraProbColors.textSecondary,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -396,8 +402,8 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     style: TextStyle(
                       fontSize: 13,
                       color: isExpiringSoon
-                          ? Colors.orange.shade400
-                          : Colors.grey.shade400,
+                          ? VeraProbColors.warning
+                          : VeraProbColors.textSecondary,
                       fontWeight: isExpiringSoon
                           ? FontWeight.w600
                           : FontWeight.normal,
@@ -415,7 +421,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
           icon: Icon(_codeCopied ? Icons.check : Icons.copy, size: 16),
           label: Text(_codeCopied ? 'Copiado!' : 'Copiar código'),
           style: OutlinedButton.styleFrom(
-            foregroundColor: _codeCopied ? Colors.green.shade700 : null,
+            foregroundColor: _codeCopied ? VeraProbColors.success : null,
           ),
         ),
       ],
@@ -426,17 +432,17 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: VeraProbColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          Icon(Icons.timer_off, size: 18, color: Colors.red.shade700),
-          const SizedBox(width: 8),
+          Icon(Icons.timer_off, size: 18, color: VeraProbColors.error),
+          SizedBox(width: 8),
           Text(
             'Código expirado. Gere um novo.',
-            style: TextStyle(fontSize: 13, color: Colors.red.shade800),
+            style: TextStyle(fontSize: 13, color: VeraProbColors.error),
           ),
         ],
       ),
@@ -447,13 +453,13 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.red.shade50,
+        color: VeraProbColors.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.red.shade200),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
       ),
       child: Text(
         'Erro: $error',
-        style: TextStyle(fontSize: 12, color: Colors.red.shade800),
+        style: const TextStyle(fontSize: 12, color: VeraProbColors.error),
       ),
     );
   }
@@ -476,7 +482,7 @@ class _Step extends StatelessWidget {
             width: 20,
             height: 20,
             decoration: BoxDecoration(
-              color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
+              color: VeraProbColors.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             alignment: Alignment.center,
@@ -485,7 +491,7 @@ class _Step extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF0D47A1),
+                color: VeraProbColors.primary,
               ),
             ),
           ),
@@ -493,7 +499,10 @@ class _Step extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+              style: const TextStyle(
+                fontSize: 13,
+                color: VeraProbColors.textSecondary,
+              ),
             ),
           ),
         ],

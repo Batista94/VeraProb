@@ -226,6 +226,8 @@ class _JustificationDetailDrawerState
   }
 
   Future<void> _approve(String id) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final orgId = ref.read(currentOrganizationIdProvider);
     final userId = ref.read(currentOperatorIdProvider);
     final role = ref.read(currentUserRoleProvider);
@@ -251,17 +253,19 @@ class _JustificationDetailDrawerState
 
     final state = ref.read(justificationActionStateProvider(id));
     if (!state.hasError) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
+      navigator.pop();
+      messenger.showSnackBar(
         const SnackBar(content: Text('Justificativa aprovada com sucesso.')),
       );
     }
   }
 
   Future<void> _reject(String id) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
     final notes = _rejectNotesController.text.trim();
     if (notes.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Motivo deve ter pelo menos 10 caracteres.'),
           backgroundColor: VeraProbColors.error,
@@ -296,10 +300,10 @@ class _JustificationDetailDrawerState
 
     final state = ref.read(justificationActionStateProvider(id));
     if (!state.hasError) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Justificativa rejeitada.')));
+      navigator.pop();
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Justificativa rejeitada.')),
+      );
     }
   }
 

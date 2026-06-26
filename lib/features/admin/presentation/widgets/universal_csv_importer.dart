@@ -50,6 +50,8 @@ class _UniversalCsvImporterDialogState
 
   Future<void> _onCloseRequested() async {
     final state = ref.read(csvImportFlowProvider);
+    final navigator = Navigator.of(context);
+
     final isDirty = state is CsvImportMapped || state is CsvImportValidated;
     if (isDirty && mounted) {
       final confirmed = await showDialog<bool>(
@@ -84,7 +86,7 @@ class _UniversalCsvImporterDialogState
       );
       if (confirmed != true || !mounted) return;
     }
-    if (mounted) Navigator.of(context).pop(false);
+    if (mounted) navigator.pop(false);
   }
 
   void _onImportSuccess() {

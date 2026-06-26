@@ -84,6 +84,8 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
       _error = null;
     });
 
+    final navigator = Navigator.of(context);
+
     try {
       final authRepo = ref.read(authRepositoryProvider);
 
@@ -117,7 +119,7 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
         replaceWindowLocation('/');
       } else {
         unawaited(
-          Navigator.of(context).pushReplacement(
+          navigator.pushReplacement(
             MaterialPageRoute(builder: (_) => const AdminLockScreen()),
           ),
         );
