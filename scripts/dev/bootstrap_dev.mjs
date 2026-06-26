@@ -109,7 +109,9 @@ function resolveConfig() {
     || '';
 
   const serviceKey = process.env.SUPABASE_SERVICE_KEY
+    || process.env.SUPABASE_SERVICE_ROLE_KEY
     || env['SUPABASE_SERVICE_KEY']
+    || env['SUPABASE_SERVICE_ROLE_KEY']
     || env['SERVICE_ROLE_KEY']
     || status.serviceKey
     || '';
