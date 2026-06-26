@@ -19,8 +19,8 @@ String humanizeDomainError(Object? error) => switch (error) {
   AuthorizationException(:final message) => message,
   SovereigntyViolationException(:final message) => message,
   ResourceNotFoundException(:final message) => message,
-  IdempotencyProcessingException(:final message) => message,
   ConcurrentModificationException(:final message) => message,
+  IdempotencyProcessingException(:final message) => message,
   DualControlSelfApprovalException(:final message) => message,
   _ => 'Erro Desconhecido: ${error?.toString() ?? "null"}',
 };

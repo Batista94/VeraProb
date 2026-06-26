@@ -50,9 +50,9 @@ VALUES
    'pending', 'GHI-3333');
 
 -- Ensure dispute reason code exists
-INSERT INTO public.dispute_reason_codes (code, description, is_active, organization_id)
-VALUES ('FORCE_MAJEURE', 'Force Majeure Event', TRUE, NULL)
-ON CONFLICT (code, organization_id) DO NOTHING;
+INSERT INTO public.dispute_reason_codes (code, category, label_pt, label_en, description, is_active, organization_id)
+VALUES ('FORCE_MAJEURE', 'ENVIRONMENTAL', 'Força Maior', 'Force Majeure', 'Force Majeure Event', TRUE, NULL)
+ON CONFLICT (code) DO NOTHING;
 
 -- ── 1. Verify that top-level JWT organization_id claim allows access ──
 SET LOCAL ROLE authenticated;
@@ -108,7 +108,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'idem-claims-dispute-fail', 'FORCE_MAJEURE'
      ) $$,
-  'insufficient_privilege',
+  '42501',
+  NULL,
   'T4: resolve_dispute blocks access when JWT organization_id does not match parameter'
 );
 
@@ -119,7 +120,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'FORCE_MAJEURE', 'Confirm fine is correct.'
      ) $$,
-  'insufficient_privilege',
+  '42501',
+  NULL,
   'T5: approve_sanction blocks access when JWT organization_id does not match parameter'
 );
 
@@ -131,7 +133,8 @@ SELECT throws_ok(
        'Rejecting this fine completely.', 'FORCE_MAJEURE',
        '2026-06-24T11:00:00Z'
      ) $$,
-  'insufficient_privilege',
+  '42501',
+  NULL,
   'T6: reject_sanction blocks access when JWT organization_id does not match parameter'
 );
 
@@ -146,7 +149,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'FORCE_MAJEURE', 'Confirm fine is correct.'
      ) $$,
-  'insufficient_privilege',
+  '42501',
+  NULL,
   'T7: approve_sanction blocks access when JWT organization_id is null'
 );
 
@@ -161,7 +165,8 @@ SELECT throws_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'FORCE_MAJEURE', 'Confirm fine is correct.'
      ) $$,
-  'insufficient_privilege',
+  '42501',
+  NULL,
   'T8: approve_sanction blocks access when JWT user role is not AUDITOR or TENANT_ADMIN'
 );
 

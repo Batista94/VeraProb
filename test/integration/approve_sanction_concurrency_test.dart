@@ -25,6 +25,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -60,9 +61,7 @@ Future<String> _ensureUser(String email, String password) async {
   }
   if (res.statusCode == 422) {
     final list = await http.get(
-      Uri.parse(
-        '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?email=$email',
-      ),
+      Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
       headers: {
         'apikey': PostgresTestConfig.serviceRoleKey,
         'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
@@ -70,7 +69,10 @@ Future<String> _ensureUser(String email, String password) async {
     );
     final users =
         (jsonDecode(list.body) as Map<String, dynamic>)['users'] as List?;
-    return (users!.first as Map<String, dynamic>)['id'] as String;
+    final user = users!.firstWhere(
+      (u) => (u as Map<String, dynamic>)['email'] == email,
+    );
+    return (user as Map<String, dynamic>)['id'] as String;
   }
   throw Exception('createUser failed (${res.statusCode}): ${res.body}');
 }
@@ -221,7 +223,7 @@ void main() async {
             final payload = utf8.decode(
               base64Url.decode(base64Url.normalize(jwtA.split('.')[1])),
             );
-            print('JWT A PAYLOAD: $payload');
+            debugPrint('JWT A PAYLOAD: $payload');
           }
           final outcomes = await Future.wait([
             attempt(repoA, approverAId, _approverAEmail),
@@ -231,7 +233,7 @@ void main() async {
           final idempotency = outcomes
               .whereType<IdempotencyProcessingException>()
               .toList();
-          print('OUTCOMES: $outcomes');
+          debugPrint('OUTCOMES: $outcomes');
 
           expect(
             successes.length,

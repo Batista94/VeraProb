@@ -216,7 +216,10 @@ class PostgresSanctionReviewCommandRepository extends BasePostgresRepository
     // Distinct governance guard: surface a clear message (caller is a valid
     // auditor of the right tenant; this is NOT an anti-oracle rejection).
     if (e.code == '55P03') {
-      return const ConcurrentModificationException();
+      return ConcurrentModificationException(
+        idempotencyKey: queueEntryId,
+        commandPath: commandPath,
+      );
     }
     if (e.code == 'P0001' &&
         detail.contains('DualControlSelfApprovalException')) {

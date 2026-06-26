@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:veraprob/domain/entities/vehicle_position.dart';
+import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'gtfs_realtime_service.dart';
 
 abstract class IVehiclePositionService {
@@ -18,53 +19,51 @@ class VehicleRepository implements IVehiclePositionService {
   @override
   Stream<List<VehiclePosition>> getVehiclePositions() {
     // 1. Stream from API (The Truth)
-    final apiStream = _gtfsService.getVehiclePositions().map((positions) {
-      for (var pos in positions) {
-        _apiPositionsCache[pos.tripId] = pos;
-      }
-      return positions;
-    });
+    return _gtfsService.getVehiclePositions().transform(
+      StreamTransformer.fromHandlers(
+        handleData:
+            (
+              List<VehiclePosition> positions,
+              EventSink<List<VehiclePosition>> sink,
+            ) {
+              final List<VehiclePosition> filteredPositions = [];
 
-    // 2. Stream from Supabase (Crowdsourcing)
-    // In a real app, we would listen to a Supabase channel
-    // For now, we'll simulate it or keep it empty until DB is ready
-    final crowdsourceStream = Stream<List<VehiclePosition>>.periodic(
-      const Duration(seconds: 5),
-      (_) => [], // Placeholder for Supabase data
+              for (final position in positions) {
+                final cached = _apiPositionsCache[position.tripId];
+                if (cached == null ||
+                    position.timestamp.isAfter(cached.timestamp)) {
+                  _apiPositionsCache[position.tripId] = position;
+                  filteredPositions.add(position);
+                }
+              }
+
+              if (filteredPositions.isNotEmpty) {
+                sink.add(filteredPositions);
+              }
+            },
+      ),
     );
-
-    // Merge streams logic (initial implementation)
-    // We basically want to emit whenever we get fresh data,
-    // prioritizing API data if it exists and is recent.
-
-    // ignore: unused_local_variable
-    final _ = crowdsourceStream; // Stub for now
-
-    return apiStream;
   }
 
   @override
   Future<void> sendVehiclePosition(VehiclePosition position) async {
-    // ignore: unused_local_variable
-    final data = {
+    // For now, simulate sending to GTFS-RT feed
+    // In production, send to GTFS-RT feed
+    final Map<String, dynamic> payload = {
       'trip_id': position.tripId,
-      'location': 'POINT(${position.longitude} ${position.latitude})',
-      'speed': position.speed,
-      'heading': position.heading,
-      'source': position.source,
+      'latitude': position.latitude,
+      'longitude': position.longitude,
       'timestamp': position.timestamp.toIso8601String(),
       'route_name': position.routeName,
     };
 
     try {
       // Local development mode: log upload trace
-      // ignore: avoid_print
-      print(
-        '🚀 UPLOAD [${position.source}] Trip ${position.tripId}: ${position.latitude}, ${position.longitude}',
+      LoggerService().log(
+        '🚀 UPLOAD [${position.source}] Trip ${position.tripId}: ${position.latitude}, ${position.longitude} - payload: $payload',
       );
     } catch (e) {
-      // ignore: avoid_print
-      print('Error sending position: $e');
+      LoggerService().error('Error sending position', error: e);
     }
   }
 }

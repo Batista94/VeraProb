@@ -53,7 +53,10 @@ class PostgresSanctionDisputeResolutionRepository extends BasePostgresRepository
       return DisputeResolutionResult.fromJson(result);
     } on PostgrestException catch (e) {
       if (e.code == '55P03') {
-        throw const ConcurrentModificationException();
+        throw ConcurrentModificationException(
+          idempotencyKey: idempotencyKey,
+          commandPath: 'resolve_dispute',
+        );
       }
       if (e.code == 'P0001' &&
           (e.details?.toString().contains('IdempotencyProcessingException') ??
