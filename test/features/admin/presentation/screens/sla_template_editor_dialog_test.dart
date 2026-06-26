@@ -811,7 +811,10 @@ void main() {
 
       final snackBar = tester.widget<SnackBar>(find.byType(SnackBar));
       expect(snackBar.backgroundColor, VeraProbColors.error);
-      expect(find.textContaining('Não foi possível salvar as alterações.'), findsOneWidget);
+      expect(
+        find.textContaining('Não foi possível salvar as alterações.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('dialog permanece aberto após falha no handler', (

@@ -488,7 +488,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final errorText = tester.widget<Text>(
-        find.textContaining('Não foi possível carregar o histórico operacional.'),
+        find.textContaining(
+          'Não foi possível carregar o histórico operacional.',
+        ),
       );
       expect(errorText.style?.color, VeraProbColors.error);
     });

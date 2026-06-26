@@ -9,6 +9,7 @@ import 'package:veraprob/features/super_admin/presentation/widgets/pulse_indicat
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_health_tab.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
+import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -298,7 +299,7 @@ void main() {
       final mockRepo = MockSuperAdminRepository();
       when(
         () => mockRepo.checkSchemaIntegrity(_testOrgId),
-      ).thenThrow(Exception('Network timeout'));
+      ).thenThrow(const DomainException('Network timeout'));
 
       await tester.pumpWidget(_buildTestWidget(repo: mockRepo));
       await _pumpUntilFound(tester, find.text('Verificar Integridade'));

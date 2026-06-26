@@ -29,10 +29,10 @@ class TenantAuditTab extends ConsumerWidget {
     return switch (auditLogsAsync) {
       AsyncData(:final value) => _buildLogList(value),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Text(
-          'Erro ao carregar logs: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar os registros de auditoria.',
+          style: TextStyle(color: VeraProbColors.error),
         ),
       ),
     };

@@ -330,10 +330,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
         SizedBox(height: 4),
         Text(
           'O código expira em 15 minutos.',
-          style: TextStyle(
-            fontSize: 12,
-            color: VeraProbColors.textSecondary,
-          ),
+          style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
         ),
       ],
     );

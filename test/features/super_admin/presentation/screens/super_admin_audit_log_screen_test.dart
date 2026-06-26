@@ -217,7 +217,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.textContaining('Erro ao carregar logs'), findsOneWidget);
+      expect(
+        find.textContaining('Não foi possível carregar os logs no momento.'),
+        findsOneWidget,
+      );
       expect(
         find.widgetWithText(ElevatedButton, 'Tentar novamente'),
         findsOneWidget,
@@ -523,7 +526,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Error state visible
-        expect(find.textContaining('Erro ao carregar logs'), findsOneWidget);
+        expect(
+          find.textContaining('Não foi possível carregar os logs no momento.'),
+          findsOneWidget,
+        );
 
         // Tap retry
         await tester.tap(
@@ -532,7 +538,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Error cleared, data visible
-        expect(find.textContaining('Erro ao carregar logs'), findsNothing);
+        expect(
+          find.textContaining('Não foi possível carregar os logs no momento.'),
+          findsNothing,
+        );
         expect(find.text('RECOVERED'), findsOneWidget);
       },
     );

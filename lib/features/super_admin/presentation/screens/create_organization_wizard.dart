@@ -214,7 +214,14 @@ class _CreateOrganizationWizardState
     } catch (_) {
       exists = false;
     }
-    final lookup = await lookupService.lookup(digits).catchError((_) => null);
+
+    final lookup = await () async {
+      try {
+        return await lookupService.lookup(digits);
+      } catch (_) {
+        return null;
+      }
+    }();
 
     if (!mounted) return;
 
@@ -400,7 +407,7 @@ class _CreateOrganizationWizardState
     } on DomainException catch (e) {
       if (!mounted) return;
       final message = _mapErrorMessage(e.message);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: VeraProbColors.error,
@@ -409,7 +416,7 @@ class _CreateOrganizationWizardState
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text(
             'Erro inesperado ao processar solicitação. Tente novamente.',
