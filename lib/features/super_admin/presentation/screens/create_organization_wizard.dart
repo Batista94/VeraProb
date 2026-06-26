@@ -214,13 +214,7 @@ class _CreateOrganizationWizardState
     } catch (_) {
       exists = false;
     }
-    final lookup = await () async {
-      try {
-        return await lookupService.lookup(digits);
-      } catch (_) {
-        return null;
-      }
-    }();
+    final lookup = await lookupService.lookup(digits).catchError((_) => null);
 
     if (!mounted) return;
 
@@ -322,6 +316,7 @@ class _CreateOrganizationWizardState
     final snapshotBillingDay = _billingDayCtrl.text.trim();
 
     setState(() => _isSubmitting = true);
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
@@ -354,9 +349,6 @@ class _CreateOrganizationWizardState
       final result = await handler.handle(cmd);
 
       if (!mounted) return;
-
-      // Capturar messenger e URL antes do showDialog (contexto seguro)
-      final messenger = ScaffoldMessenger.of(context);
 
       String baseUrl = 'http://localhost';
       try {
@@ -392,8 +384,12 @@ class _CreateOrganizationWizardState
       await showDialog<void>(
         context: context,
         barrierDismissible: true,
-        builder: (_) =>
-            _buildSuccessDialog(inviteUrls, messenger, result.orgApiSecret),
+        builder: (dialogCtx) => _buildSuccessDialog(
+          inviteUrls,
+          messenger,
+          result.orgApiSecret,
+          dialogCtx,
+        ),
       );
 
       if (mounted) {
@@ -449,6 +445,7 @@ class _CreateOrganizationWizardState
     Map<String, String> inviteUrls,
     ScaffoldMessengerState messenger,
     String? orgApiSecret,
+    BuildContext dialogCtx,
   ) {
     return AlertDialog(
       icon: Stack(
@@ -464,7 +461,7 @@ class _CreateOrganizationWizardState
             top: 0,
             child: IconButton(
               icon: const Icon(Icons.close, size: 20),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               tooltip: 'Fechar e voltar para Tenants',
             ),
           ),
@@ -600,7 +597,7 @@ class _CreateOrganizationWizardState
       ),
       actions: [
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogCtx).pop(),
           style: ElevatedButton.styleFrom(
             backgroundColor: VeraProbColors.primary,
             minimumSize: const Size(120, 44),

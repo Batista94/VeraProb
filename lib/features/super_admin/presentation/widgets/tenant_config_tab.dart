@@ -244,8 +244,11 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   }
 
   Future<void> _copyToClipboard(String value) async {
+    final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: value));
-    _showSnackBar('Copiado para a área de transferência');
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Copiado para a área de transferência')),
+    );
   }
 
   void _addDomain() {
@@ -286,6 +289,8 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
           ReasonConfirmationDialog(promptMessage: _savePromptMessage()),
     );
     if (reason == null || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final t = widget.tenant;
@@ -333,15 +338,19 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
 
       ref.invalidate(tenantHealthSnapshotProvider);
       await ref.read(tenantHealthSnapshotProvider.future);
-      _showSnackBar(
-        'Configurações atualizadas com sucesso.',
-        backgroundColor: VeraProbColors.success,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Configurações atualizadas com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
       );
     } catch (e) {
       // Extract error message gracefully without domain imports (INV-13).
       // ProviderException wraps the original error; try to access its message property.
       final msg = _extractErrorMessage(e);
-      _showSnackBar(msg, backgroundColor: VeraProbColors.error);
+      messenger.showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
+      );
     }
   }
 

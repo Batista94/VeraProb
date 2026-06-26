@@ -52,6 +52,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _archiveOrg(TenantHealthView t) async {
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await ArchiveConfirmationDialog.show(context);
     if (reason == null || !mounted) return;
 
@@ -69,13 +70,13 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       ref.invalidate(tenantHealthSnapshotProvider);
       ref.invalidate(tenantDetailProvider(t.id));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Organização arquivada com sucesso.')),
         );
       }
     } on DomainException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(e.message),
             backgroundColor: VeraProbColors.error,
@@ -84,9 +85,9 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao arquivar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao arquivar a organização.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -95,6 +96,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _unarchiveOrg(TenantHealthView t) async {
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await showDialog<String>(
       context: context,
       builder: (_) => const ReasonConfirmationDialog(
@@ -117,7 +119,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       ref.invalidate(tenantHealthSnapshotProvider);
       ref.invalidate(tenantDetailProvider(t.id));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Organização desarquivada com sucesso.'),
             backgroundColor: VeraProbColors.success,
@@ -126,9 +128,9 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao desarquivar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao desarquivar a organização.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -139,6 +141,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   Future<void> _startImpersonation(TenantHealthView t) async {
     final ticketController = TextEditingController();
     final reasonController = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -191,7 +194,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       );
       ref.read(activeImpersonationSessionProvider.notifier).set(session);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               'Personificando "${t.name}". Sessão expira em 30 minutos.',
@@ -202,7 +205,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       }
     } on DomainException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(e.message),
             backgroundColor: VeraProbColors.error,
@@ -211,9 +214,9 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao iniciar personificação: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao iniciar personificação.'),
             backgroundColor: VeraProbColors.error,
           ),
         );

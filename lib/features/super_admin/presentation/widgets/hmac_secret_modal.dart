@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 class HmacSecretModal extends StatefulWidget {
   final String secret;
@@ -20,8 +21,9 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
     super.dispose();
   }
 
-  void _copyToClipboard() {
-    Clipboard.setData(ClipboardData(text: widget.secret));
+  Future<void> _copyToClipboard() async {
+    final messenger = ScaffoldMessenger.of(context);
+    await Clipboard.setData(ClipboardData(text: widget.secret));
 
     // Configura o TTL (Time-To-Live) da Clipboard (60 segundos)
     _clipboardClearTimer?.cancel();
@@ -29,12 +31,12 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
       Clipboard.setData(const ClipboardData(text: ''));
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    messenger.showSnackBar(
       const SnackBar(
         content: Text(
           'Copiado! O segredo sumirá da área de transferência em 60s.',
         ),
-        backgroundColor: Colors.amber, // Cor de risco UX-Ops
+        backgroundColor: VeraProbColors.warning, // Cor de risco UX-Ops
       ),
     );
   }
@@ -44,36 +46,35 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A), // Slate/Zinc palette (Industrial Deep)
+        color: VeraProbColors.surface, // Slate/Zinc palette (Industrial Deep)
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
             Icons.warning_amber_rounded,
-            color: Colors.amber,
+            color: VeraProbColors.warning,
             size: 48,
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             'Segredo HMAC Gerado',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
+            style: VeraProbTypography.sectionTitle.copyWith(fontSize: 20),
           ),
           const SizedBox(height: 8),
-          const Text(
+          Text(
             'Copie agora. Por segurança, não será exibido novamente.',
-            style: TextStyle(color: Colors.amber),
+            style: VeraProbTypography.bodyMedium.copyWith(
+              color: VeraProbColors.warning,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.black26,
+            color: VeraProbColors.surfaceElevated,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -83,13 +84,16 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 18,
-                      color: Colors.white,
+                      color: VeraProbColors.textPrimary,
                       letterSpacing: 2,
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.copy, color: Colors.white),
+                  icon: const Icon(
+                    Icons.copy,
+                    color: VeraProbColors.textPrimary,
+                  ),
                   onPressed: _copyToClipboard,
                 ),
               ],
@@ -98,12 +102,15 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
           const SizedBox(height: 24),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade800,
+              backgroundColor: VeraProbColors.error,
             ),
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
+            child: Text(
               'Fechar e Destruir',
-              style: TextStyle(color: Colors.white),
+              style: VeraProbTypography.badge.copyWith(
+                color: VeraProbColors.textPrimary,
+                fontSize: 13,
+              ),
             ),
           ),
         ],

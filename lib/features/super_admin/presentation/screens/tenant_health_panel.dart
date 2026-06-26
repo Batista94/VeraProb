@@ -48,10 +48,11 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
           if (mounted) setState(() => _selectedTenant = found);
         });
       } else {
+        final messenger = ScaffoldMessenger.of(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             ref.read(selectedTenantIdProvider.notifier).select(null);
-            ScaffoldMessenger.of(context).showSnackBar(
+            messenger.showSnackBar(
               const SnackBar(
                 content: Text(
                   'Organização não encontrada ou sem permissão de acesso.',
@@ -290,6 +291,9 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     setState(() {
       _isSaving = true;
       _errorMessage = null;
@@ -313,8 +317,8 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
 
       if (!mounted) return;
       ref.invalidate(tenantHealthSnapshotProvider);
-      Navigator.of(context).pop();
-      ScaffoldMessenger.of(context).showSnackBar(
+      navigator.pop();
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             'Cotas de ${widget.snapshot.name} atualizadas com sucesso.',

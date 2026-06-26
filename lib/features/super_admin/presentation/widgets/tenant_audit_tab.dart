@@ -27,37 +27,7 @@ class TenantAuditTab extends ConsumerWidget {
     final auditLogsAsync = ref.watch(systemAuditLogProvider(params));
 
     return switch (auditLogsAsync) {
-      AsyncData(:final value) => () {
-        final logs = value;
-        if (logs.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history_outlined,
-                  size: 48,
-                  color: VeraProbColors.textDisabled,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Nenhum evento de auditoria encontrado.',
-                  style: TextStyle(color: VeraProbColors.textSecondary),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: logs.length,
-          itemBuilder: (context, index) {
-            final log = logs[index];
-            return _AuditLogItem(log: log);
-          },
-        );
-      }(),
+      AsyncData(:final value) => _buildLogList(value),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
       AsyncError(:final error) => Center(
         child: Text(
@@ -66,6 +36,37 @@ class TenantAuditTab extends ConsumerWidget {
         ),
       ),
     };
+  }
+
+  Widget _buildLogList(List<SystemAuditLogView> logs) {
+    if (logs.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history_outlined,
+              size: 48,
+              color: VeraProbColors.textDisabled,
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Nenhum evento de auditoria encontrado.',
+              style: TextStyle(color: VeraProbColors.textSecondary),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: logs.length,
+      itemBuilder: (context, index) {
+        final log = logs[index];
+        return _AuditLogItem(log: log);
+      },
+    );
   }
 }
 
@@ -302,15 +303,14 @@ class _CopyableIdRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: GestureDetector(
         onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
           await Clipboard.setData(ClipboardData(text: value));
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('ID copiado para a área de transferência'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('ID copiado para a área de transferência'),
+              duration: Duration(seconds: 2),
+            ),
+          );
         },
         child: Row(
           children: [

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/tenant_technical_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/pulse_indicator.dart';
@@ -68,10 +69,15 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
       // Req 3.2: On success, refresh the health provider to update
       // the PulseIndicator with the new schema integrity result.
       ref.invalidate(tenantTechnicalHealthProvider(widget.organizationId));
-    } catch (e) {
+    } on DomainException catch (e) {
       // Req 3.3: Show contextual error without freezing the UI.
       setState(() {
-        _checkError = 'Falha na verificação: ${e.toString()}';
+        _checkError = 'Falha na verificação: ${e.message}';
+      });
+    } catch (_) {
+      setState(() {
+        _checkError =
+            'Não foi possível verificar a integridade do schema no momento.';
       });
     } finally {
       if (mounted) {

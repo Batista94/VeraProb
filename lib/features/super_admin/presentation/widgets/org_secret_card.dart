@@ -184,11 +184,12 @@ class _OrgSecretCardState extends ConsumerState<OrgSecretCard> {
                         IconButton(
                           icon: const Icon(Icons.copy, size: 16),
                           tooltip: 'Copiar',
-                          onPressed: () {
-                            Clipboard.setData(
+                          onPressed: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await Clipboard.setData(
                               ClipboardData(text: _generatedSecret!),
                             );
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            messenger.showSnackBar(
                               const SnackBar(
                                 content: Text('Secret copiado!'),
                                 duration: Duration(seconds: 2),

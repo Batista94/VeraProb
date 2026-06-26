@@ -63,7 +63,9 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e is DomainException
+              ? e.message
+              : 'Falha ao configurar a autenticação. Tente novamente.';
           _isLoading = false;
         });
       }
@@ -106,7 +108,9 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e is DomainException
+              ? e.message
+              : 'Erro na validação do código. Tente novamente.';
           _isVerifying = false;
         });
       }
@@ -158,9 +162,13 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 48),
+          const Icon(
+            Icons.error_outline,
+            color: VeraProbColors.error,
+            size: 48,
+          ),
           const SizedBox(height: 16),
-          Text(_error!, style: const TextStyle(color: Colors.red)),
+          Text(_error!, style: const TextStyle(color: VeraProbColors.error)),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go(AppRoutes.login),
@@ -255,9 +263,10 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
               IconButton(
                 icon: const Icon(Icons.copy, size: 18),
                 tooltip: 'Copiar código',
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: result.secret));
-                  ScaffoldMessenger.of(context).showSnackBar(
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await Clipboard.setData(ClipboardData(text: result.secret));
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Código copiado'),
                       duration: Duration(seconds: 2),
@@ -317,7 +326,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.check_circle, color: Colors.green, size: 48),
+        const Icon(Icons.check_circle, color: VeraProbColors.success, size: 48),
         const SizedBox(height: 16),
         const Text(
           'MFA Configurado com Sucesso',
@@ -331,7 +340,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         const Text(
           'Salve seus códigos de recuperação em local seguro.\nEles não serão exibidos novamente.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.amber, fontSize: 13),
+          style: TextStyle(color: VeraProbColors.warning, fontSize: 13),
         ),
         const SizedBox(height: 24),
 
@@ -374,9 +383,10 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
 
         // Copy all button
         OutlinedButton.icon(
-          onPressed: () {
-            Clipboard.setData(ClipboardData(text: codes.join('\n')));
-            ScaffoldMessenger.of(context).showSnackBar(
+          onPressed: () async {
+            final messenger = ScaffoldMessenger.of(context);
+            await Clipboard.setData(ClipboardData(text: codes.join('\n')));
+            messenger.showSnackBar(
               const SnackBar(
                 content: Text('Códigos copiados'),
                 duration: Duration(seconds: 2),

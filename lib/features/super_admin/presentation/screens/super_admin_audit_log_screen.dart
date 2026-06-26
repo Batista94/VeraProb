@@ -65,7 +65,11 @@ class _SuperAdminAuditLogScreenState
                     color: VeraProbColors.error,
                   ),
                   const SizedBox(height: 12),
-                  Text('Erro ao carregar logs: $error'),
+                  Text(
+                    error is DomainException
+                        ? 'Erro ao carregar logs: ${error.message}'
+                        : 'Não foi possível carregar os logs no momento.',
+                  ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
                     onPressed: () =>

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/super_admin/start_impersonation_handler.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
@@ -61,6 +62,7 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
   Future<void> _revokeSession() async {
     if (_isRevoking) return;
     setState(() => _isRevoking = true);
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final handler = ref.read(revokeImpersonationHandlerProvider);
@@ -73,9 +75,12 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
       widget.onSessionEnded();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      final errorMsg = e is DomainException
+          ? e.message
+          : 'Falha ao encerrar sessão.';
+      messenger.showSnackBar(
         SnackBar(
-          content: Text('Erro ao revogar: $e'),
+          content: Text(errorMsg),
           backgroundColor: VeraProbColors.error,
         ),
       );

@@ -56,7 +56,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = 'Falha ao carregar os usuários.';
           _loading = false;
         });
       }
@@ -70,6 +70,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   ) async {
     if (_processing) return;
     final newStatus = !currentStatus;
+    final messenger = ScaffoldMessenger.of(context);
 
     // Apenas exigir justificativa/confirmação ao desativar o usuário (Req 3.3)
     String? reason;
@@ -122,7 +123,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       if (mounted) {
         // INV-22: Invalida snapshot para sincronizar status do painel pai.
         ref.invalidate(tenantHealthSnapshotProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               currentStatus ? 'Usuário inativado.' : 'Usuário reativado.',
@@ -134,9 +135,9 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       await _loadMembers();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao alterar o status do usuário.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -151,6 +152,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   Future<void> _resendInvite(String email) async {
     if (_processing) return;
     setState(() => _processing = true);
+    final messenger = ScaffoldMessenger.of(context);
     String? reason;
     try {
       reason = await showDialog<String>(
@@ -178,7 +180,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         reason: reason,
       );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Convite reenviado.'),
             backgroundColor: VeraProbColors.success,
@@ -187,9 +189,9 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao reenviar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao reenviar o convite.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -204,6 +206,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   Future<void> _revokeInvite(String email) async {
     if (_processing) return;
     setState(() => _processing = true);
+    final messenger = ScaffoldMessenger.of(context);
     String? reason;
     try {
       reason = await showDialog<String>(
@@ -234,7 +237,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       if (mounted) {
         // INV-22: Invalida snapshot para sincronizar status do painel pai.
         ref.invalidate(tenantHealthSnapshotProvider);
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Convite revogado.'),
             backgroundColor: VeraProbColors.success,
@@ -244,9 +247,9 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
       await _loadMembers();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao revogar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao revogar o convite.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -261,6 +264,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
   Future<void> _addAdmin() async {
     if (_processing) return;
     setState(() => _processing = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final emailCtrl = TextEditingController();
       final reasonCtrl = TextEditingController();
@@ -370,9 +374,8 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                           const SizedBox(height: 12),
                           Text(
                             serverError!,
-                            style: const TextStyle(
+                            style: VeraProbTypography.bodySmall.copyWith(
                               color: VeraProbColors.error,
-                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -408,7 +411,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
 
       // INV-22: Invalida snapshot para sincronizar status do painel pai.
       ref.invalidate(tenantHealthSnapshotProvider);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text('Convite enviado para ${result.email}.'),
           backgroundColor: VeraProbColors.success,
@@ -449,7 +452,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                     label: const Text('Adicionar'),
                     style: FilledButton.styleFrom(
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: VeraProbTypography.bodySmall,
                     ),
                   ),
                 ),
@@ -469,9 +472,11 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Erro ao carregar usuários',
-              style: TextStyle(color: VeraProbColors.error),
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.error,
+              ),
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -490,7 +495,9 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         child: Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: VeraProbColors.textSecondary),
+          style: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
         ),
       );
     }
@@ -542,7 +549,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           ),
           subtitle: Text(
             'Role: $role | Login: ${(status.toLowerCase() == 'active' && hasSignedIn) ? 'Sim' : 'Não'}',
-            style: const TextStyle(fontSize: 11),
+            style: VeraProbTypography.caption,
           ),
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
@@ -648,11 +655,7 @@ class _StatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 10,
-          color: color,
-          fontWeight: FontWeight.bold,
-        ),
+        style: VeraProbTypography.badge.copyWith(color: color),
       ),
     );
   }

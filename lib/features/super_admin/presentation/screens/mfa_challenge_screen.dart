@@ -57,7 +57,9 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e is DomainException
+              ? e.message
+              : 'Falha ao iniciar o desafio MFA.';
           _isLoadingChallenge = false;
         });
       }
@@ -105,7 +107,9 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
       if (mounted) {
         setState(() {
           _isVerifying = false;
-          _error = e.toString();
+          _error = e is DomainException
+              ? e.message
+              : 'Falha na validação do código MFA.';
         });
       }
     }
@@ -190,7 +194,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
             _isLockedOut ? Icons.lock_clock : Icons.verified_user,
             size: 40,
             color: _isLockedOut
-                ? Colors.amber
+                ? VeraProbColors.warning
                 : VeraProbColors.superAdminSurface,
           ),
         ),
@@ -262,7 +266,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
           const SizedBox(height: 16),
           Text(
             _error!,
-            style: const TextStyle(color: Colors.red, fontSize: 13),
+            style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
             textAlign: TextAlign.center,
           ),
         ],
@@ -273,7 +277,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
           const SizedBox(height: 8),
           Text(
             '$_remainingAttempts de 5 tentativas restantes',
-            style: const TextStyle(color: Colors.amber, fontSize: 12),
+            style: const TextStyle(color: VeraProbColors.warning, fontSize: 12),
           ),
         ],
 
