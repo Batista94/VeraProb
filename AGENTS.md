@@ -70,6 +70,10 @@ Critical subset:
 - Unused params: single `_` (avoid `unnecessary_underscores` error).
 - `DateTime.now()` MUST be followed by `.toUtc()` (INV-6).
 - Hermetic Goldens: always `make goldens` (Linux Docker — CI parity).
+- **No IIFE in UI (IIFE-UI-SMELL):** Never use `() { ... }()` inside `build` or `switch` statements. Always extract to helper methods (`_buildX`).
+- **No raw exceptions in UI (UX-RAW-EXCEPTION):** Never display `$e` or `e.toString()` in SnackBars/Text. Map to domain vocabulary.
+- **Wasm Context Leaks (WASM-CONTEXT-LEAK):** Capture `ScaffoldMessenger.of(context)` BEFORE any `await`. Never use `if (mounted)` with `context` after an `await`.
+- **UI Clean Code:** Avoid nested ternary operators. Keep `build()` methods declarative; push business logic into Riverpod providers. Use `VeraProbColors` and `VeraProbTypography` instead of hardcoded styling.
 
 ## Protocols (Mandatory)
 
@@ -98,6 +102,9 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 12 | PARTITION-RLS-GAP | `CREATE TABLE … PARTITION OF` without per-child `ENABLE ROW LEVEL SECURITY` + mirrored policy (INV-2, INV-22) |
 | 13 | INV-DATA-API-GRANT | Missing explicit Data API table grants for tables created in the `public` schema |
 | 14 | LAZY-TEST-BYPASS | Mock/Empty pgTAP Tests |
+| 15 | WASM-CONTEXT-LEAK | `ScaffoldMessenger.of(context)` or `Navigator.of(context)` used after `await` |
+| 16 | IIFE-UI-SMELL | `() { ... }()` Immediately Invoked Function Expressions in UI |
+| 17 | UX-RAW-EXCEPTION | `$e` or `e.toString()` used directly in UI text |
 
 ## Lessons Learned — Index
 

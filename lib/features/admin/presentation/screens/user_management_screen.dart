@@ -183,45 +183,11 @@ class UserManagementScreen extends ConsumerWidget {
                   },
 
                   switch (invitationsAsync) {
-                    AsyncData(:final value) => () {
-                      final nowUtc = ref
-                          .read(dateTimeProviderProvider)
-                          .nowUtc();
-                      final pending = value
-                          .where((i) => i.isActiveAt(nowUtc))
-                          .toList();
-                      if (pending.isEmpty) return const SizedBox.shrink();
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 32),
-                          const Divider(color: VeraProbColors.border),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.mail_outline,
-                                size: 20,
-                                color: VeraProbColors.textSecondary,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Convites Pendentes (${pending.length})',
-                                style: VeraProbTypography.kpiLabel,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          ...pending.map(
-                            (inv) => _PendingInvitationTile(
-                              invitation: inv,
-                              onRevoke: () =>
-                                  _revokeInvitation(context, ref, inv),
-                            ),
-                          ),
-                        ],
-                      );
-                    }(),
+                    AsyncData(:final value) => _buildInvitations(
+                      context,
+                      ref,
+                      value,
+                    ),
                     AsyncLoading() => const SizedBox.shrink(),
                     AsyncError() => const SizedBox.shrink(),
                   },
@@ -231,6 +197,45 @@ class UserManagementScreen extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildInvitations(
+    BuildContext context,
+    WidgetRef ref,
+    List<Invitation> value,
+  ) {
+    final nowUtc = ref.read(dateTimeProviderProvider).nowUtc();
+    final pending = value.where((i) => i.isActiveAt(nowUtc)).toList();
+    if (pending.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        const Divider(color: VeraProbColors.border),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const Icon(
+              Icons.mail_outline,
+              size: 20,
+              color: VeraProbColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Convites Pendentes (${pending.length})',
+              style: VeraProbTypography.kpiLabel,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...pending.map(
+          (inv) => _PendingInvitationTile(
+            invitation: inv,
+            onRevoke: () => _revokeInvitation(context, ref, inv),
+          ),
+        ),
+      ],
     );
   }
 
@@ -247,6 +252,7 @@ class UserManagementScreen extends ConsumerWidget {
     String userId,
     UserRole newRole,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final callerRole = ref.read(currentUserRoleProvider);
@@ -271,23 +277,21 @@ class UserManagementScreen extends ConsumerWidget {
           );
       ref.invalidate(orgMembersProvider);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Permissao atualizada.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Permissão atualizada com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
-            backgroundColor: VeraProbColors.error,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível atualizar a permissão. Tente novamente.',
           ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 
@@ -297,6 +301,7 @@ class UserManagementScreen extends ConsumerWidget {
     String userId,
     String email,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -345,23 +350,21 @@ class UserManagementScreen extends ConsumerWidget {
             );
         ref.invalidate(orgMembersProvider);
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Membro inativado.'),
-              backgroundColor: VeraProbColors.success,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Membro inativado com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(e.toString().replaceAll('Exception: ', '')),
-              backgroundColor: VeraProbColors.error,
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível inativar o membro. Verifique as permissões e tente novamente.',
             ),
-          );
-        }
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }
@@ -371,6 +374,7 @@ class UserManagementScreen extends ConsumerWidget {
     WidgetRef ref,
     Invitation invitation,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -416,23 +420,21 @@ class UserManagementScreen extends ConsumerWidget {
             );
         ref.invalidate(orgInvitationsProvider);
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Convite revogado.'),
-              backgroundColor: VeraProbColors.success,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Convite revogado com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
       } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro: $e'),
-              backgroundColor: VeraProbColors.error,
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível revogar o convite. Tente novamente mais tarde.',
             ),
-          );
-        }
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }
@@ -651,6 +653,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final orgId = widget.parentRef.read(currentOrganizationIdProvider);
@@ -695,27 +698,31 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         _generatedToken = token;
         _loading = false;
       });
-    } on ProviderException catch (e) {
+    } on ProviderException catch (_) {
       // Riverpod v3: unwrap ProviderException to show original error
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: ${e.exception}'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
       }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível enviar o convite. Ocorreu um erro no provedor de acesso.',
+          ),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
       }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível enviar o convite. Verifique os dados e tente novamente.',
+          ),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 }

@@ -74,6 +74,9 @@ Mandatory for all IDEs (Antigravity/Claude/Kiro). Failure to execute = VETO.
 
 - **Strict Mode (INV-7):** `strict-casts`, `strict-inference`, `strict-raw-types` ENABLED globally. Infrastructure has temporary exemption in `lib/infrastructure/analysis_options.yaml` until ~80 `Map<dynamic,dynamic>` cast violations are resolved. Delete that file once clean.
 - **Layer Shielding (INV-13):** Route `lib/features/` → `lib/infrastructure/` via application service or `IRepository` interface. Exceptions: `infrastructure/observability/` (logger), `infrastructure/config/` (env). Scanner rule: `INFRA-LEAK-UI`.
+- **Wasm/W3C Parity (WASM-CONTEXT-LEAK):** Never invoke `ScaffoldMessenger.of(context)` or `Navigator.of(context)` after an `await` without pre-capturing the reference. `if (mounted)` does NOT protect against staleness in Wasm.
+- **UI Clean Code (IIFE-UI-SMELL):** Do NOT use Immediately Invoked Function Expressions (IIFEs) like `() { ... }()`. Extract complex widget logic into smaller helper methods (`_buildSomething`). Avoid nested ternaries.
+- **UX Excellence (UX-RAW-EXCEPTION):** Never expose `$e` or `e.toString()` in UI feedback (SnackBars/Dialogs). Translate exceptions to user-friendly Portuguese. Avoid hardcoded styles; use `VeraProbColors` and `VeraProbTypography`.
 
 ## PATH-SCOPED RULES (auto-loaded by file pattern)
 

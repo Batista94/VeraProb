@@ -82,9 +82,9 @@ void main() {
             reason:
                 'RPC invocation should be blocked at PostgREST/Postgres layer.',
           );
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
 
@@ -103,9 +103,9 @@ void main() {
         } on StorageException catch (e) {
           // Assert it is blocked by RLS policies on the storage bucket
           expect(e.statusCode, anyOf('400', '403', '404'));
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
 
@@ -164,9 +164,9 @@ void main() {
           fail('RPC should have failed due to stale claim or missing claim.');
         } catch (e) {
           expect(e.toString(), contains('PGRST'));
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
   });

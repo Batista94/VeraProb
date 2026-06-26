@@ -203,6 +203,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isSaving = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final role = ref.read(currentUserRoleProvider);
@@ -240,23 +241,21 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
         _capReasonController.clear();
       }
       ref.invalidate(orgSettingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Configurações salvas com sucesso!'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Configurações salvas com sucesso!'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
-            backgroundColor: VeraProbColors.error,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível salvar as configurações. Verifique os dados e tente novamente.',
           ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -266,6 +265,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     if (!(_opParamsFormKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isSavingOpParams = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final role = ref.read(currentUserRoleProvider);
@@ -285,23 +285,21 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
 
       _opReasonController.clear();
       ref.invalidate(orgSettingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Parâmetros operacionais atualizados!'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Parâmetros operacionais atualizados com sucesso!'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar parâmetros: $e'),
-            backgroundColor: VeraProbColors.error,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível salvar os parâmetros. Tente novamente mais tarde.',
           ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isSavingOpParams = false);
     }
@@ -309,6 +307,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
 
   Future<void> _saveAllowedDomains() async {
     setState(() => _savingDomains = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       final superAdminId = ref.read(currentSuperAdminIdProvider);
@@ -319,23 +318,21 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
           .updateAllowedDomains(orgId, _allowedDomains, superAdminId);
 
       ref.invalidate(orgSettingsProvider);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Domínios atualizados com sucesso!'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Domínios atualizados com sucesso!'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar domínios: $e'),
-            backgroundColor: VeraProbColors.error,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível salvar os domínios. Verifique a sintaxe e tente novamente.',
           ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _savingDomains = false);
     }

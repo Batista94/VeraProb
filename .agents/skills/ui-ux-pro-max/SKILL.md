@@ -21,6 +21,7 @@ This Skill should be used when the task involves **UI structure, visual design d
 
 | Priority | Category | Domain | Key Checks (Must Have) |
 |----------|----------|--------|------------------------|
+| 0 | ZERO-TOLERANCE | `ux/code`| NO Wasm-Context-Leaks (Capture before await), NO IIFEs (`() { ... }()`), NO `$e` in UI, NO Nested Ternaries, NO Hardcoded Colors/Styles (Use VeraProbColors) |
 | 1 | Accessibility | `ux` | Contrast 4.5:1, Alt text, Keyboard nav, Aria-labels |
 | 2 | Touch & Interaction | `ux` | Min size 44×44px, 8px+ spacing, Loading feedback |
 | 3 | Performance | `ux` | WebP/AVIF, Lazy loading, Reserve space (CLS < 0.1) |

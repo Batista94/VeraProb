@@ -343,3 +343,61 @@ SELECT * FROM finish();
 ROLLBACK;
 ```
 
+---
+
+## 15. WASM-CONTEXT-LEAK: Stale BuildContext after await
+
+**Problem:** Using `ScaffoldMessenger.of(context)` or `Navigator.of(context)` after an `await` call. In Flutter Web (Wasm), the context may become stale and throw fatal pointer errors. `if (mounted)` does not fully protect against this in Wasm.
+
+**Fix:** Capture the messenger/navigator before the first `await`.
+
+```dart
+// Wrong
+await repo.save();
+if (mounted) ScaffoldMessenger.of(context).showSnackBar(...);
+
+// Right
+final messenger = ScaffoldMessenger.of(context);
+await repo.save();
+messenger.showSnackBar(...);
+```
+
+---
+
+## 16. IIFE-UI-SMELL: Immediately Invoked Function Expressions in UI
+
+**Problem:** Using `() { ... }()` inside `build()` or `switch` statements to write block logic inline, or using highly nested ternary operators.
+
+**Fix:** Extract the logic to a private helper method or split the widget.
+
+```dart
+// Wrong
+switch (asyncValue) {
+  AsyncData(:final value) => () {
+    final filtered = value.where(...);
+    return Column(children: [...]);
+  }(),
+}
+
+// Right
+switch (asyncValue) {
+  AsyncData(:final value) => _buildFilteredList(context, value),
+}
+```
+
+---
+
+## 17. UX-RAW-EXCEPTION: Exposing technical errors to users
+
+**Problem:** Using `Text('Erro: $e')` in SnackBars or UI elements.
+
+**Fix:** Translate to a human-readable domain message in Portuguese. Do not expose system traces.
+
+```dart
+// Wrong
+ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+
+// Right
+messenger.showSnackBar(const SnackBar(content: Text('Falha ao processar solicitação. Verifique os dados e tente novamente.')));
+```
+
