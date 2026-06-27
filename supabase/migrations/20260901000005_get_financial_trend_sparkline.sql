@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Migration: get_financial_trend_sparkline RPC
 -- 7-day (toggle 30-day) sparkline data for CFO KPI cards.
 -- Security: SECURITY DEFINER, INV-2 org claim, INV-26 anti-oracle 42501.

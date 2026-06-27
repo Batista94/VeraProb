@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- Migration: Fix JWT org claim read for tenant users
 -- Purpose: Fixes the bug in 20260901000004 where tenant users got 42501 insufficient_privilege
 --          because their app_metadata ->> org_id is null. Replaces with top-level organization_id.

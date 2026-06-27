@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/admin/quota_warning.dart';
+import 'package:veraprob/application/admin/quota_warning_view.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 
 /// Banner displayed in the admin dashboard when the org has active quota warnings.

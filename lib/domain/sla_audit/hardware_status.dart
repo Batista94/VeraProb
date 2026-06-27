@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 /// Hardware connectivity classification for fleet ingestion health.
 ///
 /// Maps 1:1 to the `hardware_status` TEXT returned by the

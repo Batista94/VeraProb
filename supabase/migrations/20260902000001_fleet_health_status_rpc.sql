@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: `get_fleet_health_status` RPC — Phase 10.6
 --

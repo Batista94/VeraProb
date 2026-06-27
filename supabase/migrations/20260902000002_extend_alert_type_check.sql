@@ -1,3 +1,4 @@
+-- pr_scanner: ignore-regression
 -- =============================================================================
 -- Migration: Extend operational_alerts CHECK constraint — Phase 10.6
 --

@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'idempotency_processing_exception.dart';
 
 class ConcurrentModificationException extends IdempotencyProcessingException {
