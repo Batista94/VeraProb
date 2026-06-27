@@ -12,6 +12,11 @@ import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_su
 import 'package:veraprob/features/dispute_portal/presentation/widgets/evidence_dropzone.dart';
 import 'package:veraprob/features/dispute_portal/presentation/widgets/dispute_action_footer.dart';
 
+const TextStyle _kPortalSecondaryLabelStyle = TextStyle(
+  fontSize: 12,
+  color: VeraProbColors.textSecondary,
+);
+
 /// Public, tokenized dispute portal for an external carrier (no Supabase auth).
 class DisputePortalPage extends ConsumerWidget {
   final String token;
@@ -217,10 +222,7 @@ class _LoadingView extends StatelessWidget {
       children: [
         CircularProgressIndicator(),
         SizedBox(height: 16),
-        Text(
-          'Validando link...',
-          style: TextStyle(color: VeraProbColors.textSecondary),
-        ),
+        Text('Validando link...', style: _kPortalSecondaryLabelStyle),
       ],
     );
   }
@@ -296,7 +298,7 @@ class _PortalCard extends StatelessWidget {
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: VeraProbColors.textSecondary),
+            style: _kPortalSecondaryLabelStyle,
           ),
         ],
       ),

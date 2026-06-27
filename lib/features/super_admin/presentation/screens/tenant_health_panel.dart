@@ -15,6 +15,16 @@ import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart';
 
+const TextStyle _kTenantPlaceholderStyle = TextStyle(
+  fontSize: 14,
+  color: VeraProbColors.textSecondary,
+);
+const TextStyle _kDialogSectionHeaderStyle = TextStyle(
+  fontSize: 13,
+  fontWeight: FontWeight.w600,
+);
+const TextStyle _kDialogSegmentLabelStyle = TextStyle(fontSize: 12);
+
 /// Cross-tenant health dashboard for SuperAdmin.
 ///
 /// Stage H: Split-view layout with TenantListPanel (320px) + TenantDetailPanel.
@@ -36,33 +46,12 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
   Widget build(BuildContext context) {
     final selectedId = ref.watch(selectedTenantIdProvider);
     final tenantsAsync = ref.watch(tenantHealthSnapshotProvider);
+    final messenger = ScaffoldMessenger.of(context);
 
     // Initial select or list updates
-    if (_selectedTenant == null &&
-        selectedId != null &&
+    if (selectedId != null &&
         tenantsAsync is AsyncData<List<TenantHealthView>>) {
-      final value = tenantsAsync.value;
-      final found = value.where((t) => t.id == selectedId).firstOrNull;
-      if (found != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _selectedTenant = found);
-        });
-      } else {
-        final messenger = ScaffoldMessenger.of(context);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            ref.read(selectedTenantIdProvider.notifier).select(null);
-            messenger.showSnackBar(
-              const SnackBar(
-                content: Text(
-                  'Organização não encontrada ou sem permissão de acesso.',
-                ),
-                backgroundColor: VeraProbColors.error,
-              ),
-            );
-          }
-        });
-      }
+      _resolveInitialTenant(tenantsAsync.value, selectedId, messenger);
     }
 
     // INV-11: Mantém _selectedTenant sincronizado quando o provider é invalidado
@@ -80,7 +69,7 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
             } else {
               ref.read(selectedTenantIdProvider.notifier).select(null);
               setState(() => _selectedTenant = null);
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 const SnackBar(
                   content: Text(
                     'Organização não encontrada ou sem permissão de acesso.',
@@ -141,10 +130,7 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
                       SizedBox(height: 16),
                       Text(
                         'Selecione uma organização na lista ao lado.',
-                        style: TextStyle(
-                          color: VeraProbColors.textSecondary,
-                          fontSize: 14,
-                        ),
+                        style: _kTenantPlaceholderStyle,
                       ),
                     ],
                   ),
@@ -152,6 +138,34 @@ class _TenantHealthPanelState extends ConsumerState<TenantHealthPanel> {
         ),
       ],
     );
+  }
+
+  void _resolveInitialTenant(
+    List<TenantHealthView> tenants,
+    String selectedId,
+    ScaffoldMessengerState messenger,
+  ) {
+    if (_selectedTenant != null) return;
+    final found = tenants.where((t) => t.id == selectedId).firstOrNull;
+    if (found != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedTenant = found);
+      });
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(selectedTenantIdProvider.notifier).select(null);
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Organização não encontrada ou sem permissão de acesso.',
+              ),
+              backgroundColor: VeraProbColors.error,
+            ),
+          );
+        }
+      });
+    }
   }
 }
 
@@ -401,7 +415,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
             ExpansionTile(
               title: const Text(
                 'Configuração Operacional',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: _kDialogSectionHeaderStyle,
               ),
               tilePadding: EdgeInsets.zero,
               childrenPadding: const EdgeInsets.only(bottom: 12),
@@ -420,7 +434,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
                           value: e.key,
                           label: Text(
                             e.value,
-                            style: const TextStyle(fontSize: 12),
+                            style: _kDialogSegmentLabelStyle,
                           ),
                         ),
                       )
@@ -479,10 +493,7 @@ class _EditQuotaDialogState extends ConsumerState<_EditQuotaDialog> {
                 const SizedBox(height: 16),
                 Text(
                   'Tempo de Parada Padrão: ${_dwellTimeSeconds}s (~${(_dwellTimeSeconds / 60).round()} min)',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: VeraProbColors.textSecondary,
-                  ),
+                  style: VeraProbTypography.bodySmall,
                 ),
                 SliderTheme(
                   data: const SliderThemeData(

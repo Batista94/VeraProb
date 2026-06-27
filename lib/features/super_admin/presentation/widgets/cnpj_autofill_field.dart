@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/super_admin/cnpj_lookup_exceptions.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/shared/utils/cnpj_validator.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
@@ -123,7 +124,7 @@ class _CnpjAutofillFieldState extends ConsumerState<CnpjAutofillField> {
     final showHint = _errorMessage != null;
     final hintColor = isInvalidCnpj
         ? theme.colorScheme.error
-        : const Color(0xFFFBBF24); // VeraProbColors.delayed (amber)
+        : VeraProbColors.delayed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

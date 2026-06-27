@@ -218,7 +218,9 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.textContaining('Não foi possível carregar os logs no momento.'),
+        find.textContaining(
+          'Não foi possível carregar os logs de auditoria no momento.',
+        ),
         findsOneWidget,
       );
       expect(
@@ -527,7 +529,9 @@ void main() {
 
         // Error state visible
         expect(
-          find.textContaining('Não foi possível carregar os logs no momento.'),
+          find.textContaining(
+            'Não foi possível carregar os logs de auditoria no momento.',
+          ),
           findsOneWidget,
         );
 
@@ -539,7 +543,9 @@ void main() {
 
         // Error cleared, data visible
         expect(
-          find.textContaining('Não foi possível carregar os logs no momento.'),
+          find.textContaining(
+            'Não foi possível carregar os logs de auditoria no momento.',
+          ),
           findsNothing,
         );
         expect(find.text('RECOVERED'), findsOneWidget);

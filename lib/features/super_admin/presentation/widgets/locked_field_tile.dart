@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
+const Color _kLockedFieldBorder = Color(0xFF2A3A5C);
+
 /// A read-only tile that displays an immutable field with a lock icon,
 /// tooltip, hover effect, and optional click-to-copy.
 ///
@@ -66,7 +68,7 @@ class _LockedFieldTileState extends State<LockedFieldTile> {
             color: _isHovered
                 ? VeraProbColors.surface.withValues(alpha: 0.05)
                 : VeraProbColors.surface,
-            border: Border.all(color: const Color(0xFF2A3A5C)),
+            border: Border.all(color: _kLockedFieldBorder),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Column(

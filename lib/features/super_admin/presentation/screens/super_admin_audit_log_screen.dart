@@ -9,6 +9,12 @@ import 'package:veraprob/state/providers/shared_providers.dart';
 
 const _kSeverities = ['debug', 'info', 'warning', 'error', 'critical'];
 
+const TextStyle _kReasonStyle = TextStyle(
+  fontStyle: FontStyle.italic,
+  fontSize: 12,
+  color: VeraProbColors.textSecondary,
+);
+
 /// System Audit Log screen for SuperAdmin.
 ///
 /// Displays entries from `system_audit_log` with filters:
@@ -55,7 +61,7 @@ class _SuperAdminAuditLogScreenState
         Expanded(
           child: switch (logsAsync) {
             AsyncLoading() => const Center(child: CircularProgressIndicator()),
-            AsyncError(:final error) => Center(
+            AsyncError() => Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -65,10 +71,8 @@ class _SuperAdminAuditLogScreenState
                     color: VeraProbColors.error,
                   ),
                   const SizedBox(height: 12),
-                  Text(
-                    error is DomainException
-                        ? 'Erro ao carregar logs: ${error.message}'
-                        : 'Não foi possível carregar os logs no momento.',
+                  const Text(
+                    'Não foi possível carregar os logs de auditoria no momento.',
                   ),
                   const SizedBox(height: 12),
                   ElevatedButton.icon(
@@ -217,11 +221,7 @@ class _LogList extends StatelessWidget {
               if (log.reason != null && log.reason!.isNotEmpty)
                 Text(
                   log.reason!,
-                  style: const TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: VeraProbColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                  style: _kReasonStyle,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),

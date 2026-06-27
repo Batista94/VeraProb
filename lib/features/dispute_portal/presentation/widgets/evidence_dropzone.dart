@@ -58,14 +58,16 @@ class _EvidenceDropzoneState extends State<EvidenceDropzone> {
         widget.onFileStaged(stagedFile);
       }
     } catch (e) {
-      setState(() {
-        String msg = e.toString();
-        if (msg.contains(': ')) {
-          msg = msg.split(': ').skip(1).join(': ');
-        }
-        _inlineError = msg;
-      });
+      setState(() => _inlineError = _humanizeFilePickError(e));
     }
+  }
+
+  String _humanizeFilePickError(Object e) {
+    try {
+      final msg = (e as dynamic).message;
+      if (msg is String && msg.isNotEmpty) return msg;
+    } catch (_) {}
+    return 'Não foi possível processar o arquivo. Verifique o formato e tente novamente.';
   }
 
   String _getMimeType(String? extension) {
