@@ -272,6 +272,7 @@ class _DevSeedButton extends ConsumerWidget {
   Future<void> _seedData(BuildContext context, WidgetRef ref) async {
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final repository = ref.read(dataSeedingRepositoryProvider);
       await repository.seedCsvData(organizationId);
@@ -299,22 +300,16 @@ class _DevSeedButton extends ConsumerWidget {
       ref.invalidate(dashboardRiskFeedProvider);
       ref.invalidate(activeAlertsProvider);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dados de teste inseridos.')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Erro ao inserir dados de simulação. Tente novamente.',
-            ),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Dados de teste inseridos.')),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao inserir dados de simulação. Tente novamente.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 

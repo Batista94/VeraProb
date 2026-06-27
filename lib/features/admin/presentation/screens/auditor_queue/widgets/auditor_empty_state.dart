@@ -59,6 +59,7 @@ class _SimulateButtonState extends ConsumerState<SimulateButton> {
       );
       return;
     }
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     try {
       final error = await runSanctionSimulation(
@@ -66,13 +67,12 @@ class _SimulateButtonState extends ConsumerState<SimulateButton> {
         organizationId: orgId,
         vehiclePlate: 'TST-0001',
       );
-      if (!mounted) return;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(content: Text(error), backgroundColor: VeraProbColors.error),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text(
               'Sanção VEL-01 injetada — aguarde até 5s para aparecer na fila.',
@@ -81,16 +81,14 @@ class _SimulateButtonState extends ConsumerState<SimulateButton> {
         );
       }
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível simular a sanção. Verifique se há contratos ativos.',
-            ),
-            backgroundColor: VeraProbColors.error,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível simular a sanção. Verifique se há contratos ativos.',
           ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -132,7 +130,7 @@ class _SimulateButtonState extends ConsumerState<SimulateButton> {
       style: OutlinedButton.styleFrom(
         foregroundColor: VeraProbColors.textSecondary,
         side: const BorderSide(color: VeraProbColors.textDisabled),
-        textStyle: const TextStyle(fontSize: 12),
+        textStyle: VeraProbTypography.bodySmall,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
     );

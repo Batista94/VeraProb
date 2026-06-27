@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/application/admin/route_command_service_provider.dart';
 
@@ -66,6 +67,7 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
       _isSaving = true;
       _errorMessage = null;
     });
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final route = await ref
           .read(routeCommandServiceProvider)
@@ -76,22 +78,20 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
                 ? _colorController.text.trim()
                 : null,
           );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Rota cadastrada com sucesso'),
-              ],
-            ),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 3),
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text('Rota cadastrada com sucesso'),
+            ],
           ),
-        );
-        widget.onRouteAdded(route.id);
-      }
+          backgroundColor: VeraProbColors.success,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      widget.onRouteAdded(route.id);
     } catch (e, stack) {
       LoggerService().error(
         'Falha ao cadastrar rota',
@@ -115,7 +115,7 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
         elevation: 8,
         child: Container(
           width: 420,
-          color: Colors.white,
+          color: VeraProbColors.surface,
           child: Column(
             children: [
               // Header

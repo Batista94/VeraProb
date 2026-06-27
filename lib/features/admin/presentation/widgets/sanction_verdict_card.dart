@@ -1269,6 +1269,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   }
 
   Future<void> _onRequestMoreProof(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final email = ref.read(currentOperatorEmailProvider);
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
@@ -1285,15 +1286,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {
       ref.invalidate(pendingSanctionsStreamProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Solicitação enviada. Motorista será notificado para enviar prova forense.',
-            ),
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Solicitação enviada. Motorista será notificado para enviar prova forense.',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -1413,6 +1412,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _isDossierLoading = true;
       _dossierError = null;
@@ -1480,8 +1480,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         fileExtension: 'pdf',
         mimeType: MimeType.pdf,
       );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             sealed

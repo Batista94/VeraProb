@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/features/shared/providers.dart';
 
@@ -63,6 +64,7 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
       _isSaving = true;
       _errorMessage = null;
     });
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final vehicle = await ref
           .read(vehicleAssetRepositoryProvider)
@@ -73,22 +75,20 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
                 : null,
             capacity: int.parse(_capacityController.text.trim()),
           );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check_circle, color: Colors.white, size: 20),
-                SizedBox(width: 10),
-                Text('Veículo cadastrado com sucesso'),
-              ],
-            ),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 3),
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text('Veículo cadastrado com sucesso'),
+            ],
           ),
-        );
-        widget.onVehicleAdded(vehicle.id);
-      }
+          backgroundColor: VeraProbColors.success,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      widget.onVehicleAdded(vehicle.id);
     } catch (e, stack) {
       LoggerService().error(
         'Falha ao cadastrar veículo',
