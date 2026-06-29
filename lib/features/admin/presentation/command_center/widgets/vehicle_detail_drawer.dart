@@ -19,6 +19,8 @@ import 'occurrence_modal.dart';
 import 'package:veraprob/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart';
 import 'event_tile_widget.dart';
 
+const Color _kDestructiveAction = Color(0xFFB71C1C);
+
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
 ///
 /// Contains:
@@ -457,7 +459,7 @@ class _ActionsSection extends ConsumerWidget {
           _ActionButton(
             icon: Icons.cancel_outlined,
             label: 'Cancelar Viagem',
-            color: const Color(0xFFB71C1C),
+            color: _kDestructiveAction,
             enabled: !trip.status.isTerminal,
             onTap: () => _confirmAction(
               context,

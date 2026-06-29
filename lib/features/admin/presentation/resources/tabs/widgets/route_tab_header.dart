@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 
+const Color _kNavyAccent = Color(0xFF1A237E);
+
 /// Header row for the Routes tab — title + "Cadastrar rota" button.
 class RouteTabHeader extends StatelessWidget {
   final UserRole userRole;
@@ -36,7 +38,7 @@ class RouteTabHeader extends StatelessWidget {
                 'Rotas Operacionais',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1A237E),
+                  color: _kNavyAccent,
                 ),
               ),
               const SizedBox(height: 4),

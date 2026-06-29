@@ -96,6 +96,7 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
   }
 
   Future<void> _escalateIncident() async {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _isEscalating = true);
     try {
       final session = ref.read(authStateProvider).value?.session;
@@ -114,14 +115,12 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
             jwtClaimsSnapshot: sanitizedClaims,
           );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Incidente de segurança escalado com sucesso.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Incidente de segurança escalado com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isEscalating = false);
     }
@@ -1244,11 +1243,10 @@ Widget _buildRuleConfigHuman(FrozenRuleView rule) {
       'Valor da Penalidade por No-Show',
       _formatFine((config['penalty_amount_cents'] as num?)?.toInt() ?? 0),
     ),
-    'REQUIRED_EVIDENCE' => () {
-      final typesList = config['types'] as List?;
-      final typesStr = typesList?.join(', ') ?? 'Nenhuma';
-      return _LockedRow('Evidências Obrigatórias', typesStr);
-    }(),
+    'REQUIRED_EVIDENCE' => _LockedRow(
+      'Evidências Obrigatórias',
+      (config['types'] as List?)?.join(', ') ?? 'Nenhuma',
+    ),
     _ => _LockedRow(
       'Configuração',
       config.entries.map((e) => '${e.key}: ${e.value}').join(', '),

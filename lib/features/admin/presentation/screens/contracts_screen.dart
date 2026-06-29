@@ -41,6 +41,12 @@ class _ContractListView extends ConsumerStatefulWidget {
 class _ContractListViewState extends ConsumerState<_ContractListView> {
   String _searchQuery = '';
 
+  Widget _buildContractList(List<ContractSummaryView> value) {
+    final contracts = _filterContracts(value);
+    if (contracts.isEmpty) return const _EmptyState();
+    return _ContractTable(contracts: contracts);
+  }
+
   List<ContractSummaryView> _filterContracts(List<ContractSummaryView> list) {
     if (_searchQuery.isEmpty) return list;
     final q = _searchQuery.toLowerCase();
@@ -192,11 +198,7 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
 
           Expanded(
             child: switch (contractsAsync) {
-              AsyncData(:final value) => () {
-                final contracts = _filterContracts(value);
-                if (contracts.isEmpty) return const _EmptyState();
-                return _ContractTable(contracts: contracts);
-              }(),
+              AsyncData(:final value) => _buildContractList(value),
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(),
               ),

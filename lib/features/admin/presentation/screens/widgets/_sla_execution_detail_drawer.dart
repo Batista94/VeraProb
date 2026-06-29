@@ -335,12 +335,12 @@ class _SolicitarDefesaButtonState
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
     if (orgId == null || userId == null) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     // Ask operator for expiry hours
     final hours = await _askExpiry(context);
     if (hours == null || !mounted) return;
 
     setState(() => _loading = true);
-    final messenger = ScaffoldMessenger.of(context);
     try {
       final token = await ref
           .read(generateJustificationTokenHandlerProvider)

@@ -40,12 +40,10 @@ class ContractDetailScreen extends ConsumerWidget {
     final detailAsync = ref.watch(contractDetailProvider(contractId));
 
     return switch (detailAsync) {
-      AsyncData(:final value) => () {
-        if (value == null) {
-          return const Center(child: Text('Contrato não encontrado.'));
-        }
-        return _DetailView(detail: value);
-      }(),
+      AsyncData(:final value) =>
+        value == null
+            ? const Center(child: Text('Contrato não encontrado.'))
+            : _DetailView(detail: value),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
       AsyncError() => const Center(
         child: Text(

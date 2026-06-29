@@ -65,28 +65,32 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
     }
   }
 
+  void _onAlertsChanged(
+    AsyncValue<List<OperationalAlert>>? prev,
+    AsyncValue<List<OperationalAlert>> next,
+  ) {
+    final prevIds =
+        prev?.value
+            ?.where((a) => a.severity == 'CRITICAL')
+            .map((a) => a.id)
+            .toSet() ??
+        {};
+    final nextCritical =
+        next.value?.where((a) => a.severity == 'CRITICAL') ?? [];
+    if (nextCritical.any((a) => !prevIds.contains(a.id))) {
+      ref.read(alertSoundServiceProvider).playAlertPing();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(activeAlertsStreamProvider);
 
     // Sound trigger: listen for new CRITICAL alerts
-    ref.listen<AsyncValue<List<OperationalAlert>>>(activeAlertsStreamProvider, (
-      prev,
-      next,
-    ) {
-      final prevIds =
-          prev?.value
-              ?.where((a) => a.severity == 'CRITICAL')
-              .map((a) => a.id)
-              .toSet() ??
-          {};
-      final nextCritical =
-          next.value?.where((a) => a.severity == 'CRITICAL') ?? [];
-      final hasNew = nextCritical.any((a) => !prevIds.contains(a.id));
-      if (hasNew) {
-        ref.read(alertSoundServiceProvider).playAlertPing();
-      }
-    });
+    ref.listen<AsyncValue<List<OperationalAlert>>>(
+      activeAlertsStreamProvider,
+      _onAlertsChanged,
+    );
 
     return Container(
       width: (MediaQuery.sizeOf(context).width * 0.28).clamp(300.0, 400.0),

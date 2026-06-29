@@ -115,31 +115,36 @@ class RuleStudioScreen extends ConsumerWidget {
       AsyncError() => const _RuleStudioMessage(
         'Não foi possível carregar as regras ativas.',
       ),
-      AsyncData(:final value) => () {
-        if (value.isEmpty) {
-          return const _RuleStudioMessage(
-            'Nenhuma regra ativa configurada para este contrato.',
-          );
-        }
-        final scheduledByType = _scheduledByType(historyAsync);
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Regras Ativas',
-              style: VeraProbTypography.sectionTitle.copyWith(fontSize: 15),
-            ),
-            const SizedBox(height: 12),
-            for (final entry in value.values)
-              _RuleCard(
-                contractId: contractId,
-                rule: entry,
-                scheduled: scheduledByType[entry.ruleType],
-              ),
-          ],
-        );
-      }(),
+      AsyncData(:final value) => _buildActiveRulesList(value, historyAsync),
     };
+  }
+
+  Widget _buildActiveRulesList(
+    Map<SlaRuleType, RuleVersionHistoryEntry> value,
+    AsyncValue<List<RuleVersionHistoryEntry>> historyAsync,
+  ) {
+    if (value.isEmpty) {
+      return const _RuleStudioMessage(
+        'Nenhuma regra ativa configurada para este contrato.',
+      );
+    }
+    final scheduledByType = _scheduledByType(historyAsync);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Regras Ativas',
+          style: VeraProbTypography.sectionTitle.copyWith(fontSize: 15),
+        ),
+        const SizedBox(height: 12),
+        for (final entry in value.values)
+          _RuleCard(
+            contractId: contractId,
+            rule: entry,
+            scheduled: scheduledByType[entry.ruleType],
+          ),
+      ],
+    );
   }
 
   Map<SlaRuleType, RuleVersionHistoryEntry> _scheduledByType(

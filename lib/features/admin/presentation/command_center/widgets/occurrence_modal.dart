@@ -235,6 +235,8 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   }
 
   Future<void> _submit() async {
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _isSubmitting = true);
 
     final facade = ref.read(operationalControlFacadeProvider);
@@ -248,19 +250,14 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
       );
 
       triggerUIRefresh(ref);
-
-      if (mounted) {
-        Navigator.pop(context, true);
-      }
+      navigator.pop(true);
     } on UnauthorizedActionException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Acesso Negado: ${e.reason}'),
-            backgroundColor: VeraProbColors.critical,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Acesso Negado: ${e.reason}'),
+          backgroundColor: VeraProbColors.critical,
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

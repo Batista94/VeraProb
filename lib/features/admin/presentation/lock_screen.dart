@@ -13,6 +13,10 @@ import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
+const Color _kAmbientBg = Color(0xFF080C10);
+const Color _kAmbientOverlay = Color(0x55080C10);
+const Color _kNodeGraph = Color(0xFF1E3A5F);
+
 class AdminLockScreen extends ConsumerStatefulWidget {
   const AdminLockScreen({super.key});
 
@@ -335,7 +339,7 @@ class _ForensicAmbientPanel extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         // Base background.
-        const ColoredBox(color: Color(0xFF080C10)),
+        const ColoredBox(color: _kAmbientBg),
 
         // Abstract node graph.
         const CustomPaint(painter: _NodeGraphPainter()),
@@ -343,7 +347,7 @@ class _ForensicAmbientPanel extends StatelessWidget {
         // Blurred telemetry feed overlay.
         ImageFiltered(
           imageFilter: const ColorFilter.mode(
-            Color(0x55080C10),
+            _kAmbientOverlay,
             BlendMode.srcOver,
           ),
           child: _buildTelemetryFeed(),
@@ -362,7 +366,7 @@ class _ForensicAmbientPanel extends StatelessWidget {
                 end: Alignment.bottomCenter,
                 colors: [
                   Colors.transparent,
-                  const Color(0xFF080C10).withValues(alpha: 0.95),
+                  _kAmbientBg.withValues(alpha: 0.95),
                 ],
               ),
             ),
@@ -439,10 +443,10 @@ class _TelemetryRowWidget extends StatelessWidget {
   const _TelemetryRowWidget({required this.row});
 
   Color _verdictColor() => switch (row.verdict) {
-    'GUILTY' => const Color(0xFFEF4444),
-    'COMPLIANT' => const Color(0xFF22C55E),
-    'INHIBITED' => const Color(0xFFF59E0B),
-    _ => const Color(0xFF6B7280),
+    'GUILTY' => VeraProbColors.error,
+    'COMPLIANT' => VeraProbColors.onTime,
+    'INHIBITED' => VeraProbColors.warning,
+    _ => VeraProbColors.neutral,
   };
 
   @override
@@ -454,7 +458,7 @@ class _TelemetryRowWidget extends StatelessWidget {
           child: Text(
             row.vehicleId,
             style: const TextStyle(
-              color: Color(0xFF64748B),
+              color: VeraProbColors.neutral,
               fontSize: 11,
               fontFamily: 'monospace',
             ),
@@ -465,7 +469,7 @@ class _TelemetryRowWidget extends StatelessWidget {
           child: Text(
             row.event,
             style: const TextStyle(
-              color: Color(0xFF94A3B8),
+              color: VeraProbColors.textSecondary,
               fontSize: 11,
               fontFamily: 'monospace',
             ),
@@ -475,7 +479,7 @@ class _TelemetryRowWidget extends StatelessWidget {
           child: Text(
             row.coords,
             style: const TextStyle(
-              color: Color(0xFF475569),
+              color: VeraProbColors.textDisabled,
               fontSize: 11,
               fontFamily: 'monospace',
             ),
@@ -519,11 +523,11 @@ class _NodeGraphPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final nodePaint = Paint()
-      ..color = const Color(0xFF1E3A5F).withValues(alpha: 0.55)
+      ..color = _kNodeGraph.withValues(alpha: 0.55)
       ..style = PaintingStyle.fill;
 
     final edgePaint = Paint()
-      ..color = const Color(0xFF1E3A5F).withValues(alpha: 0.18)
+      ..color = _kNodeGraph.withValues(alpha: 0.18)
       ..strokeWidth = 1
       ..style = PaintingStyle.stroke;
 

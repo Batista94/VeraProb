@@ -9,6 +9,16 @@ import 'package:veraprob/features/admin/presentation/widgets/universal_csv_impor
 import 'widgets/driver_form_drawer.dart';
 import 'widgets/telegram_binding_dialog.dart';
 
+const Color _kNavyAccent = Color(0xFF1A237E);
+const Color _kTelegramBlue = Color(0xFF0D47A1);
+const Color _kStatusArchivedColor = Color(0xFF9E9E9E);
+const Color _kStatusNeutralBg = Color(0xFFF5F5F5);
+const Color _kStatusActiveColor = Color(0xFF1B5E20);
+const Color _kStatusActiveBg = Color(0xFFE8F5E9);
+const Color _kStatusInactiveColor = Color(0xFF616161);
+const Color _kStatusPendingColor = Color(0xFFE65100);
+const Color _kStatusPendingBg = Color(0xFFFFF3E0);
+
 class DriversScreen extends ConsumerStatefulWidget {
   const DriversScreen({super.key});
 
@@ -75,13 +85,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                             userRole,
                           ),
                   AsyncLoading() => _buildSkeletonLoading(),
-                  AsyncError(:final error) => () {
-                    LoggerService().error(
-                      'Falha ao carregar motoristas',
-                      error: error,
-                    );
-                    return _buildErrorState();
-                  }(),
+                  AsyncError(:final error) => _buildDriversError(error),
                 },
               ),
             ],
@@ -140,7 +144,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 'Motoristas da Frota',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1A237E),
+                  color: _kNavyAccent,
                 ),
               ),
               const SizedBox(height: 4),
@@ -264,6 +268,11 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildDriversError(Object error) {
+    LoggerService().error('Falha ao carregar motoristas', error: error);
+    return _buildErrorState();
   }
 
   Widget _buildErrorState() {
@@ -454,6 +463,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
   }
 
   Future<void> _confirmArchive(BuildContext context, Driver driver) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -495,30 +505,26 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
       try {
         await ref.read(driverRepositoryProvider).archiveDriver(driver.id);
         ref.invalidate(driversListProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${driver.name} arquivado. Histórico preservado.'),
-              backgroundColor: Colors.orange.shade700,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('${driver.name} arquivado. Histórico preservado.'),
+            backgroundColor: Colors.orange.shade700,
+          ),
+        );
       } catch (e, stack) {
         LoggerService().error(
           'Falha ao arquivar motorista',
           error: e,
           stackTrace: stack,
         );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Não foi possível arquivar o motorista. Tente novamente.',
-              ),
-              backgroundColor: Colors.red,
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível arquivar o motorista. Tente novamente.',
             ),
-          );
-        }
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -653,7 +659,7 @@ class _DriverRowState extends State<_DriverRow> {
                         icon: const Icon(
                           Icons.telegram,
                           size: 20,
-                          color: Color(0xFF0D47A1),
+                          color: _kTelegramBlue,
                         ),
                         tooltip: 'Vincular Telegram',
                         onPressed: widget.onTelegramBind,
@@ -691,22 +697,22 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     // Archived supersedes active/pending status for display purposes (INV-3).
     final (label, color, bgColor) = isArchived
-        ? ('Arquivado', const Color(0xFF9E9E9E), const Color(0xFFF5F5F5))
+        ? ('Arquivado', _kStatusArchivedColor, _kStatusNeutralBg)
         : switch (status) {
             DriverStatus.active => (
               'Ativo',
-              const Color(0xFF1B5E20),
-              const Color(0xFFE8F5E9),
+              _kStatusActiveColor,
+              _kStatusActiveBg,
             ),
             DriverStatus.inactive => (
               'Inativo',
-              const Color(0xFF616161),
-              const Color(0xFFF5F5F5),
+              _kStatusInactiveColor,
+              _kStatusNeutralBg,
             ),
             DriverStatus.pending => (
               'Pendente',
-              const Color(0xFFE65100),
-              const Color(0xFFFFF3E0),
+              _kStatusPendingColor,
+              _kStatusPendingBg,
             ),
           };
 

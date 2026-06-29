@@ -4,6 +4,8 @@ import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
 
+const Color _kCriticalRing = Color(0xFFFF1744);
+
 /// A map marker representing a vehicle, colored by trip status.
 ///
 /// Visual hierarchy (OCC Operational Standard):
@@ -110,7 +112,7 @@ class VehicleMarkerWidget extends StatelessWidget {
         border: Border.all(
           // Red ring ONLY for CRITICAL, white for everything else
           color: isCritical
-              ? const Color(0xFFFF1744)
+              ? _kCriticalRing
               : (isSelected ? Colors.white : Colors.white70),
           width: isCritical ? (isSelected ? 3.5 : 2.5) : (isSelected ? 3 : 1.5),
         ),
@@ -124,7 +126,7 @@ class VehicleMarkerWidget extends StatelessWidget {
             ),
           if (isCritical && !isSelected)
             BoxShadow(
-              color: const Color(0xFFFF1744).withValues(alpha: 0.4),
+              color: _kCriticalRing.withValues(alpha: 0.4),
               blurRadius: 6,
               spreadRadius: 1,
             ),

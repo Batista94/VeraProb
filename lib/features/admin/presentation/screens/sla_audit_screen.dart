@@ -53,48 +53,54 @@ class _SlaSummarySection extends ConsumerWidget {
     return AsyncValueWidget(
       asyncValue: summaryAsync,
       loading: () => const SizedBox(height: 160, child: SkeletonListLoader()),
-      data: (value) => Row(
-        children: [
-          Expanded(
-            child: _SummaryCard(
-              title: 'CONFORMIDADES',
-              value: value.totalCompleted,
-              color: VeraProbColors.success,
-              percentage: value.total > 0
-                  ? (value.totalCompleted / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA PROTEGIDA',
-              revenueValue: value.protectedRevenue,
+      data: (value) {
+        final total = value.total;
+        final completedPct = total > 0
+            ? (value.totalCompleted / total * 100).round()
+            : 0;
+        final gapsPct = total > 0
+            ? (value.totalCompletedWithGaps / total * 100).round()
+            : 0;
+        final failedPct = total > 0
+            ? (value.totalFailed / total * 100).round()
+            : 0;
+        return Row(
+          children: [
+            Expanded(
+              child: _SummaryCard(
+                title: 'CONFORMIDADES',
+                value: value.totalCompleted,
+                color: VeraProbColors.success,
+                percentage: completedPct,
+                revenueLabel: 'RECEITA PROTEGIDA',
+                revenueValue: value.protectedRevenue,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _SummaryCard(
-              title: 'INCONSISTÊNCIAS',
-              value: value.totalCompletedWithGaps,
-              color: VeraProbColors.warning,
-              percentage: value.total > 0
-                  ? (value.totalCompletedWithGaps / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA EM RISCO',
-              revenueValue: value.revenueAtRisk,
+            const SizedBox(width: 16),
+            Expanded(
+              child: _SummaryCard(
+                title: 'INCONSISTÊNCIAS',
+                value: value.totalCompletedWithGaps,
+                color: VeraProbColors.warning,
+                percentage: gapsPct,
+                revenueLabel: 'RECEITA EM RISCO',
+                revenueValue: value.revenueAtRisk,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _SummaryCard(
-              title: 'QUEBRAS DE SLA',
-              value: value.totalFailed,
-              color: VeraProbColors.error,
-              percentage: value.total > 0
-                  ? (value.totalFailed / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA PERDIDA',
-              revenueValue: value.lostRevenue,
+            const SizedBox(width: 16),
+            Expanded(
+              child: _SummaryCard(
+                title: 'QUEBRAS DE SLA',
+                value: value.totalFailed,
+                color: VeraProbColors.error,
+                percentage: failedPct,
+                revenueLabel: 'RECEITA PERDIDA',
+                revenueValue: value.lostRevenue,
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

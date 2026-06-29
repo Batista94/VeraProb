@@ -1637,19 +1637,21 @@ class _RiskThermometerZone extends ConsumerWidget {
     return switch (windowAsync) {
       AsyncLoading() => const SizedBox(height: 80),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        final report = const SlaBreachRiskCalculator().evaluate(
-          windowStartUtc: value.start,
-          windowEndUtc: value.end,
-          currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
-        );
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: RiskThermometerWidget(report: report),
-        );
-      }(),
+      AsyncData(:final value) => _buildContent(value),
     };
+  }
+
+  Widget _buildContent(({DateTime start, DateTime end})? value) {
+    if (value == null) return const SizedBox.shrink();
+    final report = const SlaBreachRiskCalculator().evaluate(
+      windowStartUtc: value.start,
+      windowEndUtc: value.end,
+      currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: RiskThermometerWidget(report: report),
+    );
   }
 }
 
@@ -1672,13 +1674,13 @@ class _RecurrenceZone extends ConsumerWidget {
     return switch (ref.watch(vehicleInfractionRecurrenceProvider(key))) {
       AsyncLoading() => const SizedBox(height: 48),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-          child: RecurrenceBadgeWidget(report: value),
-        );
-      }(),
+      AsyncData(:final value) =>
+        value == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                child: RecurrenceBadgeWidget(report: value),
+              ),
     };
   }
 }
@@ -1979,31 +1981,31 @@ class _ComplianceBadgeZone extends ConsumerWidget {
     return switch (complianceAsync) {
       AsyncLoading() => const SizedBox.shrink(),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.assignment_turned_in_outlined,
-                size: 13,
-                color: VeraProbColors.textDisabled,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'Evidências:',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: VeraProbColors.textDisabled,
+      AsyncData(:final value) =>
+        value == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 13,
+                      color: VeraProbColors.textDisabled,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Evidências:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: VeraProbColors.textDisabled,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ComplianceBadge(compliance: value),
+                  ],
                 ),
               ),
-              const SizedBox(width: 6),
-              ComplianceBadge(compliance: value),
-            ],
-          ),
-        );
-      }(),
     };
   }
 }
