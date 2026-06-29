@@ -10,7 +10,8 @@
     "mcp:sequential-thinking"
   ],
   "resources": [
-    "skill://ingestion-streaming-architect"
+    "skill://ingestion-streaming-architect",
+    "skill://ponytail"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

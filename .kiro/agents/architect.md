@@ -36,4 +36,6 @@ Technical authority for structural integrity and domain purity. Enforces Clean A
 
 *   **Ingestion Streaming Architect:** Invoke EVERY TIME new API endpoints, webhooks, Supabase Edge Functions, or high-write tables are proposed. Focus on preventing direct DB inserts without buffers, ensuring idempotency, and designing the data funnel.
 
+*   **Ponytail:** Always active by default to enforce the decision ladder (stdlib first, YAGNI, shortest diff, zero speculative code).
+
 *   **Pruning Rule:** DO NOT invoke specialized skills for purely aesthetic UI tasks (CSS/Flutter Layout), simple renaming, or plain text documentation. The trigger must be strictly technical-operational.

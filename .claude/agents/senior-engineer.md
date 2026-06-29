@@ -34,6 +34,7 @@ Implementation authority for the VeraProb stack (Flutter, Riverpod, Supabase). B
 ## SKILL INVOCATION PROTOCOL
 *   **IoT Chaos Simulator:** Invoke ONLY WHEN code involves time logic (DateTime), geographic coordinates, or event stream processing.
 *   **Supabase Best Practices:** Invoke for EVERY SQL migration or RLS policy change.
+*   **Ponytail:** Always active by default to enforce the decision ladder (stdlib first, YAGNI, shortest diff, zero speculative code).
 
 ## RUNTIME HEURISTICS (Lessons from solved bugs)
 

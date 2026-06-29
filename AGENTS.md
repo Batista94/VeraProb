@@ -74,6 +74,7 @@ Critical subset:
 - **No raw exceptions in UI (UX-RAW-EXCEPTION):** Never display `$e` or `e.toString()` in SnackBars/Text. Map to domain vocabulary.
 - **Wasm Context Leaks (WASM-CONTEXT-LEAK):** Capture `ScaffoldMessenger.of(context)` BEFORE any `await`. Never use `if (mounted)` with `context` after an `await`.
 - **UI Clean Code:** Avoid nested ternary operators. Keep `build()` methods declarative; push business logic into Riverpod providers. Use `VeraProbColors` and `VeraProbTypography` instead of hardcoded styling.
+- **Ponytail (Lazy Senior Dev Philosophy):** Avoid over-engineering. Question speculative or unrequested abstractions (no interfaces with single implementations, no factories for one product). Prioritize native platform features, standard libraries, and existing dependencies before writing custom code. Shortest working diff wins, but do NOT simplify away safety, UTC rules, bigints, database security/RLS, or tenant isolation.
 
 ## Protocols (Mandatory)
 
@@ -121,6 +122,9 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 | 7 | Regression Ack Discipline — `// pr_scanner: ignore-regression` only after Council review |
 | 8 | Flutter Web Wasm Async Context — capture `Navigator.of(context)` + `ScaffoldMessenger.of(context)` BEFORE first `await` in dialogs; add `_isSaving` guard to prevent ClickDebouncer loop (CT02) |
 | 9 | Automated Test Synchronization — update automated tests when code is modified to prevent stale test errors |
+| 10 | No IIFE in Widget Trees — avoid immediately invoked function expressions in build or switch |
+| 11 | No Raw Exceptions in UI — map errors to domain vocabulary, avoid hardcoded styling |
+
 
 ## Database Governance
 
