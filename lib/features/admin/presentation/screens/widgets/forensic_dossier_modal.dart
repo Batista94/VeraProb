@@ -925,10 +925,11 @@ class _CustodyAuthenticView extends ConsumerWidget {
                     ),
                     tooltip: 'Copiar hash',
                     onPressed: () {
+                      final messenger = ScaffoldMessenger.of(context);
                       Clipboard.setData(
                         ClipboardData(text: snapshot.integrityHash),
                       );
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(
                           content: Text(
                             'Hash copiado para a área de transferência',

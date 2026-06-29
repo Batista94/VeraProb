@@ -179,7 +179,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               },
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogCtx),
               child: const Text('Fechar'),
             ),
           ],
@@ -844,8 +844,9 @@ class _HashRow extends StatelessWidget {
         InkWell(
           borderRadius: BorderRadius.circular(4),
           onTap: () {
+            final messenger = ScaffoldMessenger.of(context);
             Clipboard.setData(ClipboardData(text: hash));
-            ScaffoldMessenger.of(context).showSnackBar(
+            messenger.showSnackBar(
               SnackBar(
                 content: Text('$label copiado'),
                 duration: const Duration(seconds: 2),

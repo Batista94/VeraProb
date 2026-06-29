@@ -124,14 +124,12 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = e
-              .toString()
-              .replaceAll('Exception: ', '')
-              .replaceAll('AuthException: ', '');
+          _error =
+              'Não foi possível aceitar o convite. Verifique suas credenciais e tente novamente.';
         });
       }
     }

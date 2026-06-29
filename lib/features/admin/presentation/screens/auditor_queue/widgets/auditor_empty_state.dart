@@ -50,16 +50,16 @@ class _SimulateButtonState extends ConsumerState<SimulateButton> {
   bool _loading = false;
 
   Future<void> _simulate() async {
+    final messenger = ScaffoldMessenger.of(context);
     final orgId = ref.read(currentOrganizationIdProvider);
     if (orgId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text('Organização não encontrada. Faça login novamente.'),
         ),
       );
       return;
     }
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     try {
       final error = await runSanctionSimulation(

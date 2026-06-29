@@ -2742,8 +2742,9 @@ class _TestimonyBlockState extends State<_TestimonyBlock> {
                   label: 'Copiar selo da justificativa',
                   child: InkWell(
                     onTap: () {
+                      final messenger = ScaffoldMessenger.of(context);
                       Clipboard.setData(ClipboardData(text: seal!));
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(content: Text('Selo copiado.')),
                       );
                     },
