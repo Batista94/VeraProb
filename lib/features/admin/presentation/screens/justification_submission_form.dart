@@ -416,7 +416,7 @@ class _JustificationSubmissionFormState
           const SnackBar(content: Text('Justificativa enviada com sucesso.')),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(
           () => _error = 'Falha ao enviar justificativa. Tente novamente.',

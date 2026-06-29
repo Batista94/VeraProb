@@ -258,7 +258,7 @@ class _ContractorManagementScreenState
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(

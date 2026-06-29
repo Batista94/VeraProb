@@ -274,7 +274,7 @@ class _SlaTemplateLibraryScreenState
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -318,7 +318,7 @@ class _SlaTemplateLibraryScreenState
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(

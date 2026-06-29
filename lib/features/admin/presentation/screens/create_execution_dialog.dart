@@ -306,7 +306,7 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
           );
 
       setState(() => _resultSetId = setId);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(

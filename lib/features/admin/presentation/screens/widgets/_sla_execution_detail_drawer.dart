@@ -365,7 +365,7 @@ class _SolicitarDefesaButtonState
       final link = uri.toString();
 
       _showLinkDialog(context, link, messenger);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(

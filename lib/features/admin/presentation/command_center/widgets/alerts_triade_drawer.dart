@@ -808,7 +808,7 @@ class _QuickLinkButtonState extends ConsumerState<_QuickLinkButton> {
             evidenceIds: widget.evidenceIds,
           );
       // Stream will auto-remove the resolved alert
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _error = 'Falha');
       }

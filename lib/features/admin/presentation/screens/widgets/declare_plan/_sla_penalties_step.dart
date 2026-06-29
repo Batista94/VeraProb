@@ -174,7 +174,7 @@ class Step3SlaPenalties extends ConsumerWidget {
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text('Não foi possível salvar o modelo.'),

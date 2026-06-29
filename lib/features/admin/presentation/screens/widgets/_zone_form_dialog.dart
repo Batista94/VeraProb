@@ -219,7 +219,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     } on DomainException catch (e) {
       if (!mounted || _isCancelled) return;
       setState(() => _errorMessage = e.message);
-    } catch (e) {
+    } catch (_) {
       if (!mounted || _isCancelled) return;
       setState(
         () => _errorMessage = 'Ocorreu um erro inesperado ao salvar a zona.',

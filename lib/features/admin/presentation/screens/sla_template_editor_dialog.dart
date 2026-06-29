@@ -208,7 +208,7 @@ class _SlaTemplateEditorDialogState
 
       ref.invalidate(slaTemplatesProvider);
       if (mounted) navigator.pop(SlaTemplateView.fromDomain(saved));
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(

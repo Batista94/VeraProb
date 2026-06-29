@@ -535,7 +535,7 @@ class _DeclareContractPlanFormState
           );
         }
       }
-    } catch (e) {
+    } catch (_) {
       setState(
         () => _errorMessage = 'Ocorreu um erro inesperado ao salvar o plano.',
       );

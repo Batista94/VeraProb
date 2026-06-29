@@ -283,7 +283,7 @@ class UserManagementScreen extends ConsumerWidget {
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -356,7 +356,7 @@ class UserManagementScreen extends ConsumerWidget {
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(
@@ -426,7 +426,7 @@ class UserManagementScreen extends ConsumerWidget {
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (e) {
+      } catch (_) {
         messenger.showSnackBar(
           const SnackBar(
             content: Text(
@@ -711,7 +711,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
           backgroundColor: VeraProbColors.error,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _loading = false);
       }

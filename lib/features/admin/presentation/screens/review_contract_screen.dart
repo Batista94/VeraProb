@@ -75,7 +75,7 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         _accepting = false;
         _accepted = true;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _accepting = false;

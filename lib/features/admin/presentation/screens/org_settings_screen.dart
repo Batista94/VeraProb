@@ -247,7 +247,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -291,7 +291,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -324,7 +324,7 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
           backgroundColor: VeraProbColors.success,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(

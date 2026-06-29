@@ -29,9 +29,10 @@ class _BillingCycleReportsScreenState
   BillingCycleView? _report;
 
   Future<void> _generateReport() async {
+    final messenger = ScaffoldMessenger.of(context);
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Sessão inválida. Faça login novamente.')),
       );
       return;
@@ -73,7 +74,7 @@ class _BillingCycleReportsScreenState
       messenger.showSnackBar(
         const SnackBar(content: Text('Relatório CSV baixado com sucesso!')),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -103,7 +104,7 @@ class _BillingCycleReportsScreenState
       messenger.showSnackBar(
         const SnackBar(content: Text('Relatório PDF gerado com sucesso!')),
       );
-    } catch (e) {
+    } catch (_) {
       messenger.showSnackBar(
         const SnackBar(
           content: Text(

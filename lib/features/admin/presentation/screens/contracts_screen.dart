@@ -507,7 +507,7 @@ class _ContractTable extends ConsumerWidget {
                             errorMsg = e.message;
                             isSubmitting = false;
                           });
-                        } catch (e) {
+                        } catch (_) {
                           setDialogState(() {
                             errorMsg =
                                 'Não foi possível concluir a exclusão do contrato.';
