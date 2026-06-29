@@ -2,6 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/super_admin/audit_log_payload.dart';
 
+const _kEmptyText = TextStyle(color: VeraProbColors.textSecondary);
+const _kSourceLabel = TextStyle(
+  fontSize: 11,
+  color: VeraProbColors.textDisabled,
+);
+const _kReasonText = TextStyle(
+  fontSize: 12,
+  fontStyle: FontStyle.italic,
+  color: VeraProbColors.textPrimary,
+);
+const _kSectionLabel = TextStyle(
+  fontSize: 11,
+  fontWeight: FontWeight.w600,
+  color: VeraProbColors.textSecondary,
+);
+const _kContextKey = TextStyle(
+  fontSize: 11,
+  color: VeraProbColors.textSecondary,
+);
+const _kContextValue = TextStyle(
+  fontSize: 11,
+  color: VeraProbColors.textPrimary,
+  fontWeight: FontWeight.w500,
+);
+const _kDiffFieldName = TextStyle(fontWeight: FontWeight.w600, fontSize: 12);
+const _kDiffOldValue = TextStyle(color: VeraProbColors.error, fontSize: 12);
+const _kDiffNewValue = TextStyle(
+  color: VeraProbColors.success,
+  fontWeight: FontWeight.w500,
+  fontSize: 12,
+);
+const _kRawKey = TextStyle(
+  fontSize: 12,
+  color: VeraProbColors.textSecondary,
+  fontWeight: FontWeight.w500,
+);
+const _kRawValue = TextStyle(fontSize: 12);
+const _kTableCell = TextStyle(fontSize: 12, color: VeraProbColors.textPrimary);
+
 /// Structured audit log payload viewer.
 ///
 /// When [payload] contains `before` and `after` keys, renders a field-level
@@ -32,10 +71,7 @@ class AuditPayloadDiffView extends StatelessWidget {
     final auditPayload = AuditLogPayload.fromRaw(payload);
 
     if (auditPayload.isEmpty) {
-      return const Text(
-        'Sem payload.',
-        style: TextStyle(color: VeraProbColors.textSecondary),
-      );
+      return const Text('Sem payload.', style: _kEmptyText);
     }
 
     return Column(
@@ -115,13 +151,7 @@ class _ActorBadge extends StatelessWidget {
           ),
           if (source != null) ...[
             const SizedBox(width: 4),
-            Text(
-              '($source)',
-              style: const TextStyle(
-                fontSize: 11,
-                color: VeraProbColors.textDisabled,
-              ),
-            ),
+            Text('($source)', style: _kSourceLabel),
           ],
         ],
       ),
@@ -158,16 +188,7 @@ class _ReasonBanner extends StatelessWidget {
             color: VeraProbColors.info,
           ),
           const SizedBox(width: 6),
-          Expanded(
-            child: SelectableText(
-              reason,
-              style: const TextStyle(
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-                color: VeraProbColors.textPrimary,
-              ),
-            ),
-          ),
+          Expanded(child: SelectableText(reason, style: _kReasonText)),
         ],
       ),
     );
@@ -208,14 +229,7 @@ class _ContextView extends StatelessWidget {
                 color: VeraProbColors.textSecondary,
               ),
               SizedBox(width: 5),
-              Text(
-                'Contexto',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: VeraProbColors.textSecondary,
-                ),
-              ),
+              Text('Contexto', style: _kSectionLabel),
             ],
           ),
           const SizedBox(height: 6),
@@ -225,24 +239,11 @@ class _ContextView extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 2),
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 80,
-                    child: Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: VeraProbColors.textSecondary,
-                      ),
-                    ),
-                  ),
+                  SizedBox(width: 80, child: Text(label, style: _kContextKey)),
                   Expanded(
                     child: SelectableText(
                       e.value?.toString() ?? '—',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: VeraProbColors.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: _kContextValue,
                     ),
                   ),
                 ],
@@ -264,10 +265,7 @@ class _DiffView extends StatelessWidget {
     final changedKeys = auditPayload.changedKeys;
 
     if (changedKeys.isEmpty) {
-      return const Text(
-        'Nenhum campo alterado.',
-        style: TextStyle(color: VeraProbColors.textSecondary),
-      );
+      return const Text('Nenhum campo alterado.', style: _kEmptyText);
     }
 
     return Table(
@@ -296,28 +294,9 @@ class _DiffView extends StatelessWidget {
               color: VeraProbColors.warning.withValues(alpha: 0.08),
             ),
             children: [
-              _TableCell(
-                key,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 12,
-                ),
-              ),
-              _TableCell(
-                _fmt(oldVal),
-                style: const TextStyle(
-                  color: VeraProbColors.error,
-                  fontSize: 12,
-                ),
-              ),
-              _TableCell(
-                _fmt(newVal),
-                style: const TextStyle(
-                  color: VeraProbColors.success,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                ),
-              ),
+              _TableCell(key, style: _kDiffFieldName),
+              _TableCell(_fmt(oldVal), style: _kDiffOldValue),
+              _TableCell(_fmt(newVal), style: _kDiffNewValue),
             ],
           );
         }),
@@ -347,21 +326,11 @@ class _RawView extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 140,
-                child: Text(
-                  e.key,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: VeraProbColors.textSecondary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
+              SizedBox(width: 140, child: Text(e.key, style: _kRawKey)),
               Expanded(
                 child: SelectableText(
                   e.value?.toString() ?? '—',
-                  style: const TextStyle(fontSize: 12),
+                  style: _kRawValue,
                 ),
               ),
             ],
@@ -380,14 +349,7 @@ class _TableHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: VeraProbColors.textSecondary,
-        ),
-      ),
+      child: Text(text, style: _kSectionLabel),
     );
   }
 }
@@ -401,12 +363,7 @@ class _TableCell extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: SelectableText(
-        text,
-        style:
-            style ??
-            const TextStyle(fontSize: 12, color: VeraProbColors.textPrimary),
-      ),
+      child: SelectableText(text, style: style ?? _kTableCell),
     );
   }
 }

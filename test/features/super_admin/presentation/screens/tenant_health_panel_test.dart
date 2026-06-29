@@ -741,7 +741,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Error state visible
-      expect(find.textContaining('Erro'), findsOneWidget);
+      expect(find.textContaining('Não foi possível'), findsOneWidget);
       expect(find.text('Tentar novamente'), findsOneWidget);
       expect(find.text('Alpha Trans'), findsNothing);
 
@@ -775,7 +775,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erro'), findsOneWidget);
+      expect(find.textContaining('Não foi possível'), findsOneWidget);
 
       // Second failure on retry
       when(
@@ -785,7 +785,7 @@ void main() {
       await tester.tap(find.text('Tentar novamente'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erro'), findsOneWidget);
+      expect(find.textContaining('Não foi possível'), findsOneWidget);
 
       // Third attempt succeeds
       when(
@@ -796,7 +796,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Alpha Trans'), findsOneWidget);
-      expect(find.textContaining('Erro'), findsNothing);
+      expect(find.textContaining('Não foi possível'), findsNothing);
       expect(tester.takeException(), isNull);
     });
   });

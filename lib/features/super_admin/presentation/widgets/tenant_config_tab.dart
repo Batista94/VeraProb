@@ -222,25 +222,20 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   }
 
   /// Extract error message without importing domain types (INV-13).
-  /// Attempts to access .message property if available; falls back to toString().
-  String _extractErrorMessage(dynamic error) {
-    // Handle ProviderException by unwrapping the original exception
+  String _extractErrorMessage(Object error) {
     if (error.runtimeType.toString().contains('ProviderException')) {
       try {
-        final original = (error as dynamic).exception;
+        final original = (error as dynamic).exception as Object;
         return _extractErrorMessage(original);
       } catch (_) {
-        return error.toString();
+        return 'Falha ao processar solicitação. Tente novamente.';
       }
     }
-    // Try to access .message property without domain imports
     try {
       final msg = (error as dynamic).message;
       if (msg is String && msg.isNotEmpty) return msg;
-    } catch (_) {
-      // message property not available or not a string
-    }
-    return error.toString();
+    } catch (_) {}
+    return 'Falha ao processar solicitação. Tente novamente.';
   }
 
   Future<void> _copyToClipboard(String value) async {
@@ -283,14 +278,13 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await showDialog<String>(
       context: context,
       builder: (_) =>
           ReasonConfirmationDialog(promptMessage: _savePromptMessage()),
     );
     if (reason == null || !mounted) return;
-
-    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final t = widget.tenant;

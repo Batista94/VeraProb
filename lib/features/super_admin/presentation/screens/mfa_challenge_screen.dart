@@ -11,6 +11,26 @@ import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 
+const _kScreenTitle = TextStyle(
+  fontSize: 20,
+  fontWeight: FontWeight.bold,
+  color: VeraProbColors.textPrimary,
+);
+const _kSubtitle = TextStyle(color: VeraProbColors.textSecondary, fontSize: 13);
+const _kLoadingCaption = TextStyle(color: VeraProbColors.textSecondary);
+const _kOtpField = TextStyle(
+  fontSize: 28,
+  letterSpacing: 8,
+  fontFamily: 'monospace',
+  color: VeraProbColors.textPrimary,
+);
+const _kErrorBody = TextStyle(color: VeraProbColors.error, fontSize: 13);
+const _kAttemptsWarning = TextStyle(
+  color: VeraProbColors.warning,
+  fontSize: 12,
+);
+const _kBackLinkText = TextStyle(color: VeraProbColors.textSecondary);
+
 /// TOTP challenge screen for SuperAdmin login (INV-6).
 ///
 /// Displays a 6-digit input, auto-submits, shows lockout countdown.
@@ -181,6 +201,8 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
   }
 
   Widget _buildContent() {
+    final bool showAttemptWarning =
+        !_isLockedOut && _remainingAttempts > 0 && _remainingAttempts < 5;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -201,11 +223,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
         const SizedBox(height: 24),
         Text(
           _isLockedOut ? 'Conta Temporariamente Bloqueada' : 'Verificação MFA',
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: VeraProbColors.textPrimary,
-          ),
+          style: _kScreenTitle,
         ),
         const SizedBox(height: 8),
         Text(
@@ -213,20 +231,14 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
               ? 'Tente novamente em ${_formatCountdown()}'
               : 'Digite o código do seu aplicativo autenticador',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: VeraProbColors.textSecondary,
-            fontSize: 13,
-          ),
+          style: _kSubtitle,
         ),
         const SizedBox(height: 32),
 
         if (_isLoadingChallenge) ...[
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          const Text(
-            'Preparando desafio...',
-            style: TextStyle(color: VeraProbColors.textSecondary),
-          ),
+          const Text('Preparando desafio...', style: _kLoadingCaption),
         ] else ...[
           // Code input
           SizedBox(
@@ -238,12 +250,7 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
               maxLength: 6,
               autofocus: true,
               enabled: !_isLockedOut && !_isVerifying,
-              style: const TextStyle(
-                fontSize: 28,
-                letterSpacing: 8,
-                fontFamily: 'monospace',
-                color: VeraProbColors.textPrimary,
-              ),
+              style: _kOtpField,
               decoration: const InputDecoration(
                 counterText: '',
                 hintText: '000000',
@@ -264,30 +271,21 @@ class _MfaChallengeScreenState extends ConsumerState<MfaChallengeScreen> {
 
         if (_error != null) ...[
           const SizedBox(height: 16),
-          Text(
-            _error!,
-            style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
+          Text(_error!, style: _kErrorBody, textAlign: TextAlign.center),
         ],
 
-        if (!_isLockedOut &&
-            _remainingAttempts < 5 &&
-            _remainingAttempts > 0) ...[
+        if (showAttemptWarning) ...[
           const SizedBox(height: 8),
           Text(
             '$_remainingAttempts de 5 tentativas restantes',
-            style: const TextStyle(color: VeraProbColors.warning, fontSize: 12),
+            style: _kAttemptsWarning,
           ),
         ],
 
         const SizedBox(height: 32),
         TextButton(
           onPressed: _signOutAndReturn,
-          child: const Text(
-            'Voltar ao Login',
-            style: TextStyle(color: VeraProbColors.textSecondary),
-          ),
+          child: const Text('Voltar ao Login', style: _kBackLinkText),
         ),
       ],
     );

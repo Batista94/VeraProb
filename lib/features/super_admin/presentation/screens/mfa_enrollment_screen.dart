@@ -10,6 +10,42 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 
+const _kLoadingCaption = TextStyle(color: VeraProbColors.textSecondary);
+const _kErrorText = TextStyle(color: VeraProbColors.error);
+const _kScreenTitle = TextStyle(
+  fontSize: 20,
+  fontWeight: FontWeight.bold,
+  color: VeraProbColors.textPrimary,
+);
+const _kSubtitle = TextStyle(color: VeraProbColors.textSecondary, fontSize: 13);
+const _kMonoSecret = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 14,
+  color: VeraProbColors.textPrimary,
+  letterSpacing: 2,
+);
+const _kInstructionLabel = TextStyle(
+  color: VeraProbColors.textPrimary,
+  fontWeight: FontWeight.w600,
+);
+const _kOtpField = TextStyle(
+  fontSize: 24,
+  letterSpacing: 8,
+  fontFamily: 'monospace',
+  color: VeraProbColors.textPrimary,
+);
+const _kWarningBody = TextStyle(color: VeraProbColors.warning, fontSize: 13);
+const _kMonoCode = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 13,
+  color: VeraProbColors.textPrimary,
+);
+const _kCtaButtonText = TextStyle(
+  color: Colors.white,
+  fontWeight: FontWeight.bold,
+  letterSpacing: 1,
+);
+
 /// TOTP enrollment screen for SuperAdmin (INV-6).
 ///
 /// Three phases:
@@ -152,7 +188,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           SizedBox(height: 16),
           Text(
             'Configurando autenticação multifator...',
-            style: TextStyle(color: VeraProbColors.textSecondary),
+            style: _kLoadingCaption,
           ),
         ],
       );
@@ -168,7 +204,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             size: 48,
           ),
           const SizedBox(height: 16),
-          Text(_error!, style: const TextStyle(color: VeraProbColors.error)),
+          Text(_error!, style: _kErrorText),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go(AppRoutes.login),
@@ -205,19 +241,12 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Configurar Autenticação MFA',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: VeraProbColors.textPrimary,
-          ),
-        ),
+        const Text('Configurar Autenticação MFA', style: _kScreenTitle),
         const SizedBox(height: 8),
         const Text(
           'Escaneie o QR code com seu aplicativo autenticador\n(Google Authenticator, Authy, etc.)',
           textAlign: TextAlign.center,
-          style: TextStyle(color: VeraProbColors.textSecondary, fontSize: 13),
+          style: _kSubtitle,
         ),
         const SizedBox(height: 24),
 
@@ -249,15 +278,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Flexible(
-                child: SelectableText(
-                  result.secret,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 14,
-                    color: VeraProbColors.textPrimary,
-                    letterSpacing: 2,
-                  ),
-                ),
+                child: SelectableText(result.secret, style: _kMonoSecret),
               ),
               const SizedBox(width: 8),
               IconButton(
@@ -282,10 +303,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         // Confirmation input
         const Text(
           'Confirme o código gerado pelo aplicativo:',
-          style: TextStyle(
-            color: VeraProbColors.textPrimary,
-            fontWeight: FontWeight.w600,
-          ),
+          style: _kInstructionLabel,
         ),
         const SizedBox(height: 12),
         SizedBox(
@@ -296,12 +314,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             textAlign: TextAlign.center,
             maxLength: 6,
             autofocus: true,
-            style: const TextStyle(
-              fontSize: 24,
-              letterSpacing: 8,
-              fontFamily: 'monospace',
-              color: VeraProbColors.textPrimary,
-            ),
+            style: _kOtpField,
             decoration: InputDecoration(
               counterText: '',
               hintText: '000000',
@@ -322,25 +335,30 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
 
   Widget _buildRecoveryCodes() {
     final codes = _enrollResult!.recoveryCodes;
+    final codeWidgets = codes
+        .map(
+          (code) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: VeraProbColors.background,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(code, style: _kMonoCode),
+          ),
+        )
+        .toList();
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         const Icon(Icons.check_circle, color: VeraProbColors.success, size: 48),
         const SizedBox(height: 16),
-        const Text(
-          'MFA Configurado com Sucesso',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: VeraProbColors.textPrimary,
-          ),
-        ),
+        const Text('MFA Configurado com Sucesso', style: _kScreenTitle),
         const SizedBox(height: 8),
         const Text(
           'Salve seus códigos de recuperação em local seguro.\nEles não serão exibidos novamente.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: VeraProbColors.warning, fontSize: 13),
+          style: _kWarningBody,
         ),
         const SizedBox(height: 24),
 
@@ -352,32 +370,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: VeraProbColors.border),
           ),
-          child: Wrap(
-            spacing: 12,
-            runSpacing: 8,
-            children: codes
-                .map(
-                  (code) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: VeraProbColors.background,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      code,
-                      style: const TextStyle(
-                        fontFamily: 'monospace',
-                        fontSize: 13,
-                        color: VeraProbColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
+          child: Wrap(spacing: 12, runSpacing: 8, children: codeWidgets),
         ),
         const SizedBox(height: 16),
 
@@ -402,9 +395,9 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         CheckboxListTile(
           value: _codesAcknowledged,
           onChanged: (v) => setState(() => _codesAcknowledged = v ?? false),
-          title: const Text(
+          title: Text(
             'Salvei meus códigos de recuperação em local seguro.',
-            style: TextStyle(color: VeraProbColors.textPrimary, fontSize: 13),
+            style: VeraProbTypography.bodyMedium,
           ),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,
@@ -422,14 +415,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
-              'CONTINUAR',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1,
-              ),
-            ),
+            child: const Text('CONTINUAR', style: _kCtaButtonText),
           ),
         ),
       ],

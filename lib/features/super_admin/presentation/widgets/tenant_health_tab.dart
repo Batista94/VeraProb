@@ -228,7 +228,7 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
             ),
             const SizedBox(height: VeraProbSpacing.sm),
             Text(
-              error.toString(),
+              'Não foi possível carregar os dados. Tente novamente.',
               style: VeraProbTypography.bodySmall,
               textAlign: TextAlign.center,
               maxLines: 3,

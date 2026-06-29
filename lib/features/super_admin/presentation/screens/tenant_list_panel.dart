@@ -7,6 +7,10 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/tenant_skeleton_tile.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
+const _kErrorText = TextStyle(color: VeraProbColors.error);
+const _kEmptyText = TextStyle(color: VeraProbColors.textSecondary);
+const _kChipLabel = TextStyle(fontSize: 11);
+
 /// Left panel: filterable list of tenant organizations.
 ///
 /// Stage H: Split-view layout — this panel is 320px wide.
@@ -142,9 +146,9 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
             key: TenantListPanel.tenantListErrorKey,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                'Erro: ${asyncTenants.error}',
-                style: const TextStyle(color: VeraProbColors.error),
+              const Text(
+                'Não foi possível carregar os tenants. Tente novamente.',
+                style: _kErrorText,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -165,10 +169,7 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
 
     if (filtered.isEmpty && !isDebouncing) {
       return const Center(
-        child: Text(
-          'Nenhuma organização encontrada.',
-          style: TextStyle(color: VeraProbColors.textSecondary),
-        ),
+        child: Text('Nenhuma organização encontrada.', style: _kEmptyText),
       );
     }
 
@@ -225,7 +226,7 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FilterChip(
-      label: Text(label, style: const TextStyle(fontSize: 11)),
+      label: Text(label, style: _kChipLabel),
       selected: selected,
       onSelected: (_) => onSelected(),
       selectedColor: (color ?? VeraProbColors.secondary).withValues(alpha: 0.2),
@@ -288,8 +289,7 @@ class _TenantListTile extends StatelessWidget {
           message: tenant.name,
           child: Text(
             tenant.name,
-            style: TextStyle(
-              fontSize: 13,
+            style: VeraProbTypography.bodyMedium.copyWith(
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
             overflow: TextOverflow.ellipsis,
@@ -298,7 +298,7 @@ class _TenantListTile extends StatelessWidget {
         ),
         subtitle: Text(
           tenant.planType?.toUpperCase() ?? '—',
-          style: const TextStyle(fontSize: 11),
+          style: _kChipLabel,
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),

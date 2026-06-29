@@ -53,7 +53,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           _loading = false;
         });
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _error = 'Falha ao carregar os usuários.';
@@ -133,7 +133,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         );
       }
       await _loadMembers();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -187,7 +187,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -245,7 +245,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         );
       }
       await _loadMembers();
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -310,16 +310,12 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
                       dialogCtx,
                     ).pop((email: emailValue, reason: reasonValue));
                   }
-                } catch (e) {
-                  // INV-10: Não silencia falhas. Mantém modal aberto para retry
-                  // — mensagem inline preserva contexto digitado (INV-22).
+                } catch (_) {
                   if (!dialogCtx.mounted) return;
                   setSbState(() {
                     submitting = false;
-                    serverError = e
-                        .toString()
-                        .replaceAll(RegExp(r'^.*Exception: '), '')
-                        .trim();
+                    serverError =
+                        'Falha ao adicionar administrador. Tente novamente.';
                   });
                 }
               }
@@ -517,6 +513,8 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
         final userId = m['user_id'] as String?;
         final String? inviteToken = m['token'] as String?;
         final bool isOrgArchived = widget.tenant.isArchived;
+        final bool hasLoggedIn =
+            status.toLowerCase() == 'active' && hasSignedIn;
 
         return ListTile(
           leading: CircleAvatar(
@@ -548,7 +546,7 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
             ],
           ),
           subtitle: Text(
-            'Role: $role | Login: ${(status.toLowerCase() == 'active' && hasSignedIn) ? 'Sim' : 'Não'}',
+            'Role: $role | Login: ${hasLoggedIn ? 'Sim' : 'Não'}',
             style: VeraProbTypography.caption,
           ),
           trailing: Row(

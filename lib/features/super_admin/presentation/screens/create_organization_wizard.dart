@@ -414,7 +414,7 @@ class _CreateOrganizationWizardState
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
       messenger.showSnackBar(
         const SnackBar(
@@ -617,10 +617,17 @@ class _CreateOrganizationWizardState
 
   @override
   Widget build(BuildContext context) {
+    final bool isNarrow = MediaQuery.sizeOf(context).width < 720;
+    final StepState step0State = _currentStep > 0
+        ? StepState.complete
+        : StepState.indexed;
+    final StepState step1State = _currentStep > 1
+        ? StepState.complete
+        : StepState.indexed;
+    final bool isCnpjBusy = _cnpjChecking || _cnpjLookingUp;
+
     return Stepper(
-      type: MediaQuery.sizeOf(context).width < 720
-          ? StepperType.vertical
-          : StepperType.horizontal,
+      type: isNarrow ? StepperType.vertical : StepperType.horizontal,
       currentStep: _currentStep,
       onStepTapped: (step) {
         if (step <= _highestStepReached) _goToStep(step);
@@ -630,7 +637,7 @@ class _CreateOrganizationWizardState
         Step(
           title: const Text('Dados Fiscais'),
           isActive: _currentStep >= 0,
-          state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+          state: step0State,
           content: Step1FiscalData(
             formKey: _step1Key,
             legalNameCtrl: _legalNameCtrl,
@@ -640,7 +647,7 @@ class _CreateOrganizationWizardState
             timezone: _timezone,
             currency: _currency,
             cnpjApiError: _cnpjApiError,
-            cnpjChecking: _cnpjChecking || _cnpjLookingUp,
+            cnpjChecking: isCnpjBusy,
             cnpjAutoFilled: _cnpjAutoFilled,
             cnpjAutoInactive: _cnpjAutoInactive,
             cnpjTradeNameMissing: _cnpjTradeNameMissing,
@@ -655,7 +662,7 @@ class _CreateOrganizationWizardState
         Step(
           title: const Text('Limites'),
           isActive: _currentStep >= 1,
-          state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+          state: step1State,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

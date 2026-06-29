@@ -17,6 +17,17 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/impersonation_session_provider.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
+const _kLegalNameStyle = TextStyle(
+  color: VeraProbColors.textSecondary,
+  fontSize: 13,
+);
+const _kActionButtonText = TextStyle(fontSize: 12);
+const _kMonoIdStyle = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 11,
+  color: VeraProbColors.textDisabled,
+);
+
 /// Right panel: detail view for a selected tenant organization.
 class TenantDetailPanel extends ConsumerStatefulWidget {
   final TenantHealthView tenant;
@@ -83,7 +94,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -126,7 +137,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -212,7 +223,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
           const SnackBar(
@@ -256,10 +267,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     if (t.legalName != null)
                       Text(
                         t.legalName!,
-                        style: const TextStyle(
-                          color: VeraProbColors.textSecondary,
-                          fontSize: 13,
-                        ),
+                        style: _kLegalNameStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
                   ],
@@ -278,7 +286,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                       foregroundColor: VeraProbColors.warning,
                       side: const BorderSide(color: VeraProbColors.warning),
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -293,7 +301,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                       foregroundColor: VeraProbColors.secondary,
                       side: const BorderSide(color: VeraProbColors.secondary),
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -307,7 +315,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     style: FilledButton.styleFrom(
                       backgroundColor: VeraProbColors.success,
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -317,14 +325,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            t.id,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 11,
-              color: VeraProbColors.textDisabled,
-            ),
-          ),
+          child: Text(t.id, style: _kMonoIdStyle),
         ),
         const SizedBox(height: 16),
         TabBar(
