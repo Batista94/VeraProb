@@ -344,8 +344,9 @@ void main() {
       await tester.tap(find.text('Convidar'));
       await tester.pumpAndSettle();
 
-      // Error snackbar shown
-      expect(find.textContaining('P0005'), findsOneWidget);
+      // Error shown inline in dialog (UX-RAW-EXCEPTION: raw code never exposed)
+      expect(find.textContaining('Falha ao adicionar'), findsOneWidget);
+      expect(find.text('Convidar'), findsOneWidget);
     });
   });
 

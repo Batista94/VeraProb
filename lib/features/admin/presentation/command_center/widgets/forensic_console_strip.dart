@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/projections/forensic_ledger_view.dart';
 import 'package:veraprob/state/providers/forensic_ledger_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+
+// TODO(design): migrate to VeraProbTypography tokens once monospace variant is added
+const TextStyle _kMonoIdle = TextStyle(
+  color: Colors.white38,
+  fontFamily: 'monospace',
+  fontSize: 11,
+  letterSpacing: 1.2,
+);
+
+const TextStyle _kMonoTime = TextStyle(
+  color: Colors.white54,
+  fontFamily: 'monospace',
+  fontSize: 11,
+);
+
+const TextStyle _kMonoNarrative = TextStyle(
+  color: Colors.white70,
+  fontFamily: 'monospace',
+  fontSize: 11,
+);
 
 /// Activity Console Strip (SOC/NOC Style)
 ///
@@ -66,49 +87,46 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
         border: Border(top: BorderSide(color: VeraProbColors.border)),
       ),
       child: switch (ledgerAsync) {
-        AsyncData(:final value) => () {
-          if (value.isEmpty) {
-            return const Center(
-              child: Text(
-                'FORENSIC LEDGER ACTIVE • WAITING FOR EVENTS',
-                style: TextStyle(
-                  color: Colors.white38,
-                  fontSize: 11,
-                  fontFamily: 'monospace',
-                  letterSpacing: 1.2,
-                ),
-              ),
-            );
-          }
-
-          final displayEntries = value.take(50).toList();
-          _scrollToNewestIfAtEdge(displayEntries.length);
-
-          return ListView.separated(
-            controller: _scrollController,
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: displayEntries.length,
-            separatorBuilder: (context, index) => const VerticalDivider(
-              color: Colors.white12,
-              width: 16,
-              thickness: 1,
-              indent: 10,
-              endIndent: 10,
-            ),
-            itemBuilder: (context, index) {
-              final entry = displayEntries[index];
-              return _ConsoleItem(
-                time: _formatTime(entry.timestamp),
-                narrative: entry.narrative,
-                isApproved: entry.result == 'APPROVED',
-              );
-            },
-          );
-        }(),
+        AsyncData(:final value) => _buildLedgerList(value),
         AsyncLoading() => const _LoadingConsole(),
-        AsyncError(:final error) => _ErrorConsole(err: error.toString()),
+        AsyncError() => const _ErrorConsole(),
+      },
+    );
+  }
+
+  Widget _buildLedgerList(List<ForensicLedgerEntry> value) {
+    if (value.isEmpty) {
+      return const Center(
+        child: Text(
+          'FORENSIC LEDGER ACTIVE • WAITING FOR EVENTS',
+          style: _kMonoIdle,
+        ),
+      );
+    }
+
+    final displayEntries = value.take(50).toList();
+    _scrollToNewestIfAtEdge(displayEntries.length);
+
+    return ListView.separated(
+      controller: _scrollController,
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: displayEntries.length,
+      separatorBuilder: (_, _) => const VerticalDivider(
+        color: Colors.white12,
+        width: 16,
+        thickness: 1,
+        indent: 10,
+        endIndent: 10,
+      ),
+      itemBuilder: (_, index) {
+        final entry = displayEntries[index];
+        return _ConsoleItem(
+          time: _formatTime(entry.timestamp),
+          narrative: entry.narrative,
+          isApproved: entry.result == 'APPROVED',
+        );
       },
     );
   }
@@ -134,32 +152,21 @@ class _ConsoleItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconColor = isApproved
-        ? const Color(0xFF4CAF50)
-        : const Color(0xFFF44336);
+        ? VeraProbColors.success
+        : VeraProbColors.error;
     final iconData = isApproved ? Icons.check_rounded : Icons.close_rounded;
 
     return Center(
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            '[$time]',
-            style: const TextStyle(
-              color: Colors.white54,
-              fontFamily: 'monospace',
-              fontSize: 11,
-            ),
-          ),
+          Text('[$time]', style: _kMonoTime),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 350),
             child: Text(
               narrative,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontFamily: 'monospace',
-                fontSize: 11,
-              ),
+              style: _kMonoNarrative,
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -190,18 +197,17 @@ class _LoadingConsole extends StatelessWidget {
 }
 
 class _ErrorConsole extends StatelessWidget {
-  final String err;
-  const _ErrorConsole({required this.err});
+  const _ErrorConsole();
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
-          'LEDGER ERROR: $err',
-          style: const TextStyle(
-            color: Color(0xFFF44336),
+          'Erro ao exibir registros forenses.',
+          style: TextStyle(
+            color: VeraProbColors.error,
             fontFamily: 'monospace',
             fontSize: 11,
           ),

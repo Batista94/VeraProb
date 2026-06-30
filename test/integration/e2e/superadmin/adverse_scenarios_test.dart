@@ -104,6 +104,7 @@ void main() {
 
     tearDownAll(() async {
       if (!supabaseAvailable) return;
+      if (!edgeFunctionsAvailable) return;
       await SuperAdminDataFactory.cleanup(testOrgRaceCondition);
       await SuperAdminDataFactory.cleanup(testOrgNetworkError);
       await SuperAdminDataFactory.cleanup(testOrgDoubleClick);

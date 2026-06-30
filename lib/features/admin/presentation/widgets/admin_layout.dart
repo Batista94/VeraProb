@@ -85,12 +85,12 @@ class AdminLayout extends ConsumerWidget {
       const NavigationRailDestination(
         icon: Icon(Icons.account_balance_outlined),
         selectedIcon: Icon(Icons.account_balance),
-        label: Text('Impacto Financeiro'),
+        label: Text('Visão Executiva'),
       ),
       const NavigationRailDestination(
         icon: Icon(Icons.history_outlined),
         selectedIcon: Icon(Icons.history),
-        label: Text('Auditoria OCC'),
+        label: Text('Log Operacional'),
       ),
       const NavigationRailDestination(
         icon: Icon(Icons.admin_panel_settings_outlined),
@@ -426,10 +426,9 @@ class _LogoutButton extends ConsumerWidget {
       tooltip: 'Sair',
       color: VeraProbColors.textDisabled,
       onPressed: () async {
+        final router = GoRouter.of(context);
         await ref.read(authRepositoryProvider).signOut();
-        if (context.mounted) {
-          context.go(AppRoutes.login);
-        }
+        router.go(AppRoutes.login);
       },
     );
   }
@@ -442,33 +441,40 @@ class _FeedHealthBadge extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final health = ref.watch(feedHealthProjectionProvider);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: health.color.withValues(alpha: 0.1),
-        border: Border.all(color: health.color.withValues(alpha: 0.3)),
+    return Tooltip(
+      message: 'Saúde da Ingestão de Telemetria — clique para detalhes',
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: health.color,
-              shape: BoxShape.circle,
-            ),
+        onTap: () => context.go(AppRoutes.ingestionHealth),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: health.color.withValues(alpha: 0.1),
+            border: Border.all(color: health.color.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(16),
           ),
-          const SizedBox(width: 8),
-          Text(
-            health.label.toUpperCase(),
-            style: VeraProbTypography.badge.copyWith(
-              color: health.color,
-              fontSize: 9,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: health.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                health.label.toUpperCase(),
+                style: VeraProbTypography.badge.copyWith(
+                  color: health.color,
+                  fontSize: 9,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

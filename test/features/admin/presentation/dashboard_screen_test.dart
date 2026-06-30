@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/domain/admin/data_seeding_repository.dart';
 import 'package:veraprob/features/admin/presentation/dashboard_screen.dart';
 // import 'package:veraprob/features/admin/presentation/widgets/charts_section.dart';
 // import 'package:veraprob/features/admin/presentation/widgets/heatmap_section.dart';
 import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/state/providers/admin_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:io';
 
 class MockSharedPreferences extends Mock implements SharedPreferences {}
+
+class MockDataSeedingRepository extends Mock implements DataSeedingRepository {}
 
 class MockHttpOverrides extends HttpOverrides {
   @override
@@ -42,6 +47,40 @@ void main() {
       child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
     );
   }
+
+  group('DashboardScreen seed error (UX-RAW-EXCEPTION guard)', () {
+    testWidgets('seed failure shows sanitised domain message', (tester) async {
+      tester.view.physicalSize = const Size(1200, 1000);
+      tester.view.devicePixelRatio = 1.0;
+
+      final mockRepo = MockDataSeedingRepository();
+      when(() => mockRepo.seedCsvData(any())).thenThrow(Exception('network'));
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
+            dataSeedingRepositoryProvider.overrideWithValue(mockRepo),
+            currentOrganizationIdProvider.overrideWithValue('org-1'),
+          ],
+          child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('SIMULAR OPERAÇÃO'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Erro ao inserir dados de simulação. Tente novamente.'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Exception'), findsNothing);
+      expect(find.textContaining('network'), findsNothing);
+
+      addTearDown(tester.view.resetPhysicalSize);
+    });
+  });
 
   group('DashboardScreen', () {
     testWidgets('renders all sections', (tester) async {

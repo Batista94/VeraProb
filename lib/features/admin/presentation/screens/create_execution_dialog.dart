@@ -282,6 +282,7 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     setState(() => _isSaving = true);
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) {
@@ -305,11 +306,11 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
           );
 
       setState(() => _resultSetId = setId);
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao criar viagem: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível criar a nova execução.'),
             backgroundColor: VeraProbColors.error,
           ),
         );

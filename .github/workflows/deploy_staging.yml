@@ -120,4 +120,4 @@ jobs:
         with:
           name: web-build-staging
           path: build/web/
-          retention-days: 7
+          retention-days: 1

@@ -689,7 +689,12 @@ void main() {
         await tester.tap(find.byType(FilledButton));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('Upload falhou: 500'), findsOneWidget);
+        expect(
+          find.textContaining(
+            'Falha ao enviar justificativa. Tente novamente.',
+          ),
+          findsOneWidget,
+        );
 
         final btn = tester.widget<FilledButton>(find.byType(FilledButton));
         expect(btn.onPressed, isNotNull);

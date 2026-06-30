@@ -71,25 +71,20 @@ class _SlaTemplateLibraryScreenState
                     ),
                     const SizedBox(height: 12),
                     switch (orgTemplatesAsync) {
-                      AsyncData(:final value) => () {
-                        final filtered = _filteredTemplates(value);
-                        if (filtered.isEmpty) {
-                          return _EmptyState(
-                            onCreate: () => _showEditor(context),
-                          );
-                        }
-                        return _buildGrid(filtered, isPreset: false);
-                      }(),
+                      AsyncData(:final value) => _buildMyModelsSection(
+                        value,
+                        context,
+                      ),
                       AsyncLoading() => const Center(
                         child: Padding(
                           padding: EdgeInsets.all(32),
                           child: CircularProgressIndicator(),
                         ),
                       ),
-                      AsyncError(:final error) => Center(
+                      AsyncError() => const Center(
                         child: Text(
-                          'Erro ao carregar modelos: $error',
-                          style: const TextStyle(color: VeraProbColors.error),
+                          'Não foi possível carregar os modelos de SLA.',
+                          style: TextStyle(color: VeraProbColors.error),
                         ),
                       ),
                     },
@@ -231,6 +226,17 @@ class _SlaTemplateLibraryScreenState
     );
   }
 
+  Widget _buildMyModelsSection(
+    List<SlaTemplateView> value,
+    BuildContext context,
+  ) {
+    final filtered = _filteredTemplates(value);
+    if (filtered.isEmpty) {
+      return _EmptyState(onCreate: () => _showEditor(context));
+    }
+    return _buildGrid(filtered, isPreset: false);
+  }
+
   Future<void> _showEditor(
     BuildContext context, {
     SlaTemplateView? existing,
@@ -245,6 +251,7 @@ class _SlaTemplateLibraryScreenState
   }
 
   Future<void> _cloneTemplate(SlaTemplateView source) async {
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final orgId = ref.read(currentOrganizationIdProvider);
       if (orgId == null) return;
@@ -261,27 +268,26 @@ class _SlaTemplateLibraryScreenState
       final clone = SlaTemplateView.fromDomain(cloneDomain);
       ref.invalidate(slaTemplatesProvider);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Modelo "${clone.name}" criado.'),
-            backgroundColor: VeraProbColors.success,
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Modelo "${clone.name}" criado com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível clonar o modelo. Verifique sua conexão e tente novamente.',
           ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao clonar: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 
   Future<void> _confirmDelete(SlaTemplateView template) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -306,23 +312,21 @@ class _SlaTemplateLibraryScreenState
     if (confirmed == true) {
       try {
         await deleteSlaTemplate(template.id, template.organizationId, ref);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Modelo removido.'),
-              backgroundColor: VeraProbColors.success,
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Modelo removido com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível excluir o modelo. Tente novamente mais tarde.',
             ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro ao excluir: $e'),
-              backgroundColor: VeraProbColors.error,
-            ),
-          );
-        }
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }

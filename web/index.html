@@ -37,11 +37,24 @@
   <script>
     window.initPosthog = function(apiKey, apiHost, enableSessionReplay) {
       !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}for(n=e.init[s]||{},n.api_host=a,n.api_key=i,p=e._i=[],p.init=function(t,e,o){p.push([t,e,o])},p.capture=function(t,e){p.push([t,e])},p.set_config=function(t){p.push([t])},o="capture identify alias people set_config register register_once unregister opt_out_capturing has_opted_out_capturing set_group get_group get_distinct_id get_groups get_property get_session_id get_pageview_id set_config".split(" "),r=0;r<o.length;r++)g(n,o[r]);e._i.push([i,s,a])},e.__SV=1.6)}(document,window.posthog||[]);
-      posthog.init(apiKey, { 
-        api_host: apiHost, 
+      posthog.init(apiKey, {
+        api_host: apiHost,
         person_profiles: 'identified_only',
         session_replay: enableSessionReplay,
-        capture_performance: true
+        capture_performance: true,
+        sanitize_properties: function(properties) {
+          var urlKeys = ['$current_url', '$url', '$referrer'];
+          urlKeys.forEach(function(key) {
+            if (properties[key]) {
+              try {
+                var u = new URL(properties[key]);
+                u.search = '';
+                properties[key] = u.toString();
+              } catch (e) {}
+            }
+          });
+          return properties;
+        }
       });
     }
   </script>

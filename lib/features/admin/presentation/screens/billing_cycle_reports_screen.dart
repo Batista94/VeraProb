@@ -29,9 +29,10 @@ class _BillingCycleReportsScreenState
   BillingCycleView? _report;
 
   Future<void> _generateReport() async {
+    final messenger = ScaffoldMessenger.of(context);
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Sessão inválida. Faça login novamente.')),
       );
       return;
@@ -47,14 +48,19 @@ class _BillingCycleReportsScreenState
             periodEndUtc: _endDate,
             contractId: _selectedContractId,
           );
-      setState(() => _report = BillingCycleView.fromDomain(report));
+      if (mounted) {
+        setState(() => _report = BillingCycleView.fromDomain(report));
+      }
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _exportCsv() async {
     if (_report == null) return;
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final csv = ref.read(exportServiceProvider).generateCsv(_report!);
       final bytes = Uint8List.fromList(utf8.encode('\uFEFF$csv')); // UTF-8 BOM
@@ -65,14 +71,15 @@ class _BillingCycleReportsScreenState
         fileExtension: 'csv',
         mimeType: MimeType.csv,
       );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Relatório CSV baixado com sucesso!')),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao exportar CSV: $e'),
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível exportar o arquivo CSV. Tente novamente.',
+          ),
           backgroundColor: VeraProbColors.error,
         ),
       );
@@ -81,6 +88,7 @@ class _BillingCycleReportsScreenState
 
   Future<void> _exportPdf() async {
     if (_report == null) return;
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final pdfList = await ref
           .read(exportServiceProvider)
@@ -93,14 +101,15 @@ class _BillingCycleReportsScreenState
         fileExtension: 'pdf',
         mimeType: MimeType.pdf,
       );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(content: Text('Relatório PDF gerado com sucesso!')),
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao exportar PDF: $e'),
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível exportar o arquivo PDF. Tente novamente.',
+          ),
           backgroundColor: VeraProbColors.error,
         ),
       );

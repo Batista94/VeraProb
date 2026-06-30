@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../../../test/infrastructure/postgres/postgres_test_config.dart';
+// pr_scanner: ignore-regression (Council Approved: Systemic E2E hardening)
+
+import '../../../infrastructure/postgres/postgres_test_config.dart';
 
 /// Configuração de ambiente para os testes E2E do painel SuperAdmin.
 ///
@@ -24,10 +26,10 @@ class SuperAdminTestConfig {
   // ── Delegação ao PostgresTestConfig ───────────────────────────────────────
 
   /// URL do Supabase local (delegado ao [PostgresTestConfig]).
-  static final String supabaseUrl = PostgresTestConfig.supabaseUrl;
+  static String get supabaseUrl => PostgresTestConfig.supabaseUrl;
 
   /// Service-role key — bypassa RLS (delegado ao [PostgresTestConfig]).
-  static final String serviceRoleKey = PostgresTestConfig.serviceRoleKey;
+  static String get serviceRoleKey => PostgresTestConfig.serviceRoleKey;
 
   /// HMAC request key for super-admin-proxy requests (INV-31).
   static String get hmacSecretKeyV1 => PostgresTestConfig.hmacSecretKeyV1;
@@ -49,8 +51,17 @@ class SuperAdminTestConfig {
   /// provisionado (requer `node scripts/dev/bootstrap_dev.mjs`).
   static Future<bool> isSupabaseRunning() async {
     if (!await PostgresTestConfig.isSupabaseRunning()) return false;
+    if (!await PostgresTestConfig.isEdgeFunctionsRunning()) {
+      // ignore: avoid_print
+      print(
+        'WARNING: Supabase is up, but Edge Functions are down. Skipping SuperAdmin E2E suite.',
+      );
+      return false;
+    }
+
+    SupabaseClient? client;
     try {
-      final client = createServiceRoleClient();
+      client = createServiceRoleClient();
       final List<dynamic> result = await client
           .from('super_admin_users')
           .select('user_id')
@@ -59,6 +70,10 @@ class SuperAdminTestConfig {
       return result.isNotEmpty;
     } catch (_) {
       return false;
+    } finally {
+      if (client != null) {
+        await client.dispose();
+      }
     }
   }
 

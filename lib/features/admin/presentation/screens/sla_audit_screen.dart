@@ -5,6 +5,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'widgets/_sla_execution_detail_drawer.dart';
 
 final _currencyFormat = NumberFormat.currency(
@@ -20,27 +21,21 @@ class SlaAuditScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       color: VeraProbColors.background,
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
+      child: const Padding(
+        padding: EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Relatório de Auditoria SLA',
-              style: VeraProbTypography.sectionTitle.copyWith(
-                fontSize: 24,
-                letterSpacing: -0.5,
-              ),
+            VeraProbHeader(
+              icon: Icons.shield_outlined,
+              title: 'Relatório de Auditoria SLA',
+              subtitle:
+                  'Consolidação de evidências forenses e proteção de receita.',
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Consolidação de evidências forenses e proteção de receita.',
-              style: VeraProbTypography.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            const _SlaSummarySection(),
-            const SizedBox(height: 32),
-            const Expanded(child: _SlaExceptionsTable()),
+            SizedBox(height: 24),
+            _SlaSummarySection(),
+            SizedBox(height: 32),
+            Expanded(child: _SlaExceptionsTable()),
           ],
         ),
       ),
@@ -55,52 +50,58 @@ class _SlaSummarySection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final summaryAsync = ref.watch(slaSummaryProvider);
 
-    return switch (summaryAsync) {
-      AsyncData(:final value) => Row(
-        children: [
-          Expanded(
-            child: _SummaryCard(
-              title: 'CONFORMIDADES',
-              value: value.totalCompleted,
-              color: VeraProbColors.success,
-              percentage: value.total > 0
-                  ? (value.totalCompleted / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA PROTEGIDA',
-              revenueValue: value.protectedRevenue,
+    return AsyncValueWidget(
+      asyncValue: summaryAsync,
+      loading: () => const SizedBox(height: 160, child: SkeletonListLoader()),
+      data: (value) {
+        final total = value.total;
+        final completedPct = total > 0
+            ? (value.totalCompleted / total * 100).round()
+            : 0;
+        final gapsPct = total > 0
+            ? (value.totalCompletedWithGaps / total * 100).round()
+            : 0;
+        final failedPct = total > 0
+            ? (value.totalFailed / total * 100).round()
+            : 0;
+        return Row(
+          children: [
+            Expanded(
+              child: _SummaryCard(
+                title: 'CONFORMIDADES',
+                value: value.totalCompleted,
+                color: VeraProbColors.success,
+                percentage: completedPct,
+                revenueLabel: 'RECEITA PROTEGIDA',
+                revenueValue: value.protectedRevenue,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _SummaryCard(
-              title: 'INCONSISTÊNCIAS',
-              value: value.totalCompletedWithGaps,
-              color: VeraProbColors.warning,
-              percentage: value.total > 0
-                  ? (value.totalCompletedWithGaps / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA EM RISCO',
-              revenueValue: value.revenueAtRisk,
+            const SizedBox(width: 16),
+            Expanded(
+              child: _SummaryCard(
+                title: 'INCONSISTÊNCIAS',
+                value: value.totalCompletedWithGaps,
+                color: VeraProbColors.warning,
+                percentage: gapsPct,
+                revenueLabel: 'RECEITA EM RISCO',
+                revenueValue: value.revenueAtRisk,
+              ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: _SummaryCard(
-              title: 'QUEBRAS DE SLA',
-              value: value.totalFailed,
-              color: VeraProbColors.error,
-              percentage: value.total > 0
-                  ? (value.totalFailed / value.total * 100).round()
-                  : 0,
-              revenueLabel: 'RECEITA PERDIDA',
-              revenueValue: value.lostRevenue,
+            const SizedBox(width: 16),
+            Expanded(
+              child: _SummaryCard(
+                title: 'QUEBRAS DE SLA',
+                value: value.totalFailed,
+                color: VeraProbColors.error,
+                percentage: failedPct,
+                revenueLabel: 'RECEITA PERDIDA',
+                revenueValue: value.lostRevenue,
+              ),
             ),
-          ),
-        ],
-      ),
-      AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Text('Erro ao carregar sumário: $error'),
-    };
+          ],
+        );
+      },
+    );
   }
 }
 
@@ -202,8 +203,10 @@ class _SlaExceptionsTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final exceptionsAsync = ref.watch(slaExceptionsProvider);
 
-    return switch (exceptionsAsync) {
-      AsyncData(:final value) => () {
+    return AsyncValueWidget(
+      asyncValue: exceptionsAsync,
+      loading: () => const SkeletonListLoader(),
+      data: (value) {
         if (value.isEmpty) {
           return Center(
             child: Text(
@@ -213,14 +216,8 @@ class _SlaExceptionsTable extends ConsumerWidget {
           );
         }
 
-        return Container(
-          decoration: BoxDecoration(
-            color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: VeraProbColors.border.withValues(alpha: 0.1),
-            ),
-          ),
+        return PanelContainer(
+          padding: EdgeInsets.zero,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
             child: SingleChildScrollView(
@@ -279,10 +276,8 @@ class _SlaExceptionsTable extends ConsumerWidget {
             ),
           ),
         );
-      }(),
-      AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Text('Erro ao carregar exceções: $error'),
-    };
+      },
+    );
   }
 
   String _formatTime(DateTime dt) {

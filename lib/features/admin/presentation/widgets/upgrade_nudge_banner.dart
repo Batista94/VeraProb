@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/application/admin/quota_warning_view.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 
 /// Banner displayed in the admin dashboard when the org has active quota warnings.
@@ -14,49 +15,49 @@ class UpgradeNudgeBanner extends ConsumerWidget {
     final warningsAsync = ref.watch(activeQuotaWarningsProvider);
 
     return switch (warningsAsync) {
-      AsyncData(:final value) => () {
-        final warnings = value;
-        if (warnings.isEmpty) return const SizedBox.shrink();
-
-        // Show the highest threshold warning
-        final highest = warnings.first;
-        final color = highest.isCritical
-            ? VeraProbColors.error
-            : highest.isUrgent
-            ? Colors.orange
-            : VeraProbColors.warning;
-
-        return Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: color.withValues(alpha: 0.1),
-          child: Row(
-            children: [
-              Icon(
-                highest.isCritical
-                    ? Icons.error_outline
-                    : Icons.warning_amber_outlined,
-                size: 18,
-                color: color,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  highest.isCritical
-                      ? 'Atenção: Você atingiu ${highest.usagePct}% do limite de ${highest.resource}. '
-                            'Entre em contato com seu gerente de conta para upgrade.'
-                      : 'Aviso: Uso de ${highest.resource} em ${highest.usagePct}% '
-                            '(${highest.currentCount}/${highest.maxAllowed}). '
-                            'Considere solicitar um upgrade.',
-                  style: TextStyle(fontSize: 13, color: color),
-                ),
-              ),
-            ],
-          ),
-        );
-      }(),
+      AsyncData(:final value) => _buildBannerContent(context, value),
       AsyncLoading() => const SizedBox.shrink(),
       AsyncError() => const SizedBox.shrink(),
     };
   }
+}
+
+Widget _buildBannerContent(BuildContext context, List<QuotaWarning> warnings) {
+  if (warnings.isEmpty) return const SizedBox.shrink();
+
+  final highest = warnings.first;
+  final color = highest.isCritical
+      ? VeraProbColors.error
+      : highest.isUrgent
+      ? VeraProbColors.warning
+      : VeraProbColors.info;
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    color: color.withValues(alpha: 0.1),
+    child: Row(
+      children: [
+        Icon(
+          highest.isCritical
+              ? Icons.error_outline
+              : Icons.warning_amber_outlined,
+          size: 18,
+          color: color,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            highest.isCritical
+                ? 'Atenção: Você atingiu ${highest.usagePct}% do limite de ${highest.resource}. '
+                      'Entre em contato com seu gerente de conta para upgrade.'
+                : 'Aviso: Uso de ${highest.resource} em ${highest.usagePct}% '
+                      '(${highest.currentCount}/${highest.maxAllowed}). '
+                      'Considere solicitar um upgrade.',
+            style: VeraProbTypography.bodyMedium.copyWith(color: color),
+          ),
+        ),
+      ],
+    ),
+  );
 }

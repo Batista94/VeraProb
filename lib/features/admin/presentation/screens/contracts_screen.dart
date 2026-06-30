@@ -41,6 +41,12 @@ class _ContractListView extends ConsumerStatefulWidget {
 class _ContractListViewState extends ConsumerState<_ContractListView> {
   String _searchQuery = '';
 
+  Widget _buildContractList(List<ContractSummaryView> value) {
+    final contracts = _filterContracts(value);
+    if (contracts.isEmpty) return const _EmptyState();
+    return _ContractTable(contracts: contracts);
+  }
+
   List<ContractSummaryView> _filterContracts(List<ContractSummaryView> list) {
     if (_searchQuery.isEmpty) return list;
     final q = _searchQuery.toLowerCase();
@@ -192,18 +198,14 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
 
           Expanded(
             child: switch (contractsAsync) {
-              AsyncData(:final value) => () {
-                final contracts = _filterContracts(value);
-                if (contracts.isEmpty) return const _EmptyState();
-                return _ContractTable(contracts: contracts);
-              }(),
+              AsyncData(:final value) => _buildContractList(value),
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(),
               ),
-              AsyncError(:final error) => Center(
+              AsyncError() => const Center(
                 child: Text(
-                  'Erro ao carregar contratos: $error',
-                  style: const TextStyle(color: VeraProbColors.error),
+                  'Não foi possível carregar a lista de contratos.',
+                  style: TextStyle(color: VeraProbColors.error),
                 ),
               ),
             },
@@ -505,9 +507,10 @@ class _ContractTable extends ConsumerWidget {
                             errorMsg = e.message;
                             isSubmitting = false;
                           });
-                        } catch (e) {
+                        } catch (_) {
                           setDialogState(() {
-                            errorMsg = 'Erro inesperado: $e';
+                            errorMsg =
+                                'Não foi possível concluir a exclusão do contrato.';
                             isSubmitting = false;
                           });
                         }

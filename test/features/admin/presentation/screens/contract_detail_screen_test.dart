@@ -248,7 +248,12 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erro ao carregar contrato'), findsOneWidget);
+      expect(
+        find.textContaining(
+          'Não foi possível carregar os detalhes do contrato.',
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders "Contrato não encontrado." when detail is null', (

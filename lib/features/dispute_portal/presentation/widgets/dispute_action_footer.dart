@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:veraprob/application/dispute_portal/portal_dispute_submission_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
+const TextStyle _kCancelTextStyle = TextStyle(
+  fontSize: 13,
+  color: VeraProbColors.textSecondary,
+);
+
 class DisputeActionFooter extends StatelessWidget {
   final PortalSubmissionState state;
   final ValueChanged<String> onJustificationChanged;
@@ -88,7 +93,23 @@ class DisputeActionFooter extends StatelessWidget {
                     alpha: 0.5,
                   ),
                 ),
-                child: const Text('Enviar Contestação'),
+                child: isBusy
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Processando...'),
+                        ],
+                      )
+                    : const Text('Enviar Contestação'),
               ),
             ),
           ],
@@ -112,10 +133,7 @@ class DisputeActionFooter extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(color: VeraProbColors.textSecondary),
-              ),
+              child: const Text('Cancelar', style: _kCancelTextStyle),
             ),
             ElevatedButton(
               onPressed: () {

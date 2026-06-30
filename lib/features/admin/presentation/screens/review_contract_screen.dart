@@ -75,11 +75,12 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
         _accepting = false;
         _accepted = true;
       });
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() {
           _accepting = false;
-          _error = e.toString().replaceAll('Exception: ', '');
+          _error =
+              'Erro ao processar o contrato. Verifique se o link é válido.';
         });
       }
     }

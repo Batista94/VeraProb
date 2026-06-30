@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
+const double _kPortalTitleFontSize = 16.0;
+
 class PortalHeader extends StatelessWidget {
   final String orgDisplayName;
   final String orgCnpj;
@@ -27,7 +29,9 @@ class PortalHeader extends StatelessWidget {
             const SizedBox(width: VeraProbSpacing.sm),
             Text(
               'VeraProb · Portal Oficial de Resolução de Disputas',
-              style: VeraProbTypography.sectionTitle.copyWith(fontSize: 16),
+              style: VeraProbTypography.sectionTitle.copyWith(
+                fontSize: _kPortalTitleFontSize,
+              ),
             ),
           ],
         ),

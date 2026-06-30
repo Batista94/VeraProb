@@ -44,6 +44,14 @@ sealed class AppRoutes {
   /// Nested under the Administração hub branch so the shell is preserved.
   static const String fleetRiskAnalytics = '/admin/hub/fleet-risk';
 
+  /// Ingestion Health Monitor dashboard.
+  /// Nested under the Administração hub branch so the shell is preserved.
+  static const String ingestionHealth = '/admin/hub/ingestion-health';
+
+  /// Deep link to a specific vehicle's health detail (drill-down from alerts).
+  static String ingestionHealthVehicle(String vehicleId) =>
+      '/admin/hub/ingestion-health?vehicleId=$vehicleId';
+
   /// Routes reachable without an authenticated session. The router redirect
   /// guard bounces every other path to [login] when there is no session.
   static const Set<String> publicPaths = {

@@ -61,9 +61,10 @@ VERDICT: [GO] / [REVISE] / [NO-GO]
 
 ---
 
-## Context: The 25 Invariants
+## Context: The 28 Invariants & CI-Blocks
 
 The script enforces INV-2, INV-3, INV-4, and the DB zero-downtime rule directly.
-Your neural analysis enforces INV-1 (Immutable Ledger patterns), INV-4 (Domain Sovereignty), INV-5 (Single Decision Engine), INV-7 (Deterministic Replay), and INV-12 (Chronological Determinism) through architectural reasoning.
+Your neural analysis enforces INV-1, INV-4, INV-5, INV-7, and INV-12 through architectural reasoning.
+**CRITICAL:** You MUST perform neural-scanning for UI-Smells (WASM-CONTEXT-LEAK, IIFE-UI-SMELL, UX-RAW-EXCEPTION, Nested Ternaries, Hardcoded Colors). You MUST automatically issue a [NO-GO] veto if any `await` is followed by `ScaffoldMessenger`, if `() {` IIFEs exist in the UI tree, or if `$e` is exposed to users.
 
 When in doubt, Forensic Truth First. The CFO's ability to audit a verdict depends on every invariant being respected in every PR.

@@ -1,10 +1,11 @@
 name: CI — Analyze & Test
 
 on:
-  push:
-    branches: ["**"]
-  pull_request:
-    branches: ["main"]
+  workflow_dispatch:
+  # push:
+  #   branches: ["**"]
+  # pull_request:
+  #   branches: ["main"]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -688,12 +689,12 @@ jobs:
           fi
           echo "WASM artifact confirmed: $(du -h build/web/main.dart.wasm | cut -f1)"
 
-      - name: Upload WASM build artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: wasm-build-${{ github.sha }}
-          path: build/web/
-          retention-days: 1
+      # - name: Upload WASM build artifact
+      #   uses: actions/upload-artifact@v7
+      #   with:
+      #     name: wasm-build-${{ github.sha }}
+      #     path: build/web/
+      #     retention-days: 1
 
   chaos-audit:
     name: Forensic Chaos & Resilience Audit

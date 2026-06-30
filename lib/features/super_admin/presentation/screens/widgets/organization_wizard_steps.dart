@@ -10,6 +10,21 @@ import 'package:veraprob/application/super_admin/org_capabilities_view_model.dar
 import 'package:veraprob/application/super_admin/org_preset_view_model.dart';
 import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
 
+const _kSmallError = TextStyle(fontSize: 12, color: VeraProbColors.error);
+const _kSmallWarning = TextStyle(fontSize: 12, color: VeraProbColors.warning);
+const _kFont13 = TextStyle(fontSize: 13);
+const _kSmallSecondary = TextStyle(
+  fontSize: 12,
+  color: VeraProbColors.textSecondary,
+);
+const _kBody13Secondary = TextStyle(
+  fontSize: 13,
+  color: VeraProbColors.textSecondary,
+);
+const _kFont12 = TextStyle(fontSize: 12);
+const _kSecondary = TextStyle(color: VeraProbColors.textSecondary);
+const _kWeightMedium = TextStyle(fontWeight: FontWeight.w500);
+
 const kBrTimezones = [
   'America/Sao_Paulo',
   'America/Manaus',
@@ -155,10 +170,7 @@ class Step1FiscalData extends StatelessWidget {
                       Expanded(
                         child: Text(
                           'Alerta Crítico: Esta empresa consta como INATIVA na base da Receita Federal.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: VeraProbColors.error,
-                          ),
+                          style: _kSmallError,
                         ),
                       ),
                     ],
@@ -196,10 +208,7 @@ class Step1FiscalData extends StatelessWidget {
                         Expanded(
                           child: Text(
                             'Dados importados da Receita Federal. Verifique e confirme a exatidão da Razão Social e Nome Fantasia antes de avançar.',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: VeraProbColors.warning,
-                            ),
+                            style: _kSmallWarning,
                           ),
                         ),
                       ],
@@ -218,10 +227,7 @@ class Step1FiscalData extends StatelessWidget {
                           Expanded(
                             child: Text(
                               'Nome Fantasia não informado pela Receita Federal. Preencha o campo manualmente.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: VeraProbColors.warning,
-                              ),
+                              style: _kSmallWarning,
                             ),
                           ),
                         ],
@@ -402,10 +408,7 @@ class Step2Limits extends StatelessWidget {
                     size: 16,
                     color: VeraProbColors.secondary,
                   ),
-                  Text(
-                    '$tradeName — Plano $planLabel',
-                    style: const TextStyle(fontSize: 13),
-                  ),
+                  Text('$tradeName — Plano $planLabel', style: _kFont13),
                 ],
               ),
             ),
@@ -456,7 +459,7 @@ class Step2Limits extends StatelessWidget {
           const Text(
             'Selecione um preset para pré-configurar os módulos abaixo. '
             'Todos os campos permanecem editáveis.',
-            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+            style: _kSmallSecondary,
           ),
           const SizedBox(height: 8),
           SegmentedButton<String>(
@@ -493,10 +496,7 @@ class Step2Limits extends StatelessWidget {
                     child: Text(
                       'Preset aplicado. Você pode customizar os módulos abaixo '
                       'conforme o contrato específico.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: VeraProbColors.warning,
-                      ),
+                      style: _kSmallWarning,
                     ),
                   ),
                 ],
@@ -559,10 +559,7 @@ class Step2Limits extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             '${dwellTimeSeconds}s (~${(dwellTimeSeconds / 60).round()} min)',
-            style: const TextStyle(
-              fontSize: 13,
-              color: VeraProbColors.textSecondary,
-            ),
+            style: _kBody13Secondary,
           ),
           SliderTheme(
             data: const SliderThemeData(
@@ -606,10 +603,7 @@ class Step2Limits extends StatelessWidget {
             capabilities.maxKinematicSpeedKmh != null
                 ? '${capabilities.maxKinematicSpeedKmh!.toStringAsFixed(0)} km/h'
                 : '—  (sem limite configurado)',
-            style: const TextStyle(
-              fontSize: 13,
-              color: VeraProbColors.textSecondary,
-            ),
+            style: _kBody13Secondary,
           ),
           SliderTheme(
             data: const SliderThemeData(
@@ -645,7 +639,7 @@ class Step2Limits extends StatelessWidget {
           const SizedBox(height: 4),
           const Text(
             'Obrigatória para rastreabilidade no log de auditoria.',
-            style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
+            style: _kSmallSecondary,
           ),
           const SizedBox(height: 8),
           TextFormField(
@@ -891,7 +885,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
               children: widget.adminEmails
                   .map(
                     (email) => InputChip(
-                      label: Text(email, style: const TextStyle(fontSize: 12)),
+                      label: Text(email, style: _kFont12),
                       onDeleted: () => _removeEmail(email),
                       deleteIconColor: VeraProbColors.error,
                     ),
@@ -920,7 +914,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
               padding: EdgeInsets.only(top: 4, left: 12),
               child: Text(
                 'Adicione pelo menos um e-mail.',
-                style: TextStyle(fontSize: 12, color: VeraProbColors.error),
+                style: _kSmallError,
               ),
             ),
           const SizedBox(height: 12),
@@ -944,7 +938,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
                 ),
                 Text(
                   'Convites válidos por 7 dias serão enviados para cada e-mail com permissão de Administrador.',
-                  style: TextStyle(fontSize: 12),
+                  style: _kFont12,
                 ),
               ],
             ),
@@ -975,14 +969,11 @@ class WizardSummaryRow extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: VeraProbColors.secondary),
           const SizedBox(width: 6),
-          Text(
-            '$label: ',
-            style: const TextStyle(color: VeraProbColors.textSecondary),
-          ),
+          Text('$label: ', style: _kSecondary),
           Flexible(
             child: Text(
               value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: _kWeightMedium,
               overflow: TextOverflow.ellipsis,
             ),
           ),

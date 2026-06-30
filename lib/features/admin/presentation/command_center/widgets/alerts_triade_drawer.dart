@@ -65,28 +65,32 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
     }
   }
 
+  void _onAlertsChanged(
+    AsyncValue<List<OperationalAlert>>? prev,
+    AsyncValue<List<OperationalAlert>> next,
+  ) {
+    final prevIds =
+        prev?.value
+            ?.where((a) => a.severity == 'CRITICAL')
+            .map((a) => a.id)
+            .toSet() ??
+        {};
+    final nextCritical =
+        next.value?.where((a) => a.severity == 'CRITICAL') ?? [];
+    if (nextCritical.any((a) => !prevIds.contains(a.id))) {
+      ref.read(alertSoundServiceProvider).playAlertPing();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final alertsAsync = ref.watch(activeAlertsStreamProvider);
 
     // Sound trigger: listen for new CRITICAL alerts
-    ref.listen<AsyncValue<List<OperationalAlert>>>(activeAlertsStreamProvider, (
-      prev,
-      next,
-    ) {
-      final prevIds =
-          prev?.value
-              ?.where((a) => a.severity == 'CRITICAL')
-              .map((a) => a.id)
-              .toSet() ??
-          {};
-      final nextCritical =
-          next.value?.where((a) => a.severity == 'CRITICAL') ?? [];
-      final hasNew = nextCritical.any((a) => !prevIds.contains(a.id));
-      if (hasNew) {
-        ref.read(alertSoundServiceProvider).playAlertPing();
-      }
-    });
+    ref.listen<AsyncValue<List<OperationalAlert>>>(
+      activeAlertsStreamProvider,
+      _onAlertsChanged,
+    );
 
     return Container(
       width: (MediaQuery.sizeOf(context).width * 0.28).clamp(300.0, 400.0),
@@ -115,14 +119,14 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
                 alertsAsync.hasValue && alertsAsync.value != null
                     ? _GroupedAlertsList(alerts: alertsAsync.value!)
                     : const _LoadingPlaceholder(),
-              AsyncError(:final error) =>
+              AsyncError() =>
                 alertsAsync.hasValue && alertsAsync.value != null
                     ? _GroupedAlertsList(alerts: alertsAsync.value!)
                     : Center(
                         child: Padding(
                           padding: const EdgeInsets.all(24),
                           child: Text(
-                            'Erro ao carregar alertas: $error',
+                            'Não foi possível carregar os alertas.',
                             style: VeraProbTypography.bodySmall.copyWith(
                               color: VeraProbColors.critical,
                             ),
@@ -491,14 +495,26 @@ class _RichEvidenceCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: _ActionButton(
-                  label: 'Reconciliar',
+                  label:
+                      (alert.alertType == 'TELEMETRY_SILENT' ||
+                          alert.alertType == 'EVIDENCE_GAP')
+                      ? 'Diagnóstico'
+                      : 'Reconciliar',
                   icon: Icons.open_in_new_rounded,
                   onPressed: () {
-                    ref
-                        .read(selectedContractIdProvider.notifier)
-                        .set(alert.contractId);
-                    Navigator.of(context).pop();
-                    context.go(AdminNav.slaAudit.path);
+                    if (alert.alertType == 'TELEMETRY_SILENT' ||
+                        alert.alertType == 'EVIDENCE_GAP') {
+                      Navigator.of(context).pop();
+                      context.go(
+                        AppRoutes.ingestionHealthVehicle(alert.entityId),
+                      );
+                    } else {
+                      ref
+                          .read(selectedContractIdProvider.notifier)
+                          .set(alert.contractId);
+                      Navigator.of(context).pop();
+                      context.go(AdminNav.slaAudit.path);
+                    }
                   },
                 ),
               ),
@@ -792,7 +808,7 @@ class _QuickLinkButtonState extends ConsumerState<_QuickLinkButton> {
             evidenceIds: widget.evidenceIds,
           );
       // Stream will auto-remove the resolved alert
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         setState(() => _error = 'Falha');
       }

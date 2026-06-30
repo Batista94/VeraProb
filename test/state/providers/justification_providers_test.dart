@@ -4,6 +4,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
 import 'package:veraprob/application/sla_audit/justification/reject_justification_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/application/sla_audit/justification/review_justification_command.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
@@ -49,39 +50,32 @@ void main() {
   // ── Cenário 1: Badge de Notificação (UX-OPS) ─────────────────────────────
 
   group('pendingJustificationsCountProvider', () {
-    List<Map<String, dynamic>> makeRows() => [
-      {
-        'id': '1',
-        'status': 'PENDING',
-        'created_at_utc': '2026-04-20T10:00:00Z',
-      },
-      {
-        'id': '2',
-        'status': 'PENDING',
-        'created_at_utc': '2026-04-19T10:00:00Z',
-      },
-      {
-        'id': '3',
-        'status': 'APPROVED',
-        'created_at_utc': '2026-04-18T10:00:00Z',
-      },
-      {
-        'id': '4',
-        'status': 'REJECTED',
-        'created_at_utc': '2026-04-17T10:00:00Z',
-      },
-      {
-        'id': '5',
-        'status': 'EXPIRED',
-        'created_at_utc': '2026-04-16T10:00:00Z',
-      },
+    JustificationSummary summary(String id, JustificationStatus status) =>
+        JustificationSummary(
+          id: id,
+          status: status,
+          contractId: null,
+          setId: null,
+          category: null,
+          description: null,
+          createdAtUtc: null,
+          reviewedByUserId: null,
+          reviewedAtUtc: null,
+        );
+
+    List<JustificationSummary> makeSummaries() => [
+      summary('1', JustificationStatus.pending),
+      summary('2', JustificationStatus.pending),
+      summary('3', JustificationStatus.approved),
+      summary('4', JustificationStatus.rejected),
+      summary('5', JustificationStatus.expired),
     ];
 
     test('counts EXACTLY 2 pending from stream of 5 docs', () async {
       final container = ProviderContainer.test(
         overrides: [
           justificationListStreamProvider.overrideWith(
-            (ref) => Stream.value(makeRows()),
+            (ref) => Stream.value(makeSummaries()),
           ),
         ],
       );
@@ -97,40 +91,12 @@ void main() {
       sub.close();
     });
 
-    test(
-      'uses JustificationStatus.pending.dbValue for comparison (case-sensitive)',
-      () async {
-        final rows = [
-          // uppercase 'PENDING' must match
-          {'id': '1', 'status': JustificationStatus.pending.dbValue},
-          // lowercase must NOT match
-          {'id': '2', 'status': 'pending'},
-        ];
-        final container = ProviderContainer.test(
-          overrides: [
-            justificationListStreamProvider.overrideWith(
-              (ref) => Stream.value(rows),
-            ),
-          ],
-        );
-
-        // Keep the autoDispose provider alive during the await (Riverpod v3).
-        final sub = container.listen(
-          justificationListStreamProvider,
-          (_, _) {},
-        );
-        await container.read(justificationListStreamProvider.future);
-        expect(container.read(pendingJustificationsCountProvider), 1);
-        sub.close();
-      },
-    );
-
     test('returns 0 while stream is loading', () {
       final container = ProviderContainer.test(
         overrides: [
           justificationListStreamProvider.overrideWith(
             // never-completing stream → AsyncLoading
-            (ref) => const Stream<List<Map<String, dynamic>>>.empty(),
+            (ref) => const Stream<List<JustificationSummary>>.empty(),
           ),
         ],
       );
@@ -147,10 +113,23 @@ void main() {
       () async {
         // Provider must pass through rows in exactly the order Supabase returns.
         // Supabase is configured with .order("created_at_utc", ascending: false).
+        JustificationSummary at(String id, String createdAt) =>
+            JustificationSummary(
+              id: id,
+              status: JustificationStatus.pending,
+              contractId: null,
+              setId: null,
+              category: null,
+              description: null,
+              createdAtUtc: DateTime.parse(createdAt),
+              reviewedByUserId: null,
+              reviewedAtUtc: null,
+            );
+
         final orderedRows = [
-          {'id': '3', 'created_at_utc': '2026-04-20', 'status': 'PENDING'},
-          {'id': '2', 'created_at_utc': '2026-04-19', 'status': 'APPROVED'},
-          {'id': '1', 'created_at_utc': '2026-04-18', 'status': 'REJECTED'},
+          at('3', '2026-04-20T00:00:00Z'),
+          at('2', '2026-04-19T00:00:00Z'),
+          at('1', '2026-04-18T00:00:00Z'),
         ];
 
         final container = ProviderContainer.test(
@@ -174,9 +153,9 @@ void main() {
               data: (rows) {
                 expect(rows.length, 3);
                 // newest row (id '3') arrives first
-                expect(rows[0]['id'], '3');
-                expect(rows[1]['id'], '2');
-                expect(rows[2]['id'], '1');
+                expect(rows[0].id, '3');
+                expect(rows[1].id, '2');
+                expect(rows[2].id, '1');
               },
               error: (e, _) => fail('Unexpected error: $e'),
               loading: () => fail('Expected data, got loading'),

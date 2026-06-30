@@ -79,9 +79,9 @@ class OperationalZonesScreen extends ConsumerWidget {
               AsyncLoading() => const Center(
                 child: CircularProgressIndicator(),
               ),
-              AsyncError(:final error) => Center(
+              AsyncError() => Center(
                 child: Text(
-                  'Erro ao carregar zonas: $error',
+                  'Não foi possível carregar as zonas operacionais.',
                   style: VeraProbTypography.bodyMedium.copyWith(
                     color: VeraProbColors.error,
                   ),

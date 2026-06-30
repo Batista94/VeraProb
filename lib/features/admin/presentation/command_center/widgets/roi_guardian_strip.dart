@@ -4,6 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/forensic_ledger_providers.dart';
 
+const Color _kLabelColor = Color(0xFF8899AA);
+const Color _kLabelSubdued = Color(0xFF667788);
+const Color _kDividerLine = Color(0xFF1A2A3A);
+
 /// 42px ROI Guardian strip — Phase 10.
 /// Shows recovered revenue, avoided penalties, auto-linked trips, and ROI %.
 /// Streams from v_roi_summary via [roiSummaryProvider].
@@ -30,51 +34,53 @@ class RoiGuardianStrip extends ConsumerWidget {
           ),
         ),
         AsyncError() => const SizedBox.shrink(),
-        AsyncData(:final value) => () {
-          if (value == null) return const SizedBox.shrink();
-          // Horizontal scroll: prevents overflow on narrow windows (Lesson #3)
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.shield_outlined,
-                  size: 14,
-                  color: VeraProbColors.primary,
-                ),
-                const SizedBox(width: 6),
-                _Metric(
-                  label: 'RECEITA RECUPERADA',
-                  value: _formatCents(value.totalRecoveredCents),
-                  color: VeraProbColors.success,
-                ),
-                _Divider(),
-                _Metric(
-                  label: 'GLOSAS EVITADAS',
-                  value: _formatCents(value.totalAvoidedPenaltyCents),
-                  color: VeraProbColors.warning,
-                ),
-                _Divider(),
-                _RoiAtualMetric(roiBps: value.roiBps),
-                _Divider(),
-                _Metric(
-                  label: 'VIAGENS AUTO-VINCULADAS',
-                  value: value.totalLinkedTrips.toString(),
-                  color: VeraProbColors.primary,
-                ),
-                if (value.pendingOrphans > 0) ...[
-                  _Divider(),
-                  _Metric(
-                    label: 'ÓRFÃOS PENDENTES',
-                    value: value.pendingOrphans.toString(),
-                    color: VeraProbColors.error,
-                  ),
-                ],
-              ],
-            ),
-          );
-        }(),
+        AsyncData(:final value) => _buildRoiContent(value),
       },
+    );
+  }
+
+  Widget _buildRoiContent(RoiSummary? value) {
+    if (value == null) return const SizedBox.shrink();
+    // Horizontal scroll: prevents overflow on narrow windows (Lesson #3)
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          const Icon(
+            Icons.shield_outlined,
+            size: 14,
+            color: VeraProbColors.primary,
+          ),
+          const SizedBox(width: 6),
+          _Metric(
+            label: 'RECEITA RECUPERADA',
+            value: _formatCents(value.totalRecoveredCents),
+            color: VeraProbColors.success,
+          ),
+          _Divider(),
+          _Metric(
+            label: 'GLOSAS EVITADAS',
+            value: _formatCents(value.totalAvoidedPenaltyCents),
+            color: VeraProbColors.warning,
+          ),
+          _Divider(),
+          _RoiAtualMetric(roiBps: value.roiBps),
+          _Divider(),
+          _Metric(
+            label: 'VIAGENS AUTO-VINCULADAS',
+            value: value.totalLinkedTrips.toString(),
+            color: VeraProbColors.primary,
+          ),
+          if (value.pendingOrphans > 0) ...[
+            _Divider(),
+            _Metric(
+              label: 'ÓRFÃOS PENDENTES',
+              value: value.pendingOrphans.toString(),
+              color: VeraProbColors.error,
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -98,9 +104,7 @@ class _RoiAtualMetric extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            border: Border.all(
-              color: const Color(0xFF8899AA).withValues(alpha: 0.4),
-            ),
+            border: Border.all(color: _kLabelColor.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(4),
           ),
           child: const Column(
@@ -111,7 +115,7 @@ class _RoiAtualMetric extends StatelessWidget {
                 'ROI ATUAL: N/A',
                 style: TextStyle(
                   fontSize: 9,
-                  color: Color(0xFF8899AA),
+                  color: _kLabelColor,
                   fontFamily: 'Outfit',
                   letterSpacing: 0.8,
                 ),
@@ -120,7 +124,7 @@ class _RoiAtualMetric extends StatelessWidget {
                 'Configure o custo do contrato',
                 style: TextStyle(
                   fontSize: 7,
-                  color: Color(0xFF667788),
+                  color: _kLabelSubdued,
                   fontFamily: 'Outfit',
                   fontStyle: FontStyle.italic,
                 ),
@@ -158,7 +162,7 @@ class _Metric extends StatelessWidget {
           '$label: ',
           style: const TextStyle(
             fontSize: 9,
-            color: Color(0xFF8899AA),
+            color: _kLabelColor,
             fontFamily: 'Outfit',
             letterSpacing: 0.8,
           ),
@@ -184,7 +188,7 @@ class _Divider extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 12),
       child: SizedBox(
         height: 20,
-        child: VerticalDivider(width: 1, color: Color(0xFF1A2A3A)),
+        child: VerticalDivider(width: 1, color: _kDividerLine),
       ),
     );
   }

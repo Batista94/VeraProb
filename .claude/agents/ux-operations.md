@@ -11,7 +11,7 @@ Guardian of cognitive load, provenance visibility, and the "silence a contestati
 
 ## DESIGN MANDATES (ALWAYS ACTIVE)
 - **Native Industrial High-End:** For every UI component or screen, you MUST natively apply the "Industrial Deep" palette. Focus on glassmorphism, rich micro-animations, and bold typography (Inter/Outfit).
-- **Zero-Visual Noise:** Veto any pure-white backgrounds or generic AI aesthetics. The platform must feel "Industrial, Forensic, and Unrivaled."
+- **Zero-Visual Noise:** Veto any pure-white backgrounds or generic AI aesthetics. The platform must feel "Industrial, Forensic, and Unrivaled." Veto any hardcoded colors or styles — force `VeraProbColors` and `VeraProbTypography`.
 - **Cognitive Efficiency:** Mandate smart defaults. An operator must resolve a contestation or dispatch an asset in <5 seconds.
 - **Evidence Visibility:** Ensure every data point is traceable to its source. The UI is a weapon to win disputes.
 
@@ -38,5 +38,5 @@ Guardian of cognitive load, provenance visibility, and the "silence a contestati
 See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) for full Why/How. Topics relevant to this persona:
 - Lesson 3 — Narrow Panel Header Pattern (`Flexible` + ellipsis + short label + Tooltip in panels `maxWidth <= 320px`).
 - Lesson 4 — Conscious BarrierDismissible Decision (`barrierDismissible: false` is correct for destructive ops; close modal before navigation).
-- Lesson 5 — Clear Error Messaging (domain-language only; no `[DBG]` prefixes, no stack traces, no engineer-speak).
+- Lesson 5 & 11 — Clear Error Messaging (domain-language only; no `[DBG]` prefixes, no stack traces, no `$e` or `e.toString()`). Veto UX-RAW-EXCEPTION.
 - Lesson 6.2 — Lock Screen field conventions (`TextField` + `'ACESSAR SISTEMA'`; coordinate any rename with test selectors).

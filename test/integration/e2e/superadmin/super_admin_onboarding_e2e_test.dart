@@ -8,6 +8,7 @@
 ///   flutter test test/integration/e2e/superadmin/super_admin_onboarding_e2e_test.dart
 library;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
@@ -213,8 +214,7 @@ void main() async {
             reason: 'Coluna reason deve ser preenchida',
           );
 
-          // ignore: avoid_print
-          print(
+          debugPrint(
             '[E2E] Onboarding concluído em ${stopwatch.elapsed.inSeconds}s '
             '— orgId: ${result.orgId}',
           );

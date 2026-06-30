@@ -6,6 +6,25 @@ import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/features/admin/presentation/resources/tabs/vehicle_form_drawer.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+
+const Color _kHeaderNavy = Color(0xFF1A237E);
+const TextStyle _kBtnLabel = TextStyle(
+  fontSize: 14,
+  fontWeight: FontWeight.w600,
+);
+const TextStyle _kChipText = TextStyle(
+  fontSize: 11,
+  fontWeight: FontWeight.w600,
+);
+const Color _kStatusAvailableText = Color(0xFF1B5E20);
+const Color _kStatusAvailableBg = Color(0xFFE8F5E9);
+const Color _kStatusInServiceText = Color(0xFF1565C0);
+const Color _kStatusInServiceBg = Color(0xFFE3F2FD);
+const Color _kStatusMaintenanceText = Color(0xFFE65100);
+const Color _kStatusMaintenanceBg = Color(0xFFFFF3E0);
+const Color _kStatusRetiredText = Color(0xFF616161);
+const Color _kStatusRetiredBg = Color(0xFFF5F5F5);
 
 class VehiclesTab extends ConsumerStatefulWidget {
   const VehiclesTab({super.key});
@@ -56,13 +75,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                         ? _buildEmptyState()
                         : _buildTable(context, value, colorScheme, userRole),
                   AsyncLoading() => _buildSkeleton(),
-                  AsyncError(:final error) => () {
-                    LoggerService().error(
-                      'Falha ao carregar veículos',
-                      error: error,
-                    );
-                    return _buildErrorState();
-                  }(),
+                  AsyncError(:final error) => _buildAsyncError(error),
                 },
               ),
             ],
@@ -120,15 +133,15 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                 'Frota de Veículos',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1A237E),
+                  color: _kHeaderNavy,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Cadastro de veículos operacionais vinculados à organização.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -141,10 +154,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             label: const Text('Cadastrar veículo'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              textStyle: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              textStyle: _kBtnLabel,
             ),
           ),
       ],
@@ -212,6 +222,11 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         ],
       ),
     );
+  }
+
+  Widget _buildAsyncError(Object error) {
+    LoggerService().error('Falha ao carregar veículos', error: error);
+    return _buildErrorState();
   }
 
   Widget _buildErrorState() {
@@ -323,6 +338,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
   }
 
   Future<void> _confirmDelete(BuildContext context, Vehicle vehicle) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -335,7 +351,9 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.error,
+            ),
             child: const Text('Excluir'),
           ),
         ],
@@ -347,25 +365,21 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             .read(vehicleAssetRepositoryProvider)
             .deleteVehicle(vehicle.id);
         ref.invalidate(vehiclesListProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Veículo removido com sucesso.')),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Veículo removido com sucesso.')),
+        );
       } catch (e, stack) {
         LoggerService().error(
           'Falha ao remover veículo',
           error: e,
           stackTrace: stack,
         );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Não foi possível remover o veículo agora.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível remover o veículo agora.'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }
@@ -472,23 +486,23 @@ class _VehicleStatusChip extends StatelessWidget {
     final (label, color, bgColor) = switch (status) {
       VehicleStatus.available => (
         'Disponível',
-        const Color(0xFF1B5E20),
-        const Color(0xFFE8F5E9),
+        _kStatusAvailableText,
+        _kStatusAvailableBg,
       ),
       VehicleStatus.inService => (
         'Em Serviço',
-        const Color(0xFF1565C0),
-        const Color(0xFFE3F2FD),
+        _kStatusInServiceText,
+        _kStatusInServiceBg,
       ),
       VehicleStatus.maintenance => (
         'Manutenção',
-        const Color(0xFFE65100),
-        const Color(0xFFFFF3E0),
+        _kStatusMaintenanceText,
+        _kStatusMaintenanceBg,
       ),
       VehicleStatus.retired => (
         'Aposentado',
-        const Color(0xFF616161),
-        const Color(0xFFF5F5F5),
+        _kStatusRetiredText,
+        _kStatusRetiredBg,
       ),
     };
     return Container(
@@ -499,11 +513,7 @@ class _VehicleStatusChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: color,
-        ),
+        style: _kChipText.copyWith(color: color),
         textAlign: TextAlign.center,
       ),
     );

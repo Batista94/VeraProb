@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthResponse, AuthState;
 
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/routing_utils.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
@@ -42,6 +43,7 @@ import 'package:veraprob/features/admin/presentation/screens/sla_template_librar
 import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/evidence_reconciliation_screen.dart';
 import 'package:veraprob/presentation/shell/settings_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/ingestion_health_screen.dart';
 
 // ── Super-admin shell + branch screens ──
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
@@ -107,7 +109,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.login,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: refresh,
-    observers: [SentryNavigatorObserver()],
+    observers: [
+      SentryNavigatorObserver(
+        routeNameExtractor: (s) {
+          final name = s?.name;
+          if (name == null) return s;
+          return RouteSettings(name: Uri.tryParse(name)?.path ?? name);
+        },
+      ),
+    ],
     redirect: (context, state) {
       final session = client.auth.currentSession;
       final hasSession =
@@ -203,6 +213,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     path: 'fleet-risk',
                     builder: (context, state) =>
                         const FleetRiskAnalyticsScreen(),
+                  ),
+                  // `/admin/hub/ingestion-health` — Ingestion Health Monitor,
+                  // shell-preserving so the Administração pillar stays selected.
+                  // Supports `?vehicleId=` query param for drill-down from alerts.
+                  GoRoute(
+                    path: 'ingestion-health',
+                    builder: (context, state) {
+                      final vehicleId = parseVehicleIdParam(
+                        state.uri.queryParameters['vehicleId'],
+                      );
+                      return IngestionHealthScreen(
+                        preselectedVehicleId: vehicleId,
+                      );
+                    },
                   ),
                 ],
               ),

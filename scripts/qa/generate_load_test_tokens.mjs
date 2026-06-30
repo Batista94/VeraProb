@@ -124,8 +124,10 @@ function resolveConfig() {
     || '';
 
   const serviceKey = process.env.SUPABASE_SERVICE_KEY
+    || process.env.SUPABASE_SERVICE_ROLE_KEY
     || process.env.SERVICE_ROLE_KEY
     || dotenv['SUPABASE_SERVICE_KEY']
+    || dotenv['SUPABASE_SERVICE_ROLE_KEY']
     || dotenv['SERVICE_ROLE_KEY']
     || status.serviceKey
     || '';

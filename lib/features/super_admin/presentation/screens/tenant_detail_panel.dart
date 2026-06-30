@@ -17,6 +17,17 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/impersonation_session_provider.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
+const _kLegalNameStyle = TextStyle(
+  color: VeraProbColors.textSecondary,
+  fontSize: 13,
+);
+const _kActionButtonText = TextStyle(fontSize: 12);
+const _kMonoIdStyle = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 11,
+  color: VeraProbColors.textDisabled,
+);
+
 /// Right panel: detail view for a selected tenant organization.
 class TenantDetailPanel extends ConsumerStatefulWidget {
   final TenantHealthView tenant;
@@ -52,6 +63,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _archiveOrg(TenantHealthView t) async {
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await ArchiveConfirmationDialog.show(context);
     if (reason == null || !mounted) return;
 
@@ -69,24 +81,24 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       ref.invalidate(tenantHealthSnapshotProvider);
       ref.invalidate(tenantDetailProvider(t.id));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Organização arquivada com sucesso.')),
         );
       }
     } on DomainException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(e.message),
             backgroundColor: VeraProbColors.error,
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao arquivar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao arquivar a organização.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -95,6 +107,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   }
 
   Future<void> _unarchiveOrg(TenantHealthView t) async {
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await showDialog<String>(
       context: context,
       builder: (_) => const ReasonConfirmationDialog(
@@ -117,18 +130,18 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       ref.invalidate(tenantHealthSnapshotProvider);
       ref.invalidate(tenantDetailProvider(t.id));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(
             content: Text('Organização desarquivada com sucesso.'),
             backgroundColor: VeraProbColors.success,
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao desarquivar: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao desarquivar a organização.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -139,6 +152,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
   Future<void> _startImpersonation(TenantHealthView t) async {
     final ticketController = TextEditingController();
     final reasonController = TextEditingController();
+    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -191,7 +205,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       );
       ref.read(activeImpersonationSessionProvider.notifier).set(session);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(
               'Personificando "${t.name}". Sessão expira em 30 minutos.',
@@ -202,18 +216,18 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
       }
     } on DomainException catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           SnackBar(
             content: Text(e.message),
             backgroundColor: VeraProbColors.error,
           ),
         );
       }
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao iniciar personificação: $e'),
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Falha ao iniciar personificação.'),
             backgroundColor: VeraProbColors.error,
           ),
         );
@@ -253,10 +267,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     if (t.legalName != null)
                       Text(
                         t.legalName!,
-                        style: const TextStyle(
-                          color: VeraProbColors.textSecondary,
-                          fontSize: 13,
-                        ),
+                        style: _kLegalNameStyle,
                         overflow: TextOverflow.ellipsis,
                       ),
                   ],
@@ -275,7 +286,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                       foregroundColor: VeraProbColors.warning,
                       side: const BorderSide(color: VeraProbColors.warning),
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -290,7 +301,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                       foregroundColor: VeraProbColors.secondary,
                       side: const BorderSide(color: VeraProbColors.secondary),
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -304,7 +315,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
                     style: FilledButton.styleFrom(
                       backgroundColor: VeraProbColors.success,
                       visualDensity: VisualDensity.compact,
-                      textStyle: const TextStyle(fontSize: 12),
+                      textStyle: _kActionButtonText,
                     ),
                   ),
                 ),
@@ -314,14 +325,7 @@ class _TenantDetailPanelState extends ConsumerState<TenantDetailPanel>
         const SizedBox(height: 4),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Text(
-            t.id,
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 11,
-              color: VeraProbColors.textDisabled,
-            ),
-          ),
+          child: Text(t.id, style: _kMonoIdStyle),
         ),
         const SizedBox(height: 16),
         TabBar(

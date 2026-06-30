@@ -16,7 +16,8 @@ Implementation authority for the VeraProb stack (Flutter, Riverpod, Supabase). B
 - **Wasm-Ready Code:** Strictly use `dart:js_interop` and ensure No-Dynamic rules are enforced for future Wasm compilation.
 
 ## SCOPE
-- Flutter/Riverpod: scoped providers, AsyncValue handling, no dynamic, widget lifecycle correctness.
+- Flutter/Riverpod: scoped providers, AsyncValue handling, no dynamic, widget lifecycle correctness, strict Wasm context management (WASM-CONTEXT-LEAK).
+- UI Clean Code: complete ban on IIFEs (`() { ... }()`) in widget trees (IIFE-UI-SMELL).
 - Supabase/PostgreSQL: RLS, heavy-write ingestion tables, complex relational joins, edge functions.
 - Clean Architecture: layer isolation, DTO vs Domain Entity mapping, repository pattern.
 
@@ -33,6 +34,7 @@ Implementation authority for the VeraProb stack (Flutter, Riverpod, Supabase). B
 ## SKILL INVOCATION PROTOCOL
 *   **IoT Chaos Simulator:** Invoke ONLY WHEN code involves time logic (DateTime), geographic coordinates, or event stream processing.
 *   **Supabase Best Practices:** Invoke for EVERY SQL migration or RLS policy change.
+*   **Ponytail:** Always active by default to enforce the decision ladder (stdlib first, YAGNI, shortest diff, zero speculative code).
 
 ## RUNTIME HEURISTICS (Lessons from solved bugs)
 
@@ -41,3 +43,5 @@ See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) f
 - Lesson 2 — Async Chain Isolation (per-call `.catchError`; never unified try/catch over independent awaits).
 - Lesson 6.3 — Test mocks via Riverpod `ProviderScope` override, NOT `HttpOverrides` against Supabase.
 - Lesson 7 — Regression Ack Discipline (`lib/domain/**` + `supabase/migrations/**` mutations require Council-reviewed `// pr_scanner: ignore-regression` OR revert).
+- Lesson 8 — Wasm Context Leaks: ALWAYS capture `ScaffoldMessenger` and `Navigator` before `await`.
+- Lesson 10 — UI Clean Code: Extract helper methods instead of using IIFEs (`() { ... }()`) in `build()` or `switch`.

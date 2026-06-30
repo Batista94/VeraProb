@@ -7,6 +7,7 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_category_chip.dart';
 import 'package:veraprob/features/admin/presentation/shared/evidence_link_source_chip.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/telegram_providers.dart';
 
 /// WS-4 Evidence Reconciliation Screen — auditor triage for orphan evidence.
@@ -34,27 +35,19 @@ class EvidenceReconciliationScreen extends ConsumerWidget {
             _Header(orphansAsync: orphansAsync),
             const SizedBox(height: 24),
             Expanded(
-              child: switch (orphansAsync) {
-                AsyncData(:final value) =>
-                  value.isEmpty
-                      ? const _EmptyState()
-                      : ListView.separated(
-                          itemCount: value.length,
-                          separatorBuilder: (_, index) =>
-                              const SizedBox(height: 12),
-                          itemBuilder: (_, i) =>
-                              _OrphanEvidenceCard(evidence: value[i]),
-                        ),
-                AsyncLoading() => const Center(
-                  child: CircularProgressIndicator(),
-                ),
-                AsyncError(:final error) => Center(
-                  child: Text(
-                    'Erro ao carregar evidências: $error',
-                    style: const TextStyle(color: VeraProbColors.error),
-                  ),
-                ),
-              },
+              child: AsyncValueWidget(
+                asyncValue: orphansAsync,
+                loading: () => const SkeletonListLoader(),
+                data: (value) => value.isEmpty
+                    ? const _EmptyState()
+                    : ListView.separated(
+                        itemCount: value.length,
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (_, i) =>
+                            _OrphanEvidenceCard(evidence: value[i]),
+                      ),
+              ),
             ),
           ],
         ),
@@ -77,15 +70,11 @@ class _Header extends StatelessWidget {
       AsyncError() => 0,
       AsyncLoading() => 0,
     };
-    return Row(
-      children: [
-        const Icon(Icons.link_off_rounded, color: VeraProbColors.warning),
-        const SizedBox(width: 12),
-        Text(
-          'Reconciliação de Evidências',
-          style: VeraProbTypography.sectionTitle,
-        ),
-        const SizedBox(width: 12),
+    return VeraProbHeader(
+      icon: Icons.link_off_rounded,
+      iconColor: VeraProbColors.warning,
+      title: 'Reconciliação de Evidências',
+      actions: [
         if (count > 0)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -117,13 +106,8 @@ class _OrphanEvidenceCard extends ConsumerWidget {
     final dateFmt = DateFormat('dd/MM/yyyy HH:mm', 'pt_BR');
     final ext = evidence.fileName.split('.').last.toUpperCase();
 
-    return Container(
+    return PanelContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: VeraProbColors.border),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

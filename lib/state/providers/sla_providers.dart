@@ -10,6 +10,7 @@ import 'package:veraprob/application/sla_audit/projections/sla_execution_query_s
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 import 'package:veraprob/application/sla_audit/sanction_simulation_service.dart';
+import 'package:veraprob/application/sla_audit/simulation_seed_service.dart';
 import 'package:veraprob/domain/sla_audit/evaluation_trace_repository.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
@@ -103,6 +104,15 @@ final contractualFinancialClosingServiceProvider =
         ),
       );
     });
+
+// ── Simulation Seed Service ───────────────────────────────────────────────────
+
+final simulationSeedServiceProvider = Provider<SimulationSeedService>((ref) {
+  if (ref.watch(persistenceModeProvider) == PersistenceMode.inMemory) {
+    return noOpSimulationSeedService();
+  }
+  return PostgresSimulationSeedService(ref.watch(supabaseClientProvider));
+});
 
 // ── Sanction Simulation Service ──────────────────────────────────────────────
 

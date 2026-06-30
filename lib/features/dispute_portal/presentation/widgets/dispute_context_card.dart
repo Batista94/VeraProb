@@ -131,11 +131,12 @@ class DisputeContextCard extends StatelessWidget {
                       ),
                       const SizedBox(height: VeraProbSpacing.xs),
                       InkWell(
-                        onTap: () {
-                          Clipboard.setData(
+                        onTap: () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          await Clipboard.setData(
                             ClipboardData(text: contextData.recordId),
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(
                               content: Text(
                                 'ID copiado para a área de transferência',

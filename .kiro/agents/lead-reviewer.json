@@ -11,7 +11,8 @@
   ],
   "resources": [
     "skill://veraprob-pr-scanner",
-    "skill://caveman-review"
+    "skill://caveman-review",
+    "skill://ponytail-review"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

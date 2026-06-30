@@ -12,20 +12,30 @@ const String orgBId = '00000000-0000-0000-0000-000000000003';
 void main() {
   group('E2E: Cross-Tenant Isolation & Zero Trust Security (Group 11)', () {
     late SupabaseClient serviceRoleClient;
+    bool supabaseAvailable = false;
 
     setUpAll(() async {
+      supabaseAvailable = await PostgresTestConfig.isSupabaseRunning();
+      if (!supabaseAvailable) return;
+
       serviceRoleClient = PostgresTestConfig.createServiceRoleClient();
       await PostgresTestConfig.ensureSentinelOrg(id: orgAId, name: 'Org A');
       await PostgresTestConfig.ensureSentinelOrg(id: orgBId, name: 'Org B');
     });
 
     tearDownAll(() async {
+      if (!supabaseAvailable) return;
       await serviceRoleClient.dispose();
     });
 
     test(
       'Teste 1 (Cross-Tenant Enum Leak): Org_A enumera Org_B → 0 rows / Vazio (INV-1, INV-22)',
       () async {
+        if (!supabaseAvailable) {
+          markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+
         final client = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.supabaseAnonKey,
@@ -63,6 +73,11 @@ void main() {
     test(
       'Teste 2 (JWT Tampering & RPC Attack): Org_A executa RPC SuperAdmin na Org_B → Falha',
       () async {
+        if (!supabaseAvailable) {
+          markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+
         final client = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.supabaseAnonKey,
@@ -82,15 +97,20 @@ void main() {
             reason:
                 'RPC invocation should be blocked at PostgREST/Postgres layer.',
           );
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
 
     test(
       'Teste 3 (Storage Leak Bypass): Org_A tenta baixar evidência da Org_B → Falha',
       () async {
+        if (!supabaseAvailable) {
+          markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+
         final client = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.supabaseAnonKey,
@@ -103,15 +123,20 @@ void main() {
         } on StorageException catch (e) {
           // Assert it is blocked by RLS policies on the storage bucket
           expect(e.statusCode, anyOf('400', '403', '404'));
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
 
     test(
       'Teste 4 (Rate Limiting Exhaustion): Disparo de 100 requisições simultâneas → 429',
       () async {
+        if (!supabaseAvailable) {
+          markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+
         // Simulating DDoS against the organizations endpoint
         final url = Uri.parse(
           '${PostgresTestConfig.supabaseUrl}/rest/v1/organizations?id=eq.$orgBId',
@@ -148,6 +173,11 @@ void main() {
     test(
       'Teste 5 (Ghost Session / Real-time Revocation): Claim revogado em tempo real invalida ações',
       () async {
+        if (!supabaseAvailable) {
+          markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+
         final client = SupabaseClient(
           PostgresTestConfig.supabaseUrl,
           PostgresTestConfig.supabaseAnonKey,
@@ -164,9 +194,9 @@ void main() {
           fail('RPC should have failed due to stale claim or missing claim.');
         } catch (e) {
           expect(e.toString(), contains('PGRST'));
+        } finally {
+          await client.dispose();
         }
-
-        await client.dispose();
       },
     );
   });

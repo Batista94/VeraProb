@@ -535,8 +535,10 @@ class _DeclareContractPlanFormState
           );
         }
       }
-    } catch (e) {
-      setState(() => _errorMessage = 'Erro inesperado: $e');
+    } catch (_) {
+      setState(
+        () => _errorMessage = 'Ocorreu um erro inesperado ao salvar o plano.',
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

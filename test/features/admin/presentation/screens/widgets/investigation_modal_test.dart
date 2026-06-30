@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -462,7 +462,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final errorText = tester.widget<Text>(
-        find.textContaining('Erro ao carregar traces:'),
+        find.textContaining('Não foi possível carregar a rastreabilidade.'),
       );
       expect(errorText.style?.color, VeraProbColors.error);
     });
@@ -488,7 +488,9 @@ void main() {
       await tester.pumpAndSettle();
 
       final errorText = tester.widget<Text>(
-        find.textContaining('Erro ao carregar ledger:'),
+        find.textContaining(
+          'Não foi possível carregar o histórico operacional.',
+        ),
       );
       expect(errorText.style?.color, VeraProbColors.error);
     });

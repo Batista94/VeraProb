@@ -214,6 +214,7 @@ class _CreateOrganizationWizardState
     } catch (_) {
       exists = false;
     }
+
     final lookup = await () async {
       try {
         return await lookupService.lookup(digits);
@@ -322,6 +323,7 @@ class _CreateOrganizationWizardState
     final snapshotBillingDay = _billingDayCtrl.text.trim();
 
     setState(() => _isSubmitting = true);
+    final messenger = ScaffoldMessenger.of(context);
 
     try {
       final handler = ref.read(createOrganizationHandlerProvider);
@@ -354,9 +356,6 @@ class _CreateOrganizationWizardState
       final result = await handler.handle(cmd);
 
       if (!mounted) return;
-
-      // Capturar messenger e URL antes do showDialog (contexto seguro)
-      final messenger = ScaffoldMessenger.of(context);
 
       String baseUrl = 'http://localhost';
       try {
@@ -392,8 +391,12 @@ class _CreateOrganizationWizardState
       await showDialog<void>(
         context: context,
         barrierDismissible: true,
-        builder: (_) =>
-            _buildSuccessDialog(inviteUrls, messenger, result.orgApiSecret),
+        builder: (dialogCtx) => _buildSuccessDialog(
+          inviteUrls,
+          messenger,
+          result.orgApiSecret,
+          dialogCtx,
+        ),
       );
 
       if (mounted) {
@@ -404,16 +407,16 @@ class _CreateOrganizationWizardState
     } on DomainException catch (e) {
       if (!mounted) return;
       final message = _mapErrorMessage(e.message);
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(message),
           backgroundColor: VeraProbColors.error,
           behavior: SnackBarBehavior.floating,
         ),
       );
-    } catch (e) {
+    } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         const SnackBar(
           content: Text(
             'Erro inesperado ao processar solicitação. Tente novamente.',
@@ -449,6 +452,7 @@ class _CreateOrganizationWizardState
     Map<String, String> inviteUrls,
     ScaffoldMessengerState messenger,
     String? orgApiSecret,
+    BuildContext dialogCtx,
   ) {
     return AlertDialog(
       icon: Stack(
@@ -464,7 +468,7 @@ class _CreateOrganizationWizardState
             top: 0,
             child: IconButton(
               icon: const Icon(Icons.close, size: 20),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogCtx).pop(),
               tooltip: 'Fechar e voltar para Tenants',
             ),
           ),
@@ -600,7 +604,7 @@ class _CreateOrganizationWizardState
       ),
       actions: [
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(dialogCtx).pop(),
           style: ElevatedButton.styleFrom(
             backgroundColor: VeraProbColors.primary,
             minimumSize: const Size(120, 44),
@@ -613,10 +617,17 @@ class _CreateOrganizationWizardState
 
   @override
   Widget build(BuildContext context) {
+    final bool isNarrow = MediaQuery.sizeOf(context).width < 720;
+    final StepState step0State = _currentStep > 0
+        ? StepState.complete
+        : StepState.indexed;
+    final StepState step1State = _currentStep > 1
+        ? StepState.complete
+        : StepState.indexed;
+    final bool isCnpjBusy = _cnpjChecking || _cnpjLookingUp;
+
     return Stepper(
-      type: MediaQuery.sizeOf(context).width < 720
-          ? StepperType.vertical
-          : StepperType.horizontal,
+      type: isNarrow ? StepperType.vertical : StepperType.horizontal,
       currentStep: _currentStep,
       onStepTapped: (step) {
         if (step <= _highestStepReached) _goToStep(step);
@@ -626,7 +637,7 @@ class _CreateOrganizationWizardState
         Step(
           title: const Text('Dados Fiscais'),
           isActive: _currentStep >= 0,
-          state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+          state: step0State,
           content: Step1FiscalData(
             formKey: _step1Key,
             legalNameCtrl: _legalNameCtrl,
@@ -636,7 +647,7 @@ class _CreateOrganizationWizardState
             timezone: _timezone,
             currency: _currency,
             cnpjApiError: _cnpjApiError,
-            cnpjChecking: _cnpjChecking || _cnpjLookingUp,
+            cnpjChecking: isCnpjBusy,
             cnpjAutoFilled: _cnpjAutoFilled,
             cnpjAutoInactive: _cnpjAutoInactive,
             cnpjTradeNameMissing: _cnpjTradeNameMissing,
@@ -651,7 +662,7 @@ class _CreateOrganizationWizardState
         Step(
           title: const Text('Limites'),
           isActive: _currentStep >= 1,
-          state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+          state: step1State,
           content: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

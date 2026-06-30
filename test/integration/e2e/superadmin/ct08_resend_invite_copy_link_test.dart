@@ -27,10 +27,15 @@ void main() {
     late TestOrgData testOrg;
     late TestOrgData testOrgNoPending;
     bool supabaseAvailable = false;
+    bool edgeFunctionsAvailable = false;
 
     setUpAll(() async {
       supabaseAvailable = await SuperAdminTestConfig.isSupabaseRunning();
       if (!supabaseAvailable) return;
+
+      edgeFunctionsAvailable =
+          await SuperAdminTestConfig.isEdgeFunctionsRunning();
+      if (!edgeFunctionsAvailable) return;
 
       // Criar org com 1 admin ativo e 1 admin pendente para testes de botões
       testOrg = await SuperAdminDataFactory.createOrgWithAdmins(
@@ -51,54 +56,64 @@ void main() {
 
     tearDownAll(() async {
       if (!supabaseAvailable) return;
+      if (!edgeFunctionsAvailable) return;
       await SuperAdminDataFactory.cleanup(testOrg);
       await SuperAdminDataFactory.cleanup(testOrgNoPending);
     });
 
-    testWidgets(
-      '2.1 Botão Copiar Link visível e habilitado para Admin_Pendente',
-      (tester) async {
-        if (!supabaseAvailable) {
-          markTestSkipped('Supabase local não disponível.');
-          return;
-        }
+    testWidgets('2.1 Botão Copiar Link visível e habilitado para Admin_Pendente', (
+      tester,
+    ) async {
+      if (!supabaseAvailable) {
+        markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
+        return;
+      }
 
-        await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
-        await SuperAdminNavigationHelper.goToTenantDetail(
-          tester,
-          testOrg.orgName,
-        );
-        await SuperAdminNavigationHelper.goToUsersTab(tester);
+      await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
+      await SuperAdminNavigationHelper.goToTenantDetail(
+        tester,
+        testOrg.orgName,
+      );
+      await SuperAdminNavigationHelper.goToUsersTab(tester);
 
-        // Verificar que o botão de copiar link (ícone prancheta) está visível
-        final copyButton = find.byTooltip('Copiar link de convite');
-        expect(
-          copyButton,
-          findsAtLeast(1),
-          reason:
-              'O botão "Copiar link de convite" deve estar visível para '
-              'Admin_Pendente (Req 2.1)',
-        );
+      // Verificar que o botão de copiar link (ícone prancheta) está visível
+      final copyButton = find.byTooltip('Copiar link de convite');
+      expect(
+        copyButton,
+        findsAtLeast(1),
+        reason:
+            'O botão "Copiar link de convite" deve estar visível para '
+            'Admin_Pendente (Req 2.1)',
+      );
 
-        // Verificar que o botão está habilitado (IconButton com onPressed != null)
-        final iconButton = tester.widget<IconButton>(
-          find
-              .ancestor(of: copyButton, matching: find.byType(IconButton))
-              .first,
-        );
-        expect(
-          iconButton.onPressed,
-          isNotNull,
-          reason: 'O botão de Copiar Link deve estar habilitado (Req 2.1)',
-        );
-      },
-    );
+      // Verificar que o botão está habilitado (IconButton com onPressed != null)
+      final iconButton = tester.widget<IconButton>(
+        find.ancestor(of: copyButton, matching: find.byType(IconButton)).first,
+      );
+      expect(
+        iconButton.onPressed,
+        isNotNull,
+        reason: 'O botão de Copiar Link deve estar habilitado (Req 2.1)',
+      );
+    });
 
     testWidgets(
       '2.2 Botão Reenviar Convite visível e habilitado para Admin_Pendente',
       (tester) async {
         if (!supabaseAvailable) {
           markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+        if (!edgeFunctionsAvailable) {
+          markTestSkipped(
+            'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+          );
           return;
         }
 
@@ -138,6 +153,12 @@ void main() {
       (tester) async {
         if (!supabaseAvailable) {
           markTestSkipped('Supabase local não disponível.');
+          return;
+        }
+        if (!edgeFunctionsAvailable) {
+          markTestSkipped(
+            'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+          );
           return;
         }
 
@@ -208,6 +229,12 @@ void main() {
         markTestSkipped('Supabase local não disponível.');
         return;
       }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
+        return;
+      }
 
       await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
       await SuperAdminNavigationHelper.goToTenantDetail(
@@ -251,6 +278,12 @@ void main() {
         markTestSkipped('Supabase local não disponível.');
         return;
       }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
+        return;
+      }
 
       await SuperAdminAuthHelper.loginAsSuperAdmin(tester);
       await SuperAdminNavigationHelper.goToTenantDetail(
@@ -275,6 +308,12 @@ void main() {
     ) async {
       if (!supabaseAvailable) {
         markTestSkipped('Supabase local não disponível.');
+        return;
+      }
+      if (!edgeFunctionsAvailable) {
+        markTestSkipped(
+          'Edge Functions não disponíveis (verifique supabase_edge_runtime_veraprob).',
+        );
         return;
       }
 

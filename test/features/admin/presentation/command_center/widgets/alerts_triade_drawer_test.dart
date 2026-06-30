@@ -304,7 +304,7 @@ void main() {
         await buildHost(tester, alertsFactory: _ErrorActiveAlertsNotifier.new);
         await tester.pump();
         expect(
-          find.textContaining('Erro ao carregar alertas:'),
+          find.text('Não foi possível carregar os alertas.'),
           findsOneWidget,
         );
       },
@@ -447,8 +447,10 @@ void main() {
         alertHigh(id: 'a2', extraContext: {'driver_id': 'driver-duo'}),
       ]);
       await tester.pump();
-      // count == 2 ≤ 2 → auto-expanded → two Reconciliar buttons
-      expect(find.text('Reconciliar'), findsNWidgets(2));
+      await tester.pumpAndSettle();
+      // count == 2 ≤ 2 → auto-expanded → one Reconciliar (NO_SHOW) and one Diagnóstico (EVIDENCE_GAP)
+      expect(find.text('Reconciliar'), findsOneWidget);
+      expect(find.text('Diagnóstico'), findsOneWidget);
     });
 
     testWidgets('card com 3+ alertas inicia colapsado', (tester) async {

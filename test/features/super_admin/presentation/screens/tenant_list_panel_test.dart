@@ -222,7 +222,7 @@ void _testHappyPath() {
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('API Error'), findsOneWidget);
+      expect(find.textContaining('Não foi possível carregar'), findsOneWidget);
       // E2E navigation helper uses this key to detect error state and fail fast
       expect(find.byKey(TenantListPanel.tenantListErrorKey), findsOneWidget);
       expect(find.byKey(TenantListPanel.tenantListViewKey), findsNothing);

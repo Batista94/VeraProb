@@ -327,8 +327,10 @@ void main() {
 
         // Verify SnackBar
         expect(find.byType(SnackBar), findsOneWidget);
-        expect(find.textContaining('Erro ao revogar'), findsOneWidget);
-        expect(find.textContaining('Network Error'), findsOneWidget);
+        expect(
+          find.textContaining('Falha ao encerrar sessão.'),
+          findsOneWidget,
+        );
 
         // Verify banner is still visible
         expect(find.textContaining('MODO IMPERSONATION'), findsOneWidget);

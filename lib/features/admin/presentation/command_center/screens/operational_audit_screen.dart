@@ -137,7 +137,7 @@ class _OperationalAuditScreenState
                             tabAlignment: TabAlignment.start,
                             tabs: [
                               Tab(text: '📋 Fila de Exceções'),
-                              Tab(text: '🔗 Triagem de Órfãos'),
+                              Tab(text: '🔗 Execuções Não Reconciliadas'),
                             ],
                           ),
                         ),
@@ -447,64 +447,76 @@ class _AuditTab extends ConsumerWidget {
 
     return switch (projectionAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Text(
-          'Erro ao carregar auditoria: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar os registros de auditoria.',
+          style: TextStyle(color: VeraProbColors.error),
           textAlign: TextAlign.center,
         ),
       ),
-      AsyncData(:final value) => () {
-        if (value.entries.isEmpty) {
-          if (filters.silentMode) {
-            return const Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 48,
-                    color: VeraProbColors.success,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    '✅ Nenhuma exceção ativa',
-                    style: TextStyle(
-                      color: VeraProbColors.success,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Todas as viagens estão dentro dos parâmetros',
-                    style: TextStyle(
-                      color: VeraProbColors.textSecondary,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          return const Center(
-            child: Text(
-              'Nenhum registro encontrado',
-              style: TextStyle(color: VeraProbColors.textSecondary),
-            ),
-          );
-        }
-
-        return ListView.builder(
-          itemCount: value.entries.length,
-          itemBuilder: (context, index) {
-            final log = value.entries[index];
-            final isSelected = selectedLog?.id == log.id;
-            return _buildRowItem(context, ref, log, index, isSelected);
-          },
-        );
-      }(),
+      AsyncData(:final value) => _buildAuditContent(
+        value,
+        filters,
+        selectedLog,
+        ref,
+      ),
     };
+  }
+
+  Widget _buildAuditContent(
+    AuditLogProjection value,
+    AuditFilterState filters,
+    AuditLogEntry? selectedLog,
+    WidgetRef ref,
+  ) {
+    if (value.entries.isEmpty) {
+      if (filters.silentMode) {
+        return const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline,
+                size: 48,
+                color: VeraProbColors.success,
+              ),
+              SizedBox(height: 12),
+              Text(
+                '✅ Nenhuma exceção ativa',
+                style: TextStyle(
+                  color: VeraProbColors.success,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'Todas as viagens estão dentro dos parâmetros',
+                style: TextStyle(
+                  color: VeraProbColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+      return const Center(
+        child: Text(
+          'Nenhum registro encontrado',
+          style: TextStyle(color: VeraProbColors.textSecondary),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: value.entries.length,
+      itemBuilder: (context, index) {
+        final log = value.entries[index];
+        final isSelected = selectedLog?.id == log.id;
+        return _buildRowItem(context, ref, log, index, isSelected);
+      },
+    );
   }
 }
 

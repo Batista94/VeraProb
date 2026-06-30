@@ -19,6 +19,8 @@ import 'occurrence_modal.dart';
 import 'package:veraprob/features/admin/presentation/command_center/utils/ui_command_dispatcher.dart';
 import 'event_tile_widget.dart';
 
+const Color _kDestructiveAction = Color(0xFFB71C1C);
+
 /// Detailed vehicle/trip drawer shown when an operator selects a trip.
 ///
 /// Contains:
@@ -92,9 +94,11 @@ class VehicleDetailDrawer extends ConsumerWidget {
                       padding: EdgeInsets.all(24),
                       child: Center(child: CircularProgressIndicator()),
                     ),
-                    AsyncError(:final error) => Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text('Erro ao carregar histórico: $error'),
+                    AsyncError() => const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Não foi possível carregar o histórico do veículo.',
+                      ),
                     ),
                   },
                 ],
@@ -455,7 +459,7 @@ class _ActionsSection extends ConsumerWidget {
           _ActionButton(
             icon: Icons.cancel_outlined,
             label: 'Cancelar Viagem',
-            color: const Color(0xFFB71C1C),
+            color: _kDestructiveAction,
             enabled: !trip.status.isTerminal,
             onTap: () => _confirmAction(
               context,
@@ -577,15 +581,19 @@ class _ActionButton extends StatelessWidget {
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 14, color: effectiveColor),
               const SizedBox(width: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: effectiveColor,
+              Flexible(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: effectiveColor,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

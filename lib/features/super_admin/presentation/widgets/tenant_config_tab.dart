@@ -222,30 +222,28 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   }
 
   /// Extract error message without importing domain types (INV-13).
-  /// Attempts to access .message property if available; falls back to toString().
-  String _extractErrorMessage(dynamic error) {
-    // Handle ProviderException by unwrapping the original exception
+  String _extractErrorMessage(Object error) {
     if (error.runtimeType.toString().contains('ProviderException')) {
       try {
-        final original = (error as dynamic).exception;
+        final original = (error as dynamic).exception as Object;
         return _extractErrorMessage(original);
       } catch (_) {
-        return error.toString();
+        return 'Falha ao processar solicitação. Tente novamente.';
       }
     }
-    // Try to access .message property without domain imports
     try {
       final msg = (error as dynamic).message;
       if (msg is String && msg.isNotEmpty) return msg;
-    } catch (_) {
-      // message property not available or not a string
-    }
-    return error.toString();
+    } catch (_) {}
+    return 'Falha ao processar solicitação. Tente novamente.';
   }
 
   Future<void> _copyToClipboard(String value) async {
+    final messenger = ScaffoldMessenger.of(context);
     await Clipboard.setData(ClipboardData(text: value));
-    _showSnackBar('Copiado para a área de transferência');
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Copiado para a área de transferência')),
+    );
   }
 
   void _addDomain() {
@@ -280,6 +278,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final messenger = ScaffoldMessenger.of(context);
     final reason = await showDialog<String>(
       context: context,
       builder: (_) =>
@@ -333,15 +332,19 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
 
       ref.invalidate(tenantHealthSnapshotProvider);
       await ref.read(tenantHealthSnapshotProvider.future);
-      _showSnackBar(
-        'Configurações atualizadas com sucesso.',
-        backgroundColor: VeraProbColors.success,
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Configurações atualizadas com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
       );
     } catch (e) {
       // Extract error message gracefully without domain imports (INV-13).
       // ProviderException wraps the original error; try to access its message property.
       final msg = _extractErrorMessage(e);
-      _showSnackBar(msg, backgroundColor: VeraProbColors.error);
+      messenger.showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
+      );
     }
   }
 

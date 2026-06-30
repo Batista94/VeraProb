@@ -4,6 +4,7 @@ import 'package:veraprob/application/admin/route_command_service_provider.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/features/admin/providers/routes_provider.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 import 'widgets/route_empty_state.dart';
@@ -12,6 +13,11 @@ import 'widgets/route_search_bar.dart';
 import 'widgets/route_skeleton.dart';
 import 'widgets/route_tab_header.dart';
 import 'widgets/route_table.dart';
+
+const TextStyle _kErrorBody = TextStyle(
+  fontSize: 16,
+  color: VeraProbColors.textSecondary,
+);
 
 class RoutesTab extends ConsumerStatefulWidget {
   const RoutesTab({super.key});
@@ -77,13 +83,7 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
                         ? const RouteEmptyState()
                         : _buildTable(value, userRole),
                   AsyncLoading() => const RouteSkeleton(),
-                  AsyncError(:final error) => () {
-                    LoggerService().error(
-                      'Falha ao carregar rotas',
-                      error: error,
-                    );
-                    return _buildErrorState();
-                  }(),
+                  AsyncError(:final error) => _buildAsyncError(error),
                 },
               ),
             ],
@@ -121,23 +121,30 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
     );
   }
 
+  Widget _buildAsyncError(Object error) {
+    LoggerService().error('Falha ao carregar rotas', error: error);
+    return _buildErrorState();
+  }
+
   Widget _buildErrorState() {
     return const Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
-            'Não foi possível carregar as rotas agora.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: VeraProbColors.textSecondary,
           ),
+          SizedBox(height: 12),
+          Text('Não foi possível carregar as rotas agora.', style: _kErrorBody),
         ],
       ),
     );
   }
 
   Future<void> _confirmDelete(BuildContext context, TransitRoute route) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -150,7 +157,9 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            style: FilledButton.styleFrom(
+              backgroundColor: VeraProbColors.error,
+            ),
             child: const Text('Excluir'),
           ),
         ],
@@ -160,25 +169,21 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
       try {
         await ref.read(routeCommandServiceProvider).deleteRoute(route.id);
         ref.invalidate(routesListProvider);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rota removida com sucesso.')),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Rota removida com sucesso.')),
+        );
       } catch (e, stack) {
         LoggerService().error(
           'Falha ao remover rota',
           error: e,
           stackTrace: stack,
         );
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Não foi possível remover a rota agora.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Não foi possível remover a rota agora.'),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }

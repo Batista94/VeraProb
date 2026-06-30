@@ -96,6 +96,7 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
   }
 
   Future<void> _escalateIncident() async {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _isEscalating = true);
     try {
       final session = ref.read(authStateProvider).value?.session;
@@ -114,14 +115,12 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
             jwtClaimsSnapshot: sanitizedClaims,
           );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Incidente de segurança escalado com sucesso.'),
-            backgroundColor: VeraProbColors.success,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Incidente de segurança escalado com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _isEscalating = false);
     }
@@ -316,9 +315,9 @@ class _RawEvidenceTab extends ConsumerWidget {
         const SizedBox(height: 16),
         switch (evidenceAsync) {
           AsyncLoading() => const Center(child: CircularProgressIndicator()),
-          AsyncError(:final error) => Text(
-            'Erro ao carregar evidências: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+          AsyncError() => const Text(
+            'Não foi possível carregar as evidências anexadas.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
           AsyncData(:final value) =>
             value.isEmpty
@@ -354,26 +353,26 @@ class _RawEvidenceTab extends ConsumerWidget {
         const SizedBox(height: 16),
         switch (tracesAsync) {
           AsyncLoading() => const Center(child: CircularProgressIndicator()),
-          AsyncError(:final error) => Text(
-            'Erro ao carregar avaliação do motor: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+          AsyncError() => const Text(
+            'Não foi possível carregar a avaliação do motor.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
-          AsyncData(:final value) => () {
-            final decisions = value.expand((t) => t.decisions).toList();
-            if (decisions.isEmpty) {
-              return const Text(
-                'Sem telemetria',
-                style: TextStyle(color: VeraProbColors.textDisabled),
-              );
-            }
-            return Column(
-              children: decisions
-                  .map((d) => _RawEvidenceCard(decision: d))
-                  .toList(),
-            );
-          }(),
+          AsyncData(:final value) => _buildDecisionList(value),
         },
       ],
+    );
+  }
+
+  Widget _buildDecisionList(List<EvaluationTrace> value) {
+    final decisions = value.expand((t) => t.decisions).toList();
+    if (decisions.isEmpty) {
+      return const Text(
+        'Sem telemetria',
+        style: TextStyle(color: VeraProbColors.textDisabled),
+      );
+    }
+    return Column(
+      children: decisions.map((d) => _RawEvidenceCard(decision: d)).toList(),
     );
   }
 }
@@ -721,12 +720,12 @@ class _CustodyChainTab extends ConsumerWidget {
 
     return switch (verificationAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Text(
-            'Erro ao carregar evidência: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+            'Não foi possível carregar a evidência de integridade.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
         ),
       ),
@@ -926,10 +925,11 @@ class _CustodyAuthenticView extends ConsumerWidget {
                     ),
                     tooltip: 'Copiar hash',
                     onPressed: () {
+                      final messenger = ScaffoldMessenger.of(context);
                       Clipboard.setData(
                         ClipboardData(text: snapshot.integrityHash),
                       );
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(
                           content: Text(
                             'Hash copiado para a área de transferência',
@@ -964,12 +964,12 @@ class _FrozenRuleTab extends ConsumerWidget {
 
     return switch (verificationAsync) {
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(24),
           child: Text(
-            'Erro ao carregar regra: $error',
-            style: const TextStyle(color: VeraProbColors.error),
+            'Não foi possível carregar as regras contratuais.',
+            style: TextStyle(color: VeraProbColors.error),
           ),
         ),
       ),
@@ -1244,11 +1244,10 @@ Widget _buildRuleConfigHuman(FrozenRuleView rule) {
       'Valor da Penalidade por No-Show',
       _formatFine((config['penalty_amount_cents'] as num?)?.toInt() ?? 0),
     ),
-    'REQUIRED_EVIDENCE' => () {
-      final typesList = config['types'] as List?;
-      final typesStr = typesList?.join(', ') ?? 'Nenhuma';
-      return _LockedRow('Evidências Obrigatórias', typesStr);
-    }(),
+    'REQUIRED_EVIDENCE' => _LockedRow(
+      'Evidências Obrigatórias',
+      (config['types'] as List?)?.join(', ') ?? 'Nenhuma',
+    ),
     _ => _LockedRow(
       'Configuração',
       config.entries.map((e) => '${e.key}: ${e.value}').join(', '),

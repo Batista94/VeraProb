@@ -3,6 +3,14 @@ import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 
+const double _kSuccessTitleFontSize = 18.0;
+const TextStyle _kMonospaceProtocolStyle = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 16,
+  fontWeight: FontWeight.w600,
+  color: VeraProbColors.textPrimary,
+);
+
 class DisputeSuccessView extends StatelessWidget {
   final DateTime submittedAtUtc;
   final String protocol;
@@ -44,7 +52,9 @@ class DisputeSuccessView extends StatelessWidget {
           const SizedBox(height: 24),
           Text(
             'Contestação Recebida com Sucesso',
-            style: VeraProbTypography.sectionTitle.copyWith(fontSize: 18),
+            style: VeraProbTypography.sectionTitle.copyWith(
+              fontSize: _kSuccessTitleFontSize,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
@@ -101,12 +111,7 @@ class DisputeSuccessView extends StatelessWidget {
         Text(
           value,
           style: isMonospace
-              ? const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: VeraProbColors.textPrimary,
-                )
+              ? _kMonospaceProtocolStyle
               : VeraProbTypography.dataValue.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

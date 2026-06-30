@@ -112,7 +112,10 @@ class GeofenceEvidenceMap extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: markerColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(
+                        color: VeraProbColors.textPrimary,
+                        width: 2,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: markerColor.withValues(alpha: 0.5),

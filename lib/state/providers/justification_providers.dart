@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/infrastructure/sla_audit/justification/file_service/justification_file_service.dart';
 import 'package:veraprob/application/sla_audit/justification/approve_justification_handler.dart';
+import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/state/notifiers/async_command_mixin.dart';
 import 'package:veraprob/application/sla_audit/justification/contextual_signature_analyzer.dart';
 import 'package:veraprob/application/sla_audit/justification/generate_justification_token_handler.dart';
@@ -11,7 +12,6 @@ import 'package:veraprob/application/sla_audit/justification/submit_justificatio
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/justification/forensic_throttle_gateway.dart';
-import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/justification_evidence_storage_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/justification/supabase_evidence_storage_reader.dart';
@@ -95,13 +95,15 @@ final justificationFileServiceProvider = Provider<JustificationFileService>(
 /// RLS enforces tenant isolation — no explicit org_id filter needed.
 /// INV-30: Client injected via supabaseClientProvider.
 final justificationListStreamProvider =
-    StreamProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
+    StreamProvider.autoDispose<List<JustificationSummary>>((ref) {
       return ref
           .watch(supabaseClientProvider)
           .from('contractor_justifications')
           .stream(primaryKey: ['id'])
           .order('created_at_utc', ascending: false)
-          .map((rows) => List<Map<String, dynamic>>.from(rows));
+          .map(
+            (rows) => rows.map(JustificationSummary.fromRealtimeRow).toList(),
+          );
     });
 
 // ── Derived badge count ───────────────────────────────────────────────────────
@@ -111,10 +113,7 @@ final justificationListStreamProvider =
 final pendingJustificationsCountProvider = Provider.autoDispose<int>((ref) {
   final justificationsAsync = ref.watch(justificationListStreamProvider);
   return switch (justificationsAsync) {
-    AsyncData(:final value) =>
-      value
-          .where((r) => r['status'] == JustificationStatus.pending.dbValue)
-          .length,
+    AsyncData(:final value) => value.where((j) => j.isPending).length,
     AsyncError() => 0,
     AsyncLoading() => 0,
   };

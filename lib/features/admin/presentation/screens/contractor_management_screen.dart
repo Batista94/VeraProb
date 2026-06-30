@@ -97,109 +97,14 @@ class _ContractorManagementScreenState
             const SizedBox(height: 16),
             Expanded(
               child: switch (contractorsAsync) {
-                AsyncData(:final value) => () {
-                  final all = value;
-                  final contractors = _filterContractors(all);
-                  if (all.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.handshake_outlined,
-                            size: 64,
-                            color: VeraProbColors.textDisabled.withValues(
-                              alpha: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Nenhum contratante cadastrado ainda.',
-                            style: VeraProbTypography.bodyMedium.copyWith(
-                              color: VeraProbColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          FilledButton(
-                            onPressed: () => _showForm(context),
-                            child: const Text('Cadastrar Primeiro'),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  if (contractors.isEmpty) {
-                    return Center(
-                      child: Text(
-                        'Nenhum resultado para "$_searchQuery".',
-                        style: VeraProbTypography.bodyMedium.copyWith(
-                          color: VeraProbColors.textSecondary,
-                        ),
-                      ),
-                    );
-                  }
-
-                  return ListView.separated(
-                    itemCount: contractors.length,
-                    separatorBuilder: (context, index) =>
-                        const Divider(color: VeraProbColors.border),
-                    itemBuilder: (context, index) {
-                      final contractor = contractors[index];
-                      return ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: VeraProbColors.primary.withValues(
-                              alpha: 0.1,
-                            ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Icon(
-                            Icons.business,
-                            color: VeraProbColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        title: Text(
-                          contractor.name,
-                          style: VeraProbTypography.kpiLabel,
-                        ),
-                        subtitle: Text(
-                          '${contractor.contactName} · ${contractor.primaryEmail}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit_outlined, size: 20),
-                              tooltip: 'Editar',
-                              onPressed: () =>
-                                  _showForm(context, existing: contractor),
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: VeraProbColors.error,
-                                size: 20,
-                              ),
-                              tooltip: 'Deletar',
-                              onPressed: () =>
-                                  _confirmDelete(context, contractor),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                }(),
+                AsyncData(:final value) => _buildList(context, value),
                 AsyncLoading() => const Center(
                   child: CircularProgressIndicator(),
                 ),
-                AsyncError(:final error) => Center(
+                AsyncError() => const Center(
                   child: Text(
-                    'Erro ao carregar contratantes: $error',
-                    style: const TextStyle(color: VeraProbColors.error),
+                    'Não foi possível carregar a lista de contratantes.',
+                    style: TextStyle(color: VeraProbColors.error),
                   ),
                 ),
               },
@@ -207,6 +112,93 @@ class _ContractorManagementScreenState
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildList(BuildContext context, List<ContractorView> all) {
+    final contractors = _filterContractors(all);
+    if (all.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.handshake_outlined,
+              size: 64,
+              color: VeraProbColors.textDisabled.withValues(alpha: 0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Nenhum contratante cadastrado ainda.',
+              style: VeraProbTypography.bodyMedium.copyWith(
+                color: VeraProbColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton(
+              onPressed: () => _showForm(context),
+              child: const Text('Cadastrar Primeiro'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (contractors.isEmpty) {
+      return Center(
+        child: Text(
+          'Nenhum resultado para "$_searchQuery".',
+          style: VeraProbTypography.bodyMedium.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
+        ),
+      );
+    }
+
+    return ListView.separated(
+      itemCount: contractors.length,
+      separatorBuilder: (context, index) =>
+          const Divider(color: VeraProbColors.border),
+      itemBuilder: (context, index) {
+        final contractor = contractors[index];
+        return ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VeraProbColors.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.business,
+              color: VeraProbColors.primary,
+              size: 20,
+            ),
+          ),
+          title: Text(contractor.name, style: VeraProbTypography.kpiLabel),
+          subtitle: Text(
+            '${contractor.contactName} · ${contractor.primaryEmail}',
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                tooltip: 'Editar',
+                onPressed: () => _showForm(context, existing: contractor),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: VeraProbColors.error,
+                  size: 20,
+                ),
+                tooltip: 'Deletar',
+                onPressed: () => _confirmDelete(context, contractor),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -220,6 +212,7 @@ class _ContractorManagementScreenState
     BuildContext context,
     ContractorView contractor,
   ) async {
+    final messenger = ScaffoldMessenger.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -259,23 +252,21 @@ class _ContractorManagementScreenState
             );
         ref.invalidate(contractorListProvider);
 
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contratante removido.'),
-              backgroundColor: VeraProbColors.success,
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Contratante removido com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível remover o contratante. Verifique dependências e tente novamente.',
             ),
-          );
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro: $e'),
-              backgroundColor: VeraProbColors.error,
-            ),
-          );
-        }
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
       }
     }
   }

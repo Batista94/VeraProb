@@ -208,11 +208,11 @@ class _SlaTemplateEditorDialogState
 
       ref.invalidate(slaTemplatesProvider);
       if (mounted) navigator.pop(SlaTemplateView.fromDomain(saved));
-    } catch (e) {
+    } catch (_) {
       if (mounted) {
         messenger.showSnackBar(
-          SnackBar(
-            content: Text('Erro ao salvar: $e'),
+          const SnackBar(
+            content: Text('Não foi possível salvar as alterações.'),
             backgroundColor: VeraProbColors.error,
           ),
         );

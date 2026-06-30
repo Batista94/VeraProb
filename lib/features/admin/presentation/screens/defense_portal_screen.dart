@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'justification_detail_drawer.dart';
 import 'justification_submission_form.dart';
 import 'widgets/justification_status_badge.dart';
@@ -50,42 +52,33 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: switch (listAsync) {
-              AsyncData(:final value) => () {
+            child: AsyncValueWidget(
+              asyncValue: listAsync,
+              loading: () => const SkeletonListLoader(),
+              data: (value) {
                 final filtered = _applyFilters(value);
                 if (filtered.isEmpty) return const _EmptyState();
                 return _JustificationTable(rows: filtered);
-              }(),
-              AsyncLoading() => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              AsyncError(:final error) => Center(
-                child: Text(
-                  'Erro ao carregar justificativas: $error',
-                  style: const TextStyle(color: VeraProbColors.error),
-                ),
-              ),
-            },
+              },
+            ),
           ),
         ],
       ),
     );
   }
 
-  List<Map<String, dynamic>> _applyFilters(List<Map<String, dynamic>> rows) {
+  List<JustificationSummary> _applyFilters(List<JustificationSummary> rows) {
     var result = rows;
     if (_filterStatus != null) {
-      result = result
-          .where((r) => r['status'] == _filterStatus!.dbValue)
-          .toList();
+      result = result.where((j) => j.status == _filterStatus).toList();
     }
     final q = _searchController.text.trim().toLowerCase();
     if (q.isNotEmpty) {
       result = result
           .where(
-            (r) =>
-                (r['contract_id'] as String? ?? '').toLowerCase().contains(q) ||
-                (r['set_id'] as String? ?? '').toLowerCase().contains(q),
+            (j) =>
+                (j.contractId ?? '').toLowerCase().contains(q) ||
+                (j.setId ?? '').toLowerCase().contains(q),
           )
           .toList();
     }
@@ -96,7 +89,7 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
 // ── Header ────────────────────────────────────────────────────────────────────
 
 class _Header extends ConsumerStatefulWidget {
-  final AsyncValue<List<Map<String, dynamic>>> listAsync;
+  final AsyncValue<List<JustificationSummary>> listAsync;
   const _Header({required this.listAsync});
 
   @override
@@ -107,22 +100,18 @@ class _HeaderState extends ConsumerState<_Header> {
   @override
   Widget build(BuildContext context) {
     final pendingCount = switch (widget.listAsync) {
-      AsyncData(:final value) =>
-        value
-            .where((r) => r['status'] == JustificationStatus.pending.dbValue)
-            .length,
+      AsyncData(:final value) => value.where((j) => j.isPending).length,
       AsyncError() => 0,
       AsyncLoading() => 0,
     };
 
-    return Row(
-      children: [
-        const Icon(Icons.shield_outlined, color: VeraProbColors.primary),
-        const SizedBox(width: 12),
-        Text('Portal Defesa', style: VeraProbTypography.sectionTitle),
-        const SizedBox(width: 12),
+    return VeraProbHeader(
+      icon: Icons.shield_outlined,
+      title: 'Portal Defesa',
+      actions: [
         if (pendingCount > 0)
           Container(
+            margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.12),
@@ -135,7 +124,6 @@ class _HeaderState extends ConsumerState<_Header> {
               ),
             ),
           ),
-        const Spacer(),
         FilledButton.icon(
           onPressed: () => showDialog<void>(
             context: context,
@@ -224,36 +212,36 @@ class _FilterBar extends StatelessWidget {
 // ── Table ─────────────────────────────────────────────────────────────────────
 
 class _JustificationTable extends StatelessWidget {
-  final List<Map<String, dynamic>> rows;
+  final List<JustificationSummary> rows;
   const _JustificationTable({required this.rows});
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: DataTable(
-        headingTextStyle: VeraProbTypography.caption.copyWith(
-          color: VeraProbColors.textSecondary,
-          letterSpacing: 1.1,
+    return PanelContainer(
+      padding: EdgeInsets.zero,
+      child: SingleChildScrollView(
+        child: DataTable(
+          headingTextStyle: VeraProbTypography.caption.copyWith(
+            color: VeraProbColors.textSecondary,
+            letterSpacing: 1.1,
+          ),
+          dataRowMinHeight: 48,
+          dataRowMaxHeight: 48,
+          columns: const [
+            DataColumn(label: Text('CONTRATO')),
+            DataColumn(label: Text('SET ID')),
+            DataColumn(label: Text('CATEGORIA')),
+            DataColumn(label: Text('ENVIADO EM')),
+            DataColumn(label: Text('STATUS')),
+          ],
+          rows: rows.map((r) => _buildRow(context, r)).toList(),
         ),
-        dataRowMinHeight: 48,
-        dataRowMaxHeight: 48,
-        columns: const [
-          DataColumn(label: Text('CONTRATO')),
-          DataColumn(label: Text('SET ID')),
-          DataColumn(label: Text('CATEGORIA')),
-          DataColumn(label: Text('ENVIADO EM')),
-          DataColumn(label: Text('STATUS')),
-        ],
-        rows: rows.map((r) => _buildRow(context, r)).toList(),
       ),
     );
   }
 
-  DataRow _buildRow(BuildContext context, Map<String, dynamic> row) {
-    final status = JustificationStatus.fromDb(row['status'] as String);
-    final createdAt = DateTime.tryParse(
-      row['created_at_utc'] as String? ?? '',
-    )?.toLocal();
+  DataRow _buildRow(BuildContext context, JustificationSummary row) {
+    final createdAt = row.createdAtUtc?.toLocal();
     final dateStr = createdAt != null
         ? '${createdAt.day.toString().padLeft(2, '0')}/'
               '${createdAt.month.toString().padLeft(2, '0')} '
@@ -261,8 +249,7 @@ class _JustificationTable extends StatelessWidget {
               '${createdAt.minute.toString().padLeft(2, '0')}'
         : '-';
 
-    final categoryRaw = (row['category'] as String? ?? '').toLowerCase();
-    final categoryLabel = _categoryLabel(categoryRaw);
+    final contractId = row.contractId ?? '-';
 
     return DataRow(
       onSelectChanged: (_) => showGeneralDialog(
@@ -271,16 +258,14 @@ class _JustificationTable extends StatelessWidget {
         barrierLabel: 'Fechar',
         barrierColor: Colors.black54,
         pageBuilder: (ctx, anim, secAnim) =>
-            JustificationDetailDrawer(row: row),
+            JustificationDetailDrawer(summary: row),
       ),
       cells: [
         DataCell(
           Text(
-            (row['contract_id'] as String? ?? '-').substring(
+            contractId.substring(
               0,
-              (row['contract_id'] as String? ?? '-').length > 8
-                  ? 8
-                  : (row['contract_id'] as String? ?? '-').length,
+              contractId.length > 8 ? 8 : contractId.length,
             ),
             style: const TextStyle(
               fontFamily: 'monospace',
@@ -289,28 +274,12 @@ class _JustificationTable extends StatelessWidget {
             ),
           ),
         ),
-        DataCell(
-          Text(
-            row['set_id'] as String? ?? '-',
-            style: const TextStyle(fontSize: 13),
-          ),
-        ),
-        DataCell(Text(categoryLabel, style: const TextStyle(fontSize: 13))),
+        DataCell(Text(row.setId ?? '-', style: const TextStyle(fontSize: 13))),
+        DataCell(Text(row.categoryLabel, style: const TextStyle(fontSize: 13))),
         DataCell(Text(dateStr, style: const TextStyle(fontSize: 13))),
-        DataCell(JustificationStatusBadge(status: status)),
+        DataCell(JustificationStatusBadge(status: row.status)),
       ],
     );
-  }
-
-  String _categoryLabel(String raw) {
-    return switch (raw) {
-      'mechanical' => 'Mecânico',
-      'force_majeure' => 'Força Maior',
-      'traffic' => 'Trânsito',
-      'route_deviation' => 'Desvio de Rota',
-      'communication' => 'Comunicação',
-      _ => 'Outro',
-    };
   }
 }
 

@@ -11,7 +11,8 @@
   ],
   "resources": [
     "skill://supabase-postgres-best-practices",
-    "skill://iot-chaos-simulator"
+    "skill://iot-chaos-simulator",
+    "skill://ponytail"
   ],
   "steering": [
     "file://../steering/forensic-standards.md",

@@ -5,6 +5,43 @@ All notable changes to VeraProb will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - Phase 10.6: Ingestion Health Monitor & Signal Integrity
+
+Branch `feature/sparklines`. Uncommitted.
+
+### Added
+
+- **Ingestion Health Monitor screen** (`IngestionHealthScreen`): real-time fleet connectivity dashboard with per-vehicle telemetry gap analysis. Sorted worst-first by RPC (`get_fleet_health_status` SECURITY DEFINER — INV-1, INV-2, INV-26).
+- **`FleetHealthSummaryBar`** widget: KPI chips (Saudável / Atrasado / Offline / Nunca Visto + phantom devices) + `LinearProgressIndicator` for fleet active ratio. Industrial Dark palette compliance (Emerald/Amber/Rose/Zinc).
+- **`VehicleHealthCard`** widget: per-vehicle card displaying plate, device ID, gap seconds, integrity score, anomaly count, and hardware status color-coded chip.
+- **`fleet_health_providers.dart`**: `fleetHealthProvider` (AutoDispose AsyncNotifier) + `fleetHealthRefreshProvider` (NotifierProvider for manual refresh).
+- **`FleetHealthQueryService`** interface + **`SupabaseFleetHealthQueryService`** implementation: maps RPC rows to `FleetHealthView`/`VehicleHealthEntry` VOs; `HardwareStatus` (domain) → `HardwareStatusView` (application VO) mapping.
+- **`FleetHealthView`** + **`VehicleHealthEntry`**: Equatable read models in application layer. `fleetActiveRatioBps: int` (0–10,000 basis points) — replaces `double` to clear FINANCIAL-BLOCK scanner rule and match `integrityScoreBps` WS-9 convention.
+- **`HardwareStatusView`** enum in `fleet_health_view.dart`: application-layer view model for hardware status (INV-13 — prevents domain import in `lib/features/`). Portuguese `.label` getters.
+- **`20260902000001_fleet_health_status_rpc.sql`**: `get_fleet_health_status(uuid, int, int)` RPC with gap classification, integrity scoring, phantom device detection.
+- **`20260902000002_extend_alert_type_check.sql`**: widens `valid_alert_type` CHECK to include `TELEMETRY_SILENT` (9 total types); widens `chk_alert_driver_attribution` exemption list; constraint remains intentionally NOT VALID (pre-existing rows predate driver attribution).
+- **pgTAP test files** for both migrations: 9 assertions each (C/D categories), including regression guards for all 9 valid alert types.
+- **`[UX] Financial Sparklines`**: `SparklineWidget` + `_SparklinePainter` (CustomPaint, no chart lib), `sparklineWindowProvider` (7d/30d toggle), `financialSparklineProvider` (FutureProvider.family), `get_financial_trend_sparkline` RPC (`20260901000005`), 11 pgTAP TCs, 5 widget tests.
+
+### Changed
+
+- `alerts_triade_drawer.dart` + `app_router.dart` + `app_routes.dart`: Ingestion Health Monitor wired into admin nav (modified, uncommitted).
+
+### Fixed
+
+- **FINANCIAL-BLOCK false positive** (`fleet_health_view.dart`): `double fleetActiveRatio` replaced by `int fleetActiveRatioBps` (bps convention). Clears scanner BLOCK without suppression.
+- **CHECK widening regression** (`20260902000002`): initial draft silently dropped 4 established alert types when rebuilding `valid_alert_type` CHECK from scratch. Fixed by carrying all 9 prior types forward. Regression guards C2-C4 prevent recurrence.
+
+### Forensic Invariants
+
+- **INV-1**: `p_organization_id` explicit param on all new RPCs.
+- **INV-2**: All RPCs SECURITY DEFINER; views `WITH (security_invoker = true)`.
+- **INV-7**: `HardwareStatusView` VO eliminates `dynamic` in mapping; `fleetActiveRatioBps: int` eliminates `double` in application layer.
+- **INV-13**: `features/` imports only `HardwareStatusView` (application VO), never `HardwareStatus` (domain).
+- **INV-26**: RPC returns 0 rows on org mismatch (not error).
+
+---
+
 ## [Unreleased] - Database Privilege Hardening & Forensic Trust Roots
 
 CIA sweep (2026-06-10, merged in `88a43946` + `ea7917a4`). Closed a critical mass-deletion

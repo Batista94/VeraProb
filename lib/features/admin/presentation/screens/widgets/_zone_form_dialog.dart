@@ -166,6 +166,8 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
       _errorMessage = null;
     });
 
+    final navigator = Navigator.of(context);
+
     try {
       // Resilient session recovery: attempt token refresh before giving up
       final orgId = await SessionRecovery.ensureOrgIdWidget(ref);
@@ -213,13 +215,15 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
 
       await saveZone(zone, ref);
       if (!mounted || _isCancelled) return;
-      Navigator.of(context).pop(zone);
+      navigator.pop(zone);
     } on DomainException catch (e) {
       if (!mounted || _isCancelled) return;
       setState(() => _errorMessage = e.message);
-    } catch (e) {
+    } catch (_) {
       if (!mounted || _isCancelled) return;
-      setState(() => _errorMessage = 'Erro inesperado: $e');
+      setState(
+        () => _errorMessage = 'Ocorreu um erro inesperado ao salvar a zona.',
+      );
     } finally {
       if (mounted && !_isCancelled) {
         setState(() => _isSubmitting = false);

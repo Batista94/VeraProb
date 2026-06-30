@@ -11,11 +11,13 @@ import 'package:veraprob/presentation/shell/widgets/onboarding_progress_banner.d
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/dashboard_risk_feed_provider.dart';
 import 'package:veraprob/state/providers/sla_financial_providers.dart';
+import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
+import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
 
 /// Tier-1 OCC dashboard: an asymmetric Bento grid prioritising actionable
@@ -41,7 +43,10 @@ class DashboardScreen extends ConsumerWidget {
         );
 
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          padding: const EdgeInsets.symmetric(
+            horizontal: VeraProbSpacing.xl,
+            vertical: VeraProbSpacing.lg,
+          ),
           children: [
             AnimatedSize(
               duration: const Duration(milliseconds: 300),
@@ -161,55 +166,99 @@ class _DashboardHeader extends StatelessWidget {
 }
 
 /// Telemetry confidence promoted from the app-bar badge to a full KPI cell.
-class _TelemetryConfidenceCard extends ConsumerWidget {
+///
+/// Interactive: hover highlights border; tap navigates to ingestion-health.
+class _TelemetryConfidenceCard extends ConsumerStatefulWidget {
   const _TelemetryConfidenceCard();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_TelemetryConfidenceCard> createState() =>
+      _TelemetryConfidenceCardState();
+}
+
+class _TelemetryConfidenceCardState
+    extends ConsumerState<_TelemetryConfidenceCard> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
     final health = ref.watch(feedHealthProjectionProvider);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surfaceElevated,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      cursor: SystemMouseCursors.click,
+      child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: health.color.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        onTap: () => context.go(AppRoutes.ingestionHealth),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: VeraProbColors.surfaceElevated,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _hovered
+                  ? health.color.withValues(alpha: 0.6)
+                  : health.color.withValues(alpha: 0.25),
+              width: _hovered ? 1.5 : 1.0,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.sensors_rounded, size: 16, color: health.color),
-              const SizedBox(width: 8),
+              Row(
+                children: [
+                  Icon(Icons.sensors_rounded, size: 16, color: health.color),
+                  const SizedBox(width: 8),
+                  Text(
+                    'SAÚDE DA INGESTÃO DE TELEMETRIA',
+                    style: VeraProbTypography.kpiLabel,
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.open_in_new,
+                    size: 12,
+                    color: VeraProbColors.textSecondary.withValues(
+                      alpha: _hovered ? 1.0 : 0.4,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: health.color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    health.label.toUpperCase(),
+                    style: VeraProbTypography.kpiValue.copyWith(
+                      color: health.color,
+                      fontSize: 24,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: VeraProbSpacing.xs),
               Text(
-                'SAÚDE DA INGESTÃO DE TELEMETRIA',
-                style: VeraProbTypography.kpiLabel,
+                'Ver detalhes →',
+                style: VeraProbTypography.kpiLabel.copyWith(
+                  color: VeraProbColors.textSecondary.withValues(
+                    alpha: _hovered ? 0.8 : 0.0,
+                  ),
+                  fontSize: 10,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: health.color,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                health.label.toUpperCase(),
-                style: VeraProbTypography.kpiValue.copyWith(
-                  color: health.color,
-                  fontSize: 24,
-                ),
-              ),
-            ],
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -223,6 +272,7 @@ class _DevSeedButton extends ConsumerWidget {
   Future<void> _seedData(BuildContext context, WidgetRef ref) async {
     final organizationId = ref.read(currentOrganizationIdProvider);
     if (organizationId == null) return;
+    final messenger = ScaffoldMessenger.of(context);
     try {
       final repository = ref.read(dataSeedingRepositoryProvider);
       await repository.seedCsvData(organizationId);
@@ -230,7 +280,15 @@ class _DevSeedButton extends ConsumerWidget {
       await repository.seedRoutes(organizationId);
       await repository.seedHistoricalData(organizationId);
       await repository.seedActiveSanctions(organizationId);
+      await runSanctionSimulation(
+        ref,
+        organizationId: organizationId,
+        vehiclePlate: 'VPR-0001',
+      );
       await repository.seedPhase9(organizationId);
+      await ref
+          .read(simulationSeedServiceProvider)
+          .seedFinancialSnapshots(organizationId);
 
       // Invalidate cached providers so the onboarding checklist updates
       ref.invalidate(contractorListProvider);
@@ -238,23 +296,20 @@ class _DevSeedButton extends ConsumerWidget {
       ref.invalidate(contractListProvider);
       ref.invalidate(slaTemplatesProvider);
       ref.invalidate(financialImpactProvider);
+      ref.invalidate(financialSparklineProvider);
       ref.invalidate(dashboardRiskFeedProvider);
       ref.invalidate(activeAlertsProvider);
 
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Dados de teste inseridos.')),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erro ao inserir dados: $e'),
-            backgroundColor: VeraProbColors.error,
-          ),
-        );
-      }
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Dados de teste inseridos.')),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Erro ao inserir dados de simulação. Tente novamente.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     }
   }
 

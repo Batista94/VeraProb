@@ -8,6 +8,15 @@ import 'package:veraprob/features/super_admin/presentation/widgets/audit_categor
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 import 'package:intl/intl.dart';
 
+const _kErrorText = TextStyle(color: VeraProbColors.error);
+const _kEmptyText = TextStyle(color: VeraProbColors.textSecondary);
+const _kSectionLabel = TextStyle(fontWeight: FontWeight.bold, fontSize: 12);
+const _kMonoPayloadText = TextStyle(
+  fontFamily: 'monospace',
+  fontSize: 10,
+  color: VeraProbColors.textSecondary,
+);
+
 /// UUID v4 regex for validating SuperAdmin actor IDs.
 final _uuidRegExp = RegExp(
   r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
@@ -27,45 +36,43 @@ class TenantAuditTab extends ConsumerWidget {
     final auditLogsAsync = ref.watch(systemAuditLogProvider(params));
 
     return switch (auditLogsAsync) {
-      AsyncData(:final value) => () {
-        final logs = value;
-        if (logs.isEmpty) {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.history_outlined,
-                  size: 48,
-                  color: VeraProbColors.textDisabled,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Nenhum evento de auditoria encontrado.',
-                  style: TextStyle(color: VeraProbColors.textSecondary),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: logs.length,
-          itemBuilder: (context, index) {
-            final log = logs[index];
-            return _AuditLogItem(log: log);
-          },
-        );
-      }(),
+      AsyncData(:final value) => _buildLogList(value),
       AsyncLoading() => const Center(child: CircularProgressIndicator()),
-      AsyncError(:final error) => Center(
+      AsyncError() => const Center(
         child: Text(
-          'Erro ao carregar logs: $error',
-          style: const TextStyle(color: VeraProbColors.error),
+          'Não foi possível carregar os registros de auditoria.',
+          style: _kErrorText,
         ),
       ),
     };
+  }
+
+  Widget _buildLogList(List<SystemAuditLogView> logs) {
+    if (logs.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history_outlined,
+              size: 48,
+              color: VeraProbColors.textDisabled,
+            ),
+            SizedBox(height: 16),
+            Text('Nenhum evento de auditoria encontrado.', style: _kEmptyText),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: logs.length,
+      itemBuilder: (context, index) {
+        final log = logs[index];
+        return _AuditLogItem(log: log);
+      },
+    );
   }
 }
 
@@ -129,10 +136,7 @@ class _AuditLogItem extends StatelessWidget {
           if (log.source != null)
             _DetailRow(label: 'Origem', value: log.source!),
           const SizedBox(height: 8),
-          const Text(
-            'Justificativa:',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          ),
+          const Text('Justificativa:', style: _kSectionLabel),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.all(12),
@@ -160,10 +164,7 @@ class _AuditLogItem extends StatelessWidget {
             ),
           if (log.payload != null && log.payload!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text(
-              'Payload:',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
+            const Text('Payload:', style: _kSectionLabel),
             const SizedBox(height: 4),
             Container(
               padding: const EdgeInsets.all(8),
@@ -172,14 +173,7 @@ class _AuditLogItem extends StatelessWidget {
                 color: Colors.black.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
-              child: Text(
-                log.payload.toString(),
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 10,
-                  color: VeraProbColors.textSecondary,
-                ),
-              ),
+              child: Text(log.payload.toString(), style: _kMonoPayloadText),
             ),
           ],
         ],
@@ -302,15 +296,14 @@ class _CopyableIdRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: GestureDetector(
         onTap: () async {
+          final messenger = ScaffoldMessenger.of(context);
           await Clipboard.setData(ClipboardData(text: value));
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('ID copiado para a área de transferência'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('ID copiado para a área de transferência'),
+              duration: Duration(seconds: 2),
+            ),
+          );
         },
         child: Row(
           children: [

@@ -143,4 +143,4 @@ jobs:
         with:
           name: web-build-prod
           path: build/web/
-          retention-days: 30
+          retention-days: 1

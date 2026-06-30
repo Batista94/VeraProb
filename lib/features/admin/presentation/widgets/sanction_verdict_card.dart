@@ -1269,6 +1269,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
   }
 
   Future<void> _onRequestMoreProof(BuildContext context) async {
+    final messenger = ScaffoldMessenger.of(context);
     final userId = ref.read(currentOperatorIdProvider) ?? '';
     final email = ref.read(currentOperatorEmailProvider);
     final sessionId = ref.read(currentSessionIdProvider) ?? '';
@@ -1285,15 +1286,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     final actionState = ref.read(sanctionActionStateProvider(widget.item.id));
     if (actionState is AsyncData) {
       ref.invalidate(pendingSanctionsStreamProvider);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Solicitação enviada. Motorista será notificado para enviar prova forense.',
-            ),
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Solicitação enviada. Motorista será notificado para enviar prova forense.',
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -1413,6 +1412,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       return;
     }
 
+    final messenger = ScaffoldMessenger.of(context);
     setState(() {
       _isDossierLoading = true;
       _dossierError = null;
@@ -1480,8 +1480,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         fileExtension: 'pdf',
         mimeType: MimeType.pdf,
       );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(
           content: Text(
             sealed
@@ -1638,19 +1637,21 @@ class _RiskThermometerZone extends ConsumerWidget {
     return switch (windowAsync) {
       AsyncLoading() => const SizedBox(height: 80),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        final report = const SlaBreachRiskCalculator().evaluate(
-          windowStartUtc: value.start,
-          windowEndUtc: value.end,
-          currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
-        );
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: RiskThermometerWidget(report: report),
-        );
-      }(),
+      AsyncData(:final value) => _buildContent(value),
     };
+  }
+
+  Widget _buildContent(({DateTime start, DateTime end})? value) {
+    if (value == null) return const SizedBox.shrink();
+    final report = const SlaBreachRiskCalculator().evaluate(
+      windowStartUtc: value.start,
+      windowEndUtc: value.end,
+      currentEtaUtc: item.verdictEvidence.primaryEvidenceTimestampUtc,
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: RiskThermometerWidget(report: report),
+    );
   }
 }
 
@@ -1673,13 +1674,13 @@ class _RecurrenceZone extends ConsumerWidget {
     return switch (ref.watch(vehicleInfractionRecurrenceProvider(key))) {
       AsyncLoading() => const SizedBox(height: 48),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
-          child: RecurrenceBadgeWidget(report: value),
-        );
-      }(),
+      AsyncData(:final value) =>
+        value == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 12),
+                child: RecurrenceBadgeWidget(report: value),
+              ),
     };
   }
 }
@@ -1980,31 +1981,31 @@ class _ComplianceBadgeZone extends ConsumerWidget {
     return switch (complianceAsync) {
       AsyncLoading() => const SizedBox.shrink(),
       AsyncError() => const SizedBox.shrink(),
-      AsyncData(:final value) => () {
-        if (value == null) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.assignment_turned_in_outlined,
-                size: 13,
-                color: VeraProbColors.textDisabled,
-              ),
-              const SizedBox(width: 6),
-              const Text(
-                'Evidências:',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: VeraProbColors.textDisabled,
+      AsyncData(:final value) =>
+        value == null
+            ? const SizedBox.shrink()
+            : Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.assignment_turned_in_outlined,
+                      size: 13,
+                      color: VeraProbColors.textDisabled,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Evidências:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: VeraProbColors.textDisabled,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ComplianceBadge(compliance: value),
+                  ],
                 ),
               ),
-              const SizedBox(width: 6),
-              ComplianceBadge(compliance: value),
-            ],
-          ),
-        );
-      }(),
     };
   }
 }
@@ -2741,8 +2742,9 @@ class _TestimonyBlockState extends State<_TestimonyBlock> {
                   label: 'Copiar selo da justificativa',
                   child: InkWell(
                     onTap: () {
+                      final messenger = ScaffoldMessenger.of(context);
                       Clipboard.setData(ClipboardData(text: seal!));
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(content: Text('Selo copiado.')),
                       );
                     },

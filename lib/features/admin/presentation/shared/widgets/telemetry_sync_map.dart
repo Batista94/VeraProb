@@ -299,7 +299,10 @@ class _TelemetrySyncMapState extends ConsumerState<TelemetrySyncMap>
                 decoration: BoxDecoration(
                   color: VeraProbColors.critical,
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+                  border: Border.all(
+                    color: VeraProbColors.textPrimary,
+                    width: 2,
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: VeraProbColors.critical.withValues(alpha: 0.5),

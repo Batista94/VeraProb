@@ -9,16 +9,16 @@
 <a name="português"></a>
 ## Português
 
-VeraProb é um estudo de engenharia focado em **Forensic Contract Governance**. O projeto implementa um motor de alta performance para validação determinística de SLAs de contratos B2B a partir de fluxos de telemetria bruta.
+VeraProb é uma **Plataforma Tier-1 de Auditoria Forense, Conciliação Financeira e Gestão de SLAs** projetada para operações logísticas de grande escala. Atuando como um "juiz digital e imutável" entre Embarcadores (Tenants) e Transportadoras (Carriers), o sistema transforma o caos da telemetria IoT e multas de frete em um fluxo financeiro auditável, resolvendo o vazamento de receita e passivos trabalhistas/contratuais de frotas e veículos de viagem.
 
 > [!WARNING]
-> **Laboratório de Engenharia Especializada**: Este repositório é um ambiente de experimentação técnica. Embora implemente rigor de nível enterprise e segurança determinística, o ecossistema atual opera de forma independente, **não passou por processos de auditoria externa formal (como firmas SOC 2/Forense)** e não possui infraestrutura homologada para produção em massa.
+> **Laboratório de Engenharia Especializada**: Este repositório é um ambiente de experimentação técnica. Embora implemente rigor de nível enterprise e segurança determinística (pronta para conformidade SOC 2), o ecossistema atual opera de forma independente e não passou por processos de auditoria externa formal.
 
-### Objetivos Práticos
-O repositório serve como sandbox individual para validar padrões arquiteturais de alta criticidade em sistemas distribuídos:
-- **Solo-Enterprise Rigor**: Viabilidade de padrões Tier 1 (DDD, Event Sourcing, WASM) mantidos por um único desenvolvedor.
-- **Forensic Accuracy**: Garantia de auditoria total de estado e transações via invariantes matemáticas (INV-4/5).
-- **AI-Assisted Development**: Avaliação de limite de carga e manutenção de Clean Code através do desenvolvimento pareado com agentes de IA.
+### Os 4 Pilares de Negócio
+1. **Ingestão e Integridade de Telemetria (IoT)**: Avalia o *Confidence Score* do sinal GPS e monitora a saúde do hardware (Ingestion Health Monitor), garantindo que áreas de sombra não gerem falsas punições.
+2. **Motor de Contratos e SLA Audit**: Cruza telemetria da frota com regras de contrato. Identifica violações (atrasos, desvios, anomalias) e calcula o risco financeiro em centavos de forma 100% automatizada.
+3. **Máquina de Disputas e Resolução Forense**: Um Portal Zero-Trust para transportadoras anexarem contraprovas. Toda resolução gera um pacote de evidências selado criptograficamente (SHA-256) garantindo Cadeia de Custódia e valor legal (SOX/SOC2).
+4. **Shadow Ledger Financeiro**: Contabilidade de Risco em tempo real. Exibe Volatilidade Financeira, Receita em Risco e ROI. Aplica *Financial Guard/Stop-Loss* (teto de cobrança) para proteger parceiros de falência por erros sistêmicos.
 
 ### Pilares de Engenharia
 - **Domain-Driven Design (DDD)**: Domínio isolado e agnóstico de infraestrutura para execução das regras de contrato.
@@ -243,16 +243,16 @@ Para detalhes sobre as diretrizes de desenvolvimento e padrões de qualidade, co
 <a name="english"></a>
 ## English
 
-VeraProb is an engineering study focused on **Forensic Contract Governance**. The project implements a high-performance engine designed for deterministic SLA validation of B2B contracts using raw telemetry streams.
+VeraProb is a **Tier-1 Forensic Audit, Financial Conciliation, and SLA Management Platform** built for large-scale logistics and fleet operations. Acting as a "digital, immutable judge" between Shippers (Tenants) and Carriers, the system transforms the chaos of IoT telemetry and freight penalties into an auditable financial stream, resolving revenue leakage and contractual/labor liabilities.
 
 > [!WARNING]
-> **Specialized Engineering Lab**: This repository is a technical playground. Although it implements enterprise-grade rigor and deterministic security, the current ecosystem operates independently, **has not undergone formal external auditing processes (such as SOC 2/Forensic firms)**, and lacks a live production-ready infrastructure.
+> **Specialized Engineering Lab**: This repository is a technical playground. Although it implements enterprise-grade rigor and deterministic security (SOC 2-ready), the current ecosystem operates independently and has not undergone formal external auditing processes.
 
-### Project Objectives
-A solo sandbox designed to test high-criticality patterns in distributed systems:
-- **Solo-Enterprise Rigor**: Assessing the maintainability of Tier 1 patterns (DDD, Event Sourcing, WASM) within a solo developer workflow.
-- **Forensic Accuracy**: Ensuring full auditability of state and transactions via deterministic mathematical invariants (INV-4/5).
-- **AI-Assisted Development**: Testing boundaries of code complexity and Clean Code standards when pairing with AI agents.
+### The 4 Business Pillars
+1. **Telemetry Integrity & IoT Ingestion**: Calculates signal *Confidence Scores* and monitors hardware health (Ingestion Health Monitor) to ensure GPS blind spots aren't punished as SLA breaches.
+2. **Contract Engine & SLA Audit**: Cross-references raw fleet telemetry with contract rules. Autonomously identifies violations (delays, kinematic anomalies, route deviations) and calculates exact financial penalties.
+3. **Forensic Dispute Resolution Machine**: A Zero-Trust Portal for carriers to submit counter-evidence. Every resolution creates a SHA-256 cryptographically sealed evidence package, guaranteeing a pristine Chain of Custody (SOX/SOC2 compliance).
+4. **Shadow Financial Ledger**: Real-time Risk Accounting. Projects Financial Volatility, Revenue at Risk, and Protected ROI. Enforces a *Financial Guard (Stop-Loss)* to protect partners from bankruptcy due to systemic cascading penalties.
 
 ### Engineering Pillars
 - **Domain-Driven Design (DDD)**: Infrastructure-agnostic domain layer executing core contract rules.
