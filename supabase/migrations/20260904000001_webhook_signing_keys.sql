@@ -27,6 +27,8 @@ ALTER TABLE public.webhook_signing_keys ENABLE ROW LEVEL SECURITY;
 
 -- Grants (Data API constraint)
 GRANT SELECT, INSERT, UPDATE ON public.webhook_signing_keys TO authenticated;
+-- Dispatcher (service_role) resolves key version/status during signing
+GRANT SELECT ON public.webhook_signing_keys TO service_role;
 
 CREATE POLICY "Tenant Admins can manage webhook signing keys"
   ON public.webhook_signing_keys

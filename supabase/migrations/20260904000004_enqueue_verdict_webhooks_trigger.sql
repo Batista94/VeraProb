@@ -13,17 +13,17 @@ DECLARE
   v_payload JSONB;
 BEGIN
   -- We only fire for terminal verdict states (SEALED, REFUSED, DISPUTE_ACCEPTED, DISPUTE_OVERTURNED, DISPUTE_RETRACTED, SANCTION_ACKNOWLEDGED)
-  IF NEW.fact_type IN ('VERDICT_SEALED', 'VERDICT_REFUSED', 'DISPUTE_ACCEPTED', 'DISPUTE_OVERTURNED', 'DISPUTE_RETRACTED', 'SANCTION_ACKNOWLEDGED') THEN
+  IF NEW.type IN ('VERDICT_SEALED', 'VERDICT_REFUSED', 'DISPUTE_ACCEPTED', 'DISPUTE_OVERTURNED', 'DISPUTE_RETRACTED', 'SANCTION_ACKNOWLEDGED') THEN
     
     -- Format payload (Minimal as per plan, edge function will expand cross-verify hashes)
     v_payload := jsonb_build_object(
       'schema_version', '1.0',
-      'event_type', NEW.fact_type,
-      'occurred_at', NEW.occurred_at,
+      'event_type', NEW.type,
+      'occurred_at', NEW.occurred_at_utc,
       'organization_id', NEW.organization_id,
       'case', jsonb_build_object(
         'ledger_entry_id', NEW.id,
-        'snapshot_id', NEW.snapshot_id
+        'snapshot_id', NEW.payload ->> 'snapshot_id'
       )
     );
 
@@ -46,7 +46,7 @@ BEGIN
         NEW.organization_id,
         v_endpoint.id,
         NEW.id,
-        NEW.fact_type,
+        NEW.type,
         v_payload,
         'PENDING',
         NULL -- one-shot constraint will be updated by edge-fn

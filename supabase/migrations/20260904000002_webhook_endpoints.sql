@@ -19,6 +19,8 @@ ALTER TABLE public.webhook_endpoints ENABLE ROW LEVEL SECURITY;
 
 -- Grants (Data API constraint)
 GRANT SELECT, INSERT, UPDATE ON public.webhook_endpoints TO authenticated;
+-- Dispatcher (service_role) reads endpoints for drain + updates last_kick_at rate-limit
+GRANT SELECT, UPDATE ON public.webhook_endpoints TO service_role;
 
 CREATE POLICY "Tenant Admins can manage webhook endpoints"
   ON public.webhook_endpoints

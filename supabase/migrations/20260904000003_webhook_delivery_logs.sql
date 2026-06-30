@@ -32,7 +32,8 @@ ALTER TABLE public.webhook_delivery_logs ENABLE ROW LEVEL SECURITY;
 
 -- Grants (Data API constraint)
 GRANT SELECT, INSERT ON public.webhook_delivery_logs TO authenticated;
-GRANT UPDATE ON public.webhook_delivery_logs TO service_role;
+-- Dispatcher (service_role) drains (SELECT) and advances status/retry (UPDATE)
+GRANT SELECT, UPDATE ON public.webhook_delivery_logs TO service_role;
 
 CREATE POLICY "Authenticated users can read their org webhook delivery logs"
   ON public.webhook_delivery_logs
