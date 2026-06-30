@@ -5550,6 +5550,16 @@ export type Database = {
         };
         Returns: Json;
       };
+      drain_pending_webhooks: {
+        Args: { p_limit: number; p_org_id: string };
+        Returns: {
+          endpoint_url: string;
+          id: string;
+          org_id_out: string;
+          payload: Json;
+          signing_version: number;
+        }[];
+      };
       dropgeometrycolumn:
         | {
             Args: {
@@ -6940,6 +6950,10 @@ export type Database = {
       vp_haversine_meters: {
         Args: { lat1: number; lat2: number; lon1: number; lon2: number };
         Returns: number;
+      };
+      webhook_delivery_fail: {
+        Args: { p_error: string; p_log_id: string };
+        Returns: undefined;
       };
     };
     Enums: {

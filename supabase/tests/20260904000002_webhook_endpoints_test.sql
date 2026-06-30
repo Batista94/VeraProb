@@ -10,7 +10,7 @@ SELECT has_column('webhook_endpoints', 'url');
 -- Test URL Constraint
 SELECT lives_ok(
     $$
-    INSERT INTO organizations (id, name) VALUES ('22222222-2222-2222-2222-222222222222', 'Org B');
+    INSERT INTO organizations (id, name) VALUES ('22222222-2222-2222-2222-222222222222', 'Org B') ON CONFLICT (id) DO NOTHING;
     INSERT INTO webhook_endpoints (organization_id, url) VALUES ('22222222-2222-2222-2222-222222222222', 'https://example.com');
     $$,
     'Can insert valid https url'

@@ -3,7 +3,9 @@ import 'package:veraprob/application/sla_audit/webhook_dispatcher_port.dart';
 
 class MockWebhookDispatcherPort implements IWebhookDispatcherPort {
   @override
-  Future<void> dispatchVerdictWebhooks({required String organizationId}) async {}
+  Future<void> dispatchVerdictWebhooks({
+    required String organizationId,
+  }) async {}
 }
 
 void main() {

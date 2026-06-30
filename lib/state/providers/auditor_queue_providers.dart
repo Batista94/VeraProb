@@ -180,10 +180,14 @@ typedef RetractionProvenance = ({
 /// the ledger read to the caller's org.
 final disputeRetractionProvenanceProvider = FutureProvider.autoDispose
     .family<RetractionProvenance?, String>((ref, queueEntryId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
+
       final row = await ref
           .watch(supabaseClientProvider)
           .from('sla_audit_ledger_v2')
           .select('payload, occurred_at_utc')
+          .eq('organization_id', organizationId)
           .eq('type', 'DISPUTE_RETRACTED')
           .eq('payload->>queue_entry_id', queueEntryId)
           .order('occurred_at_utc', ascending: false)
@@ -218,10 +222,14 @@ typedef VerdictProvenance = ({
 /// when no verdict fact exists. RLS scopes the ledger read to the caller's org.
 final verdictProvenanceProvider = FutureProvider.autoDispose
     .family<VerdictProvenance?, String>((ref, queueEntryId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
+
       final row = await ref
           .watch(supabaseClientProvider)
           .from('sla_audit_ledger_v2')
           .select('payload, occurred_at_utc')
+          .eq('organization_id', organizationId)
           .inFilter('type', const [
             'VERDICT_SEALED',
             'VERDICT_REFUSED',
@@ -345,6 +353,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     queueRepo: ref.watch(sanctionReviewQueueRepositoryProvider),
     reviewRepo: ref.watch(sanctionReviewCommandRepositoryProvider),
     rbac: RbacService(),
+    webhookDispatcher: ref.watch(webhookDispatcherPortProvider),
   );
 
   AcknowledgeSanctionInternalHandler get _acknowledgeInternalHandler =>
@@ -376,6 +385,7 @@ class SanctionActionNotifier extends Notifier<AsyncValue<void>>
     resolutionRepo: ref.watch(sanctionDisputeResolutionRepositoryProvider),
     rbac: RbacService(),
     dateTimeProvider: ref.watch(dateTimeProviderProvider),
+    webhookDispatcher: ref.watch(webhookDispatcherPortProvider),
   );
 
   ConfirmPeerReviewHandler get _confirmPeerReviewHandler =>

@@ -14,13 +14,12 @@ CREATE TABLE IF NOT EXISTS public.webhook_signing_keys (
   status           webhook_signing_key_status NOT NULL DEFAULT 'active',
   retiring_until   TIMESTAMPTZ,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-
-  -- Only one active key per org at a time
-  CONSTRAINT uq_webhook_signing_keys_active
-    EXCLUDE USING btree (organization_id WITH =)
-    WHERE (status = 'active')
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE UNIQUE INDEX uq_webhook_signing_keys_active 
+  ON public.webhook_signing_keys (organization_id) 
+  WHERE status = 'active';
 
 -- RLS
 ALTER TABLE public.webhook_signing_keys ENABLE ROW LEVEL SECURITY;
@@ -36,12 +35,12 @@ CREATE POLICY "Tenant Admins can manage webhook signing keys"
   FOR ALL
   TO authenticated
   USING (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   )
   WITH CHECK (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   );
 
 COMMENT ON TABLE public.webhook_signing_keys IS 'INV-31: Stores only metadata for webhook signing keys. No key material stored.';

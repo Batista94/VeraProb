@@ -40,7 +40,7 @@ CREATE POLICY "Authenticated users can read their org webhook delivery logs"
   AS PERMISSIVE
   FOR SELECT
   TO authenticated
-  USING (organization_id::text = (auth.jwt() ->> 'organization_id'));
+  USING (organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid);
 
 CREATE POLICY "Tenant Admins can view webhook delivery logs"
   ON public.webhook_delivery_logs
@@ -48,12 +48,12 @@ CREATE POLICY "Tenant Admins can view webhook delivery logs"
   FOR ALL
   TO authenticated
   USING (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   )
   WITH CHECK (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   );
 
 -- ── Immutability Trigger ─────────────────────────────────────────────────────

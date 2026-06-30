@@ -28,12 +28,12 @@ CREATE POLICY "Tenant Admins can manage webhook endpoints"
   FOR ALL
   TO authenticated
   USING (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   )
   WITH CHECK (
-    organization_id::text = (auth.jwt() ->> 'organization_id')
-    AND (auth.jwt() ->> 'user_role') = 'admin'
+    organization_id = (auth.jwt() -> 'app_metadata' ->> 'org_id')::uuid
+    AND (auth.jwt() -> 'app_metadata' ->> 'role') = 'TENANT_ADMIN'
   );
 
 COMMENT ON TABLE public.webhook_endpoints IS 'Configured webhook destinations per organization.';

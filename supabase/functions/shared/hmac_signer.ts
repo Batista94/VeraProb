@@ -375,6 +375,39 @@ function hexToBytes(hex: string): Uint8Array {
   return bytes;
 }
 
+// ── Per-Org Key Derivation (INV-28 org isolation, INV-31 zero key at rest) ───
+//
+// Webhook signing must be per-tenant: leaking one org's outbound key (shared with
+// that org's ERP) must never compromise another org or the master. We derive it:
+//
+//   K_org_vN = HMAC-SHA256(masterKey, organization_id || "|" || N)
+//
+// derived at sign time. The DB stores ONLY the version metadata (N), never the key
+// material. One-wayness of HMAC isolates orgs; the master never leaves env.
+//
+// ponytail: anchored on key version 1 (the original master). Rotating the master =
+// re-issuing every org key (the documented incident path), so a single anchor is
+// correct today; revisit only if independent master rotation becomes a requirement.
+
+export async function deriveOrgKey(orgId: string, version: number): Promise<CryptoKey> {
+  const keys = getKeys(); // throws the INV-31 error if no master is configured
+  const master = keys.find((k) => k.version === 1) ?? keys[0];
+  const masterKey = await crypto.subtle.importKey(
+    "raw", master.raw, { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const derived = await crypto.subtle.sign(
+    "HMAC", masterKey, new TextEncoder().encode(`${orgId}|${version}`),
+  );
+  return await crypto.subtle.importKey(
+    "raw", new Uint8Array(derived), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+}
+
+export async function signWithDerivedKey(key: CryptoKey, message: string): Promise<string> {
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 // ── Key Info (for debugging/audit purposes) ──────────────────────────────────
 
 /**

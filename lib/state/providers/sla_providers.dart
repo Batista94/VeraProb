@@ -23,6 +23,8 @@ import 'package:veraprob/infrastructure/sla_audit/postgres_evaluation_trace_repo
 import 'package:veraprob/infrastructure/sla_audit/postgres_operational_alert_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_sla_execution_query_service.dart';
 import 'package:veraprob/infrastructure/sla_audit/sla_persistence_provider.dart';
+import 'package:veraprob/infrastructure/sla_audit/supabase_webhook_dispatch_kicker.dart';
+import 'package:veraprob/application/sla_audit/webhook_dispatcher_port.dart';
 import 'package:veraprob/infrastructure/config/environment.dart';
 import 'auth_providers.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -194,4 +196,13 @@ final slaExceptionsProvider = FutureProvider<List<SlaExecutionItemView>>((
 
   return [...noShows, ...evidenceGaps]
     ..sort((a, b) => a.windowStartUtc.compareTo(b.windowStartUtc));
+});
+
+// ── Webhook Dispatcher ───────────────────────────────────────────────────────
+
+final webhookDispatcherPortProvider = Provider<IWebhookDispatcherPort?>((ref) {
+  if (ref.watch(persistenceModeProvider) == PersistenceMode.inMemory) {
+    return null; // Local mock/no-op in memory mode
+  }
+  return SupabaseWebhookDispatchKicker(ref.watch(supabaseClientProvider));
 });

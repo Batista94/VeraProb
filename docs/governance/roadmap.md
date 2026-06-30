@@ -40,7 +40,7 @@
 
 ### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima) (Concluído)
 
-### [x] Phase 10.6 — Forensic Operations & Dispute Reality (Concluído)
+### [x] Phase 10.6 — Forensic Operations & Dispute Reality (Concluído) (Concluído)
 
 > **Plano v3 (council-remediated) entregue 2026-06-12** — Componentes 1-5. Migrações `20260813000001`…`20260814000004` (15) + edge fns `verify-evidence-hash`, `notify-sla-breach`. `make test-db` 824 PASS. CI E2E pendente de re-run após fix do grant MFA (`20260815000000`).
 
@@ -68,10 +68,10 @@
 > **Plano de Arquitetura — Webhook de Veredito Selado (council, 2026-06-30, v2 endurecida)** — Transactional Outbox + dual-path (kick imediato pós-RPC + GHA cron reconciliador). Assinatura HMAC-SHA256 por org com congelamento de versão de chave. SSRF anti-DNS-rebinding (resolve→valida→pin IP). At-least-once + idempotência no receptor. Design em `forensic_records/plans/`. Sem código ainda.
 
 - [/] **[BIZ] Webhook de Veredito Selado — dispatch engine (backend-first):**
-  - [ ] Tabela `webhook_signing_keys` (chave de saída por org, versionada, status active/retiring/revoked, janela de graça 24h).
-  - [ ] Tabela `webhook_endpoints` (config por org, `last_kick_at` rate-limit, guarda SSRF, soft-delete, RLS Tenant Admin).
-  - [ ] Tabela `webhook_delivery_logs` (outbox append-only imutável: `PENDING|DELIVERING|SUCCESS|FAILED|DEAD`, `signing_key_id` e `ledger_entry_id` próprios, retry/backoff, enqueue idempotente).
-  - [ ] Trigger `enqueue_verdict_webhooks` AFTER INSERT em `sla_audit_ledger_v2` (tipos terminais) — outbox, zero HTTP em txn.
+  - [x] Tabela `webhook_signing_keys` (chave de saída por org, versionada, status active/retiring/revoked, janela de graça 24h).
+  - [x] Tabela `webhook_endpoints` (config por org, `last_kick_at` rate-limit, guarda SSRF, soft-delete, RLS Tenant Admin).
+  - [x] Tabela `webhook_delivery_logs` (outbox append-only imutável: `PENDING|DELIVERING|SUCCESS|FAILED|DEAD`, `signing_key_id` e `ledger_entry_id` próprios, retry/backoff, enqueue idempotente).
+  - [x] Trigger `enqueue_verdict_webhooks` AFTER INSERT em `sla_audit_ledger_v2` (tipos terminais) — outbox, zero HTTP em txn.
   - [ ] Edge fn `dispatch-verdict-webhooks` (dois modos de auth, SSRF Deno.startTls, SKIP LOCKED, cross-verify de hash, backoff, dead-letter).
   - [ ] Kick imediato Dart pós-commit (fire-and-forget) na camada application/infrastructure.
   - [ ] GHA cron reconciliador `webhook-dispatch.yml` (retry de FAILED).
