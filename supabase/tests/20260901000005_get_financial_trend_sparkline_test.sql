@@ -242,10 +242,14 @@ SELECT throws_ok(
   'TC10/INV-26: p_org_id NULL → 42501 anti-oracle'
 );
 
--- ── TC11: p_days clamp — p_days=200 clamped to 90, no crash ─────────────────
+-- ── TC11: p_days clamp — p_days=200 clamped to 90, result bounded ───────────
 SELECT ok(
-  (public.get_financial_trend_sparkline('00000000-0000-0000-0000-000000000020'::uuid, 200)) IS NOT NULL,
-  'TC11: p_days=200 clamped to 90, returns JSONB without crash'
+  coalesce(
+    jsonb_array_length(
+      public.get_financial_trend_sparkline('00000000-0000-0000-0000-000000000020'::uuid, 200)
+    ), 0
+  ) <= 90,
+  'TC11: p_days=200 clamped to 90, result contains at most 90 data points'
 );
 
 SELECT * FROM finish();

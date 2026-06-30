@@ -54,10 +54,10 @@ INSERT INTO public.dispute_reason_codes (code, category, label_pt, label_en, des
 VALUES ('FORCE_MAJEURE', 'ENVIRONMENTAL', 'Força Maior', 'Force Majeure', 'Force Majeure Event', TRUE, NULL)
 ON CONFLICT (code) DO NOTHING;
 
--- ── 1. Verify that top-level JWT organization_id claim allows access ──
+-- ── 1. Verify that app_metadata.org_id claim allows access (canonical JWT path) ──
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims =
-  '{"role":"authenticated","sub":"00000000-0000-0000-0000-0000000006b1","organization_id":"00000000-0000-0000-0000-0000000006a1","app_metadata":{"role":"AUDITOR"}}';
+  '{"role":"authenticated","sub":"00000000-0000-0000-0000-0000000006b1","organization_id":"00000000-0000-0000-0000-0000000006a1","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000006a1","role":"AUDITOR"}}';
 
 -- resolve_dispute should succeed
 SELECT lives_ok(
@@ -69,7 +69,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'idem-claims-dispute', 'FORCE_MAJEURE'
      ) $$,
-  'T1: resolve_dispute succeeds when JWT organization_id matches parameter'
+  'T1: resolve_dispute succeeds when JWT app_metadata.org_id matches parameter'
 );
 
 -- approve_sanction should succeed
@@ -80,7 +80,7 @@ SELECT lives_ok(
        '00000000-0000-0000-0000-0000000006b1', 'auditor@test.com',
        '2026-06-24T11:00:00Z', 'FORCE_MAJEURE', 'Confirm fine is correct.'
      ) $$,
-  'T2: approve_sanction succeeds when JWT organization_id matches parameter'
+  'T2: approve_sanction succeeds when JWT app_metadata.org_id matches parameter'
 );
 
 -- reject_sanction should succeed
@@ -92,7 +92,7 @@ SELECT lives_ok(
        'Rejecting this fine completely.', 'FORCE_MAJEURE',
        '2026-06-24T11:00:00Z'
      ) $$,
-  'T3: reject_sanction succeeds when JWT organization_id matches parameter'
+  'T3: reject_sanction succeeds when JWT app_metadata.org_id matches parameter'
 );
 
 -- ── 2. Verify that mismatched JWT organization_id claim blocks access ──
