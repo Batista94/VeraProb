@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-06-24
-**Current Status:** Phase 10.6 (Core + Ingestion Health Monitor delivered) · [NEXT: commitar feature/sparklines + validar CI E2E green + priorizar próximos itens BIZ]
+**Revision:** 2026-06-30
+**Current Status:** Phase 10.6 completed (Dispute Submission, Ingestion Health Monitor, Sparklines, and Auto-resolve Alerts delivered) · [NEXT: Integrar webhook de resoluções de disputas (10.7) e priorizar próximos itens BIZ]
 
 ---
 
@@ -9,8 +9,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1354+ passing · 117 files · `make test-db` ✅ (2 new test files on feature/sparklines pending commit) |
-| Migrations | 317 committed + 2 pending commit on `feature/sparklines` = 319 files ✅ |
+| DB Tests (pgTAP) | 1354+ passing · 121 files · `make test-db` ✅ |
+| Migrations | 322 committed ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -34,6 +34,8 @@
 
 ## Phase 10 — CI/CD & Launch Preparation
 
+- [x] **[CI/CD] Enterprise GitHub Actions Pipelines:** Automação de pipelines de CI/CD com barreiras automáticas de migração (Append-Only Gate), varredura estática de segurança (`pr_full_scanner.sh`), testes pgTAP, testes de unidade/widgets Flutter e testes E2E para staging/production.
+
 ### [x] Phase 10.4.C — Forensic Evidence Snapshot & Immutability (Concluído)
 
 ### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima) (Concluído)
@@ -47,7 +49,7 @@
 - [x] **[Comp 3] Trilha de "quem cancelou":** No retract, `disputed_at`/`disputed_by` selados no open (INV-15) e NUNCA limpos (INV-23) — provenance sobrevive ao retract. Exposto na timeline do card + `RetractionProvenance` widget.
 - [x] **[Comp 3] SLA-timer de disputa (aging):** Prazo de resolução em dias úteis (`resolution_due_at`) com calendário de feriados por org (`organization_holidays`). `DisputeSlaChip` (countdown/overdue) no card. RPC `dispute_open` semeia o prazo.
 - [x] **[Comp 5.3] Forensic Dispute Portal (ReadOnly):** Tela externa tokenizada (link temporário TTL) para transportadores verem evidências sem login no core. Tokens (`dispute_portal_tokens`) + RPC `read_dispute_portal` + tipos de ledger de portal. (Stub ReadOnly; submissão de contraprova = backlog 10.7.)
-- [x] **[BIZ] Forensic Dispute Portal (submissão):** Interface externa para carriers submeterem contraprovas digitais (além do ReadOnly entregue). *(Sprint A — pre-signed URL + quarentena + SHA-256 server-side + painel auditor PENDING_AUDIT.)*
+- [x] **[BIZ] Forensic Dispute Portal (submissão):** Interface externa para carriers submeterem contraprovas digitais. Entregue com retry logic, validação de input, e UI state management.
 - [x] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
 - [x] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador. *(Sprint C — `get_fleet_risk_summary` RPC; risk_bps server-side byte-idêntico ao `SlaBreachRiskCalculator`, INV-15; substitui o loop Dart em `atRiskSlaCountProvider`.)*
 - [x] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows. *(Sprint B — schedule/activate/retire RPCs, anti-backdating 2-camadas, amendments financeiros append-only, snapshot INV-21.)*
@@ -61,6 +63,7 @@
 - [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 - [x] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
 - [x] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
+- [x] **[BIZ] Sanction Auto-Resolution Trigger:** Expansão dos gatilhos de sanção para auto-resolver todos os tipos de alerta relacionados (por case key) de forma automática.
 
 ### [ ] Phase 10.7 — Enterprise Integration & Event Dispatch
 
@@ -75,13 +78,13 @@
 
 ### [ ] Phase 10.9 — Governance, Legal & Anti-Fraud
 
-- [ ] **Self-Service Onboarding:** Tenant creation flow with automated limit configuration.
-- [ ] **[BIZ] Immutable Admin Log (Meta-Audit):** Implementar tabela de auditoria de sistema (Meta-Audit) para registrar quem alterou regras de SLA e configurações críticas, blindando o sistema contra fraude interna.
-- [ ] **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?).
+- [x] **Self-Service Onboarding:** Fluxo assistido de onboarding de Tenants com validações rigorosas (Wizard UI com CNPJ autofill) e MFA enrollment para o Super Admin.
+- [x] **[BIZ] Immutable Admin Log (Meta-Audit):** Tabela de auditoria de sistema (Meta-Audit) implementada para registrar e inspecionar quem alterou regras de SLA e configurações críticas (Visualização de Diff de Payload via painel Super Admin).
+- [x] **[BIZ] Configuration Audit Log:** Immutable meta-audit of changes to SLA models, contracts, and permissions (Who changed the rule and when?). Concluído junto com o Meta-Audit.
 - [ ] **[BIZ] Systemic Fraud Detection:** Automatic behavioral alerts for operator deviations (e.g., excessive inhibitions for specific carriers).
 - [/] **[BIZ] Data Lifecycle Management (LGPD):** Automatic retention engine (5 years for evidence, 1 year for raw telemetry) for legal compliance.
 - [x] **[BIZ] Tenant Lifecycle Management:** Funções de 'Reenviar Convite', 'Editar Dados' e 'Arquivar Tenant' (Soft Delete para preservar a Cadeia de Custódia de dados passados).
-- [ ] **Support Impersonation Security:** "Grant Support Access" button with mandatory audit log and auto-expiry.
+- [x] **Support Impersonation Security:** "Grant Support Access" button with mandatory audit log and auto-expiry (Impersonation banner implementado).
 - [ ] **[BIZ] Progressive Penalty Engine (INV-28):** Support for time-scaled fines that increase based on infringement duration.
 - [ ] **[BIZ] Multi-Level Org Hierarchy:** Sub-tenant structure for large corporations (HQ > Branch > Cost Center) with rule inheritance and data isolation.
 - [ ] **[BIZ] Partner Billing Reconciliation:** Invoice crossing tool (CSV Upload) against the immutable Ledger for identifying billing discrepancies.
@@ -107,6 +110,7 @@
 ## Technical Debt & Maintenance
 
 - **[TECH] Batch RPC Schema Sync:** `batch_update_vehicles` e `batch_update_contracts` (migration `20260412000004`) são funções hardcoded. Ao adicionar colunas atualizáveis a `vehicles` ou `contracts`, adicionar a linha `COALESCE` correspondente nas funções. Backlog: substituir por script de geração estática em CI/CD (evita risco de PL/pgSQL dinâmico e conflitos de placeholders `format()` vs `RAISE`).
+- [x] **[TEST] SLA Template Editor Dialog Refactoring:** Modularização e substituição da suite monolítica de testes (~2.6k LOC) por 12 suites baseadas em Robot Pattern, blindando regras de integridade e CIA triad.
 
 ---
 
