@@ -4685,6 +4685,207 @@ export type Database = {
           },
         ];
       };
+      webhook_delivery_logs: {
+        Row: {
+          attempt_count: number;
+          created_at: string;
+          dispatched_at: string | null;
+          endpoint_id: string;
+          event_type: string;
+          id: string;
+          last_error: string | null;
+          ledger_entry_id: string;
+          next_attempt_at: string | null;
+          organization_id: string;
+          payload: Json;
+          signature: string | null;
+          signing_key_id: string | null;
+          status: Database["public"]["Enums"]["webhook_delivery_status"];
+        };
+        Insert: {
+          attempt_count?: number;
+          created_at?: string;
+          dispatched_at?: string | null;
+          endpoint_id: string;
+          event_type: string;
+          id?: string;
+          last_error?: string | null;
+          ledger_entry_id: string;
+          next_attempt_at?: string | null;
+          organization_id: string;
+          payload: Json;
+          signature?: string | null;
+          signing_key_id?: string | null;
+          status?: Database["public"]["Enums"]["webhook_delivery_status"];
+        };
+        Update: {
+          attempt_count?: number;
+          created_at?: string;
+          dispatched_at?: string | null;
+          endpoint_id?: string;
+          event_type?: string;
+          id?: string;
+          last_error?: string | null;
+          ledger_entry_id?: string;
+          next_attempt_at?: string | null;
+          organization_id?: string;
+          payload?: Json;
+          signature?: string | null;
+          signing_key_id?: string | null;
+          status?: Database["public"]["Enums"]["webhook_delivery_status"];
+        };
+        Relationships: [
+          {
+            foreignKeyName: "fk_webhook_delivery_logs_ledger";
+            columns: ["organization_id", "ledger_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sla_audit_ledger_v2";
+            referencedColumns: ["organization_id", "id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_endpoint_id_fkey";
+            columns: ["endpoint_id"];
+            isOneToOne: false;
+            referencedRelation: "webhook_endpoints";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_signing_key_id_fkey";
+            columns: ["signing_key_id"];
+            isOneToOne: false;
+            referencedRelation: "webhook_signing_keys";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      webhook_endpoints: {
+        Row: {
+          created_at: string;
+          deleted_at: string | null;
+          id: string;
+          is_active: boolean;
+          last_kick_at: string | null;
+          organization_id: string;
+          updated_at: string;
+          url: string;
+        };
+        Insert: {
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          is_active?: boolean;
+          last_kick_at?: string | null;
+          organization_id: string;
+          updated_at?: string;
+          url: string;
+        };
+        Update: {
+          created_at?: string;
+          deleted_at?: string | null;
+          id?: string;
+          is_active?: boolean;
+          last_kick_at?: string | null;
+          organization_id?: string;
+          updated_at?: string;
+          url?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      webhook_signing_keys: {
+        Row: {
+          created_at: string;
+          id: string;
+          organization_id: string;
+          retiring_until: string | null;
+          status: Database["public"]["Enums"]["webhook_signing_key_status"];
+          updated_at: string;
+          version: number;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          organization_id: string;
+          retiring_until?: string | null;
+          status?: Database["public"]["Enums"]["webhook_signing_key_status"];
+          updated_at?: string;
+          version?: number;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          organization_id?: string;
+          retiring_until?: string | null;
+          status?: Database["public"]["Enums"]["webhook_signing_key_status"];
+          updated_at?: string;
+          version?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "webhook_signing_keys_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_signing_keys_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_signing_keys_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       contractors_view: {
@@ -6748,6 +6949,9 @@ export type Database = {
         | "MIN_GEOFENCE_COVERAGE"
         | "NO_SHOW_PENALTY"
         | "REQUIRED_EVIDENCE";
+      webhook_delivery_status:
+        "PENDING" | "DELIVERING" | "SUCCESS" | "FAILED" | "DEAD";
+      webhook_signing_key_status: "active" | "retiring" | "revoked";
     };
     CompositeTypes: {
       geometry_dump: {
@@ -7438,6 +7642,14 @@ export const Constants = {
         "NO_SHOW_PENALTY",
         "REQUIRED_EVIDENCE",
       ],
+      webhook_delivery_status: [
+        "PENDING",
+        "DELIVERING",
+        "SUCCESS",
+        "FAILED",
+        "DEAD",
+      ],
+      webhook_signing_key_status: ["active", "retiring", "revoked"],
     },
   },
   storage: {

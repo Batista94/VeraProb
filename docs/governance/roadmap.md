@@ -40,7 +40,7 @@
 
 ### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima) (Concluído)
 
-### [x] Phase 10.6 — Forensic Operations & Dispute Reality
+### [x] Phase 10.6 — Forensic Operations & Dispute Reality (Concluído)
 
 > **Plano v3 (council-remediated) entregue 2026-06-12** — Componentes 1-5. Migrações `20260813000001`…`20260814000004` (15) + edge fns `verify-evidence-hash`, `notify-sla-breach`. `make test-db` 824 PASS. CI E2E pendente de re-run após fix do grant MFA (`20260815000000`).
 
@@ -53,28 +53,40 @@
 - [x] **WS-9: Signal Integrity Monitor:** Lógica SQL/Dart para detectar 'GPS Jumps' e inconsistências na telemetria, gerando um 'Confidence Score' no card. (Pausado da Fase 10.4)
 - [x] **[BIZ] Real-time Risk Thermometer:** Visualização preditiva de quebra de SLA (ETA vs Prazo do Contrato) para ação preventiva do operador. *(Sprint C — `get_fleet_risk_summary` RPC; risk_bps server-side byte-idêntico ao `SlaBreachRiskCalculator`, INV-15; substitui o loop Dart em `atRiskSlaCountProvider`.)*
 - [x] **[BIZ] SLA Versioning & Lifecycle:** Version control system for SLA models with mandatory effective dates and retirement workflows. *(Sprint B — schedule/activate/retire RPCs, anti-backdating 2-camadas, amendments financeiros append-only, snapshot INV-21.)*
-- [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput. *(DIFERIDO pós-first-tenant — precisa de volume real de fila; 10.10 bulk-resolve é a maior alavanca para a mesma persona.)*
 - [x] **[Comp 5.4 · BIZ] Human Verdict Affirmation:** Botões `AFIRMAR VIOLAÇÃO` (sela hash) / `INIBIR VIOLAÇÃO` (comentário obrigatório) + fluxo de confirmação (`CONFIRMAR AFIRMAÇÃO`/`CONFIRMAR INIBIÇÃO`/`CANCELAR SOLICITAÇÃO`) direto no `SanctionVerdictCard`. Cobertura de widget 43 testes.
 - [x] **[BIZ] One-Click Evidence Package:** Instant forensic dossier generator (Map + Telemetry + Hash + Contract) in PDF for defense against undue fines.
 - [x] **[BIZ] Evidence Package (One-Click Dossier):** Função de exportação consolidada contendo Telemetria + Provas Fotográficas + Snapshot do Contrato assinado.
 - [x] **[BIZ] Carrier Performance Ranking:** Dashboard de 'Leaderboard' que classifica transportadores por índice de violações e conformidade contratual. *(Sprint C — `mv_carrier_performance` MV + pg_cron horário + `get_carrier_performance_ranking` RPC SECURITY DEFINER; `CarrierRankTable`.)*
 - [x] **[BIZ] Ingestion Health Monitor:** Real-time data integrity dashboard to detect telemetry gaps and hardware failures. *(Entregue 2026-06-24 — `get_fleet_health_status` RPC SECURITY DEFINER, `IngestionHealthScreen`, `FleetHealthSummaryBar`, `VehicleHealthCard`, `fleet_health_providers`, `SupabaseFleetHealthQueryService`. `HardwareStatusView` INV-13 VO; `fleetActiveRatioBps` int bps convention. Migrations `20260902000001`+`20260902000002`. Branch `feature/sparklines`.)*
 - [x] **[BIZ] Digital Audit Acknowledgement:** Carrier/driver fine acceptance workflow to accelerate billing cycles. *(Sprint A — `acknowledge_via_portal` hash-bound + `acknowledge_sanction_internal`; status terminal `acknowledged`; fato ledger `SANCTION_ACKNOWLEDGED`.)*
-- [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 - [x] **[UX] Financial Sparklines:** Mini-trend charts (sparklines) in Financial Impact cards for daily volatility visualization. (Movido da Fase 10.4)
 - [x] **[UX] Data Integrity Drill-down:** Functional links from 'Incomplete Report' alerts to the telemetry Health Dashboard. (Movido da Fase 10.4)
 - [x] **[BIZ] Sanction Auto-Resolution Trigger:** Expansão dos gatilhos de sanção para auto-resolver todos os tipos de alerta relacionados (por case key) de forma automática.
 
-### [ ] Phase 10.7 — Enterprise Integration & Event Dispatch
+### [/] Phase 10.7 — Enterprise Integration & Event Dispatch
 
-- [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
-- [ ] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
+> **Plano de Arquitetura — Webhook de Veredito Selado (council, 2026-06-30, v2 endurecida)** — Transactional Outbox + dual-path (kick imediato pós-RPC + GHA cron reconciliador). Assinatura HMAC-SHA256 por org com congelamento de versão de chave. SSRF anti-DNS-rebinding (resolve→valida→pin IP). At-least-once + idempotência no receptor. Design em `forensic_records/plans/`. Sem código ainda.
+
+- [/] **[BIZ] Webhook de Veredito Selado — dispatch engine (backend-first):**
+  - [ ] Tabela `webhook_signing_keys` (chave de saída por org, versionada, status active/retiring/revoked, janela de graça 24h).
+  - [ ] Tabela `webhook_endpoints` (config por org, `last_kick_at` rate-limit, guarda SSRF, soft-delete, RLS Tenant Admin).
+  - [ ] Tabela `webhook_delivery_logs` (outbox append-only imutável: `PENDING|DELIVERING|SUCCESS|FAILED|DEAD`, `signing_key_id` e `ledger_entry_id` próprios, retry/backoff, enqueue idempotente).
+  - [ ] Trigger `enqueue_verdict_webhooks` AFTER INSERT em `sla_audit_ledger_v2` (tipos terminais) — outbox, zero HTTP em txn.
+  - [ ] Edge fn `dispatch-verdict-webhooks` (dois modos de auth, SSRF Deno.startTls, SKIP LOCKED, cross-verify de hash, backoff, dead-letter).
+  - [ ] Kick imediato Dart pós-commit (fire-and-forget) na camada application/infrastructure.
+  - [ ] GHA cron reconciliador `webhook-dispatch.yml` (retry de FAILED).
+  - [ ] Testes pgTAP + Deno + Dart cobrindo V1–V5 + planos 1:1; Council + Skills obrigatórios.
+  - [ ] (10.7 separado) UI Tenant Admin: CRUD endpoints, Delivery Log viewer, replay manual, secret reveal-once.
+
+- [/] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
+- [/] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
 - [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
 - [ ] **[BIZ] Data Extract & Reporting API:** Criação de endpoints de exportação de dados agregados (CSV/JSON) e chaves de API Read-Only para que o C-Level do cliente possa conectar seus painéis do PowerBI diretamente às Views de ROI (`v_roi_summary`) e `contractual_financial_snapshot`.
 
 ### [ ] Phase 10.8 — Shadow Processing & ROI Proving
 
 - [ ] **SLA Sandbox (ROI Simulator):** Lógica em SQL/Edge Functions para simular 'E se...' (What-if analysis) rodando novos modelos de SLA contra dados históricos para provar economia financeira.
+- [ ] **[BIZ] SLA Sensitivity Analysis:** Financial prediction tool based on historical data to simulate the impact of new SLA rules on past performance. *(MOVIDO → Fase 10.8 — fundir com SLA Sandbox; design `simulate_rule_sensitivity` arquivado como fundação.)*
 
 ### [ ] Phase 10.9 — Governance, Legal & Anti-Fraud
 
@@ -93,6 +105,7 @@
 
 ### [ ] Phase 10.10 — Bulk Operations & Convenience (Conveniência e Ações em Massa)
 
+- [ ] **[UX] Auditor Productivity Dashboard:** Transform the 'Auditee Queue' into a performance center with metrics for response time, verdict accuracy, and daily throughput. *(DIFERIDO pós-first-tenant — precisa de volume real de fila; 10.10 bulk-resolve é a maior alavanca para a mesma persona.)*
 - [ ] **[BIZ] Rule Update Consent Flow (Contractor Sign-off):** Implementar fluxo de consentimento/aceite digital por parte da transportadora quando regras ou penalidades de SLA forem alteradas ou renegociadas no Rule Studio, mitigando riscos de alegações de alteração unilateral de regras em auditorias futuras.
 - [ ] **[UX] Bulk Action Mode:** Seleção múltipla de infrações na Fila Auditora para tratamento em massa (Batch Processing).
 - [ ] **WS-7: Operational Macros (1-Click Verdict):** Atalhos para vereditos comuns (ex: 'Blitz', 'Trânsito') que preenchem justificativa e aplicam regras de tolerância automaticamente.
