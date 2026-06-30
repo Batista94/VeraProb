@@ -377,5 +377,29 @@ void main() {
       expect(find.text('Link Inválido'), findsOneWidget);
       expect(find.text('Link inválido ou expirado.'), findsOneWidget);
     });
+
+    testWidgets('W13: botão exibe "Processando..." durante envio', (
+      tester,
+    ) async {
+      final gateway = _FakeGateway();
+      await tester.pumpWidget(_host(gateway));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.byType(TextFormField),
+        'Justificativa muito muito longa para passar de vinte.',
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.text('Enviar Contestação'));
+      await tester.tap(find.text('Enviar Contestação'));
+      await tester.pump(); // one frame: busy state active, button rebuilt
+
+      expect(find.text('Processando...'), findsOneWidget);
+      expect(find.text('Enviar Contestação'), findsNothing);
+
+      await tester.pumpAndSettle();
+      expect(find.text('Contestação Recebida com Sucesso'), findsOneWidget);
+    });
   });
 }

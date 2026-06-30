@@ -212,6 +212,13 @@ class _EvidenceDropzoneState extends State<EvidenceDropzone> {
               ),
             ),
           ),
+          if (isBusy) ...[
+            const SizedBox(height: VeraProbSpacing.xs),
+            const LinearProgressIndicator(
+              backgroundColor: VeraProbColors.surfaceElevated,
+              color: VeraProbColors.primary,
+            ),
+          ],
         ],
         if (_inlineError != null) ...[
           const SizedBox(height: VeraProbSpacing.xs),

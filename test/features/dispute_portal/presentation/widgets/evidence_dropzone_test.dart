@@ -79,4 +79,49 @@ void main() {
     final inkWell = tester.widget<InkWell>(find.byType(InkWell).first);
     expect(inkWell.onTap, isNull);
   });
+
+  // Regression guards for no-file loading feedback (gap fixed alongside
+  // DisputeActionFooter spinner — ensures LinearProgressIndicator appears
+  // in the empty-dropzone branch during all busy states).
+  testWidgets('hashing without file shows LinearProgressIndicator', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildDropzone(state: const PortalSubmissionHashing()),
+    );
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('uploading without file shows LinearProgressIndicator', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildDropzone(state: const PortalSubmissionUploading()),
+    );
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('retrying without file shows LinearProgressIndicator', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildDropzone(
+        state: const PortalSubmissionRetrying(attempt: 1, maxAttempts: 3),
+      ),
+    );
+
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('staging without file shows no LinearProgressIndicator', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      buildDropzone(state: const PortalSubmissionStaging(justification: '')),
+    );
+
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+  });
 }

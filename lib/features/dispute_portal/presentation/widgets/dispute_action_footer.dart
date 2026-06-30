@@ -93,7 +93,23 @@ class DisputeActionFooter extends StatelessWidget {
                     alpha: 0.5,
                   ),
                 ),
-                child: const Text('Enviar Contestação'),
+                child: isBusy
+                    ? const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Processando...'),
+                        ],
+                      )
+                    : const Text('Enviar Contestação'),
               ),
             ),
           ],
