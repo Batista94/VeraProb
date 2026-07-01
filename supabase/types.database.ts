@@ -4746,6 +4746,13 @@ export type Database = {
             foreignKeyName: "webhook_delivery_logs_endpoint_id_fkey";
             columns: ["endpoint_id"];
             isOneToOne: false;
+            referencedRelation: "v_webhook_endpoint_health";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_delivery_logs_endpoint_id_fkey";
+            columns: ["endpoint_id"];
+            isOneToOne: false;
             referencedRelation: "webhook_endpoints";
             referencedColumns: ["id"];
           },
@@ -5133,6 +5140,46 @@ export type Database = {
           total_recovered_cents: number | null;
         };
         Relationships: [];
+      };
+      v_webhook_endpoint_health: {
+        Row: {
+          created_at: string | null;
+          dead_count: number | null;
+          delivering_count: number | null;
+          failed_count: number | null;
+          id: string | null;
+          is_active: boolean | null;
+          last_dispatched_at: string | null;
+          last_kick_at: string | null;
+          organization_id: string | null;
+          pending_count: number | null;
+          success_count: number | null;
+          total_logs: number | null;
+          url: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "webhook_endpoints_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       vw_device_heartbeat_status: {
         Row: {
@@ -6955,6 +7002,7 @@ export type Database = {
         Args: { p_error: string; p_log_id: string; p_org_id: string };
         Returns: undefined;
       };
+      webhook_manual_replay: { Args: { p_log_id: string }; Returns: undefined };
     };
     Enums: {
       sla_rule_type:
