@@ -7,6 +7,8 @@
 // P1: apenas operações de provisioning/rotação de segredo.
 // P2 expandirá com findEndpointHealth, watchDeliveryLogs, etc.
 
+import 'package:veraprob/application/webhooks/webhook_delivery_log_view.dart';
+import 'package:veraprob/application/webhooks/webhook_endpoint_view.dart';
 import 'package:veraprob/application/webhooks/webhook_secret_reveal_result.dart';
 
 abstract class IWebhookRepository {
@@ -20,4 +22,10 @@ abstract class IWebhookRepository {
   ///
   /// Mapeia para action = 'rotate' na edge fn reveal-webhook-signing-secret.
   Future<WebhookSecretRevealResult> rotateSecret(String orgId);
+
+  Future<List<WebhookEndpointView>> findEndpointHealth();
+
+  Stream<List<WebhookDeliveryLogView>> watchDeliveryLogs(String endpointId);
+
+  Future<void> manualReplay(String logId);
 }

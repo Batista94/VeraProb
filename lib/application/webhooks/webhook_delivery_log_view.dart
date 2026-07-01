@@ -1,27 +1,37 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:equatable/equatable.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_status_view.dart';
-
-part 'webhook_delivery_log_view.freezed.dart';
 
 /// WebhookDeliveryLogView — Application model (P2).
 ///
 /// INV-13: Agnostic core representation of webhook_delivery_logs.
-@freezed
-class WebhookDeliveryLogView with _$WebhookDeliveryLogView {
-  const factory WebhookDeliveryLogView({
-    required String id,
-    required String endpointId,
-    required String eventType,
-    required Map<String, dynamic> payload,
-    required WebhookDeliveryStatusView status,
-    required int attemptCount,
-    DateTime? nextAttemptAt,
-    String? lastError,
-    String? signature,
-    DateTime? dispatchedAt,
-    required DateTime createdAt,
-    required String ledgerEntryId,
-  }) = _WebhookDeliveryLogView;
+class WebhookDeliveryLogView extends Equatable {
+  final String id;
+  final String endpointId;
+  final String eventType;
+  final Map<String, dynamic> payload;
+  final WebhookDeliveryStatusView status;
+  final int attemptCount;
+  final DateTime? nextAttemptAt;
+  final String? lastError;
+  final String? signature;
+  final DateTime? dispatchedAt;
+  final DateTime createdAt;
+  final String ledgerEntryId;
+
+  const WebhookDeliveryLogView({
+    required this.id,
+    required this.endpointId,
+    required this.eventType,
+    required this.payload,
+    required this.status,
+    required this.attemptCount,
+    this.nextAttemptAt,
+    this.lastError,
+    this.signature,
+    this.dispatchedAt,
+    required this.createdAt,
+    required this.ledgerEntryId,
+  });
 
   // INV-13: factory method to map from infra map
   factory WebhookDeliveryLogView.fromMap(Map<String, dynamic> map) {
@@ -32,12 +42,32 @@ class WebhookDeliveryLogView with _$WebhookDeliveryLogView {
       payload: map['payload'] as Map<String, dynamic>,
       status: WebhookDeliveryStatusView.fromString(map['status'] as String),
       attemptCount: map['attempt_count'] as int,
-      nextAttemptAt: map['next_attempt_at'] != null ? DateTime.parse(map['next_attempt_at'] as String) : null,
+      nextAttemptAt: map['next_attempt_at'] != null
+          ? DateTime.parse(map['next_attempt_at'] as String)
+          : null,
       lastError: map['last_error'] as String?,
       signature: map['signature'] as String?,
-      dispatchedAt: map['dispatched_at'] != null ? DateTime.parse(map['dispatched_at'] as String) : null,
+      dispatchedAt: map['dispatched_at'] != null
+          ? DateTime.parse(map['dispatched_at'] as String)
+          : null,
       createdAt: DateTime.parse(map['created_at'] as String),
       ledgerEntryId: map['ledger_entry_id'] as String,
     );
   }
+
+  @override
+  List<Object?> get props => [
+    id,
+    endpointId,
+    eventType,
+    payload,
+    status,
+    attemptCount,
+    nextAttemptAt,
+    lastError,
+    signature,
+    dispatchedAt,
+    createdAt,
+    ledgerEntryId,
+  ];
 }

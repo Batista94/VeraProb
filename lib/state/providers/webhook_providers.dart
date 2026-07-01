@@ -104,23 +104,40 @@ final webhookSecretRevealProvider =
 
 // ── P2: Webhook Management Providers ─────────────────────────────────────────
 
+class SelectedEndpointIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void select(String? id) => state = id;
+}
+
 /// Endpoint atualmente selecionado no Master-Detail.
-final selectedEndpointIdProvider = StateProvider<String?>((ref) => null);
+final selectedEndpointIdProvider =
+    NotifierProvider<SelectedEndpointIdNotifier, String?>(
+      SelectedEndpointIdNotifier.new,
+    );
+
+class DeliveryLogFilterNotifier extends Notifier<WebhookDeliveryStatusView?> {
+  @override
+  WebhookDeliveryStatusView? build() => null;
+  void setFilter(WebhookDeliveryStatusView? filter) => state = filter;
+}
 
 /// Filtro de status de entrega selecionado no Detail.
-final deliveryLogFilterProvider = StateProvider<WebhookDeliveryStatusView?>((ref) => null);
+final deliveryLogFilterProvider =
+    NotifierProvider<DeliveryLogFilterNotifier, WebhookDeliveryStatusView?>(
+      DeliveryLogFilterNotifier.new,
+    );
 
 /// Lista de endpoints com health view rollup.
-final webhookEndpointHealthProvider = FutureProvider.autoDispose<List<WebhookEndpointView>>((ref) async {
-  final repo = ref.watch(webhookRepositoryProvider);
-  return repo.findEndpointHealth();
-});
+final webhookEndpointHealthProvider =
+    FutureProvider.autoDispose<List<WebhookEndpointView>>((ref) async {
+      final repo = ref.watch(webhookRepositoryProvider);
+      return repo.findEndpointHealth();
+    });
 
 /// Stream de logs de entrega para o endpoint selecionado.
-final deliveryLogStreamProvider = StreamProvider.autoDispose.family<List<WebhookDeliveryLogView>, String>((ref, endpointId) {
-  final repo = ref.watch(webhookRepositoryProvider);
-  return repo.watchDeliveryLogs(endpointId);
-});
-
-/// Gerencia estado de inflight de replay manual (evita multiplos replays simultaneos no UI)
-final replayInFlightProvider = StateProvider.autoDispose<Set<String>>((ref) => {});
+final deliveryLogStreamProvider = StreamProvider.autoDispose
+    .family<List<WebhookDeliveryLogView>, String>((ref, endpointId) {
+      final repo = ref.watch(webhookRepositoryProvider);
+      return repo.watchDeliveryLogs(endpointId);
+    });
