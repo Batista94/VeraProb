@@ -134,9 +134,7 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
 
         // Inicializa o dotenv no contexto do teste
-        dotenv.loadFromString(
-          envString: 'HMAC_SECRET_KEY_V1=test-key',
-        );
+        dotenv.loadFromString(envString: 'HMAC_SECRET_KEY_V1=test-key');
 
         final container = ProviderContainer(
           overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
