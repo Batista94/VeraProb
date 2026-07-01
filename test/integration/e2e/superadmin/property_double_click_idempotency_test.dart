@@ -70,77 +70,79 @@ void main() {
       final numClicks = clickCounts[i];
       final numAdmins = adminCounts[i];
 
-      test(
-        'iter $i: $numClicks concurrent archive calls com $numAdmins admins '
-        'resulta em exatamente 1 operação',
-        skip: !supabaseAvailable
-            ? 'Supabase local não disponível. Execute: supabase start'
-            : null,
-        () async {
-          // 1. Create org with N active admins
-          final org = await SuperAdminDataFactory.createOrgWithAdmins(
-            orgName: 'PBT-DoubleClick-$i',
-            cnpj: SuperAdminDataFactory.generateUniqueCnpj(),
-            activeAdmins: numAdmins,
-            pendingAdmins: 0,
+      test('iter $i: $numClicks concurrent archive calls com $numAdmins admins '
+          'resulta em exatamente 1 operação', () async {
+        // `skip:` is evaluated at collection time, before setUpAll sets
+        // supabaseAvailable — guard at runtime instead.
+        if (!supabaseAvailable) {
+          markTestSkipped(
+            'Supabase local não disponível. Execute: supabase start',
+          );
+          return;
+        }
+        // 1. Create org with N active admins
+        final org = await SuperAdminDataFactory.createOrgWithAdmins(
+          orgName: 'PBT-DoubleClick-$i',
+          cnpj: SuperAdminDataFactory.generateUniqueCnpj(),
+          activeAdmins: numAdmins,
+          pendingAdmins: 0,
+        );
+
+        try {
+          // 2. Fire N concurrent archive RPC calls (simulating double-click)
+          final futures = List.generate(numClicks, (clickIdx) async {
+            try {
+              await serviceRoleClient.rpc<dynamic>(
+                'super_admin_archive_organization',
+                params: {
+                  'p_org_id': org.orgId,
+                  'p_reason': 'PBT double-click iter $i — click $clickIdx',
+                  'p_super_admin_id': org.admins.first.userId,
+                },
+              );
+            } catch (_) {
+              // Expected: some concurrent calls may fail with conflict
+              // errors. This is acceptable — idempotency means only 1
+              // succeeds or all produce the same final state.
+            }
+          });
+
+          await Future.wait(futures);
+
+          // 3. Verify org status is ARCHIVED (exactly once)
+          final status = await SuperAdminDbVerifier.getOrgStatus(
+            org.orgId,
+            client: serviceRoleClient,
+          );
+          expect(
+            status,
+            equals('ARCHIVED'),
+            reason:
+                'Org status deve ser ARCHIVED após $numClicks concurrent '
+                'calls (iter $i, N=$numAdmins)',
           );
 
-          try {
-            // 2. Fire N concurrent archive RPC calls (simulating double-click)
-            final futures = List.generate(numClicks, (clickIdx) async {
-              try {
-                await serviceRoleClient.rpc<dynamic>(
-                  'super_admin_archive_organization',
-                  params: {
-                    'p_org_id': org.orgId,
-                    'p_reason': 'PBT double-click iter $i — click $clickIdx',
-                    'p_super_admin_id': org.admins.first.userId,
-                  },
-                );
-              } catch (_) {
-                // Expected: some concurrent calls may fail with conflict
-                // errors. This is acceptable — idempotency means only 1
-                // succeeds or all produce the same final state.
-              }
-            });
+          // 4. Verify exactly 1 audit log entry for ARCHIVE_ORGANIZATION
+          final auditLogs = await serviceRoleClient
+              .from('system_audit_log')
+              .select()
+              .eq('organization_id', org.orgId)
+              .eq('event_type', 'ORG_ARCHIVED');
 
-            await Future.wait(futures);
-
-            // 3. Verify org status is ARCHIVED (exactly once)
-            final status = await SuperAdminDbVerifier.getOrgStatus(
-              org.orgId,
-              client: serviceRoleClient,
-            );
-            expect(
-              status,
-              equals('ARCHIVED'),
-              reason:
-                  'Org status deve ser ARCHIVED após $numClicks concurrent '
-                  'calls (iter $i, N=$numAdmins)',
-            );
-
-            // 4. Verify exactly 1 audit log entry for ARCHIVE_ORGANIZATION
-            final auditLogs = await serviceRoleClient
-                .from('system_audit_log')
-                .select()
-                .eq('organization_id', org.orgId)
-                .eq('event_type', 'ARCHIVE_ORGANIZATION');
-
-            expect(
-              auditLogs.length,
-              equals(1),
-              reason:
-                  'Deve existir exatamente 1 registro de audit log para '
-                  'ARCHIVE_ORGANIZATION na org ${org.orgId} após '
-                  '$numClicks concurrent calls (iter $i). '
-                  'Encontrados: ${auditLogs.length}',
-            );
-          } finally {
-            // 5. Cleanup — always runs even if assertions fail
-            await SuperAdminDataFactory.cleanup(org);
-          }
-        },
-      );
+          expect(
+            auditLogs.length,
+            equals(1),
+            reason:
+                'Deve existir exatamente 1 registro de audit log para '
+                'ORG_ARCHIVED na org ${org.orgId} após '
+                '$numClicks concurrent calls (iter $i). '
+                'Encontrados: ${auditLogs.length}',
+          );
+        } finally {
+          // 5. Cleanup — always runs even if assertions fail
+          await SuperAdminDataFactory.cleanup(org);
+        }
+      });
     }
   });
 }

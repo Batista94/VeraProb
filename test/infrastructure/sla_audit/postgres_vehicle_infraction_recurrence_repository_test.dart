@@ -231,13 +231,12 @@ void main() async {
         '7. Returned entries carry correct vehiclePlate and UTC timestamps',
         () async {
           final plate = 'CHK-${uuid.v4().substring(0, 4).toUpperCase()}';
-          final ts = DateTime.utc(
+          final monthStart = DateTime.utc(
             DateTime.now().toUtc().year,
             DateTime.now().toUtc().month,
-            10,
-            14,
-            30,
+            1,
           );
+          final ts = monthStart.add(const Duration(hours: 6, minutes: 30));
           await insertQueueRow(
             vehiclePlate: plate,
             createdAtUtc: ts,

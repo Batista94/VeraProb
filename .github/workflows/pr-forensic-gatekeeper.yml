@@ -2,8 +2,8 @@ name: VeraProb Forensic Gatekeeper
 
 on:
   workflow_dispatch:
-  # pull_request:
-  #   branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
 
 concurrency:
   group: forensic-${{ github.ref }}

@@ -5,7 +5,9 @@ import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_command_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
+import 'dart:async';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
+import 'package:veraprob/application/sla_audit/webhook_dispatcher_port.dart';
 import 'approve_sanction_command.dart';
 
 /// Application handler for [ApproveSanctionCommand].
@@ -31,6 +33,7 @@ class ApproveSanctionHandler {
   final SanctionReviewCommandRepository _reviewRepo;
   final RbacService _rbac;
   final IDateTimeProvider _dateTimeProvider;
+  final IWebhookDispatcherPort? _webhookDispatcher;
 
   ApproveSanctionHandler({
     required TenantValidationService tenantValidator,
@@ -38,11 +41,13 @@ class ApproveSanctionHandler {
     required SanctionReviewCommandRepository reviewRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
+    IWebhookDispatcherPort? webhookDispatcher,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
        _reviewRepo = reviewRepo,
        _rbac = rbac,
-       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider();
+       _dateTimeProvider = dateTimeProvider ?? BrazilDateTimeProvider(),
+       _webhookDispatcher = webhookDispatcher;
 
   /// Handles the command by transitioning the queue entry to [applied]
   /// and appending a `VERDICT_SEALED` entry to the immutable ledger, atomically.
@@ -93,5 +98,16 @@ class ApproveSanctionHandler {
       reasonCode: command.reasonCode,
       reviewerReason: command.reviewerReason,
     );
+
+    // 6. Fire and forget webhook dispatch (Phase 10.7)
+    // Runs outside the atomic boundary; failure is reconciled by cron.
+    final dispatcher = _webhookDispatcher;
+    if (dispatcher != null) {
+      unawaited(
+        dispatcher.dispatchVerdictWebhooks(
+          organizationId: command.organizationId,
+        ),
+      );
+    }
   }
 }

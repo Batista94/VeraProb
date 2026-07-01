@@ -6,7 +6,9 @@ import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sanction_dispute_resolution_repository.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_repository.dart';
+import 'dart:async';
 import 'package:veraprob/domain/sla_audit/sanction_transition_guard.dart';
+import 'package:veraprob/application/sla_audit/webhook_dispatcher_port.dart';
 import 'resolve_dispute_command.dart';
 
 /// Application handler for [ResolveDisputeCommand].
@@ -34,6 +36,7 @@ class ResolveDisputeHandler {
   final RbacService _rbac;
   final IDateTimeProvider _clock;
   final SanctionTransitionGuard _guard;
+  final IWebhookDispatcherPort? _webhookDispatcher;
 
   ResolveDisputeHandler({
     required TenantValidationService tenantValidator,
@@ -41,12 +44,14 @@ class ResolveDisputeHandler {
     required SanctionDisputeResolutionRepository resolutionRepo,
     required RbacService rbac,
     IDateTimeProvider? dateTimeProvider,
+    IWebhookDispatcherPort? webhookDispatcher,
   }) : _tenantValidator = tenantValidator,
        _queueRepo = queueRepo,
        _resolutionRepo = resolutionRepo,
        _rbac = rbac,
        _clock = dateTimeProvider ?? BrazilDateTimeProvider(),
-       _guard = const SanctionTransitionGuard();
+       _guard = const SanctionTransitionGuard(),
+       _webhookDispatcher = webhookDispatcher;
 
   Future<void> handle(ResolveDisputeCommand command) async {
     // 1. Fail-Fast tenant sync (INV-1, INV-22).
@@ -103,6 +108,17 @@ class ResolveDisputeHandler {
       occurredAtUtc: _clock.nowUtc(),
       idempotencyKey: '${command.queueEntryId}:$ledgerType:SNAPSHOT',
     );
+
+    // 8. Fire and forget webhook dispatch (Phase 10.7)
+    // Runs outside the atomic boundary; failure is reconciled by cron.
+    final dispatcher = _webhookDispatcher;
+    if (dispatcher != null) {
+      unawaited(
+        dispatcher.dispatchVerdictWebhooks(
+          organizationId: command.organizationId,
+        ),
+      );
+    }
   }
 
   void _assertReasonCode(ResolveDisputeCommand command) {

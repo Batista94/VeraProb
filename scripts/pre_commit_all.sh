@@ -4,8 +4,37 @@
 # ==============================================================================
 set -e
 
-PYTHON_CMD="python3"
-command -v python3 >/dev/null 2>&1 || PYTHON_CMD="python"
+find_real_python() {
+  for cmd in python3 py.exe python; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      if "$cmd" --version 2>&1 | grep -q "Python 3"; then
+        echo "$cmd"
+        return 0
+      fi
+    fi
+  done
+  
+  local common_paths=(
+    "$LOCALAPPDATA/Programs/Python"/Python*/python.exe
+    "$LOCALAPPDATA/Python"/pythoncore-*/python.exe
+    "$HOME/AppData/Local/Programs/Python"/Python*/python.exe
+    "$HOME/AppData/Local/Python"/pythoncore-*/python.exe
+    "$HOME/anaconda3/python.exe"
+    "/c/Python"/Python*/python.exe
+  )
+  for p in "${common_paths[@]}"; do
+    if [ -f "$p" ]; then
+      if "$p" --version 2>&1 | grep -q "Python 3"; then
+        echo "$p"
+        return 0
+      fi
+    fi
+  done
+  
+  echo "python"
+}
+
+PYTHON_CMD=$(find_real_python)
 
 echo "🚀 Running Unified Pre-Commit Hooks..."
 

@@ -93,6 +93,14 @@ TELEGRAM_WEBHOOK_SECRET = "env(TELEGRAM_WEBHOOK_SECRET)"
 [functions.ingest-sascar]
 verify_jwt = false
 
+# super-admin-proxy performs its own INV-31 HMAC temporal gate + manual JWT/AAL2
+# checks (index.ts lines 96-166) and must return sovereigntyErrorResponse() (404)
+# uniformly for every auth failure (INV-26 Anti-Oracle). Gateway verify_jwt=true
+# (default) intercepts unauthenticated requests with 401 before the function
+# runs, breaking that parity.
+[functions.super-admin-proxy]
+verify_jwt = false
+
 
 [analytics]
 enabled          = false
