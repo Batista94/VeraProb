@@ -6952,7 +6952,7 @@ export type Database = {
         Returns: number;
       };
       webhook_delivery_fail: {
-        Args: { p_error: string; p_log_id: string };
+        Args: { p_error: string; p_log_id: string; p_org_id: string };
         Returns: undefined;
       };
     };

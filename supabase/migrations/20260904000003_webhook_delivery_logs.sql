@@ -30,8 +30,15 @@ CREATE TABLE IF NOT EXISTS public.webhook_delivery_logs (
 -- RLS
 ALTER TABLE public.webhook_delivery_logs ENABLE ROW LEVEL SECURITY;
 
--- Grants (Data API constraint)
-GRANT SELECT, INSERT ON public.webhook_delivery_logs TO authenticated;
+-- Drain hot-path index: the dispatcher scans (org, created_at) for non-terminal rows only.
+-- Partial keeps it tiny — SUCCESS/DEAD rows (the vast majority over time) are excluded.
+CREATE INDEX idx_webhook_delivery_logs_drain
+  ON public.webhook_delivery_logs (organization_id, created_at)
+  WHERE status IN ('PENDING', 'FAILED', 'DELIVERING');
+
+-- Grants (Data API constraint). Rows are written ONLY by the SECURITY DEFINER enqueue trigger
+-- (owner privileges), never by a tenant session — so authenticated gets SELECT only, no INSERT.
+GRANT SELECT ON public.webhook_delivery_logs TO authenticated;
 -- Dispatcher (service_role) drains (SELECT) and advances status/retry (UPDATE)
 GRANT SELECT, UPDATE ON public.webhook_delivery_logs TO service_role;
 

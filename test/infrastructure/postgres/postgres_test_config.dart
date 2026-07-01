@@ -217,9 +217,11 @@ class PostgresTestConfig {
       final response = await http
           .get(Uri.parse('$supabaseUrl/functions/v1/super-admin-proxy'))
           .timeout(const Duration(seconds: 2));
-      // 405 = function deployed but rejects non-POST (correct behavior)
-      // 404 = router has no such function (not deployed) — treat as offline
-      return response.statusCode == 405;
+      // Liveness, not auth: any response from the function process means it booted.
+      // 401 = deployed but JWT-gated at the gateway (verify_jwt default) — healthy.
+      // 405 = deployed, reached the method guard on an unauth path — healthy.
+      // 404 = router has no such function (not deployed); 503 = boot failure — offline.
+      return response.statusCode == 401 || response.statusCode == 405;
     } catch (_) {
       return false;
     }

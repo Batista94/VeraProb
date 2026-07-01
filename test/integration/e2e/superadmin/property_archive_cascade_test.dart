@@ -67,10 +67,16 @@ void main() {
 
       test(
         'iter $i: Arquivar org com $numAdmins admins bloqueia todos',
-        skip: !supabaseAvailable
-            ? 'Supabase local não disponível. Execute: supabase start'
-            : null,
         () async {
+          // `skip:` is evaluated at collection time, before setUpAll sets
+          // supabaseAvailable — guard at runtime instead so the flag is read
+          // after the probe has actually run.
+          if (!supabaseAvailable) {
+            markTestSkipped(
+              'Supabase local não disponível. Execute: supabase start',
+            );
+            return;
+          }
           // 1. Create org with N active admins
           final org = await SuperAdminDataFactory.createOrgWithAdmins(
             orgName: 'PBT-Archive-Cascade-$i',

@@ -55,14 +55,21 @@ Deno.test("dispatch-verdict-webhooks - Reject SSRF Private IP", async () => {
             })
           })
         }),
-        update: (updates: any) => ({
-          eq: async (col: string, val: any) => {
-            if (updates.status === "DEAD") {
-              assertEquals(updates.last_error, "SSRF_BLOCKED");
-            }
-            return { error: null };
-          }
-        })
+        // `.eq` is both chainable (rate-limit update filters org + is_active) and awaitable
+        // (DEAD update filters id only). Return a Promise that also carries an `.eq`.
+        update: (updates: any) => {
+          const chain = (): any => {
+            const p: any = Promise.resolve().then(() => {
+              if (updates.status === "DEAD") {
+                assertEquals(updates.last_error, "SSRF_BLOCKED");
+              }
+              return { error: null };
+            });
+            p.eq = () => chain();
+            return p;
+          };
+          return { eq: () => chain() };
+        }
       })
     } as any;
 

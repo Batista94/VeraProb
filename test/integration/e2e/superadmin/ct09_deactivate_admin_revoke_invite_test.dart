@@ -564,7 +564,10 @@ void main() {
         }
 
         // Aguardar feedback de erro
-        await SuperAdminWidgetHelpers.waitForSnackbar(tester, 'Erro');
+        await SuperAdminWidgetHelpers.waitForSnackbar(
+          tester,
+          'Falha ao alterar o status',
+        );
 
         // Verificar que a aplicação não crashou
         expect(

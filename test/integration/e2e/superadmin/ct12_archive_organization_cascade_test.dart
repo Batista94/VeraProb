@@ -458,7 +458,7 @@ void main() {
           // Aguardar feedback de erro
           await SuperAdminWidgetHelpers.waitForSnackbar(
             tester,
-            'Erro ao arquivar',
+            'Falha ao arquivar',
           );
 
           // Verificar que a aplicação não crashou

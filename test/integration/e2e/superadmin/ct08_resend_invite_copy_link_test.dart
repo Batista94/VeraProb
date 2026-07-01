@@ -351,7 +351,7 @@ void main() {
         // Aguardar feedback de erro (snackbar com mensagem de erro)
         await SuperAdminWidgetHelpers.waitForSnackbar(
           tester,
-          'Erro ao reenviar',
+          'Falha ao reenviar',
         );
 
         // Verificar que a aplicação não crashou

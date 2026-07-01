@@ -33,16 +33,36 @@ function isPublicIp(ip: string): boolean {
     return false; // 100.64.0.0/10 (CGNAT)
   }
   // IPv6 local/private
-  if (ip === "::1" || ip === "::" || ip.toLowerCase().startsWith("::ffff:0:0") || ip.toLowerCase().startsWith("fe80:") || ip.toLowerCase().startsWith("fc00:") || ip.toLowerCase().startsWith("fd00:")) {
+  const lower = ip.toLowerCase();
+  // IPv4-mapped IPv6 (::ffff:a.b.c.d): re-validate the embedded IPv4; block hex-mapped form.
+  if (lower.startsWith("::ffff:")) {
+    const tail = lower.slice(7);
+    return tail.includes(".") ? isPublicIp(tail) : false;
+  }
+  // fe80::/10 link-local; fc00::/7 unique-local spans fc00:–fdff:.
+  if (lower === "::1" || lower === "::" || lower.startsWith("fe80:") || lower.startsWith("fc") || lower.startsWith("fd")) {
     return false;
   }
   return true;
 }
 
+// Constant-time exact match of the Bearer token vs the service-role key. Replaces loose
+// `.includes()` substring semantics + closes a timing leak on the cross-tenant auth boundary.
+function isServiceRoleAuth(authHeader: string, secret: string | undefined): boolean {
+  if (!secret) return false;
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (token.length !== secret.length) return false;
+  let diff = 0;
+  for (let i = 0; i < token.length; i++) {
+    diff |= token.charCodeAt(i) ^ secret.charCodeAt(i);
+  }
+  return diff === 0;
+}
+
 export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof createClient>, req: Request): Promise<Response> {
   const authHeader = req.headers.get("Authorization") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const isCron = authHeader.includes(serviceRoleKey ?? "DO_NOT_MATCH");
+  const isCron = isServiceRoleAuth(authHeader, serviceRoleKey);
 
   // If it's not cron, it must be an authenticated kick from the tenant
   if (!isCron && !ctx.orgId) {
@@ -68,7 +88,7 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
       }
     }
     
-    await supabase.from("webhook_endpoints").update({ last_kick_at: new Date().toISOString() }).eq("organization_id", queryOrgId);
+    await supabase.from("webhook_endpoints").update({ last_kick_at: new Date().toISOString() }).eq("organization_id", queryOrgId).eq("is_active", true);
   }
 
   // Drain logic via RPC
@@ -121,8 +141,9 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
         .eq("id", ledgerEntryId ?? "")
         .maybeSingle();
 
-      const sealedFine = Number(ledger?.payload?.verdict_evidence?.fine_cents ?? 0);
-      const payloadFine = Number(payload?.financial?.fine_cents ?? 0);
+      // INV-4: fine_cents is BIGINT — compare as BigInt to avoid float64 precision loss above 2^53.
+      const sealedFine = BigInt(ledger?.payload?.verdict_evidence?.fine_cents ?? 0);
+      const payloadFine = BigInt(payload?.financial?.fine_cents ?? 0);
 
       if (ledgerErr || !ledger || sealedFine !== payloadFine) {
         await supabase.from("webhook_delivery_logs").update({ status: 'DEAD', last_error: 'PAYLOAD_TAMPERED' }).eq("id", id);
@@ -131,7 +152,7 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
           event_type: 'PAYLOAD_TAMPERED',
           severity: 'critical',
           source: 'edge_function',
-          payload: { log_id: id, sealed_fine_cents: sealedFine, payload_fine_cents: payloadFine }
+          payload: { log_id: id, sealed_fine_cents: sealedFine.toString(), payload_fine_cents: payloadFine.toString() }
         });
         continue;
       }
@@ -145,12 +166,11 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
       const orgKey = await deriveOrgKey(organization_id, used_version);
       const finalSignature = `v${used_version}|${await signWithDerivedKey(orgKey, stringToSign)}`;
 
-      // Dispatch via manual TCP/TLS to avoid standard fetch DNS rebinding
-      const tcp = await Deno.connect({ hostname: ipv4[0], port: 443 });
-      const tls = await Deno.startTls(tcp, { hostname: u.hostname });
-      
+      // Dispatch via manual TCP/TLS to avoid standard fetch DNS rebinding.
+      // Connect to a VALIDATED ip (never the hostname → no re-resolution); prefer IPv4, else IPv6.
+      const targetIp = (ipv4[0] ?? ipv6[0]) as string;
       const encoder = new TextEncoder();
-      const httpRequest = 
+      const httpRequest =
         `POST ${u.pathname}${u.search} HTTP/1.1\r\n` +
         `Host: ${u.hostname}\r\n` +
         `Content-Type: application/json\r\n` +
@@ -162,28 +182,39 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
         `Connection: close\r\n\r\n` +
         `${rawBody}`;
 
-      await tls.write(encoder.encode(httpRequest));
-      
-      const buffer = new Uint8Array(1024);
-      const readResult = await tls.read(buffer);
-      tls.close();
+      const conn = await Deno.connect({ hostname: targetIp, port: 443 });
+      let tls: Deno.TlsConn | null = null;
+      let statusCode = 0;
+      try {
+        tls = await Deno.startTls(conn, { hostname: u.hostname });
+        await tls.write(encoder.encode(httpRequest));
 
-      if (readResult) {
-        const responseStr = new TextDecoder().decode(buffer.subarray(0, readResult));
-        const statusMatch = responseStr.match(/^HTTP\/1\.1 (\d+)/);
-        const statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
-
-        if (statusCode >= 200 && statusCode < 300) {
-          await supabase.from("webhook_delivery_logs").update({ status: 'SUCCESS', signature: finalSignature, dispatched_at: new Date().toISOString() }).eq("id", id);
-        } else {
-          await supabase.rpc("webhook_delivery_fail", { p_log_id: id, p_error: `HTTP_${statusCode}` });
+        // The HTTP status line may not arrive in the first read; accumulate until CRLF.
+        const buffer = new Uint8Array(1024);
+        const decoder = new TextDecoder();
+        let responseStr = "";
+        for (let reads = 0; reads < 8; reads++) {
+          const n = await tls.read(buffer);
+          if (n === null) break;
+          responseStr += decoder.decode(buffer.subarray(0, n), { stream: true });
+          if (responseStr.includes("\r\n")) break;
         }
+        const statusMatch = responseStr.match(/^HTTP\/1\.1 (\d+)/);
+        statusCode = statusMatch ? parseInt(statusMatch[1], 10) : 0;
+      } finally {
+        // tls.close() also closes the underlying conn; if startTls failed, close conn directly.
+        if (tls) { try { tls.close(); } catch { /* ignore */ } }
+        else { try { conn.close(); } catch { /* ignore */ } }
+      }
+
+      if (statusCode >= 200 && statusCode < 300) {
+        await supabase.from("webhook_delivery_logs").update({ status: 'SUCCESS', signature: finalSignature, dispatched_at: new Date().toISOString() }).eq("id", id);
       } else {
-        await supabase.rpc("webhook_delivery_fail", { p_log_id: id, p_error: `NO_RESPONSE` });
+        await supabase.rpc("webhook_delivery_fail", { p_log_id: id, p_org_id: organization_id, p_error: statusCode > 0 ? `HTTP_${statusCode}` : `NO_RESPONSE` });
       }
       processed++;
     } catch (err: any) {
-      await supabase.rpc("webhook_delivery_fail", { p_log_id: log.id, p_error: err.message.substring(0, 50) });
+      await supabase.rpc("webhook_delivery_fail", { p_log_id: log.id, p_org_id: log.org_id_out, p_error: err.message.substring(0, 50) });
     }
   }
 
@@ -194,7 +225,7 @@ if (import.meta.main) {
   Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization") ?? "";
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const isCron = authHeader.includes(serviceRoleKey ?? "DO_NOT_MATCH");
+    const isCron = isServiceRoleAuth(authHeader, serviceRoleKey);
 
     if (isCron) {
       return await handleWithSecurity(req, "dispatch-verdict-webhooks", handler, false);

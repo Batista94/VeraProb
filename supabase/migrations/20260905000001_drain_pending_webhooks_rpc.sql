@@ -46,8 +46,9 @@ BEGIN
 
     -- Key Bootstrap (V3)
     IF v_log.wdl_key_id IS NULL THEN
-      -- One-active-key-per-org is an EXCLUDE constraint. Only bare DO NOTHING (no target)
-      -- can use an exclusion constraint as arbiter — it cannot be named or inferred.
+      -- One-active-key-per-org is a partial UNIQUE index (uq_webhook_signing_keys_active,
+      -- ON (organization_id) WHERE status = 'active'). Bare DO NOTHING (no target) lets the
+      -- planner match that partial index as arbiter without us inferring its predicate.
       -- Idempotent under concurrent SKIP LOCKED drains bootstrapping the same org.
       INSERT INTO public.webhook_signing_keys (organization_id, version, status)
       VALUES (v_log.wdl_org_id, 1, 'active')
