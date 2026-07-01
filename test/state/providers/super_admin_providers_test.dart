@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:fake_async/fake_async.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderException;
 import 'package:flutter_test/flutter_test.dart';
@@ -20,7 +21,9 @@ import 'package:veraprob/domain/super_admin/i_cnpj_lookup_service.dart';
 import 'package:veraprob/domain/super_admin/i_super_admin_repository.dart';
 import 'package:veraprob/domain/super_admin/system_audit_log_entry.dart';
 import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -96,6 +99,74 @@ ProviderContainer _createContainer({
 }
 
 void main() {
+  // ═════════════════════════════════════════════════════════════════════════════
+  // GROUP 0: hmacRequestKeyProvider Resolution (INV-31)
+  // ═════════════════════════════════════════════════════════════════════════════
+  group('hmacRequestKeyProvider Resolution (INV-31)', () {
+    tearDown(() {
+      // Limpa o estado do dotenv após cada teste
+      dotenv.clean();
+    });
+
+    test(
+      'Caso 1: Resolve com sucesso a partir das SharedPreferences',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'hmac_request_key_v1': 'key-from-shared-prefs',
+        });
+        final prefs = await SharedPreferences.getInstance();
+
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+
+        final key = container.read(hmacRequestKeyProvider);
+        expect(key, equals('key-from-shared-prefs'));
+        container.dispose();
+      },
+    );
+
+    test(
+      'Caso 2: Resolve a partir do dotenv quando SharedPreferences estiver vazio',
+      () async {
+        // Configura o mock do SharedPreferences vazio
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        // Inicializa o dotenv no contexto do teste
+        dotenv.loadFromString(
+          envString: 'HMAC_SECRET_KEY_V1=test-key',
+        );
+
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+
+        final key = container.read(hmacRequestKeyProvider);
+        expect(key, equals('test-key'));
+        container.dispose();
+      },
+    );
+
+    test(
+      'Caso 3: Lança IntegrityException quando ausente em ambas as fontes',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+
+        expect(
+          () => container.read(hmacRequestKeyProvider),
+          throwsA(isA<ProviderException>()),
+        );
+        container.dispose();
+      },
+    );
+  });
+
   // ═════════════════════════════════════════════════════════════════════════════
   // GROUP 1: SECURITY INVARIANTS (CIA TRIAD)
   // ═════════════════════════════════════════════════════════════════════════════

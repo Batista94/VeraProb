@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/audit/system_audit_log_service.dart';
@@ -39,16 +40,25 @@ final hmacRequestKeyProvider = Provider<String>((ref) {
   try {
     final prefs = ref.watch(sharedPreferencesProvider);
     final key = prefs.getString('hmac_request_key_v1');
-    if (key == null || key.isEmpty) {
-      throw const IntegrityException(
-        'INV-31: hmac_request_key_v1 not configured',
-        field: 'hmac_request_key_v1',
-      );
+    if (key != null && key.isNotEmpty) {
+      return key;
     }
-    return key;
   } on UnimplementedError {
     return 'test-hmac-key-v1-32chars-padding00';
+  } catch (_) {
+    // Ignora outros erros e tenta o fallback no dotenv
   }
+
+  // Fallback para a variável de ambiente configurada no bootstrap (.env)
+  final envKey = dotenv.env['HMAC_SECRET_KEY_V1'];
+  if (envKey != null && envKey.isNotEmpty) {
+    return envKey;
+  }
+
+  throw const IntegrityException(
+    'INV-31: hmac_request_key_v1 not configured in SharedPreferences or .env',
+    field: 'hmac_request_key_v1',
+  );
 });
 
 /// Read operations route through the `super-admin-proxy` Edge Function
