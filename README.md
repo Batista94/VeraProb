@@ -43,6 +43,7 @@ graph TB
     Sentry["🚨 Sentry<br/>(Error Tracking)"]
     PostHog["📊 PostHog<br/>(Analytics)"]
     Resend["📧 Resend<br/>(Notificações)"]
+    ERP["🏢 ERP Cliente<br/>(SAP/Oracle)"]
     
     Tenant1 -->|Ingesta telemetria bruta| VeraProb
     Tenant2 -->|Ingesta telemetria bruta| VeraProb
@@ -54,6 +55,7 @@ graph TB
     VeraProb -->|Log de erros| Sentry
     VeraProb -->|Eventos| PostHog
     VeraProb -->|Notificações| Resend
+    VeraProb -->|Webhook de Veredito Selado HMAC| ERP
     
     VeraProb -->|Verdicts & Forensic Records| Tenant1
     VeraProb -->|Verdicts & Forensic Records| Tenant2
@@ -124,7 +126,7 @@ graph TB
 ---
 ### Decisões Arquiteturais ("Why This Architecture?")
 
-A complexidade arquitetural do VeraPrab justifica-se pela necessidade de **rigor forense, não-repúdio e integridade sob falhas**, operando como um motor de governança financeira.
+A complexidade arquitetural do VeraProb justifica-se pela necessidade de **rigor forense, não-repúdio e integridade sob falhas**, operando como um motor de governança financeira.
 
 - **Clean Architecture + DDD (C4 Boundaries)**
   - *Decisão*: Isolamento do core de validação (`lib/domain/`) contra dependências de infraestrutura (Supabase, Postgres, MapTiler).
@@ -276,6 +278,7 @@ graph TB
     Sentry["🚨 Sentry<br/>(Error Tracking)"]
     PostHog["📊 PostHog<br/>(Analytics)"]
     Resend["📧 Resend<br/>(Notifications)"]
+    ERP["🏢 Client ERP<br/>(SAP/Oracle)"]
     
     Tenant1 -->|Ingest raw telemetry| VeraProb
     Tenant2 -->|Ingest raw telemetry| VeraProb
@@ -287,6 +290,7 @@ graph TB
     VeraProb -->|Error logs| Sentry
     VeraProb -->|Events| PostHog
     VeraProb -->|Notifications| Resend
+    VeraProb -->|HMAC-signed Sealed Verdict Webhook| ERP
     
     VeraProb -->|Verdicts & Forensic Records| Tenant1
     VeraProb -->|Verdicts & Forensic Records| Tenant2

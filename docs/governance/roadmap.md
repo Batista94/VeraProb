@@ -1,7 +1,7 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-06-30
-**Current Status:** Phase 10.6 completed (Dispute Submission, Ingestion Health Monitor, Sparklines, and Auto-resolve Alerts delivered) · [NEXT: Integrar webhook de resoluções de disputas (10.7) e priorizar próximos itens BIZ]
+**Revision:** 2026-07-01
+**Current Status:** Phase 10.7 backend-first entregue (Sealed Verdict Webhook engine — Transactional Outbox + dual-path dispatch, HMAC per-org, SSRF-hardened; test-db 1459 PASS, deno 6/0, scanner [GO], lead-reviewer [GO], UAT-1 webhook.site verde) · [NEXT: UI Tenant Admin de webhooks (10.7 separado) + trilha de notificação Resend na resolução]
 
 ---
 
@@ -9,8 +9,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1354+ passing · 121 files · `make test-db` ✅ |
-| Migrations | 322 committed ✅ |
+| DB Tests (pgTAP) | 1459+ passing · 130 files · `make test-db` ✅ |
+| Migrations | 331 committed ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -20,14 +20,14 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 5 itens de Readiness pendentes.
+**Status:** EM ANDAMENTO — 4 itens de Readiness pendentes.
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
 - [ ] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
 - [ ] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
 - [ ] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
-- [ ] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
+- [x] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing. *(Entregue Fase 10.7 — engine backend-first; UAT-1 webhook.site verde.)*
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 
 ---
@@ -40,7 +40,7 @@
 
 ### [x] Phase 10.5 — Core Transactional Integrity (Prioridade Máxima) (Concluído)
 
-### [x] Phase 10.6 — Forensic Operations & Dispute Reality (Concluído) (Concluído)
+### [x] Phase 10.6 — Forensic Operations & Dispute Reality (Concluído)
 
 > **Plano v3 (council-remediated) entregue 2026-06-12** — Componentes 1-5. Migrações `20260813000001`…`20260814000004` (15) + edge fns `verify-evidence-hash`, `notify-sla-breach`. `make test-db` 824 PASS. CI E2E pendente de re-run após fix do grant MFA (`20260815000000`).
 
@@ -65,21 +65,21 @@
 
 ### [/] Phase 10.7 — Enterprise Integration & Event Dispatch
 
-> **Plano de Arquitetura — Webhook de Veredito Selado (council, 2026-06-30, v2 endurecida)** — Transactional Outbox + dual-path (kick imediato pós-RPC + GHA cron reconciliador). Assinatura HMAC-SHA256 por org com congelamento de versão de chave. SSRF anti-DNS-rebinding (resolve→valida→pin IP). At-least-once + idempotência no receptor. Design em `forensic_records/plans/`. Sem código ainda.
+> **Plano de Arquitetura — Webhook de Veredito Selado (council, 2026-06-30, v2 endurecida) — ENTREGUE 2026-07-01** — Transactional Outbox + dual-path (kick imediato pós-RPC + GHA cron reconciliador). Assinatura HMAC-SHA256 por org com congelamento de versão de chave. SSRF anti-DNS-rebinding (resolve→valida→pin IP). At-least-once + idempotência no receptor. Migrações `20260904000001`…`20260905000003` (7) + edge fn `dispatch-verdict-webhooks` + kicker Dart + GHA `webhook-dispatch.yml`. Gates: test-db 1459 PASS, deno 6/0, scanner [GO], lead-reviewer [GO], UAT-1 webhook.site verde. Commits `19cc79fa`…`03c78c1a` na branch `feature/enterprise-integrations`. Pendente: UI Tenant Admin (10.7 separado) + Gate 8 PR→main + UAT-2 (secrets CI).
 
-- [/] **[BIZ] Webhook de Veredito Selado — dispatch engine (backend-first):**
+- [/] **[BIZ] Webhook de Veredito Selado — dispatch engine (backend-first entregue · UI pendente):**
   - [x] Tabela `webhook_signing_keys` (chave de saída por org, versionada, status active/retiring/revoked, janela de graça 24h).
   - [x] Tabela `webhook_endpoints` (config por org, `last_kick_at` rate-limit, guarda SSRF, soft-delete, RLS Tenant Admin).
   - [x] Tabela `webhook_delivery_logs` (outbox append-only imutável: `PENDING|DELIVERING|SUCCESS|FAILED|DEAD`, `signing_key_id` e `ledger_entry_id` próprios, retry/backoff, enqueue idempotente).
   - [x] Trigger `enqueue_verdict_webhooks` AFTER INSERT em `sla_audit_ledger_v2` (tipos terminais) — outbox, zero HTTP em txn.
-  - [ ] Edge fn `dispatch-verdict-webhooks` (dois modos de auth, SSRF Deno.startTls, SKIP LOCKED, cross-verify de hash, backoff, dead-letter).
-  - [ ] Kick imediato Dart pós-commit (fire-and-forget) na camada application/infrastructure.
-  - [ ] GHA cron reconciliador `webhook-dispatch.yml` (retry de FAILED).
-  - [ ] Testes pgTAP + Deno + Dart cobrindo V1–V5 + planos 1:1; Council + Skills obrigatórios.
+  - [x] Edge fn `dispatch-verdict-webhooks` (dois modos de auth, SSRF Deno.startTls, SKIP LOCKED, cross-verify de hash V4, backoff, dead-letter).
+  - [x] Kick imediato Dart pós-commit (fire-and-forget) na camada application/infrastructure (`webhook_dispatcher_port` + `supabase_webhook_dispatch_kicker`).
+  - [x] GHA cron reconciliador `webhook-dispatch.yml` (retry de FAILED, `*/5`).
+  - [x] Testes pgTAP (7) + Deno (6/0) + Dart cobrindo V1–V5 + planos 1:1; Council + Skills [GO].
   - [ ] (10.7 separado) UI Tenant Admin: CRUD endpoints, Delivery Log viewer, replay manual, secret reveal-once.
 
-- [/] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
-- [/] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration.
+- [x] **Webhook Endpoint:** Functional 'Sealed Verdict' webhook for external integration testing.
+- [x] **[BIZ] Webhooks & API-First Integration:** Anticipated from Phase 11. Implement 'Sealed Verdict' Webhooks (JSON) for immediate SAP/Oracle/ERP integration. *(Entregue Fase 10.7 — payload JSON assinado HMAC per-org; consumível por SAP/Oracle/ERP.)*
 - [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
 - [ ] **[BIZ] Data Extract & Reporting API:** Criação de endpoints de exportação de dados agregados (CSV/JSON) e chaves de API Read-Only para que o C-Level do cliente possa conectar seus painéis do PowerBI diretamente às Views de ROI (`v_roi_summary`) e `contractual_financial_snapshot`.
 
