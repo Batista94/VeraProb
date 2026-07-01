@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_log_view.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_status_view.dart';
+import 'package:veraprob/application/webhooks/webhook_exceptions.dart';
 import 'package:veraprob/state/providers/webhook_providers.dart';
 
 class ForensicLogView extends ConsumerStatefulWidget {
@@ -91,15 +92,14 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
       messenger.showSnackBar(
         const SnackBar(content: Text('Replay solicitado com sucesso.')),
       );
-    } catch (e) {
-      // UX-RAW-EXCEPTION: Extract clean message from Domain/App exceptions
-      // sem usar reflection (import de DomainException é proibido na UI).
-      final raw = e.toString();
-      final msg = raw.contains(':')
-          ? raw.split(':').sublist(1).join(':').trim()
-          : raw;
+    } on WebhookApplicationException catch (e) {
+      // Mensagem já traduzida para vocabulário de domínio (PT) na infra.
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {
       messenger.showSnackBar(
-        SnackBar(content: Text(msg.isEmpty ? 'Erro inesperado' : msg)),
+        const SnackBar(
+          content: Text('Erro inesperado ao solicitar o reprocessamento.'),
+        ),
       );
     } finally {
       if (mounted) {

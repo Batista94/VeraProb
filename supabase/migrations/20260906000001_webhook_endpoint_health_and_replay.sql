@@ -38,6 +38,7 @@ CREATE OR REPLACE FUNCTION public.webhook_manual_replay(p_log_id UUID)
 RETURNS void
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_org_id UUID;
@@ -50,7 +51,7 @@ BEGIN
   v_role := auth.jwt() -> 'app_metadata' ->> 'role';
 
   IF v_org_id IS NULL OR v_role IS NULL THEN
-    RAISE EXCEPTION 'Not authenticated or missing claims' USING ERRCODE = 'unauthenticated';
+    RAISE EXCEPTION 'Not authenticated or missing claims' USING ERRCODE = 'insufficient_privilege';
   END IF;
 
   IF v_role != 'TENANT_ADMIN' THEN
@@ -63,12 +64,12 @@ BEGIN
   WHERE id = p_log_id;
 
   IF NOT FOUND OR v_log_record.organization_id != v_org_id THEN
-    RAISE EXCEPTION 'Webhook delivery log not found' USING ERRCODE = 'not_found';
+    RAISE EXCEPTION 'Webhook delivery log not found' USING ERRCODE = 'no_data_found';
   END IF;
 
-  -- 3. Validate Status
+  -- 3. Validate Status (P0001 → IntegrityException; mensagem PT chega à UI)
   IF v_log_record.status NOT IN ('FAILED', 'DEAD') THEN
-    RAISE EXCEPTION 'Can only replay FAILED or DEAD logs' USING ERRCODE = 'invalid_parameter_value';
+    RAISE EXCEPTION 'Apenas logs com falha (FAILED ou DEAD) podem ser reprocessados.';
   END IF;
 
   -- 4. Rate Limiting (30s minimum interval)
@@ -78,7 +79,7 @@ BEGIN
   FOR UPDATE; -- Lock for concurrency
 
   IF v_endpoint_record.last_kick_at IS NOT NULL AND v_endpoint_record.last_kick_at > NOW() - INTERVAL '30 seconds' THEN
-    RAISE EXCEPTION 'Rate limit exceeded: Please wait 30 seconds between replays' USING ERRCODE = 'rate_limit_exceeded';
+    RAISE EXCEPTION 'Limite de reprocessamento atingido: aguarde 30 segundos.';
   END IF;
 
   -- 5. Update Log to PENDING

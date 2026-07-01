@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/webhooks/i_webhook_repository.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_log_view.dart';
 import 'package:veraprob/application/webhooks/webhook_endpoint_view.dart';
+import 'package:veraprob/application/webhooks/webhook_exceptions.dart';
 import 'package:veraprob/application/webhooks/webhook_secret_reveal_result.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
@@ -72,16 +73,26 @@ class SupabaseWebhookRepository
     try {
       await _client.rpc('webhook_manual_replay', params: {'p_log_id': logId});
     } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(
-        e,
-        resourceType: 'webhook_delivery_log',
-        resourceId: logId,
-      );
-    } catch (e) {
-      throw const WebhookSecretException(
-        'Erro inesperado ao solicitar replay.',
+      throw _mapReplayException(e);
+    } catch (_) {
+      throw const WebhookApplicationException(
+        'Não foi possível solicitar o reprocessamento. Tente novamente.',
       );
     }
+  }
+
+  /// Traduz o erro da RPC para vocabulário de domínio (PT), pronto para a UI.
+  ///
+  /// P0001 = regra de negócio (status inválido / rate limit): a própria RPC já
+  /// emite a mensagem em português. INV-26: not-found (P0002) e RLS (42501)
+  /// recebem mensagem genérica — sem oráculo de existência/pertencimento.
+  WebhookApplicationException _mapReplayException(PostgrestException e) {
+    return switch (e.code) {
+      'P0001' => WebhookApplicationException(e.message),
+      _ => const WebhookApplicationException(
+        'Log de entrega indisponível para reprocessamento.',
+      ),
+    };
   }
 
   // ── Private ──────────────────────────────────────────────────────────────
