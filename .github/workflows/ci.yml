@@ -2,10 +2,10 @@ name: CI — Analyze & Test
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: ["**"]
-  # pull_request:
-  #   branches: ["main"]
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["main"]
 
 concurrency:
   group: ci-${{ github.ref }}
