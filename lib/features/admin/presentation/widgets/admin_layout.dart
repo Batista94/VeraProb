@@ -429,7 +429,11 @@ class _AlertsButton extends ConsumerWidget {
         ),
         child: const Icon(Icons.notifications_active_rounded),
       ),
-      tooltip: hasAlerts ? 'Triagem de Alertas' : 'Sem alertas ativos',
+      // Disambiguates from the onboarding badge: name + live count for
+      // tooltip AND screen readers (IconButton derives semantics from it).
+      tooltip: hasAlerts
+          ? 'Triagem de Alertas — $count alerta${count > 1 ? 's' : ''} ativo${count > 1 ? 's' : ''}'
+          : 'Sem alertas ativos',
       color: hasAlerts ? VeraProbColors.critical : VeraProbColors.textDisabled,
       onPressed: hasAlerts ? () => Scaffold.of(context).openEndDrawer() : null,
     );

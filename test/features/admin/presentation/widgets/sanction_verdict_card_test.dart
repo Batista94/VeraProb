@@ -2269,7 +2269,11 @@ void _sealedEvidenceAndStyleTests() {
           btn.style?.backgroundColor?.resolve(states),
           VeraProbColors.verdictAction,
         );
-        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
+        expect(
+          btn.style?.foregroundColor?.resolve(states),
+          // ACCENT-FILL-CONTRAST: dark foreground on verdictAction fill.
+          VeraProbColors.background,
+        );
       },
     );
 
@@ -2291,7 +2295,11 @@ void _sealedEvidenceAndStyleTests() {
           btn.style?.backgroundColor?.resolve(states),
           VeraProbColors.verdictAction,
         );
-        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
+        expect(
+          btn.style?.foregroundColor?.resolve(states),
+          // ACCENT-FILL-CONTRAST: dark foreground on verdictAction fill.
+          VeraProbColors.background,
+        );
       },
     );
 
@@ -2433,7 +2441,11 @@ void _sealedEvidenceAndStyleTests() {
           btn.style?.backgroundColor?.resolve(states),
           VeraProbColors.verdictAction,
         );
-        expect(btn.style?.foregroundColor?.resolve(states), Colors.white);
+        expect(
+          btn.style?.foregroundColor?.resolve(states),
+          // ACCENT-FILL-CONTRAST: dark foreground on verdictAction fill.
+          VeraProbColors.background,
+        );
       },
     );
   });

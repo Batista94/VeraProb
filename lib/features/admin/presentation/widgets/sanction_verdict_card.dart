@@ -201,7 +201,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             color: isFocused
                 ? leftBorderColor.withValues(alpha: 0.05)
                 : VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             border: Border.all(
               color: isFocused ? leftBorderColor : VeraProbColors.border,
             ),
@@ -307,9 +307,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                         decoration: BoxDecoration(
                                           color: VeraProbColors.primary
                                               .withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
+                                          borderRadius: VeraProbRadii.smAll,
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
@@ -442,7 +440,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                     color: VeraProbColors.error.withValues(
                                       alpha: 0.1,
                                     ),
-                                    borderRadius: BorderRadius.circular(8),
+                                    borderRadius: VeraProbRadii.mdAll,
                                     border: Border.all(
                                       color: VeraProbColors.error.withValues(
                                         alpha: 0.3,
@@ -648,7 +646,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: cfg.color.withValues(alpha: cfg.fill),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: VeraProbRadii.smAll,
                 border: cfg.bordered
                     ? Border.all(color: cfg.color.withValues(alpha: 0.4))
                     : null,
@@ -710,7 +708,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(color: VeraProbColors.border),
         ),
         child: const CircularProgressIndicator(strokeWidth: 2),
@@ -723,13 +721,13 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
         child: InkWell(
           key: const ValueKey('download-dossier-button'),
           onTap: _onDownloadDossier,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           child: Container(
             height: 40,
             width: 40,
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: const Icon(
@@ -915,14 +913,15 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                         height: 14,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+                          color: VeraProbColors.background,
                         ),
                       )
                     : const Icon(Icons.gavel_rounded, size: 16),
                 label: const Text('CONFIRMAR INFRAÇÃO'),
                 style: FilledButton.styleFrom(
                   backgroundColor: VeraProbColors.verdictAction,
-                  foregroundColor: Colors.white,
+                  foregroundColor: VeraProbColors.background,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
                     vertical: 10,
@@ -948,7 +947,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             label: const Text('ANULAR INFRAÇÃO'),
             style: FilledButton.styleFrom(
               backgroundColor: VeraProbColors.verdictAction,
-              foregroundColor: Colors.white,
+              foregroundColor: VeraProbColors.background,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -992,7 +991,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             label: const Text('ANULAR INFRAÇÃO'),
             style: FilledButton.styleFrom(
               backgroundColor: VeraProbColors.verdictAction,
-              foregroundColor: Colors.white,
+              foregroundColor: VeraProbColors.background,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -1013,7 +1012,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
             label: const Text('CONFIRMAR INFRAÇÃO'),
             style: FilledButton.styleFrom(
               backgroundColor: VeraProbColors.verdictAction,
-              foregroundColor: Colors.white,
+              foregroundColor: VeraProbColors.background,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
@@ -1509,7 +1508,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
@@ -1777,7 +1776,7 @@ class _ClauseBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Text(
@@ -1802,7 +1801,7 @@ class _ConfidenceBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1842,7 +1841,7 @@ class _ForensicSealRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: VeraProbColors.surfaceElevated.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
           ),
           child: Text(
             'SHA-256: ${item.shortEvidenceHash}...',
@@ -1933,7 +1932,7 @@ class _PeerReviewRow extends StatelessWidget {
                   label: const Text('CONFIRMAR (2º AUDITOR)'),
                   style: FilledButton.styleFrom(
                     backgroundColor: VeraProbColors.verdictAction,
-                    foregroundColor: Colors.white,
+                    foregroundColor: VeraProbColors.background,
                     disabledBackgroundColor: VeraProbColors.textDisabled
                         .withValues(alpha: 0.3),
                     padding: const EdgeInsets.symmetric(
@@ -2121,7 +2120,7 @@ class _RetractionProvenanceZone extends ConsumerWidget {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: VeraProbColors.warning.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(
             color: VeraProbColors.warning.withValues(alpha: 0.3),
           ),
@@ -2257,7 +2256,7 @@ class _PortalLinkZoneState extends ConsumerState<_PortalLinkZone> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: VeraProbColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(color: VeraProbColors.border),
         ),
         child: Row(
@@ -2296,7 +2295,7 @@ class _PortalLinkZoneState extends ConsumerState<_PortalLinkZone> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: VeraProbColors.surfaceElevated,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(color: VeraProbColors.border),
         ),
         child: Column(
@@ -2546,7 +2545,7 @@ class _PortalSubmissionTile extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border, width: 0.5),
       ),
       child: Column(
@@ -2617,7 +2616,7 @@ class _PortalJustificationTile extends StatelessWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border, width: 0.5),
       ),
       child: Column(
@@ -2884,7 +2883,10 @@ class _PortalAttachmentLightbox extends StatelessWidget {
               label: 'Fechar visualização',
               child: IconButton(
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.close, color: Colors.white),
+                icon: const Icon(
+                  Icons.close,
+                  color: VeraProbColors.textPrimary,
+                ),
               ),
             ),
           ),
@@ -2904,7 +2906,7 @@ class _PortalAttachmentLightbox extends StatelessWidget {
                         padding: EdgeInsets.all(32),
                         child: Text(
                           'Não foi possível carregar o anexo.',
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(color: VeraProbColors.textPrimary),
                         ),
                       ),
                     ),

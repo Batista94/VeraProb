@@ -358,7 +358,7 @@ class _AuditTab extends ConsumerWidget {
                           color: IncidentStatusUiMapper.colorFor(
                             log.lifecycleStatus!,
                           ).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: VeraProbRadii.smAll,
                           border: Border.all(
                             color: IncidentStatusUiMapper.colorFor(
                               log.lifecycleStatus!,
@@ -395,7 +395,7 @@ class _AuditTab extends ConsumerWidget {
                     color: log.category == 'SYSTEM'
                         ? VeraProbColors.info.withValues(alpha: 0.15)
                         : VeraProbColors.warning.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: VeraProbRadii.smAll,
                   ),
                   child: Text(
                     log.category == 'SYSTEM' ? 'Sistema' : 'Operador',
@@ -545,7 +545,7 @@ class _FilterChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: VeraProbRadii.xlAll,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
@@ -557,7 +557,7 @@ class _FilterChip extends StatelessWidget {
                 ? VeraProbColors.primary.withValues(alpha: 0.5)
                 : VeraProbColors.border,
           ),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: VeraProbRadii.xlAll,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -718,7 +718,7 @@ class _AuditSidePanel extends ConsumerWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: VeraProbColors.background,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(color: VeraProbColors.border),
                 ),
                 child: SelectableText(
