@@ -33,10 +33,14 @@
  * ```
  */
 
+// deno-lint-ignore no-import-prefix
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "./sovereignty_error_mapper.ts";
 import { validateJwtAuth, type JwtAuthResult } from "./jwt_auth_validator.ts";
 import { sanitizeJwtClaims } from "./jwt_claims_sanitizer.ts";
+
+// deno-lint-ignore no-explicit-any
+declare const Sentry: any;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -206,8 +210,9 @@ export async function handleWithSecurity(
 
     // Step 5.1: SuperAdmin Enforcement (INV-6)
     if (requireSuperAdmin) {
-      const isSuperAdmin = authResult.jwtPayload.app_metadata?.super_admin === true || 
-                          authResult.jwtPayload.app_metadata?.super_admin === "true";
+      const appMetadata = authResult.jwtPayload.app_metadata as { super_admin?: boolean | string } | undefined;
+      const isSuperAdmin = appMetadata?.super_admin === true || 
+                          appMetadata?.super_admin === "true";
       
       if (!isSuperAdmin) {
         // INV-26: Return canonical 404 to prevent inference of SuperAdmin status
@@ -262,9 +267,11 @@ export async function handleWithSecurity(
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
-  // Step 7: Execute handler with full error trapping (INV-26)
+  // Step 7: Final Execution (INV-27)
+  // Run the actual edge function handler with the enriched security context
   try {
-    const response = await handler(ctx, supabase, req);
+    // deno-lint-ignore no-explicit-any
+    const response = await handler(ctx, supabase as any, req);
 
     // Step 8: Inject correlation ID into response headers
     const headers = new Headers(response.headers);
@@ -277,7 +284,7 @@ export async function handleWithSecurity(
       status: response.status,
       headers,
     });
-  } catch (error) {
+  } catch (_error) {
     // INV-26: ALL infrastructure errors → canonical 404
     // NO Postgres error codes (22P02, PGRST116, etc.) reach the client
 

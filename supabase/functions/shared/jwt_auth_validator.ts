@@ -23,6 +23,9 @@
 
 import { sovereigntyErrorResponse } from "./sovereignty_error_mapper.ts";
 
+// deno-lint-ignore no-explicit-any
+declare const Sentry: any;
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface JwtAuthSuccess {
@@ -99,6 +102,7 @@ function extractBearerToken(req: Request): string | null {
  * @param expectedOrgId — Optional: if provided, validates the JWT's org_id
  *   matches this value. Mismatch returns 404 (not 403) to prevent inference.
  */
+// deno-lint-ignore require-await
 export async function validateJwtAuth(
   req: Request,
   expectedOrgId?: string,
@@ -161,7 +165,7 @@ export async function validateJwtAuth(
  */
 function _failure(
   _reason: string,
-  status?: number,
+  _status?: number,
   forensicContext?: Record<string, string | undefined>,
 ): JwtAuthFailure {
   // Log forensic context to Sentry (if Sentry is initialized)

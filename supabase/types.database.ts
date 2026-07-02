@@ -284,6 +284,89 @@ export type Database = {
           },
         ];
       };
+      carrier_notification_outbox: {
+        Row: {
+          attempt_count: number;
+          carrier_email: string;
+          created_at: string;
+          event_type: string;
+          fine_cents: number;
+          id: string;
+          last_error: string | null;
+          ledger_entry_id: string;
+          next_attempt_at: string;
+          organization_id: string;
+          portal_token: string | null;
+          resend_message_id: string | null;
+          sent_at: string | null;
+          status: string;
+          verdict_outcome: string;
+        };
+        Insert: {
+          attempt_count?: number;
+          carrier_email: string;
+          created_at?: string;
+          event_type: string;
+          fine_cents?: number;
+          id?: string;
+          last_error?: string | null;
+          ledger_entry_id: string;
+          next_attempt_at?: string;
+          organization_id: string;
+          portal_token?: string | null;
+          resend_message_id?: string | null;
+          sent_at?: string | null;
+          status?: string;
+          verdict_outcome: string;
+        };
+        Update: {
+          attempt_count?: number;
+          carrier_email?: string;
+          created_at?: string;
+          event_type?: string;
+          fine_cents?: number;
+          id?: string;
+          last_error?: string | null;
+          ledger_entry_id?: string;
+          next_attempt_at?: string;
+          organization_id?: string;
+          portal_token?: string | null;
+          resend_message_id?: string | null;
+          sent_at?: string | null;
+          status?: string;
+          verdict_outcome?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "carrier_notification_outbox_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "carrier_notification_outbox_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "carrier_notification_outbox_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "fk_cno_ledger";
+            columns: ["organization_id", "ledger_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "sla_audit_ledger_v2";
+            referencedColumns: ["organization_id", "id"];
+          },
+        ];
+      };
       contract_financial_amendments: {
         Row: {
           amended_at_utc: string;
@@ -5467,6 +5550,10 @@ export type Database = {
         Args: { p_org_id: string; p_rows: Json };
         Returns: number;
       };
+      carrier_notification_fail: {
+        Args: { p_error: string; p_notification_id: string; p_org_id: string };
+        Returns: undefined;
+      };
       check_and_close_execution_autonomously: {
         Args: {
           p_current_lat?: number;
@@ -5596,6 +5683,19 @@ export type Database = {
           p_queue_entry_id: string;
         };
         Returns: Json;
+      };
+      drain_pending_carrier_notifications: {
+        Args: { p_limit?: number; p_org_id?: string };
+        Returns: {
+          carrier_email: string;
+          event_type: string;
+          fine_cents: number;
+          id: string;
+          ledger_entry_id: string;
+          org_id_out: string;
+          portal_token: string;
+          verdict_outcome: string;
+        }[];
       };
       drain_pending_webhooks: {
         Args: { p_limit: number; p_org_id: string };
