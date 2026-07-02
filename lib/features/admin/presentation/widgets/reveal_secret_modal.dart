@@ -16,15 +16,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/webhooks/webhook_exceptions.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/webhook_providers.dart';
+
+/// Ação executada pelo modal ao abrir.
+enum RevealAction { provision, rotate }
 
 /// Modal blindado Reveal-Once para exibição do segredo de assinatura HMAC.
 ///
 /// Sempre aberto via showDialog(barrierDismissible: false).
 /// Nunca exibe o segredo novamente após fechar (rotate se perdido).
 class RevealSecretModal extends ConsumerStatefulWidget {
-  const RevealSecretModal({super.key});
+  final RevealAction action;
+  const RevealSecretModal({super.key, required this.action});
 
   @override
   ConsumerState<RevealSecretModal> createState() => _RevealSecretModalState();
@@ -39,6 +45,43 @@ class _RevealSecretModalState extends ConsumerState<RevealSecretModal>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  /// Dispara provision/rotate na edge fn e injeta o resultado no provider
+  /// autoDispose (único holder do plaintext — INV-28).
+  Future<void> _load() async {
+    if (!mounted) return;
+    final notifier = ref.read(webhookSecretRevealProvider.notifier);
+    notifier.setLoading();
+
+    try {
+      final orgId = ref.read(currentOrganizationIdProvider);
+      if (orgId == null) {
+        notifier.setError(
+          'Sessão sem organização ativa. Autentique-se novamente.',
+        );
+        return;
+      }
+
+      final repo = ref.read(webhookRepositoryProvider);
+      final result = widget.action == RevealAction.rotate
+          ? await repo.rotateSecret(orgId)
+          : await repo.revealSecret(orgId);
+      if (!mounted) return;
+      ref
+          .read(webhookSecretRevealProvider.notifier)
+          .setRevealed(result.secretHex, result.version);
+    } on WebhookApplicationException catch (e) {
+      if (!mounted) return;
+      ref.read(webhookSecretRevealProvider.notifier).setError(e.message);
+    } on Object {
+      // UX-RAW-EXCEPTION: nunca expõe $e.
+      if (!mounted) return;
+      ref
+          .read(webhookSecretRevealProvider.notifier)
+          .setError('Falha ao obter o segredo de assinatura. Tente novamente.');
+    }
   }
 
   @override

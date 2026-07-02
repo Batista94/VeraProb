@@ -42,6 +42,36 @@ class SupabaseWebhookRepository
   }
 
   @override
+  Future<void> createEndpoint(String orgId, String url) async {
+    try {
+      await _client.from('webhook_endpoints').insert(<String, dynamic>{
+        'organization_id': orgId,
+        'url': url,
+      });
+    } on PostgrestException catch (e) {
+      throw _mapCreateEndpointException(e);
+    } catch (_) {
+      throw const WebhookApplicationException(
+        'Não foi possível criar o endpoint. Tente novamente.',
+      );
+    }
+  }
+
+  /// 23514 = CHECK (url LIKE 'https://%'). INV-26: RLS/not-found → genérico.
+  WebhookApplicationException _mapCreateEndpointException(
+    PostgrestException e,
+  ) {
+    return switch (e.code) {
+      '23514' => const WebhookApplicationException(
+        'URL inválida. O endpoint deve usar HTTPS.',
+      ),
+      _ => const WebhookApplicationException(
+        'Não foi possível criar o endpoint. Verifique os dados e tente novamente.',
+      ),
+    };
+  }
+
+  @override
   Future<List<WebhookEndpointView>> findEndpointHealth() async {
     try {
       final response = await _client.from('v_webhook_endpoint_health').select();
@@ -51,8 +81,10 @@ class SupabaseWebhookRepository
           .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'webhook_endpoint');
-    } catch (e) {
-      throw WebhookSecretException('Falha ao consultar endpoints: $e');
+    } catch (_) {
+      throw const WebhookSecretException(
+        'Falha ao consultar os endpoints de webhook.',
+      );
     }
   }
 
@@ -109,7 +141,7 @@ class SupabaseWebhookRepository
 
       final data = response.data as Map<String, dynamic>?;
       if (data == null) {
-        throw const WebhookSecretException(
+        throw const WebhookApplicationException(
           'Resposta inválida da função de provisionamento.',
         );
       }
@@ -118,27 +150,34 @@ class SupabaseWebhookRepository
       final version = data['version'] as int?;
 
       if (secretHex == null || secretHex.isEmpty || version == null) {
-        throw const WebhookSecretException(
+        throw const WebhookApplicationException(
           'Dados do segredo ausentes ou inválidos.',
         );
       }
 
       return WebhookSecretRevealResult(secretHex: secretHex, version: version);
-    } on WebhookSecretException {
+    } on WebhookApplicationException {
       rethrow;
     } on FunctionException catch (e) {
+      // Reveal-once estrito: 409 = chave ativa já provisionada.
+      if (e.status == 409) {
+        throw const WebhookApplicationException(
+          'O segredo desta organização já foi provisionado e não pode ser '
+          'exibido novamente. Utilize a rotação para gerar uma nova chave.',
+        );
+      }
       // INV-26 parity: edge fn retornou 404 (org errada, role errado).
       // Mapeia para mensagem de domínio sem vazar detalhes.
       if (e.status == 404) {
-        throw const WebhookSecretException(
+        throw const WebhookApplicationException(
           'Acesso negado ou organização inválida.',
         );
       }
-      throw WebhookSecretException(
+      throw WebhookApplicationException(
         'Falha ao contatar o serviço de provisionamento (HTTP ${e.status}).',
       );
     } on Object {
-      throw const WebhookSecretException(
+      throw const WebhookApplicationException(
         'Serviço de provisionamento indisponível. Tente novamente.',
       );
     }

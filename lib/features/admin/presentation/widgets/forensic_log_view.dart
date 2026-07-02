@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_log_view.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_status_view.dart';
 import 'package:veraprob/application/webhooks/webhook_exceptions.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/webhook_providers.dart';
 
 class ForensicLogView extends ConsumerStatefulWidget {
@@ -39,7 +40,10 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
             const SizedBox(height: 16),
             const Text(
               'Erro retornado',
-              style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: VeraProbColors.error,
+              ),
             ),
             const SizedBox(height: 8),
             _SanitizedText(widget.log.lastError!),
@@ -125,7 +129,10 @@ class _HashRow extends StatelessWidget {
         children: [
           SizedBox(
             width: 140,
-            child: Text(label, style: const TextStyle(color: Colors.grey)),
+            child: Text(
+              label,
+              style: const TextStyle(color: VeraProbColors.textSecondary),
+            ),
           ),
           Expanded(
             child: SelectableText(
@@ -157,9 +164,9 @@ class _MonoJsonView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.black12,
+        color: VeraProbColors.surface,
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        border: Border.all(color: VeraProbColors.border),
       ),
       child: SelectableText(
         sanitized,
@@ -183,16 +190,16 @@ class _SanitizedText extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.red.withValues(alpha: 0.05),
+        color: VeraProbColors.error.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.2)),
       ),
       child: SelectableText(
         sanitized,
         style: const TextStyle(
           fontFamily: 'monospace',
           fontSize: 12,
-          color: Colors.red,
+          color: VeraProbColors.error,
         ),
       ),
     );

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
+import 'package:veraprob/application/webhooks/webhook_exceptions.dart';
 import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/infrastructure/webhooks/supabase_webhook_repository.dart';
 
@@ -122,7 +122,7 @@ void main() {
     );
 
     test(
-      'manualReplay converts PGRST116 to ResourceNotFoundException (INV-26)',
+      'manualReplay maps PGRST116 to generic domain message — anti-oracle (INV-26)',
       () async {
         when(
           () => mockClient.rpc<dynamic>(
@@ -142,9 +142,17 @@ void main() {
           ),
         );
 
+        // INV-26: not-found e wrong-org são indistinguíveis — a mensagem
+        // genérica não pode ecoar o erro técnico do PostgREST.
         expect(
           () => repository.manualReplay('log-404'),
-          throwsA(isA<ResourceNotFoundException>()),
+          throwsA(
+            isA<WebhookApplicationException>().having(
+              (e) => e.message,
+              'message',
+              'Log de entrega indisponível para reprocessamento.',
+            ),
+          ),
         );
       },
     );
@@ -208,7 +216,7 @@ void main() {
             body: any(named: 'body'),
           ),
         ).thenThrow(
-          FunctionException(
+          const FunctionException(
             status: 404,
             reasonPhrase: 'Not Found',
             details: 'Not Found',

@@ -5,7 +5,9 @@ import 'package:veraprob/application/webhooks/webhook_delivery_status_view.dart'
 import 'package:veraprob/application/webhooks/webhook_endpoint_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/webhook_providers.dart';
+import 'package:veraprob/features/admin/presentation/widgets/create_endpoint_dialog.dart';
 import 'package:veraprob/features/admin/presentation/widgets/forensic_log_view.dart';
+import 'package:veraprob/features/admin/presentation/widgets/reveal_secret_modal.dart';
 
 class WebhookManagementScreen extends ConsumerStatefulWidget {
   const WebhookManagementScreen({super.key});
@@ -69,6 +71,57 @@ class _WebhookManagementScreenState
 class _EndpointListPanel extends ConsumerWidget {
   const _EndpointListPanel();
 
+  /// Novo endpoint → (sucesso) → Reveal-Once do segredo (provision).
+  Future<void> _createEndpointFlow(BuildContext context) async {
+    final created = await showDialog<bool>(
+      context: context,
+      builder: (_) => const CreateEndpointDialog(),
+    );
+    if (created != true || !context.mounted) return;
+    await _showRevealModal(context, RevealAction.provision);
+  }
+
+  /// Rotação explícita: confirmação (afeta TODOS os endpoints) → Reveal-Once.
+  Future<void> _rotateSecretFlow(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Rotacionar segredo de assinatura?'),
+        content: const Text(
+          'Uma nova chave (version+1) será gerada para TODOS os endpoints '
+          'desta organização. A chave atual continuará válida por 30 minutos '
+          'para entregas em trânsito. O ERP deverá ser atualizado com a nova '
+          'chave, exibida uma única vez.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Rotacionar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    await _showRevealModal(context, RevealAction.rotate);
+  }
+
+  Future<void> _showRevealModal(
+    BuildContext context,
+    RevealAction action,
+  ) async {
+    // Blindado: sem ESC/backdrop (plano Pilar 1).
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useSafeArea: true,
+      builder: (_) => RevealSecretModal(action: action),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final endpointsAsync = ref.watch(webhookEndpointHealthProvider);
@@ -90,12 +143,19 @@ class _EndpointListPanel extends ConsumerWidget {
                   ),
                 ),
               ),
-              FilledButton.icon(
-                onPressed: () {
-                  // TODO: P1 create endpoint dialog
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Novo'),
+              IconButton(
+                tooltip:
+                    'Rotacionar segredo de assinatura (afeta todos os endpoints)',
+                icon: const Icon(Icons.autorenew, size: 20),
+                onPressed: () => _rotateSecretFlow(context),
+              ),
+              Tooltip(
+                message: 'Criar novo endpoint de webhook',
+                child: FilledButton.icon(
+                  onPressed: () => _createEndpointFlow(context),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Novo'),
+                ),
               ),
             ],
           ),
@@ -180,7 +240,7 @@ class _StatusChip extends StatelessWidget {
     }
     return Chip(
       label: Text(
-        '$count ${status.name}',
+        '$count ${status.labelPt}',
         style: const TextStyle(fontSize: 10),
       ),
       backgroundColor: color.withValues(alpha: 0.1),
@@ -242,7 +302,7 @@ class _DeliveryLogPanel extends ConsumerWidget {
             return Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: ChoiceChip(
-                label: Text(status.name.toUpperCase()),
+                label: Text(status.labelPt.toUpperCase()),
                 selected: currentFilter == status,
                 onSelected: (val) => ref
                     .read(deliveryLogFilterProvider.notifier)

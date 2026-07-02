@@ -23,6 +23,11 @@ abstract class IWebhookRepository {
   /// Mapeia para action = 'rotate' na edge fn reveal-webhook-signing-secret.
   Future<WebhookSecretRevealResult> rotateSecret(String orgId);
 
+  /// Cria um endpoint de webhook para a org (RLS: TENANT_ADMIN + org match).
+  ///
+  /// Lança WebhookApplicationException com mensagem PT pronta para a UI.
+  Future<void> createEndpoint(String orgId, String url);
+
   Future<List<WebhookEndpointView>> findEndpointHealth();
 
   Stream<List<WebhookDeliveryLogView>> watchDeliveryLogs(String endpointId);

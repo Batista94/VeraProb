@@ -32,11 +32,13 @@
 #     9.1  Mandatory Test Plan for Migrations
 #     9.2  Enterprise Complexity Analysis (dart_code_metrics)
 #     9.3  Test Presence Gate (BLOCK→main, WARN→feature branch)
+#   Step 10: Deno Test Suite (Edge Functions)
 #
 # SKIP flags (env vars):
 #   SKIP_REGRESSION=1     — skip regression alert (Step 2)
 #   SKIP_ANALYZE=1        — skip flutter analyze (~30s, Step 6.1)
 #   SKIP_STRICT_TYPES=1   — skip strict type-safety analysis (~30s, Step 8.3)
+#   SKIP_DENO_TESTS=1     — skip Deno test suite (Step 10)
 # =============================================================================
 
 set -uo pipefail
@@ -625,6 +627,44 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
     fi
   else
     echo -e "  ${GREEN}[9.3] No critical files changed. Test presence check skipped.${NC}"
+  fi
+fi
+
+# ── Step 10: Deno Test Suite (Edge Functions) ────────────────────────────────
+echo -e "\n${BOLD}${BLUE}Step 10: Deno Test Suite (Edge Functions)...${NC}"
+if [[ "${SKIP_DENO_TESTS:-0}" == "1" ]]; then
+  echo -e "  ${YELLOW}[SKIP]${NC} SKIP_DENO_TESTS=1."
+elif ! command -v deno >/dev/null 2>&1; then
+  echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Deno CLI not found. Install Deno. Skipping Deno tests."
+  TOTAL_WARNS=$((TOTAL_WARNS + 1))
+else
+  # Check if Supabase API is online to determine whether we run live integration tests or only unit tests.
+  # Perform a lightweight check to see if the local Supabase functions endpoint is reachable.
+  SUPABASE_ONLINE=false
+  if curl -s -f -I --connect-timeout 2 "http://localhost:54321/functions/v1/" >/dev/null 2>&1; then
+    SUPABASE_ONLINE=true
+  fi
+
+  DENO_TEST_FLAGS="--config supabase/functions/deno.json --allow-env --allow-net --no-check"
+  if [[ -f ".env" ]]; then
+    DENO_TEST_FLAGS="--env-file=.env $DENO_TEST_FLAGS"
+  fi
+
+  if [[ "$SUPABASE_ONLINE" == "true" ]]; then
+    echo -e "  Supabase local services detected. Running ALL Deno tests..."
+    DENO_CMD_ARGS="test $DENO_TEST_FLAGS supabase/functions/tests/"
+  else
+    echo -e "  ${YELLOW}Supabase offline.${NC} Running only Deno unit tests (excluding live integration tests)..."
+    DENO_CMD_ARGS="test $DENO_TEST_FLAGS --ignore=supabase/functions/tests/telegram_webhook_integration_test.ts,supabase/functions/tests/super_admin_proxy_integration_test.ts supabase/functions/tests/"
+  fi
+
+  # Run Deno tests
+  echo "  Running: deno $DENO_CMD_ARGS"
+  if deno $DENO_CMD_ARGS; then
+    echo -e "  ${GREEN}Deno tests: all passed.${NC}"
+  else
+    echo -e "  ${RED}${BOLD}[BLOCK]${NC} Deno test suite failed."
+    TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
   fi
 fi
 

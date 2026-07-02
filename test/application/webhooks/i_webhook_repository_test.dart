@@ -19,6 +19,9 @@ class DummyWebhookRepository implements IWebhookRepository {
   }
 
   @override
+  Future<void> createEndpoint(String orgId, String url) async {}
+
+  @override
   Future<List<WebhookEndpointView>> findEndpointHealth() async {
     return [];
   }

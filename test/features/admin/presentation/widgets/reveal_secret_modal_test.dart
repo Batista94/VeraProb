@@ -128,7 +128,8 @@ class _TestRevealModalHost extends ConsumerWidget {
           showDialog<void>(
             context: context,
             barrierDismissible: false,
-            builder: (_) => const RevealSecretModal(),
+            builder: (_) =>
+                const RevealSecretModal(action: RevealAction.provision),
           );
         },
         child: const Text('Abrir Modal'),

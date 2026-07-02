@@ -8,8 +8,10 @@
  *   - Nenhum material de chave persiste em DB (INV-31). DB guarda só version/status.
  *
  * Actions:
- *   - "provision": garante 1 webhook_signing_keys active (idempotente via ON CONFLICT DO NOTHING),
- *                  recomputa deriveOrgKey, retorna { secret_hex, version } UMA VEZ.
+ *   - "provision": cria a 1ª webhook_signing_keys active e retorna
+ *                  { secret_hex, version } UMA ÚNICA VEZ. Se já existe chave
+ *                  ativa → 409 ALREADY_PROVISIONED (reveal-once estrito;
+ *                  perdeu a chave = rotaciona).
  *   - "rotate":    active → retiring (retiring_until = NOW()+30min), insere nova active (version+1),
  *                  recomputa, retorna UMA VEZ.
  *   - qualquer outro valor: negado (404 anti-oracle — INV-26).
@@ -38,21 +40,24 @@ interface RevealResponse {
 
 // ── Entry point ───────────────────────────────────────────────────────────────
 
-Deno.serve(async (req: Request) => {
-  return await handleWithSecurity(
-    req,
-    "reveal-webhook-signing-secret",
-    handleReveal,
-    /* requireAuth */ true,
-    /* requireSuperAdmin */ false,
-    /* requireAAL2 */ false,
-    // TODO Fase 11: substituir por `Deno.env.get("REQUIRE_AAL2_TENANT_SECRET") === "true"`
-  );
-});
+if (import.meta.main) {
+  Deno.serve(async (req: Request) => {
+    return await handleWithSecurity(
+      req,
+      "reveal-webhook-signing-secret",
+      handleReveal,
+      /* requireAuth */ true,
+      /* requireSuperAdmin */ false,
+      /* requireAAL2 */ false,
+      // TODO Fase 11: substituir por `Deno.env.get("REQUIRE_AAL2_TENANT_SECRET") === "true"`
+    );
+  });
+}
 
 // ── Handler ───────────────────────────────────────────────────────────────────
 
-async function handleReveal(
+/** Exportado para testes unitários (padrão dispatch-*). */
+export async function handleReveal(
   ctx: SecurityContext,
   supabase: ReturnType<typeof createClient>,
   req: Request,
@@ -105,30 +110,48 @@ async function handleProvision(
   supabase: ReturnType<typeof createClient>,
 ): Promise<Response> {
   // Busca a chave ativa (service_role bypassa RLS).
-  let key = await _fetchActiveKey(orgId, supabase);
+  const existing = await _fetchActiveKey(orgId, supabase);
 
-  if (!key) {
-    // Sem chave ativa: provisiona version 1.
-    // ponytail: SELECT-then-INSERT race é aceitável aqui — o partial UNIQUE index
-    // (WHERE status='active') é o guard real. Em corrida concorrente, um lado
-    // ganha (23505) e re-selecionamos o vencedor.
-    const { data: inserted, error: insErr } = await supabase
-      .from("webhook_signing_keys")
-      .insert({ organization_id: orgId, version: 1, status: "active" })
-      .select("id, version")
-      .maybeSingle();
-
-    key = insErr
-      ? await _fetchActiveKey(orgId, supabase)
-      : (inserted as ActiveKey | null);
+  // Reveal-once ESTRITO: chave ativa já existe → o material só nasceu no
+  // provision/rotate original e NUNCA é re-exibido. Se perdeu, rotaciona.
+  // 409 é seguro aqui: o caller já provou pertencer à org (INV-26 protege
+  // cross-org, não o estado da própria org).
+  if (existing) {
+    return new Response(JSON.stringify({ error: "ALREADY_PROVISIONED" }), {
+      status: 409,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
+  // Sem chave ativa: provisiona version 1.
+  // ponytail: SELECT-then-INSERT race é aceitável aqui — o partial UNIQUE index
+  // (WHERE status='active') é o guard real. Em corrida concorrente, um lado
+  // ganha e o perdedor (23505) recebe 409 — o vencedor já viu o segredo.
+  const { data: inserted, error: insErr } = await supabase
+    .from("webhook_signing_keys")
+    .insert({ organization_id: orgId, version: 1, status: "active" })
+    .select("id, version")
+    .maybeSingle();
+
+  if (insErr) {
+    const winner = await _fetchActiveKey(orgId, supabase);
+    if (winner) {
+      return new Response(JSON.stringify({ error: "ALREADY_PROVISIONED" }), {
+        status: 409,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error("[reveal-webhook-signing-secret] provision insert failed");
+    return sovereigntyErrorResponse();
+  }
+
+  const key = inserted as ActiveKey | null;
   if (!key) {
     console.error("[reveal-webhook-signing-secret] provision key fetch failed");
     return sovereigntyErrorResponse();
   }
 
-  const secretHex = await _deriveSecretHex(orgId, key.version as number);
+  const secretHex = await deriveSecretHex(orgId, key.version as number);
 
   // Audit log WEBHOOK_SECRET_REVEALED (service_role, append-only).
   await _auditLog(supabase, orgId, userId, "WEBHOOK_SECRET_REVEALED", {
@@ -187,7 +210,7 @@ async function handleRotate(
     return sovereigntyErrorResponse();
   }
 
-  const secretHex = await _deriveSecretHex(orgId, newVersion);
+  const secretHex = await deriveSecretHex(orgId, newVersion);
 
   await _auditLog(supabase, orgId, userId, "WEBHOOK_SECRET_ROTATED", {
     previous_version: currentVersion,
@@ -232,7 +255,10 @@ async function _fetchActiveKey(
  * Espelha a lógica de deriveOrgKey em hmac_signer.ts sem reimportar o módulo
  * (evitaria importar HMAC_SECRET_KEY_V* neste contexto de reveal).
  */
-async function _deriveSecretHex(orgId: string, version: number): Promise<string> {
+export async function deriveSecretHex(
+  orgId: string,
+  version: number,
+): Promise<string> {
   const masterRaw = _getMasterKeyRaw();
 
   const masterKey = await crypto.subtle.importKey(
@@ -257,24 +283,30 @@ async function _deriveSecretHex(orgId: string, version: number): Promise<string>
 }
 
 /**
- * Lê o master key raw do env (HMAC_SECRET_KEY_V1).
+ * Lê o master key raw do env.
+ *
+ * PARIDADE OBRIGATÓRIA com hmac_signer.ts loadAllKeys(): o master raw são os
+ * bytes UTF-8 do valor do env (TextEncoder), NUNCA hex-decode. Divergir aqui
+ * faz o secret revelado não verificar as assinaturas do drain (bug Integridade).
+ * Âncora idêntica a deriveOrgKey: version 1 se existir, senão a menor versão.
  *
  * INV-31: master nunca persiste em DB. Apenas disponível no env da edge fn.
  * Throw explícito se ausente — fail-fast antes de qualquer operação.
  */
 function _getMasterKeyRaw(): Uint8Array {
-  const hex = Deno.env.get("HMAC_SECRET_KEY_V1");
-  if (!hex) {
+  const found: { version: number; raw: Uint8Array }[] = [];
+  let version = 1;
+  while (true) {
+    const keyStr = Deno.env.get(`HMAC_SECRET_KEY_V${version}`);
+    if (!keyStr || keyStr.length === 0) break;
+    found.push({ version, raw: new TextEncoder().encode(keyStr) });
+    version++;
+  }
+  if (found.length === 0) {
     throw new Error("INV-31: HMAC_SECRET_KEY_V1 not configured in edge fn env");
   }
-  if (hex.length % 2 !== 0) {
-    throw new Error("INV-31: HMAC_SECRET_KEY_V1 is not valid hex (odd length)");
-  }
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
+  const master = found.find((k) => k.version === 1) ?? found[0];
+  return master.raw;
 }
 
 // ── Audit log ─────────────────────────────────────────────────────────────────
