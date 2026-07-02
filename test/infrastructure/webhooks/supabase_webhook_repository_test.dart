@@ -10,6 +10,8 @@ class MockSupabaseClient extends Mock implements SupabaseClient {}
 
 class MockSupabaseQueryBuilder extends Mock implements SupabaseQueryBuilder {}
 
+class MockFunctionsClient extends Mock implements FunctionsClient {}
+
 class FakePostgrestFilterBuilder<T> extends Mock
     implements PostgrestFilterBuilder<T> {
   final Future<T> _future;
@@ -44,6 +46,7 @@ class FakePostgrestFilterBuilder<T> extends Mock
 
 void main() {
   late MockSupabaseClient mockClient;
+  late MockFunctionsClient mockFunctionsClient;
   late SupabaseWebhookRepository repository;
 
   setUpAll(() {
@@ -52,6 +55,8 @@ void main() {
 
   setUp(() {
     mockClient = MockSupabaseClient();
+    mockFunctionsClient = MockFunctionsClient();
+    when(() => mockClient.functions).thenReturn(mockFunctionsClient);
     repository = SupabaseWebhookRepository(mockClient);
   });
 
@@ -173,5 +178,54 @@ void main() {
       expect(endpoints.first.id, 'ep-123');
       expect(endpoints.first.successCount, 10);
     });
+
+    test('revealSecret extracts secretHex and version correctly', () async {
+      when(
+        () => mockFunctionsClient.invoke(
+          'reveal-webhook-signing-secret',
+          body: any(named: 'body'),
+        ),
+      ).thenAnswer(
+        (_) => Future.value(
+          FunctionResponse(
+            data: {'secret_hex': 'deadbeef', 'version': 3},
+            status: 200,
+          ),
+        ),
+      );
+
+      final result = await repository.revealSecret('org-123');
+      expect(result.secretHex, 'deadbeef');
+      expect(result.version, 3);
+    });
+
+    test(
+      'revealSecret throws WebhookSecretException on 404 (INV-26)',
+      () async {
+        when(
+          () => mockFunctionsClient.invoke(
+            'reveal-webhook-signing-secret',
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(
+          FunctionException(
+            status: 404,
+            reasonPhrase: 'Not Found',
+            details: 'Not Found',
+          ),
+        );
+
+        expect(
+          () => repository.revealSecret('org-123'),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'toString',
+              contains('Acesso negado'),
+            ),
+          ),
+        );
+      },
+    );
   });
 }

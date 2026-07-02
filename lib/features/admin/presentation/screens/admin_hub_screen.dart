@@ -103,6 +103,12 @@ class AdminHubScreen extends ConsumerWidget {
             icon: Icons.settings_outlined,
             destination: AdminNav.settings,
           ),
+          if (role.hasPermission(UserRole.admin))
+            const _HubItem(
+              label: 'Integrações (Webhooks)',
+              icon: Icons.webhook_outlined,
+              destination: AdminNav.webhooks,
+            ),
           if (canSeeEvidence)
             const _HubItem(
               label: 'Evidências',

@@ -6,6 +6,7 @@
  * and immutable logging of the verdict communication.
  */
 
+// deno-lint-ignore no-import-prefix
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
 
@@ -45,6 +46,7 @@ export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof 
   const queryOrgId = isCron ? null : ctx.orgId;
 
   // Drain logic via RPC
+  // deno-lint-ignore no-explicit-any
   const { data: logs, error: drainErr } = await (supabase as any).rpc("drain_pending_carrier_notifications", {
     p_org_id: queryOrgId,
     p_limit: isCron ? 100 : 10
@@ -124,6 +126,7 @@ Este é um registro definitivo emitido pelo motor forense VeraProb. A ausência 
 
       if (res.ok) {
         const result = await res.json();
+        // deno-lint-ignore no-explicit-any
         await (supabase as any).from("carrier_notification_outbox")
           .update({ 
             status: 'SENT', 
@@ -134,10 +137,13 @@ Este é um registro definitivo emitido pelo motor forense VeraProb. A ausência 
       } else {
         const text = await res.text();
         const errMessage = `HTTP_${res.status}: ${text.substring(0, 100)}`;
+        // deno-lint-ignore no-explicit-any
         await (supabase as any).rpc("carrier_notification_fail", { p_notification_id: id, p_org_id: organization_id, p_error: errMessage });
       }
       processed++;
+    // deno-lint-ignore no-explicit-any
     } catch (err: any) {
+      // deno-lint-ignore no-explicit-any
       await (supabase as any).rpc("carrier_notification_fail", { p_notification_id: log.id, p_org_id: log.org_id_out, p_error: err.message.substring(0, 50) });
     }
   }

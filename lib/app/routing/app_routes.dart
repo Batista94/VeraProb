@@ -52,6 +52,9 @@ sealed class AppRoutes {
   static String ingestionHealthVehicle(String vehicleId) =>
       '/admin/hub/ingestion-health?vehicleId=$vehicleId';
 
+  /// Webhooks integration management.
+  static const String webhooks = '/admin/hub/webhooks';
+
   /// Routes reachable without an authenticated session. The router redirect
   /// guard bounces every other path to [login] when there is no session.
   static const Set<String> publicPaths = {
@@ -89,6 +92,7 @@ extension AdminNavRoute on AdminNav {
     AdminNav.contractors => '/admin/hub/contractors',
     AdminNav.settings => '/admin/hub/settings',
     AdminNav.evidence => '/admin/hub/evidence',
+    AdminNav.webhooks => AppRoutes.webhooks,
   };
 
   /// Resolves a URL path back to its [AdminNav], or `null` when the path is

@@ -31,6 +31,7 @@ enum AdminNav {
   contractors,
   settings,
   evidence,
+  webhooks,
 }
 
 /// Number of leading [AdminNav] entries rendered as sidebar pillars
