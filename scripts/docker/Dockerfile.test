@@ -22,6 +22,11 @@ RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
+# Instala o Deno 2.x
+ENV DENO_INSTALL=/opt/deno
+RUN curl -fsSL https://deno.land/install.sh | sh
+ENV PATH="${DENO_INSTALL}/bin:${PATH}"
+
 # Instala o Flutter 3.41.9
 RUN git clone https://github.com/flutter/flutter.git -b 3.41.9 /opt/flutter
 

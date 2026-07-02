@@ -11,7 +11,8 @@ DOCKERFILE_PATH="scripts/docker/Dockerfile.test"
 # Definimos os arquivos especificos que contem Goldens
 TEST_FILES="test/features/super_admin/presentation/screens/tenant_list_panel_test.dart \
 test/features/super_admin/presentation/screens/super_admin_audit_log_screen_test.dart \
-test/features/super_admin/presentation/widgets/impersonation_banner_test.dart"
+test/features/super_admin/presentation/widgets/impersonation_banner_test.dart \
+test/features/admin/presentation/widgets/forensic_log_view_golden_test.dart"
 
 echo "Gerenciando ambiente esteril (Build local)..."
 
@@ -30,6 +31,6 @@ docker run --rm \
   -v /app/build \
   -w /app \
   $IMAGE_NAME \
-  bash -c "flutter pub get && flutter test --update-goldens --name=[Gg]olden $TEST_FILES"
+  bash -c "flutter pub get && flutter test --update-goldens --tags golden --run-skipped --name=[Gg]olden $TEST_FILES"
 
 echo "Goldens atualizados com sucesso via ambiente Linux!"

@@ -103,7 +103,8 @@
     "path_filter": "supabase/functions/.*index\\.ts",
     "exclude_files": [
       "notify-invite",
-      "super-admin-proxy"
+      "super-admin-proxy",
+      "dispatch-carrier-notifications"
     ],
     "must_also_contain": "hmac_signer|hmac|signPayload|verifyPayload|loadAllKeys",
     "description": "INV-31: Ingestion/ledger Edge Functions MUST import hmac_signer.ts for HMAC signing (Zero-Knowledge integrity).",

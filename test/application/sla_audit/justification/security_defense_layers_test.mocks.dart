@@ -17,14 +17,14 @@ import 'package:veraprob/application/sla_audit/justification/evidence_validation
     as _i4;
 import 'package:veraprob/application/sla_audit/justification/xss_input_sanitizer.dart'
     as _i2;
-import 'package:veraprob/domain/shared/date_time_provider.dart' as _i10;
 import 'package:veraprob/domain/enums/user_permissions.dart' as _i9;
 import 'package:veraprob/domain/enums/user_role.dart' as _i8;
 import 'package:veraprob/domain/services/rbac_service.dart' as _i7;
+import 'package:veraprob/domain/shared/date_time_provider.dart' as _i10;
 import 'package:veraprob/domain/sla_audit/justification/justification_audit_log.dart'
-    as _i16;
-import 'package:veraprob/domain/sla_audit/justification/justification_status.dart'
     as _i15;
+import 'package:veraprob/domain/sla_audit/justification/justification_status.dart'
+    as _i16;
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart'
     as _i3;
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_repository.dart'
@@ -271,7 +271,7 @@ class MockSLAJustificationRepository extends _i1.Mock
   @override
   _i6.Future<_i3.SLAJustification> createWithAuditLog({
     required _i3.SLAJustification? justification,
-    required _i16.JustificationAuditLog? initialAuditLog,
+    required _i15.JustificationAuditLog? initialAuditLog,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#createWithAuditLog, [], {
@@ -324,7 +324,7 @@ class MockSLAJustificationRepository extends _i1.Mock
   _i6.Future<_i3.SLAJustification> updateStatus({
     required String? id,
     required String? organizationId,
-    required _i15.JustificationStatus? status,
+    required _i16.JustificationStatus? status,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,
@@ -394,8 +394,8 @@ class MockSLAJustificationRepository extends _i1.Mock
   _i6.Future<int> updateStatusAtomic({
     required String? id,
     required String? organizationId,
-    required _i15.JustificationStatus? expectedCurrentStatus,
-    required _i15.JustificationStatus? newStatus,
+    required _i16.JustificationStatus? expectedCurrentStatus,
+    required _i16.JustificationStatus? newStatus,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,
@@ -415,7 +415,7 @@ class MockSLAJustificationRepository extends _i1.Mock
           as _i6.Future<int>);
 
   @override
-  _i6.Future<void> appendAuditLog(_i16.JustificationAuditLog? log) =>
+  _i6.Future<void> appendAuditLog(_i15.JustificationAuditLog? log) =>
       (super.noSuchMethod(
             Invocation.method(#appendAuditLog, [log]),
             returnValue: _i6.Future<void>.value(),
@@ -427,8 +427,8 @@ class MockSLAJustificationRepository extends _i1.Mock
   _i6.Future<int> updateStatusWithAuditLog({
     required String? id,
     required String? organizationId,
-    required _i15.JustificationStatus? expectedCurrentStatus,
-    required _i15.JustificationStatus? newStatus,
+    required _i16.JustificationStatus? expectedCurrentStatus,
+    required _i16.JustificationStatus? newStatus,
     required String? reviewerId,
     required String? resolutionNotes,
     required DateTime? reviewedAtUtc,

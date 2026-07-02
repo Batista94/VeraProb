@@ -158,6 +158,11 @@ jobs:
       - name: Dependency Intelligence (Outdated Audit)
         run: flutter pub outdated
 
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       - name: VeraProb Forensic Scan (H-03)
         run: |
           chmod +x scripts/security/pr_full_scanner.sh

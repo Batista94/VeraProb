@@ -44,6 +44,8 @@ import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.da
 import 'package:veraprob/features/admin/presentation/screens/evidence_reconciliation_screen.dart';
 import 'package:veraprob/presentation/shell/settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/ingestion_health_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/webhook_management_screen.dart';
+import 'package:veraprob/core/utils/jwt_utils.dart';
 
 // ── Super-admin shell + branch screens ──
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
@@ -132,6 +134,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // This prevents landing on a stale layout or dashboard shell on fresh browser load.
       if (path == '/' || path.isEmpty) {
         return hasSession ? AppRoutes.adminDashboard : AppRoutes.login;
+      }
+
+      // Webhook branch guard: strictly TENANT_ADMIN (Pilar 1 requirement)
+      if (path.startsWith(AppRoutes.webhooks)) {
+        if (session != null) {
+          final claims = decodeJwtPayload(session.accessToken);
+          final meta = claims['app_metadata'] as Map<String, dynamic>?;
+          if (meta?['role'] != 'TENANT_ADMIN') {
+            return AppRoutes.adminHub; // Silent redirect to admin hub
+          }
+        }
       }
 
       // Unauthenticated access to a protected route → login. Logged-in users
@@ -267,6 +280,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           ),
           _adminBranch(AdminNav.settings, const SettingsScreen()),
           _adminBranch(AdminNav.evidence, const EvidenceReconciliationScreen()),
+          _adminBranch(AdminNav.webhooks, const WebhookManagementScreen()),
         ],
       ),
 

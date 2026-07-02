@@ -31,12 +31,28 @@ export function extractExifMetadata(bytes: Uint8Array): ExifMetadata | null {
     const lat = tags.GPSLatitude?.description;
     const lon = tags.GPSLongitude?.description;
 
+    const gps_latitude = lat !== undefined ? Number(lat) || null : null;
+    const gps_longitude = lon !== undefined ? Number(lon) || null : null;
+    const make = tags.Make?.description ?? null;
+    const model = tags.Model?.description ?? null;
+    const date_time_original = tags.DateTimeOriginal?.description ?? null;
+
+    if (
+      gps_latitude === null &&
+      gps_longitude === null &&
+      make === null &&
+      model === null &&
+      date_time_original === null
+    ) {
+      return null;
+    }
+
     return {
-      gps_latitude: lat !== undefined ? Number(lat) || null : null,
-      gps_longitude: lon !== undefined ? Number(lon) || null : null,
-      make: tags.Make?.description ?? null,
-      model: tags.Model?.description ?? null,
-      date_time_original: tags.DateTimeOriginal?.description ?? null,
+      gps_latitude,
+      gps_longitude,
+      make,
+      model,
+      date_time_original,
     };
   } catch {
     return null;
