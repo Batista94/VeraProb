@@ -32,7 +32,13 @@ class OrgSettingsTab extends ConsumerStatefulWidget {
   ConsumerState<OrgSettingsTab> createState() => _OrgSettingsTabState();
 }
 
-class _OrgSettingsTabState extends ConsumerState<OrgSettingsTab> {
+class _OrgSettingsTabState extends ConsumerState<OrgSettingsTab>
+    with AutomaticKeepAliveClientMixin {
+  // Keeps form drafts (controllers, capability edits) alive when the user
+  // flips to another tab in the settings hub's TabBarView.
+  @override
+  bool get wantKeepAlive => true;
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _timezoneController = TextEditingController();
@@ -72,6 +78,7 @@ class _OrgSettingsTabState extends ConsumerState<OrgSettingsTab> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // AutomaticKeepAliveClientMixin contract
     final orgAsync = ref.watch(orgSettingsProvider);
     final userRole = ref.watch(currentUserRoleProvider);
     final isSuperAdmin = userRole == UserRole.superAdmin;

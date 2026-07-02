@@ -11,6 +11,7 @@ import 'package:veraprob/features/admin/presentation/command_center/widgets/roi_
 import 'dart:math' as math;
 
 import 'package:veraprob/features/shared/mappers/incident_status_ui_mapper.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/audit_providers.dart';
 import 'package:veraprob/state/providers/shadow_providers.dart';
 
@@ -90,30 +91,37 @@ class _OperationalAuditScreenState
             ),
           ),
         ),
-        appBar: AppBar(
-          title: const Text(
-            'OCC - Centro de Auditoria Integrada',
-            style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.1),
-          ),
-          backgroundColor: VeraProbColors.surface,
-          centerTitle: false,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.info_outline),
-              tooltip: 'Detalhes do Registro',
-              onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
-            ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: () {
-                ref.invalidate(auditServiceProvider);
-                ref.invalidate(unlinkedShadowsProvider);
-              },
-            ),
-          ],
-        ),
+        // De-chromed: the admin shell already provides the AppBar. A local
+        // AppBar here would render double chrome (P3, shell overhaul).
         body: Column(
           children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                VeraProbSpacing.lg,
+                VeraProbSpacing.md,
+                VeraProbSpacing.lg,
+                VeraProbSpacing.md,
+              ),
+              child: VeraProbHeader(
+                icon: Icons.fact_check_outlined,
+                title: 'OCC - Centro de Auditoria Integrada',
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    tooltip: 'Detalhes do Registro',
+                    onPressed: () => _scaffoldKey.currentState?.openEndDrawer(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Atualizar registros',
+                    onPressed: () {
+                      ref.invalidate(auditServiceProvider);
+                      ref.invalidate(unlinkedShadowsProvider);
+                    },
+                  ),
+                ],
+              ),
+            ),
             const RoiGuardianStrip(),
             Expanded(
               child: Row(

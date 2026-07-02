@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
@@ -39,6 +40,17 @@ class _SettingsHubScreenState extends State<SettingsHubScreen>
   }
 
   @override
+  void didUpdateWidget(SettingsHubScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // The shell's IndexedStack keeps this State alive, so a later deep link
+    // (`?tab=users`) rebuilds with a new initialTab instead of remounting —
+    // without this, the query param is silently ignored after first visit.
+    if (widget.initialTab != oldWidget.initialTab) {
+      _tabController.animateTo(_getInitialIndex(widget.initialTab));
+    }
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
@@ -46,28 +58,48 @@ class _SettingsHubScreenState extends State<SettingsHubScreen>
 
   @override
   Widget build(BuildContext context) {
+    // De-chromed: the admin shell already provides the AppBar (P3 rule).
     return Scaffold(
       backgroundColor: VeraProbColors.background,
-      appBar: AppBar(
-        title: const Text('Configurações'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: VeraProbColors.primary,
-          unselectedLabelColor: VeraProbColors.textSecondary,
-          indicatorColor: VeraProbColors.primary,
-          tabs: const [
-            Tab(text: 'Geral'),
-            Tab(text: 'Organização'),
-            Tab(text: 'Equipe'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _GeneralSettingsTab(),
-          OrgSettingsTab(),
-          UserManagementTab(),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              VeraProbSpacing.lg,
+              VeraProbSpacing.md,
+              VeraProbSpacing.lg,
+              0,
+            ),
+            child: VeraProbHeader(
+              icon: Icons.settings_outlined,
+              title: 'Configurações',
+            ),
+          ),
+          TabBar(
+            controller: _tabController,
+            labelColor: VeraProbColors.primary,
+            unselectedLabelColor: VeraProbColors.textSecondary,
+            indicatorColor: VeraProbColors.primary,
+            isScrollable: true,
+            tabAlignment: TabAlignment.start,
+            tabs: const [
+              Tab(text: 'Geral'),
+              Tab(text: 'Organização'),
+              Tab(text: 'Equipe'),
+            ],
+          ),
+          const Divider(height: 1, color: VeraProbColors.border),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: const [
+                _GeneralSettingsTab(),
+                OrgSettingsTab(),
+                UserManagementTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -85,7 +117,7 @@ class _GeneralSettingsTab extends ConsumerWidget {
 
     return SingleChildScrollView(
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(VeraProbSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -96,12 +128,12 @@ class _GeneralSettingsTab extends ConsumerWidget {
                 letterSpacing: 1.2,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: VeraProbSpacing.sm),
             Text(
               'Gerencie as preferências globais do Centro de Controle.',
               style: VeraProbTypography.bodySmall,
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: VeraProbSpacing.xl),
 
             // ── Seção: Sessão Atual ────────────────
             const _SectionHeader(title: 'Sessão Atual'),
@@ -116,7 +148,7 @@ class _GeneralSettingsTab extends ConsumerWidget {
               icon: Icons.badge_outlined,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: VeraProbSpacing.xl),
 
             // ── Seção: Conectividade ───────────────
             const _SectionHeader(title: 'Dados e Conectividade'),
@@ -126,7 +158,7 @@ class _GeneralSettingsTab extends ConsumerWidget {
               icon: Icons.sensors,
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height: VeraProbSpacing.xl),
 
             // ── Seção: Informações Técnicas ───────
             const _SectionHeader(title: 'Sobre a Plataforma'),

@@ -168,7 +168,7 @@ class AdminLayout extends ConsumerWidget {
         children: [
           // ── Logo Home-Anchor ──────────────────────────
           InkWell(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             onTap: () => _goBranch(ref, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -187,7 +187,7 @@ class AdminLayout extends ConsumerWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                     boxShadow: [
                       BoxShadow(
                         color: VeraProbColors.primary.withValues(alpha: 0.2),
@@ -196,9 +196,11 @@ class AdminLayout extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  // ACCENT-FILL-CONTRAST: foreground on primary fill is
+                  // always the dark background token, never white.
                   child: const Icon(
                     Icons.hub_rounded,
-                    color: Colors.white,
+                    color: VeraProbColors.background,
                     size: 20,
                   ),
                 ),
@@ -292,7 +294,7 @@ class AdminLayout extends ConsumerWidget {
     final bottomDestinations = _buildBottomDestinations(ref);
     final isCompact = VeraProbBreakpoints.isCompact(context);
     final isExpandedRail =
-        MediaQuery.of(context).size.width >= VeraProbBreakpoints.medium;
+        MediaQuery.sizeOf(context).width >= VeraProbBreakpoints.medium;
 
     // ── Incident-responsive drawer ─────────────────────────────
     // Close the instant the queue empties so the operator never lands on the
@@ -326,7 +328,9 @@ class AdminLayout extends ConsumerWidget {
                     indicatorColor: VeraProbColors.primary.withValues(
                       alpha: 0.15,
                     ),
-                    selectedIndex: selectedIndex,
+                    // Deep hub branches (index >= pillarCount) collapse onto
+                    // the Admin pillar — raw index asserts out of range.
+                    selectedIndex: railIndexFor(selectedIndex),
                     onDestinationSelected: (idx) {
                       if (idx == selectedIndex) return;
                       _goBranch(ref, idx);
@@ -348,7 +352,9 @@ class AdminLayout extends ConsumerWidget {
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1600),
+                      constraints: const BoxConstraints(
+                        maxWidth: VeraProbBreakpoints.maxContent,
+                      ),
                       child: Container(
                         color: VeraProbColors.background,
                         child: Column(
@@ -417,10 +423,8 @@ class _AlertsButton extends ConsumerWidget {
         backgroundColor: VeraProbColors.critical,
         label: Text(
           '$count',
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+          style: VeraProbTypography.badge.copyWith(
+            color: VeraProbColors.background,
           ),
         ),
         child: const Icon(Icons.notifications_active_rounded),
@@ -439,7 +443,12 @@ class _HubBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      padding: const EdgeInsets.fromLTRB(
+        VeraProbSpacing.lg,
+        VeraProbSpacing.sm,
+        VeraProbSpacing.lg,
+        0,
+      ),
       child: Row(
         children: [
           TextButton.icon(
@@ -448,11 +457,7 @@ class _HubBackButton extends StatelessWidget {
             label: const Text('VOLTAR PARA ADMINISTRAÇÃO'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.textSecondary,
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              textStyle: VeraProbTypography.badge.copyWith(fontSize: 12),
             ),
           ),
         ],
@@ -468,7 +473,12 @@ class _InternalBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      padding: const EdgeInsets.fromLTRB(
+        VeraProbSpacing.lg,
+        VeraProbSpacing.sm,
+        VeraProbSpacing.lg,
+        0,
+      ),
       child: Row(
         children: [
           TextButton.icon(
@@ -477,11 +487,7 @@ class _InternalBackButton extends StatelessWidget {
             label: const Text('VOLTAR PARA LISTA'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.textSecondary,
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              textStyle: VeraProbTypography.badge.copyWith(fontSize: 12),
             ),
           ),
         ],
@@ -518,14 +524,14 @@ class _FeedHealthBadge extends ConsumerWidget {
     return Tooltip(
       message: 'Saúde da Ingestão de Telemetria — clique para detalhes',
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: VeraProbRadii.xlAll,
         onTap: () => context.go(AppRoutes.ingestionHealth),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: health.color.withValues(alpha: 0.1),
             border: Border.all(color: health.color.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: VeraProbRadii.xlAll,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -594,10 +600,8 @@ class _OnboardingBadge extends ConsumerWidget {
           backgroundColor: VeraProbColors.warning,
           label: Text(
             '$remaining',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+            style: VeraProbTypography.badge.copyWith(
+              color: VeraProbColors.background,
             ),
           ),
           child: const Icon(Icons.checklist_rounded),

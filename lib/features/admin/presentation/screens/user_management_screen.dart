@@ -37,7 +37,7 @@ class UserManagementTab extends ConsumerWidget {
                 color: VeraProbColors.primary,
               ),
               const SizedBox(width: 12),
-              Text('Gestao de Equipe', style: VeraProbTypography.sectionTitle),
+              Text('Gestão de Equipe', style: VeraProbTypography.sectionTitle),
               const Spacer(),
               FilledButton.icon(
                 icon: const Icon(Icons.person_add_outlined, size: 18),
@@ -48,7 +48,7 @@ class UserManagementTab extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'Gerencie os membros da sua organizacao e suas permissoes de acesso.',
+            'Gerencie os membros da sua organização e suas permissões de acesso.',
             style: VeraProbTypography.bodyMedium.copyWith(
               color: VeraProbColors.textSecondary,
             ),
@@ -136,7 +136,7 @@ class UserManagementTab extends ConsumerWidget {
                                           ),
                                         ),
                                         child: const Text(
-                                          'Voce (Admin)',
+                                          'Você (Admin)',
                                           style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
@@ -299,8 +299,8 @@ class UserManagementTab extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Inativar Membro'),
         content: Text(
-          'Deseja realmente inativar o usuario $email? '
-          'Ele perdera o acesso ao sistema, mas o historico sera preservado.',
+          'Deseja realmente inativar o usuário $email? '
+          'Ele perderá o acesso ao sistema, mas o histórico será preservado.',
         ),
         actions: [
           TextButton(
@@ -372,7 +372,7 @@ class UserManagementTab extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Revogar Convite'),
         content: Text(
-          'Deseja revogar o convite enviado para ${invitation.email}? O link ficara invalido imediatamente.',
+          'Deseja revogar o convite enviado para ${invitation.email}? O link ficará inválido imediatamente.',
         ),
         actions: [
           TextButton(
@@ -518,7 +518,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 
   Widget _buildFormDialog(BuildContext context) {
     return AlertDialog(
-      title: const Text('Convidar Usuario'),
+      title: const Text('Convidar Usuário'),
       content: SizedBox(
         width: 400,
         child: Form(
@@ -535,7 +535,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Informe o e-mail.';
-                  if (!v.contains('@')) return 'E-mail invalido.';
+                  if (!v.contains('@')) return 'E-mail inválido.';
                   return null;
                 },
               ),
@@ -571,12 +571,13 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         FilledButton(
           onPressed: _loading ? null : _submit,
           child: _loading
+              // ACCENT-FILL-CONTRAST: dark foreground on primary fill.
               ? const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VeraProbColors.background,
                   ),
                 )
               : const Text('Enviar Convite'),
@@ -599,7 +600,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Compartilhe o link abaixo com o usuario convidado:'),
+            const Text('Compartilhe o link abaixo com o usuário convidado:'),
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),

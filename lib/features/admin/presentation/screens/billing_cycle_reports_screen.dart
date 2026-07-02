@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/shared/providers/reporting_providers.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/application/shared/billing_cycle_view.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -119,29 +120,18 @@ class _BillingCycleReportsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(VeraProbSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.receipt_long_outlined,
-                  size: 28,
-                  color: VeraProbColors.primary,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Relatórios de Ciclo de Faturamento',
-                  style: VeraProbTypography.sectionTitle,
-                ),
-              ],
+            const VeraProbHeader(
+              icon: Icons.receipt_long_outlined,
+              title: 'Relatórios de Ciclo de Faturamento',
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: VeraProbSpacing.lg),
             _buildFilters(),
-            const SizedBox(height: 20),
+            const SizedBox(height: VeraProbSpacing.md),
             if (_isLoading)
               const Center(child: CircularProgressIndicator())
             else if (_report != null)

@@ -29,40 +29,51 @@ class SuperAdminShell extends ConsumerWidget {
           body: Row(
             children: [
               // ── NavigationRail (indigo) ─────────────────────────────
+              // Active styling inherited from navigationRailTheme (P3).
+              // Unselected stays local: the theme's textDisabled was tuned
+              // for `background` and fails 3:1 on superAdminSurface —
+              // textSecondary passes (≈5.6:1) and keeps the rail legible.
               NavigationRail(
                 backgroundColor: VeraProbColors.superAdminSurface,
                 selectedIndex: navigationShell.currentIndex,
                 onDestinationSelected: navigationShell.goBranch,
                 labelType: NavigationRailLabelType.all,
-                selectedIconTheme: const IconThemeData(color: Colors.white),
-                unselectedIconTheme: const IconThemeData(color: Colors.white54),
-                selectedLabelTextStyle: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                unselectedIconTheme: const IconThemeData(
+                  color: VeraProbColors.textSecondary,
+                  size: 24,
                 ),
-                unselectedLabelTextStyle: const TextStyle(
-                  color: Colors.white54,
+                unselectedLabelTextStyle: VeraProbTypography.caption.copyWith(
+                  fontSize: 13,
+                  color: VeraProbColors.textSecondary,
                 ),
                 leading: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: VeraProbSpacing.md,
+                  ),
                   child: Column(
                     children: [
-                      const Icon(Icons.shield, color: Colors.white, size: 32),
-                      const SizedBox(height: 4),
+                      const Icon(
+                        Icons.shield,
+                        color: VeraProbColors.textPrimary,
+                        size: 32,
+                      ),
+                      const SizedBox(height: VeraProbSpacing.xs),
                       Text(
                         'SuperAdmin',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: 11,
+                        style: VeraProbTypography.caption.copyWith(
+                          color: VeraProbColors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
                 trailing: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.only(bottom: VeraProbSpacing.md),
                   child: IconButton(
-                    icon: const Icon(Icons.logout, color: Colors.white54),
+                    icon: const Icon(
+                      Icons.logout,
+                      color: VeraProbColors.textSecondary,
+                    ),
                     tooltip: 'Sair',
                     onPressed: () async {
                       // INV-22: Reset resilience state before logout
