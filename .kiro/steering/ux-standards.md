@@ -56,6 +56,8 @@ VeraProbTypography   // text styles: base (Inter), heading (Outfit), mono, kpiVa
 - **Radius:** Always `VeraProbRadii.*` — never raw `BorderRadius.circular()`.
 - **Cards:** `surface` fill + `border` side. Elevation only via `VeraProbElevation.raised` on hover/focus.
 - **Glassmorphism:** Subtle — `surfaceElevated` + `border` + `overlay` elevation on modals.
+- **Chip semantics:** a count inside a `VeraProbChip` MUST count what the label names (`'3 falhas'` = 3 failed deliveries). Never pair an unrelated number with a status label (e.g., attempt count next to `'sucesso'` reads as 3 successes). If no honest count exists, chip shows the label only.
+- **Event rows:** any list row representing a timestamped event (logs, deliveries, audit entries) MUST show its formatted timestamp (`dd/MM/yyyy HH:mm UTC`, tabular figures) — status + id without "when" is forensically useless.
 
 ### 5. Micro-interactions
 

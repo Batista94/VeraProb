@@ -137,9 +137,11 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
 
   Widget _buildPayloadSection() {
     return ExpansionTile(
-      title: const Text(
+      title: Text(
         'Payload enviado',
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: VeraProbTypography.bodyMedium.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
       ),
       initiallyExpanded: false,
       tilePadding: EdgeInsets.zero,
@@ -154,9 +156,9 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Erro retornado',
-          style: TextStyle(
+          style: VeraProbTypography.bodyMedium.copyWith(
             fontWeight: FontWeight.bold,
             color: VeraProbColors.error,
           ),

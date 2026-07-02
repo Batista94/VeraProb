@@ -54,10 +54,10 @@ class MasterDetailScaffold extends StatelessWidget {
   }
 
   Widget _buildWide(BuildContext context, double totalWidth) {
-    final masterWidth = (totalWidth * 0.35).clamp(
-      masterMinWidth,
-      masterMaxWidth,
-    );
+    // num.clamp returns num — toDouble() required under strict-casts
+    final masterWidth = (totalWidth * 0.35)
+        .clamp(masterMinWidth, masterMaxWidth)
+        .toDouble();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

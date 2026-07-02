@@ -69,7 +69,7 @@ Critical subset:
 - `const` whenever possible.
 - Unused params: single `_` (avoid `unnecessary_underscores` error).
 - `DateTime.now()` MUST be followed by `.toUtc()` (INV-6).
-- Hermetic Goldens: always `make goldens` (Linux Docker — CI parity).
+- Hermetic Goldens: always `make goldens` (Linux Docker — CI parity). Goldens live in ONE dedicated `*_golden_test.dart` per widget, registered in `scripts/generate_goldens.sh` `TEST_FILES` in the same diff — unregistered goldens never get a baseline (GOLDEN-UNWIRED, ci-blocks #19).
 - **No IIFE in UI (IIFE-UI-SMELL):** Never use `() { ... }()` inside `build` or `switch` statements. Always extract to helper methods (`_buildX`).
 - **No raw exceptions in UI (UX-RAW-EXCEPTION):** Never display `$e`, `e.toString()`, or state-wrapper errors (`${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}`) in SnackBars/Text. Map to domain vocabulary. Scanner does NOT catch these — review-enforced.
 - **Accent-fill contrast (ACCENT-FILL-CONTRAST):** Foreground on `primary`/`secondary`/`error` fills is always `VeraProbColors.background` (dark), never `Colors.white` — white fails WCAG AA 4.5:1 on all Indigo Zinc accents. Encoded in theme; don't override at widget level.
@@ -108,6 +108,8 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 16 | IIFE-UI-SMELL | `() { ... }()` Immediately Invoked Function Expressions in UI |
 | 17 | UX-RAW-EXCEPTION | Error object interpolated in UI text (`$e`, `e.toString()`, `${state.error}`, `${asyncValue.error}`) |
 | 18 | ACCENT-FILL-CONTRAST | `Colors.white` foreground on accent fills (primary/secondary/error) fails WCAG AA — use `background` |
+| 19 | GOLDEN-UNWIRED | `goldenTest` in file absent from `generate_goldens.sh` TEST_FILES — baseline never generated |
+| 20 | NUM-CLAMP-DOWNCAST | `num.clamp` result passed to `double` parameter — implicit downcast blocked by Strict Mode |
 
 ## Lessons Learned — Index
 
@@ -127,6 +129,8 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 | 10 | No IIFE in Widget Trees — avoid immediately invoked function expressions in build or switch |
 | 11 | No Raw Exceptions in UI — map errors to domain vocabulary (incl. `${state.error}` wrappers), avoid hardcoded styling |
 | 12 | Accent-Fill Foreground Contrast — dark `background` foreground on accent fills, never `Colors.white`; validate token pairs both directions |
+| 13 | Golden Test Wiring — goldens live in ONE `*_golden_test.dart` registered in `generate_goldens.sh` TEST_FILES, else baseline never generated |
+| 14 | Security-Flow SSOT — reveal-once/destructive dialog flows have one owner (screen); extracted widgets get callbacks, never copies |
 
 
 ## Database Governance

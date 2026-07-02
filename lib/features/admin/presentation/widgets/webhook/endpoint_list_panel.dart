@@ -3,47 +3,24 @@
 // Master panel for WebhookManagementScreen.
 // Extracted from the monolithic webhook_management_screen.dart (P2 redesign).
 //
-// Flows create/rotate intactos — apenas movidos do screen-level para cá.
-// WASM-CONTEXT-LEAK: navigator/messenger capturados PRÉ-await (já verificado).
+// Create/reveal flow lives at screen level (single SSOT — reveal-once modal
+// must never drift between call-sites); empty-state CTA delegates via
+// [onCreateEndpoint].
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/webhooks/webhook_delivery_status_view.dart';
 import 'package:veraprob/application/webhooks/webhook_endpoint_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/features/admin/presentation/widgets/create_endpoint_dialog.dart';
-import 'package:veraprob/features/admin/presentation/widgets/reveal_secret_modal.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/webhook_providers.dart';
 
-/// Master panel: list of webhook endpoints with create/rotate flows.
+/// Master panel: list of webhook endpoints.
 class EndpointListPanel extends ConsumerWidget {
-  const EndpointListPanel({super.key});
+  const EndpointListPanel({super.key, required this.onCreateEndpoint});
 
-  // ── Flows (intactos — comportamento preservado) ─────────────────────────
-
-  Future<void> _createEndpointFlow(BuildContext context) async {
-    final created = await showDialog<bool>(
-      context: context,
-      builder: (_) => const CreateEndpointDialog(),
-    );
-    if (created != true || !context.mounted) return;
-    await _showRevealModal(context, RevealAction.provision);
-  }
-
-  Future<void> _showRevealModal(
-    BuildContext context,
-    RevealAction action,
-  ) async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      useSafeArea: true,
-      builder: (_) => RevealSecretModal(action: action),
-    );
-  }
-
-  // ── Build ───────────────────────────────────────────────────────────────
+  /// Opens the create-endpoint dialog (owned by the screen — reveal-once flow).
+  final VoidCallback onCreateEndpoint;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,9 +31,9 @@ class EndpointListPanel extends ConsumerWidget {
       children: [
         Expanded(
           child: endpointsAsync.when(
-            data: (endpoints) => _buildList(context, endpoints, ref),
+            data: (endpoints) => _buildList(endpoints, ref),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, st) =>
+            error: (_, _) =>
                 const Center(child: Text('Falha ao carregar endpoints')),
           ),
         ),
@@ -64,11 +41,7 @@ class EndpointListPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildList(
-    BuildContext context,
-    List<WebhookEndpointView> endpoints,
-    WidgetRef ref,
-  ) {
+  Widget _buildList(List<WebhookEndpointView> endpoints, WidgetRef ref) {
     if (endpoints.isEmpty) {
       return EmptyState(
         icon: Icons.webhook_outlined,
@@ -76,7 +49,7 @@ class EndpointListPanel extends ConsumerWidget {
         description:
             'Crie um endpoint HTTPS para receber os vereditos selados via webhook.',
         action: FilledButton.icon(
-          onPressed: () => _createEndpointFlow(context),
+          onPressed: onCreateEndpoint,
           icon: const Icon(Icons.add),
           label: const Text('Novo Endpoint'),
         ),

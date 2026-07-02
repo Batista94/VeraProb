@@ -18,7 +18,7 @@ Full target catalog in `AGENTS.md` "Setup" section. Claude-relevant highlights:
 - `make test` / `make test-db` / `make test-all` — fast cycles
 - `make test-e2e` / `make test-e2e-file FILE=...` — E2E with required dart-defines
 - `make test-full` — everything (requires local Supabase up)
-- `make goldens` — hermetic via Docker Linux (NEVER update goldens outside this target — CI parity)
+- `make goldens` — hermetic via Docker Linux (NEVER update goldens outside this target — CI parity). New golden files MUST be registered in `scripts/generate_goldens.sh` `TEST_FILES` (GOLDEN-UNWIRED, ci-blocks #19); `golden` tag is skipped by `make test`, so an unregistered golden has NO generation or execution path.
 - `make check` / `make full-check` — scanner + lint + (optional) chaos + coverage
 - `make help` — list all targets
 

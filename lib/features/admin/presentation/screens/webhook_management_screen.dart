@@ -22,7 +22,7 @@ import 'package:veraprob/state/providers/webhook_providers.dart';
 class WebhookManagementScreen extends ConsumerWidget {
   const WebhookManagementScreen({super.key});
 
-  // ── Flows (moved to screen level for header CTA; panel keeps its own copy) ─
+  // ── Flows (single SSOT — panel empty-state CTA delegates here) ────────────
 
   Future<void> _createEndpointFlow(BuildContext context) async {
     final created = await showDialog<bool>(
@@ -104,7 +104,9 @@ class WebhookManagementScreen extends ConsumerWidget {
         ),
         Expanded(
           child: MasterDetailScaffold(
-            masterBuilder: (_) => const EndpointListPanel(),
+            masterBuilder: (_) => EndpointListPanel(
+              onCreateEndpoint: () => _createEndpointFlow(context),
+            ),
             detailBuilder: (_) => const DeliveryLogPanel(),
             hasSelection: selectedId != null,
             onBack: () =>

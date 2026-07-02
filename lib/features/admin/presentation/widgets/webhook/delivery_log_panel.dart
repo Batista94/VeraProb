@@ -53,7 +53,7 @@ class DeliveryLogPanel extends ConsumerWidget {
           child: logsAsync.when(
             data: (logs) => _buildLogList(logs, filter),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (err, st) =>
+            error: (_, _) =>
                 const Center(child: Text('Falha ao carregar logs')),
           ),
         ),
@@ -159,19 +159,22 @@ class DeliveryLogPanel extends ConsumerWidget {
         return ExpansionTile(
           title: Row(
             children: [
-              _logStatusChip(log.status, log.attemptCount),
+              _logStatusChip(log.status),
               const SizedBox(width: VeraProbSpacing.sm),
               Flexible(
                 child: Text(
                   log.eventType,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           subtitle: Text(
-            'Tentativa ${log.attemptCount} · ${log.id.substring(0, 8)}',
+            'Tentativa ${log.attemptCount} · ${_formatUtc(log.createdAt)} · '
+            '${log.id.substring(0, 8)}',
             style: VeraProbTypography.mono.copyWith(
               fontSize: 11,
               color: VeraProbColors.textSecondary,
@@ -183,7 +186,7 @@ class DeliveryLogPanel extends ConsumerWidget {
     );
   }
 
-  Widget _logStatusChip(WebhookDeliveryStatusView status, int count) {
+  Widget _logStatusChip(WebhookDeliveryStatusView status) {
     final color = switch (status) {
       WebhookDeliveryStatusView.success => VeraProbColors.success,
       WebhookDeliveryStatusView.failed ||
@@ -191,6 +194,14 @@ class DeliveryLogPanel extends ConsumerWidget {
       WebhookDeliveryStatusView.pending ||
       WebhookDeliveryStatusView.delivering => VeraProbColors.warning,
     };
-    return VeraProbChip(label: '$count ${status.labelPt}', color: color);
+    return VeraProbChip(label: status.labelPt, color: color);
+  }
+
+  String _formatUtc(DateTime utc) {
+    return '${utc.day.toString().padLeft(2, '0')}/'
+        '${utc.month.toString().padLeft(2, '0')}/'
+        '${utc.year} '
+        '${utc.hour.toString().padLeft(2, '0')}:'
+        '${utc.minute.toString().padLeft(2, '0')} UTC';
   }
 }
