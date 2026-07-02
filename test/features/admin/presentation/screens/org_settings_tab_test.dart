@@ -9,7 +9,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 
 void main() {
-  group('OrgSettingsScreen (INV-9/INV-19)', () {
+  group('OrgSettingsTab (INV-9/INV-19)', () {
     late Organization mockOrg;
 
     setUp(() {
@@ -32,7 +32,7 @@ void main() {
             currentUserRoleProvider.overrideWith((ref) => UserRole.superAdmin),
             orgSettingsProvider.overrideWith((ref) => mockOrg),
           ],
-          child: const MaterialApp(home: OrgSettingsScreen()),
+          child: const MaterialApp(home: Scaffold(body: OrgSettingsTab())),
         ),
       );
 
@@ -66,7 +66,7 @@ void main() {
             currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
             orgSettingsProvider.overrideWith((ref) => mockOrg),
           ],
-          child: const MaterialApp(home: OrgSettingsScreen()),
+          child: const MaterialApp(home: Scaffold(body: OrgSettingsTab())),
         ),
       );
 

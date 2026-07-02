@@ -25,14 +25,14 @@ import 'package:veraprob/features/admin/presentation/screens/widgets/org_setting
 /// Section widgets live under `widgets/org_settings/` — this screen owns the
 /// mutable state (controllers, `AsyncValue` orchestration) and the save
 /// handlers; sections are stateless and surface mutations via callbacks.
-class OrgSettingsScreen extends ConsumerStatefulWidget {
-  const OrgSettingsScreen({super.key});
+class OrgSettingsTab extends ConsumerStatefulWidget {
+  const OrgSettingsTab({super.key});
 
   @override
-  ConsumerState<OrgSettingsScreen> createState() => _OrgSettingsScreenState();
+  ConsumerState<OrgSettingsTab> createState() => _OrgSettingsTabState();
 }
 
-class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
+class _OrgSettingsTabState extends ConsumerState<OrgSettingsTab> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _timezoneController = TextEditingController();
@@ -76,31 +76,28 @@ class _OrgSettingsScreenState extends ConsumerState<OrgSettingsScreen> {
     final userRole = ref.watch(currentUserRoleProvider);
     final isSuperAdmin = userRole == UserRole.superAdmin;
 
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const OrgSettingsHeader(),
-            const SizedBox(height: 32),
-            Expanded(
-              child: switch (orgAsync) {
-                AsyncData() => _buildLoadedBody(isSuperAdmin),
-                AsyncLoading() => const Center(
-                  child: CircularProgressIndicator(),
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const OrgSettingsHeader(),
+          const SizedBox(height: 32),
+          Expanded(
+            child: switch (orgAsync) {
+              AsyncData() => _buildLoadedBody(isSuperAdmin),
+              AsyncLoading() => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              AsyncError() => const Center(
+                child: Text(
+                  'Não foi possível carregar as configurações da organização.',
+                  style: TextStyle(color: VeraProbColors.error),
                 ),
-                AsyncError() => const Center(
-                  child: Text(
-                    'Não foi possível carregar as configurações da organização.',
-                    style: TextStyle(color: VeraProbColors.error),
-                  ),
-                ),
-              },
-            ),
-          ],
-        ),
+              ),
+            },
+          ),
+        ],
       ),
     );
   }

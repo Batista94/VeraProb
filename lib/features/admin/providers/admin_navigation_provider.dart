@@ -26,8 +26,6 @@ enum AdminNav {
   zones,
   billingReports,
   slaTemplates,
-  orgSettings,
-  userManagement,
   contractors,
   settings,
   evidence,

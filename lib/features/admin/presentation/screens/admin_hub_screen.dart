@@ -89,17 +89,7 @@ class AdminHubScreen extends ConsumerWidget {
         title: 'Conta & Governança',
         items: [
           const _HubItem(
-            label: 'Organização',
-            icon: Icons.business_outlined,
-            destination: AdminNav.orgSettings,
-          ),
-          const _HubItem(
-            label: 'Usuários',
-            icon: Icons.manage_accounts_outlined,
-            destination: AdminNav.userManagement,
-          ),
-          const _HubItem(
-            label: 'Ajustes',
+            label: 'Configurações',
             icon: Icons.settings_outlined,
             destination: AdminNav.settings,
           ),
