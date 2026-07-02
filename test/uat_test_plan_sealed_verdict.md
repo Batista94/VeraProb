@@ -27,7 +27,7 @@ Antes de iniciar os testes, garanta que o ambiente esteja configurado:
 * **Resultado Esperado:** A tela apresenta a lista de endpoints cadastrados (inicialmente vazia) e o botão "Novo Endpoint".
 
 ### Passo 2: Provisionar Novo Endpoint e Obter Segredo (Reveal-Once)
-* **Ação:** Clique em **"Novo Endpoint"** / **"Adicionar"**.
+* **Ação:** Clique em **"Novo Endpoint"**.
 * **Ação:** Insira a URL obtida do `webhook.site` e salve.
 * **Resultado Esperado:** O modal **"Segredo de Assinatura"** deve abrir sob regras de segurança rígidas (foco bloqueado, blur no segredo).
 * **Ação:** Clique em **"Revelar"**, copie a chave secreta gerada (em formato hex) e marque o checkbox de confirmação de segurança. Clique em **"Concluir"**.
@@ -77,7 +77,7 @@ Para testar a emissão transacional do webhook e notificação:
   - Altere a URL do endpoint para um IP inválido ou porta fechada na UI.
   - Provoque um novo evento de sanção para gerar um log com status `FAILED` ou `DEAD`.
   - Expanda o log com falha na UI, verifique o log de erro exibido de forma segura (sem vazamentos/XSS).
-  - Clique no botão **"Replay"**.
+  - Clique no botão **"Replay Manual"**.
 * **Resultado Esperado:** O botão fica desabilitado por no mínimo 3 segundos (debounce anti-DDoS). O status no backend é resetado para `PENDING` e a fila processa a tentativa de entrega novamente.
 
 ### Passo 6: Notificação por E-mail do Carrier (Resend)

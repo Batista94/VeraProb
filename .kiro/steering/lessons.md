@@ -205,8 +205,18 @@ Future<void> _save() async {
 
 ## 11. NO RAW EXCEPTIONS IN UI (UX-RAW-EXCEPTION)
 
-**Rule:** Never interpolate `$e`, `${e.exception}`, or `e.toString()` directly into `Text` widgets or `SnackBar` contents. Also, never use hardcoded colors/styles.
+**Rule:** Never interpolate `$e`, `${e.exception}`, or `e.toString()` directly into `Text` widgets or `SnackBar` contents. The same leak hides behind state wrappers — `${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}` — and the static scanner catches NONE of these (review-enforced rule). Also, never use hardcoded colors/styles.
 
-**Why:** Exposing internal stack traces or technical errors to end-users destroys the "Enterprise-Grade" UX requirement (INV-10). It violates the SLA of a professional UI. Hardcoded styles break the design system.
+**Why:** Exposing internal stack traces or technical errors to end-users destroys the "Enterprise-Grade" UX requirement (INV-10). It violates the SLA of a professional UI. Hardcoded styles break the design system. P1 UI overhaul found a live leak that survived every gate: `'Erro: ${actionState.error}'` in `justification_detail_drawer.dart` — the wrapper property evaded the `$e` grep habit.
 
-**How to apply:** Catch exceptions and render domain-specific, actionable messages in Portuguese (e.g., `'Não foi possível salvar os dados. Tente novamente.'`). Always use `VeraProbColors` and `VeraProbTypography`.
+**How to apply:** Catch exceptions and render domain-specific, actionable messages in Portuguese (e.g., `'Não foi possível salvar os dados. Tente novamente.'`). Grep `.error}` besides `$e` in any file you touch. Prefer omitting the custom `error:` builder — `AsyncValueWidget`'s default is already sanitized. Always use `VeraProbColors` and `VeraProbTypography`. Recipe: `.claude/rules/ci-blocks.md` #17.
+
+---
+
+## 12. ACCENT-FILL FOREGROUND CONTRAST (ACCENT-FILL-CONTRAST)
+
+**Rule:** Foreground on accent fills (`primary`/`secondary`/`error`) is always `VeraProbColors.background` (dark), never `Colors.white`.
+
+**Why:** On the Indigo Zinc palette, white fails WCAG AA 4.5:1 on every accent fill (primary `#6E7CF6` = 3.6:1, secondary `#5EEAD4` = 1.5:1, error `#EF4444` = 3.8:1) and button labels are 13px — the "large text" allowance doesn't apply. No single accent hue can pass BOTH white-on-fill and fill-as-text-on-dark at 4.5:1; dark-on-accent is the only combination that keeps both directions valid.
+
+**How to apply:** Inherit from theme (`colorScheme.onPrimary/onSecondary/onError` + `ElevatedButtonTheme` already encode it). Never set `foregroundColor: Colors.white` on accent-filled buttons at widget level. Validate any NEW token pair in both directions (fill+foreground AND token-as-text on `background`/`surface`) before commit. Recipe: `.claude/rules/ci-blocks.md` #18.

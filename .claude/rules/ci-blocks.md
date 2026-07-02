@@ -7,7 +7,7 @@ paths:
 
 # VeraProb — Common CI Blocks & Forensic Fixes
 
-Top 14 scanner-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
+Top 18 CI-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
 
 ---
 
@@ -389,15 +389,38 @@ switch (asyncValue) {
 
 ## 17. UX-RAW-EXCEPTION: Exposing technical errors to users
 
-**Problem:** Using `Text('Erro: $e')` in SnackBars or UI elements.
+**Problem:** Interpolating ANY error object into UI text. Not just `$e` / `e.toString()` — the same leak hides behind state wrappers: `${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}`, `err.toString()`. All of them render raw `PostgrestException`/stack internals to the end user. The static scanner does NOT catch these — this rule is review-enforced; grep for `.error}` and `$e` in any file you touch.
 
 **Fix:** Translate to a human-readable domain message in Portuguese. Do not expose system traces.
 
 ```dart
 // Wrong
 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+if (actionState.hasError) Text('Erro: ${actionState.error}');
+error: (err, st) => Text(err.toString()),
 
 // Right
 messenger.showSnackBar(const SnackBar(content: Text('Falha ao processar solicitação. Verifique os dados e tente novamente.')));
+if (actionState.hasError) const Text('Falha ao processar a revisão. Tente novamente.');
+// Best: omit the custom error builder — AsyncValueWidget's default is already sanitized
+// ('Não foi possível carregar os dados. Tente novamente.').
 ```
+
+---
+
+## 18. ACCENT-FILL-CONTRAST: `Colors.white` on accent fills fails WCAG AA
+
+**Problem:** Setting `Colors.white` as foreground on Indigo Zinc accent fills. White fails 4.5:1 on every accent: `primary #6E7CF6` = 3.6:1, `secondary #5EEAD4` = 1.5:1, `error #EF4444` = 3.8:1. Button labels are 13px — the WCAG "large text" 3:1 allowance does NOT apply.
+
+**Fix:** Foreground on accent fills is always `VeraProbColors.background` (dark). `background` passes on all accents (primary 5.5:1, secondary 13:1, error 5.2:1) and keeps `primary`-as-text on `background` valid (5.5:1). The theme already encodes this (`colorScheme.onPrimary/onSecondary/onError`, `ElevatedButtonTheme`) — never override it back to white at widget level.
+
+```dart
+// Wrong
+FilledButton.styleFrom(foregroundColor: Colors.white)
+
+// Right — inherit from theme, or if explicit style is required:
+FilledButton.styleFrom(foregroundColor: VeraProbColors.background)
+```
+
+New color token pairs MUST be validated in both directions (token-as-fill with its foreground, token-as-text on `background`/`surface`) at 4.5:1 text / 3:1 UI glyphs before commit.
 

@@ -15,10 +15,10 @@ abstract final class CsvT {
   static const warning = VeraProbColors.warning;
   static const textHi = VeraProbColors.textPrimary;
   static const textLo = VeraProbColors.textSecondary;
-  static const radiusCard = 12.0;
-  static const radiusChip = 8.0;
-  static const animDuration = Duration(milliseconds: 200);
-  static const animCurve = Cubic(0.4, 0, 0.2, 1);
+  static const radiusCard = VeraProbRadii.lg;
+  static const radiusChip = VeraProbRadii.md;
+  static const animDuration = VeraProbMotion.base;
+  static const animCurve = VeraProbMotion.curve;
 
   static BoxDecoration cardDecoration({double radius = radiusCard}) =>
       BoxDecoration(

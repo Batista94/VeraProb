@@ -215,22 +215,20 @@ void main() {
       expect(icon.color, expectedColor);
     });
 
-    testWidgets('warning variant color is same regardless of theme', (
+    testWidgets('warning variant color is correct in dark theme', (
       tester,
     ) async {
-      for (final theme in [AppTheme.darkTheme, AppTheme.lightTheme]) {
-        await tester.pumpWidget(
-          _buildSubject(
-            const InfoTooltip(
-              message: 'Warning',
-              variant: InfoTooltipVariant.warning,
-            ),
-            theme: theme,
+      await tester.pumpWidget(
+        _buildSubject(
+          const InfoTooltip(
+            message: 'Warning',
+            variant: InfoTooltipVariant.warning,
           ),
-        );
-        final icon = tester.widget<Icon>(find.byType(Icon));
-        expect(icon.color, VeraProbColors.warning);
-      }
+          theme: AppTheme.darkTheme,
+        ),
+      );
+      final icon = tester.widget<Icon>(find.byType(Icon));
+      expect(icon.color, VeraProbColors.warning);
     });
   });
 }

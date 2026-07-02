@@ -76,7 +76,8 @@ Mandatory for all IDEs (Antigravity/Claude/Kiro). Failure to execute = VETO.
 - **Layer Shielding (INV-13):** Route `lib/features/` → `lib/infrastructure/` via application service or `IRepository` interface. Exceptions: `infrastructure/observability/` (logger), `infrastructure/config/` (env). Scanner rule: `INFRA-LEAK-UI`.
 - **Wasm/W3C Parity (WASM-CONTEXT-LEAK):** Never invoke `ScaffoldMessenger.of(context)` or `Navigator.of(context)` after an `await` without pre-capturing the reference. `if (mounted)` does NOT protect against staleness in Wasm.
 - **UI Clean Code (IIFE-UI-SMELL):** Do NOT use Immediately Invoked Function Expressions (IIFEs) like `() { ... }()`. Extract complex widget logic into smaller helper methods (`_buildSomething`). Avoid nested ternaries.
-- **UX Excellence (UX-RAW-EXCEPTION):** Never expose `$e` or `e.toString()` in UI feedback (SnackBars/Dialogs). Translate exceptions to user-friendly Portuguese. Avoid hardcoded styles; use `VeraProbColors` and `VeraProbTypography`.
+- **UX Excellence (UX-RAW-EXCEPTION):** Never expose `$e`, `e.toString()`, or state-wrapper errors (`${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}`) in UI feedback (SnackBars/Dialogs). Translate exceptions to user-friendly Portuguese. Avoid hardcoded styles; use `VeraProbColors` and `VeraProbTypography`.
+- **Accent-fill Contrast (ACCENT-FILL-CONTRAST):** Foreground on accent fills (`primary`/`secondary`/`error`) is always `VeraProbColors.background`, never `Colors.white` (fails WCAG AA on Indigo Zinc). Recipe: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #18.
 
 ## PATH-SCOPED RULES (auto-loaded by file pattern)
 

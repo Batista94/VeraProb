@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// A widget that correctly implements stale-while-revalidate for [AsyncValue].
 ///
@@ -112,10 +113,20 @@ class AsyncValueWidget<T> extends StatelessWidget {
 
   Widget _buildError(Object error, StackTrace stackTrace) {
     if (this.error != null) return this.error!(error, stackTrace);
-    return Center(
+    return const Center(
       child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Text('Erro: $error', textAlign: TextAlign.center),
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, color: VeraProbColors.error, size: 32),
+            SizedBox(height: 8),
+            Text(
+              'Não foi possível carregar os dados. Tente novamente.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
