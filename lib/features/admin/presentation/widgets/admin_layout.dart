@@ -100,6 +100,62 @@ class AdminLayout extends ConsumerWidget {
     ];
   }
 
+  List<NavigationDestination> _buildBottomDestinations(WidgetRef ref) {
+    final pendingCount = ref.watch(pendingSanctionsCountProvider);
+    final pendingJustificationCount = ref.watch(
+      pendingJustificationsCountProvider,
+    );
+
+    return [
+      const NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: 'Painel',
+      ),
+      NavigationDestination(
+        icon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval),
+        ),
+        label: 'Fila',
+      ),
+      NavigationDestination(
+        icon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield),
+        ),
+        label: 'Defesa',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.account_balance_outlined),
+        selectedIcon: Icon(Icons.account_balance),
+        label: 'Executivo',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.history_outlined),
+        selectedIcon: Icon(Icons.history),
+        label: 'Log',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.admin_panel_settings_outlined),
+        selectedIcon: Icon(Icons.admin_panel_settings),
+        label: 'Admin',
+      ),
+    ];
+  }
+
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
     WidgetRef ref,
@@ -232,8 +288,11 @@ class AdminLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = navigationShell.currentIndex;
-    final destinations = _buildDestinations(ref);
-    final isWideScreen = MediaQuery.of(context).size.width >= 600;
+    final railDestinations = _buildDestinations(ref);
+    final bottomDestinations = _buildBottomDestinations(ref);
+    final isCompact = VeraProbBreakpoints.isCompact(context);
+    final isExpandedRail =
+        MediaQuery.of(context).size.width >= VeraProbBreakpoints.medium;
 
     // ── Incident-responsive drawer ─────────────────────────────
     // Close the instant the queue empties so the operator never lands on the
@@ -260,16 +319,31 @@ class AdminLayout extends ConsumerWidget {
             onEndDrawerChanged: (isOpen) {
               ref.read(isAlertsDrawerOpenProvider.notifier).set(isOpen);
             },
-            appBar: _buildAppBar(context, ref, isWideScreen),
+            appBar: _buildAppBar(context, ref, !isCompact),
+            bottomNavigationBar: isCompact
+                ? NavigationBar(
+                    backgroundColor: VeraProbColors.surfaceElevated,
+                    indicatorColor: VeraProbColors.primary.withValues(
+                      alpha: 0.15,
+                    ),
+                    selectedIndex: selectedIndex,
+                    onDestinationSelected: (idx) {
+                      if (idx == selectedIndex) return;
+                      _goBranch(ref, idx);
+                    },
+                    destinations: bottomDestinations,
+                  )
+                : null,
             body: Row(
               children: [
-                _buildSidebar(
-                  context,
-                  ref,
-                  isWideScreen,
-                  selectedIndex,
-                  destinations,
-                ),
+                if (!isCompact)
+                  _buildSidebar(
+                    context,
+                    ref,
+                    isExpandedRail,
+                    selectedIndex,
+                    railDestinations,
+                  ),
                 Expanded(
                   child: Align(
                     alignment: Alignment.topCenter,

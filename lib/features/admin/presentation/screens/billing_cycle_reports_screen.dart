@@ -119,12 +119,27 @@ class _BillingCycleReportsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Relatórios de Ciclo de Faturamento')),
+      backgroundColor: Colors.transparent,
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.receipt_long_outlined,
+                  size: 28,
+                  color: VeraProbColors.primary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Relatórios de Ciclo de Faturamento',
+                  style: VeraProbTypography.sectionTitle,
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             _buildFilters(),
             const SizedBox(height: 20),
             if (_isLoading)
