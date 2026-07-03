@@ -74,7 +74,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
               primary: VeraProbColors.primary,
-              onPrimary: Colors.white,
+              // ACCENT-FILL-CONTRAST: dark fg on fill.
+              onPrimary: VeraProbColors.background,
               surface: VeraProbColors.surfaceElevated,
               onSurface: VeraProbColors.textPrimary,
             ),
@@ -449,7 +450,8 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  // ACCENT-FILL-CONTRAST: dark fg on fill.
+                                  color: VeraProbColors.background,
                                 ),
                               )
                             : const Text('ATIVAR CONTRATO'),

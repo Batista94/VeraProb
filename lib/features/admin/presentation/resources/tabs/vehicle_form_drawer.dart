@@ -79,9 +79,17 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
         const SnackBar(
           content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+              Icon(
+                Icons.check_circle,
+                color: VeraProbColors.background,
+                size: 20,
+              ),
               SizedBox(width: 10),
-              Text('Veículo cadastrado com sucesso'),
+              Text(
+                'Veículo cadastrado com sucesso',
+                style: TextStyle(color: VeraProbColors.background),
+              ),
             ],
           ),
           backgroundColor: VeraProbColors.success,
@@ -122,15 +130,15 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
         elevation: 8,
         child: Container(
           width: 420,
-          color: Colors.white,
+          color: VeraProbColors.surface,
           child: Column(
             children: [
               // Header
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
+                    bottom: BorderSide(color: VeraProbColors.border),
                   ),
                 ),
                 child: Row(
@@ -235,24 +243,30 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.shade200),
+                              color: VeraProbColors.error.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: VeraProbRadii.mdAll,
+                              border: Border.all(
+                                color: VeraProbColors.error.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.warning_amber,
                                   size: 18,
-                                  color: Colors.red.shade700,
+                                  color: VeraProbColors.error,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 13,
-                                      color: Colors.red.shade800,
+                                      color: VeraProbColors.error,
                                     ),
                                   ),
                                 ),
@@ -268,8 +282,8 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
               // Footer
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: VeraProbColors.border)),
                 ),
                 child: Row(
                   children: [
@@ -296,7 +310,8 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  // ACCENT-FILL-CONTRAST: dark fg on fill.
+                                  color: VeraProbColors.background,
                                 ),
                               )
                             : const Text(
@@ -318,10 +333,10 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
   Widget _fieldLabel(String text) {
     return Text(
       text,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade800,
+        color: VeraProbColors.textPrimary,
       ),
     );
   }

@@ -131,9 +131,10 @@ class _HeaderState extends ConsumerState<_Header> {
           ),
           icon: const Icon(Icons.add, size: 16),
           label: const Text('Nova Justificativa'),
+          // ACCENT-FILL-CONTRAST: dark fg on fill.
           style: FilledButton.styleFrom(
             backgroundColor: VeraProbColors.primary,
-            foregroundColor: Colors.black,
+            foregroundColor: VeraProbColors.background,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),

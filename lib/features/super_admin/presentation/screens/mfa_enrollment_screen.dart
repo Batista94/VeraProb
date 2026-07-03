@@ -41,7 +41,7 @@ const _kMonoCode = TextStyle(
   color: VeraProbColors.textPrimary,
 );
 const _kCtaButtonText = TextStyle(
-  color: Colors.white,
+  color: VeraProbColors.textPrimary,
   fontWeight: FontWeight.bold,
   letterSpacing: 1,
 );
@@ -254,14 +254,18 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: const Color(
+              0xFFFFFFFF,
+            ), // QR code requires white background for scanner readability
+            borderRadius: VeraProbRadii.lgAll,
           ),
           child: QrImageView(
             data: result.totpUri,
             version: QrVersions.auto,
             size: 200,
-            backgroundColor: Colors.white,
+            backgroundColor: const Color(
+              0xFFFFFFFF,
+            ), // functional — do not change
           ),
         ),
         const SizedBox(height: 16),

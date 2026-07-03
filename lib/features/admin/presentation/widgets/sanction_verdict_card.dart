@@ -2811,7 +2811,7 @@ class _PortalAttachmentThumb extends ConsumerWidget {
       child: InkWell(
         onTap: () => showDialog<void>(
           context: context,
-          barrierColor: Colors.black87,
+          barrierColor: const Color(0xDE000000), // lightbox barrier
           builder: (_) => _PortalAttachmentLightbox(
             url: url,
             token: token,

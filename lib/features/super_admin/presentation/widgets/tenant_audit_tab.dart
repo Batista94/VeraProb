@@ -170,8 +170,8 @@ class _AuditLogItem extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
+                color: const Color(0x33000000), // payload background
+                borderRadius: VeraProbRadii.smAll,
               ),
               child: Text(log.payload.toString(), style: _kMonoPayloadText),
             ),

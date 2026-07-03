@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/providers/trips_provider.dart';
-import 'package:veraprob/presentation/shared/ui/skeleton_list_loader.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 
 class TimecardReportsScreen extends ConsumerWidget {
   const TimecardReportsScreen({super.key});
@@ -58,7 +59,7 @@ class TimecardReportsScreen extends ConsumerWidget {
       children: [
         // Summary Card
         Card(
-          color: Colors.indigo.shade50,
+          color: VeraProbColors.surfaceElevated,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -109,7 +110,9 @@ class TimecardReportsScreen extends ConsumerWidget {
                     trip.status == 'active'
                         ? Icons.directions_bus
                         : Icons.check_circle,
-                    color: trip.status == 'active' ? Colors.green : Colors.grey,
+                    color: trip.status == 'active'
+                        ? VeraProbColors.success
+                        : VeraProbColors.textSecondary,
                   ),
                   title: Text('Linha: ${trip.routeId}'),
                   subtitle: Text(
@@ -131,23 +134,10 @@ class TimecardReportsScreen extends ConsumerWidget {
       error: error,
       stackTrace: stackTrace,
     );
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
-            'Não foi possível carregar os relatórios agora.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Tente novamente mais tarde.',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: Icons.error_outline,
+      title: 'Não foi possível carregar os relatórios agora.',
+      description: 'Tente novamente mais tarde.',
     );
   }
 }

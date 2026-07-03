@@ -95,12 +95,13 @@ class _SlaTemplateLibraryScreenState
           ],
         ),
       ),
+      // ACCENT-FILL-CONTRAST: dark fg on fill.
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showEditor(context),
         icon: const Icon(Icons.add),
         label: const Text('Novo Modelo'),
         backgroundColor: VeraProbColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: VeraProbColors.background,
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Parses a hex color string to a Flutter [Color].
 ///
@@ -36,12 +37,10 @@ class RouteTable extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            decoration: const BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
@@ -56,7 +55,7 @@ class RouteTable extends StatelessWidget {
             child: ListView.separated(
               itemCount: routes.length,
               separatorBuilder: (_, _) =>
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  const Divider(height: 1, color: VeraProbColors.border),
               itemBuilder: (context, index) {
                 final route = routes[index];
                 return RouteRow(
@@ -79,10 +78,10 @@ class RouteTable extends StatelessWidget {
       flex: flex,
       child: Text(
         label,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade600,
+          color: VeraProbColors.textSecondary,
           letterSpacing: 0.8,
         ),
       ),
@@ -124,8 +123,8 @@ class _RouteRowState extends State<RouteRow> {
           color: widget.isHighlighted
               ? colorScheme.primaryContainer.withValues(alpha: 0.3)
               : _isHovered
-              ? Colors.grey.shade50
-              : Colors.white,
+              ? VeraProbColors.surfaceElevated
+              : Colors.transparent,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
@@ -144,7 +143,10 @@ class _RouteRowState extends State<RouteRow> {
               flex: 3,
               child: Text(
                 widget.route.longName,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ),
             Expanded(
@@ -157,25 +159,25 @@ class _RouteRowState extends State<RouteRow> {
                           height: 16,
                           decoration: BoxDecoration(
                             color: routeColor,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: VeraProbRadii.smAll,
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: VeraProbSpacing.sm),
                         Text(
                           widget.route.color ?? '',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: VeraProbColors.textSecondary,
                             fontFamily: 'monospace',
                           ),
                         ),
                       ],
                     )
-                  : Text(
+                  : const Text(
                       '—',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey.shade400,
+                        color: VeraProbColors.textDisabled,
                       ),
                     ),
             ),
@@ -186,10 +188,10 @@ class _RouteRowState extends State<RouteRow> {
                 children: [
                   if (widget.onDelete != null)
                     IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.delete_outline,
                         size: 20,
-                        color: Colors.red.shade400,
+                        color: VeraProbColors.error,
                       ),
                       tooltip: 'Remover rota',
                       onPressed: widget.onDelete,

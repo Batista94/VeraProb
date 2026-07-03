@@ -146,9 +146,10 @@ class _JustificationDetailDrawerState
                                 onPressed: actionState.isLoading
                                     ? null
                                     : () => _reject(id),
+                                // ACCENT-FILL-CONTRAST: dark fg on fill.
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VeraProbColors.error,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: VeraProbColors.background,
                                 ),
                                 child: actionState.isLoading
                                     ? const SizedBox(
@@ -156,7 +157,7 @@ class _JustificationDetailDrawerState
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: VeraProbColors.background,
                                         ),
                                       )
                                     : const Text('Confirmar Rejeição'),
@@ -178,14 +179,15 @@ class _JustificationDetailDrawerState
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: VeraProbColors.background,
                                         ),
                                       )
                                     : const Icon(Icons.check, size: 16),
                                 label: const Text('Aprovar'),
+                                // ACCENT-FILL-CONTRAST: dark fg on fill.
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VeraProbColors.success,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: VeraProbColors.background,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),

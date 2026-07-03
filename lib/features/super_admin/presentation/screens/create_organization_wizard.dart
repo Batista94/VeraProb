@@ -748,7 +748,7 @@ class _CreateOrganizationWizardState
                 : () => _goToStep(_currentStep + 1),
             style: ElevatedButton.styleFrom(
               backgroundColor: VeraProbColors.superAdminSurface,
-              foregroundColor: Colors.white,
+              foregroundColor: VeraProbColors.textPrimary,
             ),
             child: _isSubmitting
                 ? const SizedBox(
@@ -756,7 +756,7 @@ class _CreateOrganizationWizardState
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: VeraProbColors.textPrimary,
                     ),
                   )
                 : Text(isLast ? 'Criar e Enviar Convite' : 'Próximo'),

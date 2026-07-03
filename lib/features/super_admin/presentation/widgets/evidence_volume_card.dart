@@ -47,19 +47,22 @@ class EvidenceVolumeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
+              // ACCENT-FILL-CONTRAST: dark foreground on accent gradient.
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.storage_outlined,
                     size: 18,
-                    color: Colors.white70,
+                    color: VeraProbColors.background.withValues(alpha: 0.75),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Volumetria de Evidências',
                       style: VeraProbTypography.bodySmall.copyWith(
-                        color: Colors.white70,
+                        color: VeraProbColors.background.withValues(
+                          alpha: 0.75,
+                        ),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -71,14 +74,14 @@ class EvidenceVolumeCard extends StatelessWidget {
                 _formatNumber(totalHistorical),
                 style: VeraProbTypography.kpiValue.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: Colors.white,
+                  color: VeraProbColors.background,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Este mês: ${_formatNumber(totalMonthly)}',
                 style: VeraProbTypography.bodySmall.copyWith(
-                  color: Colors.white70,
+                  color: VeraProbColors.background.withValues(alpha: 0.75),
                 ),
               ),
             ],

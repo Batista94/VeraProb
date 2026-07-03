@@ -35,7 +35,7 @@ class DisputeSuccessView extends StatelessWidget {
         border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.1)),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12,
+            color: Color(0x1F000000), // box shadow
             blurRadius: 24,
             offset: Offset(0, 8),
           ),

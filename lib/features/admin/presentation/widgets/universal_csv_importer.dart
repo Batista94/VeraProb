@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_mapping_step.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_result_step.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_theme.dart';
@@ -221,9 +222,9 @@ class _StepPill extends StatelessWidget {
     final isDone = index < currentStep;
 
     // Fix INV-UX: text color was identical to background (alpha 0.1 over same hue).
-    // Active → white text. Done → success. Inactive → textLo.
+    // Active → textPrimary. Done → success. Inactive → textLo.
     final textColor = isActive
-        ? Colors.white
+        ? VeraProbColors.textPrimary
         : (isDone ? CsvT.success : CsvT.textLo);
     final bgColor = isActive
         ? CsvT.action.withValues(alpha: 0.15)
@@ -329,7 +330,8 @@ class _DialogFooter extends ConsumerWidget {
         label: Text('Importar ${report.validRows} linha(s)'),
         style: FilledButton.styleFrom(
           backgroundColor: CsvT.action,
-          foregroundColor: Colors.white,
+          // ACCENT-FILL-CONTRAST: dark fg on fill.
+          foregroundColor: VeraProbColors.background,
           disabledBackgroundColor: CsvT.bgSlate,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(CsvT.radiusChip),
@@ -346,7 +348,8 @@ class _DialogFooter extends ConsumerWidget {
         label: const Text('Validar'),
         style: FilledButton.styleFrom(
           backgroundColor: CsvT.action,
-          foregroundColor: Colors.white,
+          // ACCENT-FILL-CONTRAST: dark fg on fill.
+          foregroundColor: VeraProbColors.background,
           disabledBackgroundColor: CsvT.bgSlate,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(CsvT.radiusChip),

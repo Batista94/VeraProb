@@ -1150,14 +1150,15 @@ class _TamperedView extends StatelessWidget {
                   height: 14,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VeraProbColors.background,
                   ),
                 )
               : const Icon(Icons.report_gmailerrorred),
           label: const Text('ESCALAR INCIDENTE'),
+          // ACCENT-FILL-CONTRAST: dark fg on fill.
           style: ElevatedButton.styleFrom(
             backgroundColor: VeraProbColors.error,
-            foregroundColor: Colors.white,
+            foregroundColor: VeraProbColors.background,
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
         ),

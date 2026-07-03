@@ -606,17 +606,24 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(4),
+                color: const Color(0x8C000000), // map scrim
+                borderRadius: VeraProbRadii.smAll,
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.touch_app, color: Colors.white, size: 13),
+                  Icon(
+                    Icons.touch_app,
+                    color: VeraProbColors.background,
+                    size: 13,
+                  ),
                   SizedBox(width: 4),
                   Text(
                     'Clique no mapa para posicionar o pin',
-                    style: TextStyle(color: Colors.white, fontSize: 11),
+                    style: TextStyle(
+                      color: VeraProbColors.background,
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),
@@ -627,11 +634,11 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             bottom: 0,
             right: 0,
             child: Container(
-              color: Colors.white.withValues(alpha: 0.7),
+              color: const Color(0xB3FFFFFF), // OSM attribution bg
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               child: const Text(
                 '© OpenStreetMap contributors',
-                style: TextStyle(fontSize: 9, color: Colors.black87),
+                style: TextStyle(fontSize: 9, color: Color(0xDE000000)),
               ),
             ),
           ),
@@ -694,7 +701,8 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       height: 16,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        // ACCENT-FILL-CONTRAST: dark fg on fill.
+                        color: VeraProbColors.background,
                       ),
                     )
                   : Icon(

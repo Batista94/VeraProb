@@ -297,8 +297,9 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
                             ),
                             child: const Text(
                               'ACESSAR SISTEMA',
+                              // ACCENT-FILL-CONTRAST: dark fg on fill.
                               style: TextStyle(
-                                color: Colors.white,
+                                color: VeraProbColors.background,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1,

@@ -82,9 +82,17 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
         const SnackBar(
           content: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+              Icon(
+                Icons.check_circle,
+                color: VeraProbColors.background,
+                size: 20,
+              ),
               SizedBox(width: 10),
-              Text('Rota cadastrada com sucesso'),
+              Text(
+                'Rota cadastrada com sucesso',
+                style: TextStyle(color: VeraProbColors.background),
+              ),
             ],
           ),
           backgroundColor: VeraProbColors.success,
@@ -121,9 +129,9 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
               // Header
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
+                    bottom: BorderSide(color: VeraProbColors.border),
                   ),
                 ),
                 child: Row(
@@ -216,24 +224,30 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: Colors.red.shade50,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.red.shade200),
+                              color: VeraProbColors.error.withValues(
+                                alpha: 0.12,
+                              ),
+                              borderRadius: VeraProbRadii.mdAll,
+                              border: Border.all(
+                                color: VeraProbColors.error.withValues(
+                                  alpha: 0.4,
+                                ),
+                              ),
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.warning_amber,
                                   size: 18,
-                                  color: Colors.red.shade700,
+                                  color: VeraProbColors.error,
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontSize: 13,
-                                      color: Colors.red.shade800,
+                                      color: VeraProbColors.error,
                                     ),
                                   ),
                                 ),
@@ -249,8 +263,8 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
               // Footer
               Container(
                 padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                decoration: const BoxDecoration(
+                  border: Border(top: BorderSide(color: VeraProbColors.border)),
                 ),
                 child: Row(
                   children: [
@@ -277,7 +291,8 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
                                 height: 20,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  color: Colors.white,
+                                  // ACCENT-FILL-CONTRAST: dark fg on fill.
+                                  color: VeraProbColors.background,
                                 ),
                               )
                             : const Text(
@@ -299,10 +314,10 @@ class _RouteFormDrawerState extends ConsumerState<RouteFormDrawer>
   Widget _fieldLabel(String text) {
     return Text(
       text,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: Colors.grey.shade800,
+        color: VeraProbColors.textPrimary,
       ),
     );
   }

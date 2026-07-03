@@ -52,7 +52,7 @@ class _MfaDisabledBannerState extends State<MfaDisabledBanner> {
               color: VeraProbColors.warning,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.2),
+                  color: const Color(0x33000000), // shadow
                   blurRadius: _isHovered ? 4 : 2,
                   offset: Offset(0, _isHovered ? 4 : 2),
                 ),

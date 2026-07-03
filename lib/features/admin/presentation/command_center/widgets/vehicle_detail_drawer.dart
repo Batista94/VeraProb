@@ -49,7 +49,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
         border: Border(left: BorderSide(color: VeraProbColors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Color(0x42000000), // drawer shadow
             blurRadius: 8,
             offset: Offset(-2, 0),
           ),
@@ -346,9 +346,10 @@ class _SuggestionSection extends ConsumerWidget {
               onPressed: _buildCallback(ref),
               icon: Icon(suggestion.action.icon, size: 16),
               label: Text(suggestion.actionLabel),
+              // ACCENT-FILL-CONTRAST: dark fg on fill.
               style: FilledButton.styleFrom(
                 backgroundColor: VeraProbColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: VeraProbColors.background,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),

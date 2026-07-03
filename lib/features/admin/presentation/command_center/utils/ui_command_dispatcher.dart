@@ -29,7 +29,11 @@ class UiCommandDispatcher {
         const SnackBar(
           content: Text(
             'Ação autorizada e registrada.',
-            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+            style: TextStyle(
+              color: VeraProbColors.background,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           backgroundColor: VeraProbColors.success,
           duration: Duration(milliseconds: 1500),
@@ -44,8 +48,9 @@ class UiCommandDispatcher {
         SnackBar(
           content: Text(
             'Acesso Negado: Ação registrada no ledger.\nMotivo: ${e.reason}',
+            // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
             style: const TextStyle(
-              color: Colors.white,
+              color: VeraProbColors.background,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -61,9 +66,7 @@ class UiCommandDispatcher {
         const SnackBar(
           content: Text(
             'Falha ao executar o comando operacional. Tente novamente.',
-            style: TextStyle(color: Colors.white),
           ),
-          backgroundColor: Colors.black87,
           duration: Duration(seconds: 4),
           behavior: SnackBarBehavior.floating,
         ),

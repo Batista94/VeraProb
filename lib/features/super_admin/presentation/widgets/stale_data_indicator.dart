@@ -38,15 +38,16 @@ class StaleDataIndicator extends ConsumerWidget {
               color: VeraProbColors.warning.withValues(alpha: 0.9),
               borderRadius: BorderRadius.circular(4),
             ),
+            // ACCENT-FILL-CONTRAST: dark foreground on warning fill.
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.history, size: 12, color: Colors.black87),
+                Icon(Icons.history, size: 12, color: VeraProbColors.background),
                 SizedBox(width: 4),
                 Text(
                   'STALE DATA',
                   style: TextStyle(
-                    color: Colors.black87,
+                    color: VeraProbColors.background,
                     fontSize: 9,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,

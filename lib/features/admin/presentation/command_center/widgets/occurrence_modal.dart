@@ -211,14 +211,15 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: VeraProbColors.background,
                             ),
                           )
                         : const Icon(Icons.check, size: 16),
                     label: const Text('Confirmar'),
+                    // ACCENT-FILL-CONTRAST: dark fg on fill.
                     style: FilledButton.styleFrom(
                       backgroundColor: VeraProbColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: VeraProbColors.background,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,

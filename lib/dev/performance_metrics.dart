@@ -217,11 +217,13 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                     ),
                   ),
                   onPressed: () async {
+                    // WASM-CONTEXT-LEAK: capture before any await.
+                    final messenger = ScaffoldMessenger.of(context);
                     final organizationId = ref.read(
                       currentOrganizationIdProvider,
                     );
                     if (organizationId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(
                           content: Text(
                             'Erro: Organization ID não encontrado.',
@@ -247,26 +249,22 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                         vehiclePlate: plate,
                       );
 
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Injetando VEL-01 para $plate na Fila Auditora...',
-                            ),
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Injetando VEL-01 para $plate na Fila Auditora...',
                           ),
-                        );
-                      }
+                        ),
+                      );
                     } catch (_) {
                       // INV-26: No internal details leaked
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Falha na simulação. Verifique contratos ativos.',
-                            ),
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Falha na simulação. Verifique contratos ativos.',
                           ),
-                        );
-                      }
+                        ),
+                      );
                     }
                   },
                   child: const Text('TRIGGER VEL-01 (SPEED)'),
