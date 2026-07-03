@@ -46,12 +46,45 @@ void main() {
 
   group('AppTheme Coverage', () {
     testWidgets('VeraProbColors access', (WidgetTester tester) async {
-      expect(VeraProbColors.background, const Color(0xFF0A0A0F));
-      expect(VeraProbColors.primary, const Color(0xFF2DD4BF));
+      expect(VeraProbColors.background, const Color(0xFF09090B));
+      expect(VeraProbColors.surface, const Color(0xFF101013));
+      expect(VeraProbColors.surfaceElevated, const Color(0xFF18181D));
+      expect(VeraProbColors.primary, const Color(0xFF6E7CF6));
+      expect(VeraProbColors.accent, const Color(0xFF93A0FF));
+      expect(VeraProbColors.secondary, const Color(0xFF5EEAD4));
+      expect(VeraProbColors.textPrimary, const Color(0xFFE4E4E9));
+      expect(VeraProbColors.textSecondary, const Color(0xFF9B9BA6));
+      expect(VeraProbColors.textDisabled, const Color(0xFF4E4E58));
       expect(VeraProbColors.success, VeraProbColors.onTime);
       expect(VeraProbColors.warning, VeraProbColors.delayed);
       expect(VeraProbColors.error, VeraProbColors.critical);
       expect(VeraProbColors.info, VeraProbColors.scheduled);
+      expect(VeraProbColors.verdictAction, const Color(0xFF8B5CF6));
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('VeraProbRadii access', (WidgetTester tester) async {
+      expect(VeraProbRadii.sm, 4.0);
+      expect(VeraProbRadii.md, 8.0);
+      expect(VeraProbRadii.lg, 12.0);
+      expect(VeraProbRadii.xl, 16.0);
+      expect(VeraProbRadii.pill, 999.0);
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('VeraProbMotion access', (WidgetTester tester) async {
+      expect(VeraProbMotion.fast, const Duration(milliseconds: 150));
+      expect(VeraProbMotion.base, const Duration(milliseconds: 200));
+      expect(VeraProbMotion.slow, const Duration(milliseconds: 300));
+      expect(VeraProbMotion.curve, isA<Curve>());
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('VeraProbBreakpoints constants', (WidgetTester tester) async {
+      expect(VeraProbBreakpoints.compact, 600.0);
+      expect(VeraProbBreakpoints.medium, 900.0);
+      expect(VeraProbBreakpoints.wide, 1100.0);
+      expect(VeraProbBreakpoints.maxContent, 1600.0);
       await tester.pumpAndSettle();
     });
 
@@ -83,17 +116,6 @@ void main() {
       expect(theme.brightness, Brightness.dark);
       expect(theme.scaffoldBackgroundColor, VeraProbColors.background);
       expect(theme.colorScheme.primary, VeraProbColors.primary);
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('AppTheme.lightTheme properties', (WidgetTester tester) async {
-      final theme = AppTheme.lightTheme;
-      expect(theme.brightness, Brightness.light);
-      expect(theme.scaffoldBackgroundColor, VeraProbColors.lightBackground);
-      expect(theme.colorScheme.primary, VeraProbColors.primary);
-      expect(theme.colorScheme.surface, VeraProbColors.lightSurface);
-      expect(theme.appBarTheme.backgroundColor, VeraProbColors.lightSurface);
-      expect(theme.cardTheme.color, VeraProbColors.lightSurface);
       await tester.pumpAndSettle();
     });
 

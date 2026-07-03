@@ -150,7 +150,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 440),
         child: Padding(
@@ -166,7 +166,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: VeraProbColors.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: VeraProbRadii.lgAll,
                     ),
                     child: const Icon(
                       Icons.telegram,
@@ -212,7 +212,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: VeraProbColors.warning.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: VeraProbRadii.lgAll,
                         border: Border.all(
                           color: VeraProbColors.warning.withValues(alpha: 0.3),
                         ),
@@ -350,7 +350,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
           padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
           decoration: BoxDecoration(
             color: VeraProbColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             border: Border.all(
               color: isExpiringSoon
                   ? VeraProbColors.warning
@@ -430,7 +430,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
       ),
       child: const Row(
@@ -451,7 +451,7 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
       ),
       child: const Text(

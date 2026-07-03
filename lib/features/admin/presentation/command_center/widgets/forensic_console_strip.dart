@@ -6,20 +6,20 @@ import 'package:veraprob/core/theme/app_theme.dart';
 
 // TODO(design): migrate to VeraProbTypography tokens once monospace variant is added
 const TextStyle _kMonoIdle = TextStyle(
-  color: Colors.white38,
+  color: VeraProbColors.textDisabled,
   fontFamily: 'monospace',
   fontSize: 11,
   letterSpacing: 1.2,
 );
 
 const TextStyle _kMonoTime = TextStyle(
-  color: Colors.white54,
+  color: VeraProbColors.textSecondary,
   fontFamily: 'monospace',
   fontSize: 11,
 );
 
 const TextStyle _kMonoNarrative = TextStyle(
-  color: Colors.white70,
+  color: VeraProbColors.textPrimary,
   fontFamily: 'monospace',
   fontSize: 11,
 );
@@ -114,7 +114,7 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: displayEntries.length,
       separatorBuilder: (_, _) => const VerticalDivider(
-        color: Colors.white12,
+        color: VeraProbColors.border,
         width: 16,
         thickness: 1,
         indent: 10,

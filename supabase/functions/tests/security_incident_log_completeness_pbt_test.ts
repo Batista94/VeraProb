@@ -250,7 +250,7 @@ function createLogIncidentHandler(mockClient: unknown) {
           jwt_claims: sanitizedClaims,
           correlation_id: ctx.correlationId,
           ip: ctx.requestIp,
-          user_agent: req.headers.get("user-agent") ?? "unknown",
+          user_agent: req.headers.get("user-agent")?.trim() || "unknown",
           timestamp_utc: new Date().toISOString(),
         },
       });

@@ -34,15 +34,14 @@ import 'package:veraprob/features/admin/presentation/screens/sla_audit_screen.da
 import 'package:veraprob/features/admin/presentation/screens/sla_financial_impact_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/operational_zones_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/billing_cycle_reports_screen.dart';
-import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
-import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
+
 import 'package:veraprob/features/admin/presentation/screens/contractor_management_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/auditor_queue_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/defense_portal_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_template_library_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/evidence_reconciliation_screen.dart';
-import 'package:veraprob/presentation/shell/settings_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/ingestion_health_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/webhook_management_screen.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
@@ -145,6 +144,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return AppRoutes.adminHub; // Silent redirect to admin hub
           }
         }
+      }
+
+      // Preserve legacy deep links to unified settings screen
+      if (path == '/admin/hub/org-settings') {
+        return '${AdminNavRoute(AdminNav.settings).path}?tab=org';
+      }
+      if (path == '/admin/hub/user-management') {
+        return '${AdminNavRoute(AdminNav.settings).path}?tab=users';
       }
 
       // Unauthenticated access to a protected route → login. Logged-in users
@@ -272,13 +279,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             const BillingCycleReportsScreen(),
           ),
           _adminBranch(AdminNav.slaTemplates, const SlaTemplateLibraryScreen()),
-          _adminBranch(AdminNav.orgSettings, const OrgSettingsScreen()),
-          _adminBranch(AdminNav.userManagement, const UserManagementScreen()),
           _adminBranch(
             AdminNav.contractors,
             const ContractorManagementScreen(),
           ),
-          _adminBranch(AdminNav.settings, const SettingsScreen()),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AdminNav.settings.path,
+                builder: (context, state) => SettingsHubScreen(
+                  initialTab: state.uri.queryParameters['tab'],
+                ),
+              ),
+            ],
+          ),
           _adminBranch(AdminNav.evidence, const EvidenceReconciliationScreen()),
           _adminBranch(AdminNav.webhooks, const WebhookManagementScreen()),
         ],

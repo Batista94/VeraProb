@@ -83,7 +83,7 @@ class _BannerContent extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: accentColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: VeraProbRadii.smAll,
                 ),
                 child: Text(
                   isDegraded ? 'DEGRADED' : 'UNAVAILABLE',

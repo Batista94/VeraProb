@@ -132,7 +132,7 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: VeraProbColors.primary.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: const Icon(
               Icons.person_add_alt_1,
@@ -162,7 +162,7 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(
           color: VeraProbColors.primary.withValues(alpha: 0.3),
           width: 0.5,
@@ -191,9 +191,9 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
   Widget _buildPersonalDataCard() {
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: VeraProbColors.border),
+      shape: const RoundedRectangleBorder(
+        borderRadius: VeraProbRadii.lgAll,
+        side: BorderSide(color: VeraProbColors.border),
       ),
       color: VeraProbColors.surfaceElevated,
       child: Padding(
@@ -305,7 +305,7 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
       ),
       child: Row(

@@ -27,7 +27,7 @@ class VeraProbChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: outline ? Colors.transparent : color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(
           color: color.withValues(alpha: outline ? 0.6 : 0.3),
           width: 1,

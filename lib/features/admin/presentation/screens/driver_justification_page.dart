@@ -197,7 +197,7 @@ class _ErrorCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -234,7 +234,7 @@ class _SuccessCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(
           color: VeraProbColors.success.withValues(alpha: 0.3),
         ),

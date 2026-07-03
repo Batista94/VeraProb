@@ -181,7 +181,7 @@ class _ContractorTypeAheadFieldState extends State<ContractorTypeAheadField> {
           alignment: Alignment.topLeft,
           child: Material(
             elevation: 4,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: 280,

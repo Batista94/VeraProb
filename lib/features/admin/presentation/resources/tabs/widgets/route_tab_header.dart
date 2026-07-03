@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/application/shared/app_types.dart';
-
-const Color _kNavyAccent = Color(0xFF1A237E);
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Header row for the Routes tab — title + "Cadastrar rota" button.
 class RouteTabHeader extends StatelessWidget {
@@ -25,7 +24,7 @@ class RouteTabHeader extends StatelessWidget {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
           ),
           child: Icon(Icons.route, size: 28, color: colorScheme.primary),
         ),
@@ -38,15 +37,14 @@ class RouteTabHeader extends StatelessWidget {
                 'Rotas Operacionais',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: _kNavyAccent,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Cadastro de rotas vinculadas à operação da organização.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ],
           ),

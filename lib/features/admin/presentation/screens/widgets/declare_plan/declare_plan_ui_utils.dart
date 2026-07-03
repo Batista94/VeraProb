@@ -109,7 +109,7 @@ class TemplateTile extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: VeraProbColors.secondary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: VeraProbRadii.mdAll,
               ),
               child: Text(
                 'SISTEMA',
@@ -147,7 +147,7 @@ class ReviewRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNarrow = MediaQuery.sizeOf(context).width < 480;
+    final isNarrow = VeraProbBreakpoints.isCompact(context);
     final Widget valueText = Text(
       value,
       style: const TextStyle(
@@ -221,7 +221,7 @@ class KpiCard extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(

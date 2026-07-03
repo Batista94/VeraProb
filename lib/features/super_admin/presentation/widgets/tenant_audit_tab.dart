@@ -98,7 +98,7 @@ class _AuditLogItem extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: ExpansionTile(
@@ -141,9 +141,9 @@ class _AuditLogItem extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             width: double.infinity,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: VeraProbColors.background,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Text(
               log.reason ?? 'Nenhuma justificativa fornecida.',
@@ -169,9 +169,9 @@ class _AuditLogItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(4),
+              decoration: const BoxDecoration(
+                color: Color(0x33000000), // payload background
+                borderRadius: VeraProbRadii.smAll,
               ),
               child: Text(log.payload.toString(), style: _kMonoPayloadText),
             ),

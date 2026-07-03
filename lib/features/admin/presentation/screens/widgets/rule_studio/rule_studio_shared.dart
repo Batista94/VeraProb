@@ -33,7 +33,7 @@ class RuleTypeIcon extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Icon(icon, size: size, color: color),
     );
@@ -80,17 +80,17 @@ class RuleParamField extends StatelessWidget {
             hintStyle: const TextStyle(color: VeraProbColors.textDisabled),
             filled: true,
             fillColor: VeraProbColors.surfaceElevated,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.border),
+            border: const OutlineInputBorder(
+              borderRadius: VeraProbRadii.mdAll,
+              borderSide: BorderSide(color: VeraProbColors.border),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.border),
+            enabledBorder: const OutlineInputBorder(
+              borderRadius: VeraProbRadii.mdAll,
+              borderSide: BorderSide(color: VeraProbColors.border),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: VeraProbColors.primary),
+            focusedBorder: const OutlineInputBorder(
+              borderRadius: VeraProbRadii.mdAll,
+              borderSide: BorderSide(color: VeraProbColors.primary),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,

@@ -121,7 +121,10 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Erro:'), findsOneWidget);
+      expect(
+        find.textContaining('Não foi possível carregar os dados'),
+        findsOneWidget,
+      );
 
       addTearDown(tester.view.resetPhysicalSize);
     });

@@ -205,8 +205,38 @@ Future<void> _save() async {
 
 ## 11. NO RAW EXCEPTIONS IN UI (UX-RAW-EXCEPTION)
 
-**Rule:** Never interpolate `$e`, `${e.exception}`, or `e.toString()` directly into `Text` widgets or `SnackBar` contents. Also, never use hardcoded colors/styles.
+**Rule:** Never interpolate `$e`, `${e.exception}`, or `e.toString()` directly into `Text` widgets or `SnackBar` contents. The same leak hides behind state wrappers — `${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}` — and the static scanner catches NONE of these (review-enforced rule). Also, never use hardcoded colors/styles.
 
-**Why:** Exposing internal stack traces or technical errors to end-users destroys the "Enterprise-Grade" UX requirement (INV-10). It violates the SLA of a professional UI. Hardcoded styles break the design system.
+**Why:** Exposing internal stack traces or technical errors to end-users destroys the "Enterprise-Grade" UX requirement (INV-10). It violates the SLA of a professional UI. Hardcoded styles break the design system. P1 UI overhaul found a live leak that survived every gate: `'Erro: ${actionState.error}'` in `justification_detail_drawer.dart` — the wrapper property evaded the `$e` grep habit.
 
-**How to apply:** Catch exceptions and render domain-specific, actionable messages in Portuguese (e.g., `'Não foi possível salvar os dados. Tente novamente.'`). Always use `VeraProbColors` and `VeraProbTypography`.
+**How to apply:** Catch exceptions and render domain-specific, actionable messages in Portuguese (e.g., `'Não foi possível salvar os dados. Tente novamente.'`). Grep `.error}` besides `$e` in any file you touch. Prefer omitting the custom `error:` builder — `AsyncValueWidget`'s default is already sanitized. Always use `VeraProbColors` and `VeraProbTypography`. Recipe: `.claude/rules/ci-blocks.md` #17.
+
+---
+
+## 12. ACCENT-FILL FOREGROUND CONTRAST (ACCENT-FILL-CONTRAST)
+
+**Rule:** Foreground on accent fills (`primary`/`secondary`/`error`) is always `VeraProbColors.background` (dark), never `Colors.white`.
+
+**Why:** On the Indigo Zinc palette, white fails WCAG AA 4.5:1 on every accent fill (primary `#6E7CF6` = 3.6:1, secondary `#5EEAD4` = 1.5:1, error `#EF4444` = 3.8:1) and button labels are 13px — the "large text" allowance doesn't apply. No single accent hue can pass BOTH white-on-fill and fill-as-text-on-dark at 4.5:1; dark-on-accent is the only combination that keeps both directions valid.
+
+**How to apply:** Inherit from theme (`colorScheme.onPrimary/onSecondary/onError` + `ElevatedButtonTheme` already encode it). Never set `foregroundColor: Colors.white` on accent-filled buttons at widget level. Validate any NEW token pair in both directions (fill+foreground AND token-as-text on `background`/`surface`) before commit. Recipe: `.claude/rules/ci-blocks.md` #18.
+
+---
+
+## 13. GOLDEN TEST WIRING (GOLDEN-UNWIRED)
+
+**Rule:** Goldens for a widget live in exactly ONE dedicated `*_golden_test.dart` file, and that file MUST be listed in `scripts/generate_goldens.sh` `TEST_FILES` in the same diff that adds it. Never put `goldenTest` calls in a plain `*_test.dart` behaviour file.
+
+**Why:** The `golden` tag is skip-listed in `dart_test.yaml` (so `make test` never runs goldens) and `make goldens` runs ONLY the hardcoded `TEST_FILES`. P2 review caught a `goldenTest` (`forensic_log_view_narrow`) added to `forensic_log_view_test.dart`: the file wasn't in `TEST_FILES`, so its baseline PNG could never be generated — a permanent CI-compare failure that no local gate would ever surface. It also duplicated coverage already owned by `forensic_log_view_golden_test.dart`, splitting the regen path.
+
+**How to apply:** When a widget's layout changes, regen its existing goldens via `make goldens`. When adding NEW goldens: dedicated `_golden_test.dart` file → register in `TEST_FILES` → group name contains "Golden" (script filters `--name=[Gg]olden`) → `make goldens` → commit PNGs with the test. Periodically grep `goldens/ci/` for orphaned PNGs. Recipe: `.claude/rules/ci-blocks.md` #19.
+
+---
+
+## 14. SECURITY-FLOW SSOT (REVEAL-ONCE DUPLICATION)
+
+**Rule:** Flows that gate secrets or destructive actions (reveal-once modal, rotate-secret confirm, MFA challenges) have exactly ONE owner in the widget tree — normally the screen/composition root. Child widgets that need to trigger the flow receive a callback (`onCreateEndpoint: VoidCallback`); they never re-implement the `showDialog` chain.
+
+**Why:** P2 review found `_createEndpointFlow` + `_showRevealModal` (create → reveal-once `RevealSecretModal`, `barrierDismissible: false`) copy-pasted into both `webhook_management_screen.dart` and `endpoint_list_panel.dart`. Duplicated security flows drift silently: one call-site gets a fix (e.g., `barrierDismissible`, `useSafeArea`, mounted-guard) and the clone keeps the vulnerable version. Confidentiality-critical UI (INV-28 secrets) cannot depend on grep luck.
+
+**How to apply:** Before extracting a panel/widget from a screen, list every `showDialog`/flow method it uses. Flows touching secrets stay on the screen; the extracted widget gets callbacks. If two widgets legitimately need the same flow, promote it to ONE shared helper — never a second copy.

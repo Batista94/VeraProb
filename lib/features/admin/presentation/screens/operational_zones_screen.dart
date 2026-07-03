@@ -3,9 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/admin/operational_zone_view.dart';
 import 'package:veraprob/state/providers/operational_zone_providers.dart';
-import 'package:veraprob/presentation/shared/ui/info_tooltip.dart';
-import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
-import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
 import 'package:veraprob/features/admin/presentation/screens/widgets/_zone_form_dialog.dart';
@@ -67,13 +65,22 @@ class OperationalZonesScreen extends ConsumerWidget {
             child: switch (zonesAsync) {
               AsyncData(:final value) =>
                 value.isEmpty
-                    ? _EmptyState(
-                        onCreateTap: () async {
-                          final saved = await showZoneFormDialog(context);
-                          if (saved != null) {
-                            ref.invalidate(operationalZonesProvider);
-                          }
-                        },
+                    ? EmptyState(
+                        icon: Icons.place_outlined,
+                        title: 'Nenhuma zona criada ainda',
+                        description:
+                            'Crie zonas operacionais para usar como origem e destino\n'
+                            'nas viagens programadas por padrão de turno.',
+                        action: FilledButton.icon(
+                          icon: const Icon(Icons.add),
+                          label: const Text('Criar Primeira Zona'),
+                          onPressed: () async {
+                            final saved = await showZoneFormDialog(context);
+                            if (saved != null) {
+                              ref.invalidate(operationalZonesProvider);
+                            }
+                          },
+                        ),
                       )
                     : _ZoneList(zones: value),
               AsyncLoading() => const Center(
@@ -125,7 +132,7 @@ class _ZoneList extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: VeraProbColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Icon(z.type.icon, color: VeraProbColors.primary, size: 20),
           ),
@@ -220,49 +227,6 @@ class _TypeChip extends StatelessWidget {
       label: label,
       color: VeraProbColors.primary,
       outline: true,
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onCreateTap;
-  const _EmptyState({required this.onCreateTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.place_outlined,
-            size: 56,
-            color: VeraProbColors.textDisabled,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhuma zona criada ainda',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Crie zonas operacionais para usar como origem e destino\n'
-            'nas viagens programadas por padrão de turno.',
-            textAlign: TextAlign.center,
-            style: VeraProbTypography.bodyMedium.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 24),
-          FilledButton.icon(
-            icon: const Icon(Icons.add),
-            label: const Text('Criar Primeira Zona'),
-            onPressed: onCreateTap,
-          ),
-        ],
-      ),
     );
   }
 }

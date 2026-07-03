@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Seção 1 das Configurações da Organização: campos estruturais + capacidades
 /// + botão de salvar.
@@ -117,7 +118,8 @@ class GeneralSettingsSection extends StatelessWidget {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        // ACCENT-FILL-CONTRAST: dark fg on fill.
+                        color: VeraProbColors.background,
                       ),
                     )
                   : const Icon(Icons.save_outlined),

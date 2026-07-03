@@ -225,7 +225,8 @@ class _ReviewContractScreenState extends ConsumerState<ReviewContractScreen> {
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+                    color: VeraProbColors.background,
                   ),
                 )
               : const Icon(Icons.handshake_outlined),

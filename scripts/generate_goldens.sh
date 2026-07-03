@@ -12,7 +12,8 @@ DOCKERFILE_PATH="scripts/docker/Dockerfile.test"
 TEST_FILES="test/features/super_admin/presentation/screens/tenant_list_panel_test.dart \
 test/features/super_admin/presentation/screens/super_admin_audit_log_screen_test.dart \
 test/features/super_admin/presentation/widgets/impersonation_banner_test.dart \
-test/features/admin/presentation/widgets/forensic_log_view_golden_test.dart"
+test/features/admin/presentation/widgets/forensic_log_view_golden_test.dart \
+test/features/admin/presentation/screens/settings_hub_screen_golden_test.dart"
 
 echo "Gerenciando ambiente esteril (Build local)..."
 

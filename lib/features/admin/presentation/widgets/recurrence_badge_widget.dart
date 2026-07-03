@@ -51,7 +51,7 @@ class RecurrenceBadgeWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: badgeColor.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: VeraProbRadii.lgAll,
                 border: Border.all(color: badgeColor.withValues(alpha: 0.5)),
               ),
               child: Text(

@@ -140,7 +140,7 @@ class IngestionHealthDetailPanel extends StatelessWidget {
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: VeraProbRadii.smAll,
                     child: LinearProgressIndicator(
                       // Physical metric — double required for Flutter progress API.
                       value: (entry.integrityScoreBps / 10000.0).clamp(
@@ -195,7 +195,7 @@ class IngestionHealthDetailPanel extends StatelessWidget {
                 padding: VeraProbSpacing.cardPadding,
                 decoration: BoxDecoration(
                   color: VeraProbColors.secondary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(
                     color: VeraProbColors.secondary.withValues(alpha: 0.3),
                   ),

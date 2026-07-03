@@ -70,7 +70,7 @@ class _HistoryGroupState extends State<_HistoryGroup> {
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(

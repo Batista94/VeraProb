@@ -21,7 +21,7 @@ DOCKER_RUN = docker run --rm -v "$(CURDIR)":/app -v veraprob_dart_tool:/app/.dar
 #   make help
 # =============================================================================
 
-.PHONY: help setup env run run-staging scan-secrets test-security pr-scan load-tokens index-advisor coverage goldens chaos-test format format-check test test-integration test-db test-e2e test-e2e-file test-all test-full full-check build-test-env check check-integrity docs-check
+.PHONY: help setup env run run-staging scan-secrets test-security pr pr-scan load-tokens index-advisor coverage goldens chaos-test format format-check test test-integration test-db test-e2e test-e2e-file test-all test-full full-check build-test-env check check-integrity docs-check
 
 # Test layout (AGENTS.md):
 #   test/                 — unit + widget       (make test)
@@ -167,6 +167,8 @@ else
 		$(MAKE) test-db; \
 	fi
 endif
+
+pr: pr-scan ## [Lead Reviewer] Atalho para pr-scan (executa o scanner de PR)
 
 docs-check: ## [Governance] Valida sync entre AGENTS.md index e SSOT (.claude/rules/ci-blocks.md + .kiro/steering/lessons.md)
 	bash scripts/governance/check_docs_sync.sh

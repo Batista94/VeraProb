@@ -109,7 +109,7 @@ class IngestionHealthWidget extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: VeraProbRadii.mdAll,
               ),
               child: Text(
                 '${report.integrityScore}%',
@@ -131,7 +131,7 @@ class IngestionHealthWidget extends StatelessWidget {
             message:
                 '${report.totalSilentSeconds}s de silêncio em ${report.totalSpanSeconds}s',
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(3),
+              borderRadius: VeraProbRadii.smAll,
               child: SizedBox(
                 height: 6,
                 child: hasGaps
@@ -147,7 +147,7 @@ class IngestionHealthWidget extends StatelessWidget {
                     : Container(
                         decoration: BoxDecoration(
                           color: VeraProbColors.success.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: VeraProbRadii.smAll,
                         ),
                       ),
               ),
@@ -258,12 +258,12 @@ class _GapRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 4),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: color.withValues(alpha: 0.15)),
           ),
           child: Row(

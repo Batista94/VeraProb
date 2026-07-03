@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/sla_audit/local_fact_queue/sync_status.dart';
 import 'package:veraprob/state/notifiers/connectivity_notifier.dart';
 import 'package:veraprob/state/providers/local_fact_queue_providers.dart';
@@ -23,7 +24,6 @@ class EdgeLedgerStatusBadge extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final countAsync = ref.watch(pendingFactCountProvider);
-    final connectionState = ref.watch(connectivityNotifierProvider);
 
     // Riverpod 3.x: a stream can surface an error while still being subscribed,
     // producing AsyncLoading.copyWithPrevious(AsyncError). Check `hasError`
@@ -32,7 +32,7 @@ class EdgeLedgerStatusBadge extends ConsumerWidget {
       return const _BadgeChip(
         label: 'Sync error',
         icon: Icons.warning_amber_rounded,
-        color: Colors.red,
+        color: VeraProbColors.error,
       );
     }
 
@@ -40,34 +40,37 @@ class EdgeLedgerStatusBadge extends ConsumerWidget {
       AsyncLoading() => const _BadgeChip(
         label: 'Ledger',
         icon: Icons.sync,
-        color: Colors.grey,
+        color: VeraProbColors.neutral,
       ),
       AsyncError() => const _BadgeChip(
         label: 'Sync error',
         icon: Icons.warning_amber_rounded,
-        color: Colors.red,
+        color: VeraProbColors.error,
       ),
-      AsyncData(:final value) => () {
-        if (connectionState == EdgeLedgerConnectionState.syncing) {
-          return const _SyncingChip();
-        }
-        if (value == 0) {
-          return const _BadgeChip(
-            label: 'Synced',
-            icon: Icons.check_circle_outline,
-            color: Colors.green,
-            semanticLabel: 'Edge Ledger synced',
-          );
-        }
-        return _BadgeChip(
-          label: '$value buffered',
-          icon: Icons.sync_outlined,
-          color: Colors.amber.shade700,
-          onTap: () => _showDetail(context, ref, value),
-          semanticLabel: '$value facts buffered in Edge Ledger',
-        );
-      }(),
+      AsyncData(:final value) => _buildDataChip(context, ref, value),
     };
+  }
+
+  Widget _buildDataChip(BuildContext context, WidgetRef ref, int value) {
+    final connectionState = ref.watch(connectivityNotifierProvider);
+    if (connectionState == EdgeLedgerConnectionState.syncing) {
+      return const _SyncingChip();
+    }
+    if (value == 0) {
+      return const _BadgeChip(
+        label: 'Synced',
+        icon: Icons.check_circle_outline,
+        color: VeraProbColors.success,
+        semanticLabel: 'Edge Ledger synced',
+      );
+    }
+    return _BadgeChip(
+      label: '$value buffered',
+      icon: Icons.sync_outlined,
+      color: VeraProbColors.warning,
+      onTap: () => _showDetail(context, ref, value),
+      semanticLabel: '$value facts buffered in Edge Ledger',
+    );
   }
 
   void _showDetail(BuildContext context, WidgetRef ref, int count) {
@@ -102,12 +105,12 @@ class _BadgeChip extends StatelessWidget {
       button: onTap != null,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: VeraProbRadii.xlAll,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: VeraProbRadii.xlAll,
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Row(
@@ -141,11 +144,11 @@ class _SyncingChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+          color: VeraProbColors.info.withValues(alpha: 0.12),
+          borderRadius: VeraProbRadii.xlAll,
+          border: Border.all(color: VeraProbColors.info.withValues(alpha: 0.3)),
         ),
-        child: Row(
+        child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             SizedBox(
@@ -153,14 +156,14 @@ class _SyncingChip extends StatelessWidget {
               height: 12,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade700),
+                valueColor: AlwaysStoppedAnimation<Color>(VeraProbColors.info),
               ),
             ),
-            const SizedBox(width: 6),
+            SizedBox(width: 6),
             Text(
               'Syncing\u2026',
               style: TextStyle(
-                color: Colors.blue.shade700,
+                color: VeraProbColors.info,
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
               ),

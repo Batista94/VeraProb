@@ -100,6 +100,62 @@ class AdminLayout extends ConsumerWidget {
     ];
   }
 
+  List<NavigationDestination> _buildBottomDestinations(WidgetRef ref) {
+    final pendingCount = ref.watch(pendingSanctionsCountProvider);
+    final pendingJustificationCount = ref.watch(
+      pendingJustificationsCountProvider,
+    );
+
+    return [
+      const NavigationDestination(
+        icon: Icon(Icons.dashboard_outlined),
+        selectedIcon: Icon(Icons.dashboard),
+        label: 'Painel',
+      ),
+      NavigationDestination(
+        icon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingCount > 0,
+          label: Text('$pendingCount'),
+          child: const Icon(Icons.approval),
+        ),
+        label: 'Fila',
+      ),
+      NavigationDestination(
+        icon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield_outlined),
+        ),
+        selectedIcon: Badge(
+          isLabelVisible: pendingJustificationCount > 0,
+          label: Text('$pendingJustificationCount'),
+          child: const Icon(Icons.shield),
+        ),
+        label: 'Defesa',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.account_balance_outlined),
+        selectedIcon: Icon(Icons.account_balance),
+        label: 'Executivo',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.history_outlined),
+        selectedIcon: Icon(Icons.history),
+        label: 'Log',
+      ),
+      const NavigationDestination(
+        icon: Icon(Icons.admin_panel_settings_outlined),
+        selectedIcon: Icon(Icons.admin_panel_settings),
+        label: 'Admin',
+      ),
+    ];
+  }
+
   PreferredSizeWidget _buildAppBar(
     BuildContext context,
     WidgetRef ref,
@@ -112,7 +168,7 @@ class AdminLayout extends ConsumerWidget {
         children: [
           // ── Logo Home-Anchor ──────────────────────────
           InkWell(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             onTap: () => _goBranch(ref, 0),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -131,7 +187,7 @@ class AdminLayout extends ConsumerWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                     boxShadow: [
                       BoxShadow(
                         color: VeraProbColors.primary.withValues(alpha: 0.2),
@@ -140,9 +196,11 @@ class AdminLayout extends ConsumerWidget {
                       ),
                     ],
                   ),
+                  // ACCENT-FILL-CONTRAST: foreground on primary fill is
+                  // always the dark background token, never white.
                   child: const Icon(
                     Icons.hub_rounded,
-                    color: Colors.white,
+                    color: VeraProbColors.background,
                     size: 20,
                   ),
                 ),
@@ -232,8 +290,11 @@ class AdminLayout extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedIndex = navigationShell.currentIndex;
-    final destinations = _buildDestinations(ref);
-    final isWideScreen = MediaQuery.of(context).size.width >= 600;
+    final railDestinations = _buildDestinations(ref);
+    final bottomDestinations = _buildBottomDestinations(ref);
+    final isCompact = VeraProbBreakpoints.isCompact(context);
+    final isExpandedRail =
+        MediaQuery.sizeOf(context).width >= VeraProbBreakpoints.medium;
 
     // ── Incident-responsive drawer ─────────────────────────────
     // Close the instant the queue empties so the operator never lands on the
@@ -260,21 +321,40 @@ class AdminLayout extends ConsumerWidget {
             onEndDrawerChanged: (isOpen) {
               ref.read(isAlertsDrawerOpenProvider.notifier).set(isOpen);
             },
-            appBar: _buildAppBar(context, ref, isWideScreen),
+            appBar: _buildAppBar(context, ref, !isCompact),
+            bottomNavigationBar: isCompact
+                ? NavigationBar(
+                    backgroundColor: VeraProbColors.surfaceElevated,
+                    indicatorColor: VeraProbColors.primary.withValues(
+                      alpha: 0.15,
+                    ),
+                    // Deep hub branches (index >= pillarCount) collapse onto
+                    // the Admin pillar — raw index asserts out of range.
+                    selectedIndex: railIndexFor(selectedIndex),
+                    onDestinationSelected: (idx) {
+                      if (idx == selectedIndex) return;
+                      _goBranch(ref, idx);
+                    },
+                    destinations: bottomDestinations,
+                  )
+                : null,
             body: Row(
               children: [
-                _buildSidebar(
-                  context,
-                  ref,
-                  isWideScreen,
-                  selectedIndex,
-                  destinations,
-                ),
+                if (!isCompact)
+                  _buildSidebar(
+                    context,
+                    ref,
+                    isExpandedRail,
+                    selectedIndex,
+                    railDestinations,
+                  ),
                 Expanded(
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 1600),
+                      constraints: const BoxConstraints(
+                        maxWidth: VeraProbBreakpoints.maxContent,
+                      ),
                       child: Container(
                         color: VeraProbColors.background,
                         child: Column(
@@ -343,15 +423,17 @@ class _AlertsButton extends ConsumerWidget {
         backgroundColor: VeraProbColors.critical,
         label: Text(
           '$count',
-          style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            color: Colors.white,
+          style: VeraProbTypography.badge.copyWith(
+            color: VeraProbColors.background,
           ),
         ),
         child: const Icon(Icons.notifications_active_rounded),
       ),
-      tooltip: hasAlerts ? 'Triagem de Alertas' : 'Sem alertas ativos',
+      // Disambiguates from the onboarding badge: name + live count for
+      // tooltip AND screen readers (IconButton derives semantics from it).
+      tooltip: hasAlerts
+          ? 'Triagem de Alertas — $count alerta${count > 1 ? 's' : ''} ativo${count > 1 ? 's' : ''}'
+          : 'Sem alertas ativos',
       color: hasAlerts ? VeraProbColors.critical : VeraProbColors.textDisabled,
       onPressed: hasAlerts ? () => Scaffold.of(context).openEndDrawer() : null,
     );
@@ -365,7 +447,12 @@ class _HubBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      padding: const EdgeInsets.fromLTRB(
+        VeraProbSpacing.lg,
+        VeraProbSpacing.sm,
+        VeraProbSpacing.lg,
+        0,
+      ),
       child: Row(
         children: [
           TextButton.icon(
@@ -374,11 +461,7 @@ class _HubBackButton extends StatelessWidget {
             label: const Text('VOLTAR PARA ADMINISTRAÇÃO'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.textSecondary,
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              textStyle: VeraProbTypography.badge.copyWith(fontSize: 12),
             ),
           ),
         ],
@@ -394,7 +477,12 @@ class _InternalBackButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+      padding: const EdgeInsets.fromLTRB(
+        VeraProbSpacing.lg,
+        VeraProbSpacing.sm,
+        VeraProbSpacing.lg,
+        0,
+      ),
       child: Row(
         children: [
           TextButton.icon(
@@ -403,11 +491,7 @@ class _InternalBackButton extends StatelessWidget {
             label: const Text('VOLTAR PARA LISTA'),
             style: TextButton.styleFrom(
               foregroundColor: VeraProbColors.textSecondary,
-              textStyle: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
+              textStyle: VeraProbTypography.badge.copyWith(fontSize: 12),
             ),
           ),
         ],
@@ -444,14 +528,14 @@ class _FeedHealthBadge extends ConsumerWidget {
     return Tooltip(
       message: 'Saúde da Ingestão de Telemetria — clique para detalhes',
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: VeraProbRadii.xlAll,
         onTap: () => context.go(AppRoutes.ingestionHealth),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: health.color.withValues(alpha: 0.1),
             border: Border.all(color: health.color.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: VeraProbRadii.xlAll,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -520,10 +604,8 @@ class _OnboardingBadge extends ConsumerWidget {
           backgroundColor: VeraProbColors.warning,
           label: Text(
             '$remaining',
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
+            style: VeraProbTypography.badge.copyWith(
+              color: VeraProbColors.background,
             ),
           ),
           child: const Icon(Icons.checklist_rounded),

@@ -115,7 +115,7 @@ class DisputePortalPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(
                 color: VeraProbColors.warning.withValues(alpha: 0.3),
               ),
@@ -151,7 +151,7 @@ class DisputePortalPage extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: VeraProbColors.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(
                 color: VeraProbColors.error.withValues(alpha: 0.3),
               ),
@@ -282,7 +282,7 @@ class _PortalCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(

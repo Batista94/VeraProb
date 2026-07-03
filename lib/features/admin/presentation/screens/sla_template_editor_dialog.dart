@@ -230,7 +230,7 @@ class _SlaTemplateEditorDialogState
 
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(

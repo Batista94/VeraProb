@@ -43,7 +43,7 @@ class _SlimBar extends StatelessWidget {
       height: 60,
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
         boxShadow: [
           BoxShadow(
@@ -75,7 +75,7 @@ class _SlimBar extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: VeraProbRadii.smAll,
                     child: LinearProgressIndicator(
                       value: progress.completedCount / progress.steps.length,
                       backgroundColor: VeraProbColors.border,
@@ -131,7 +131,7 @@ class _PrerequisiteDot extends StatelessWidget {
         onTap: step.isFulfilled
             ? null
             : () => onNavigate(step.destination.index),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: VeraProbRadii.xlAll,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(

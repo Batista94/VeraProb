@@ -7,7 +7,7 @@ paths:
 
 # VeraProb — Common CI Blocks & Forensic Fixes
 
-Top 14 scanner-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
+Top 20 CI-blocking patterns with fix recipes. Loaded by Claude Code when editing Dart sources or SQL migrations.
 
 ---
 
@@ -389,15 +389,79 @@ switch (asyncValue) {
 
 ## 17. UX-RAW-EXCEPTION: Exposing technical errors to users
 
-**Problem:** Using `Text('Erro: $e')` in SnackBars or UI elements.
+**Problem:** Interpolating ANY error object into UI text. Not just `$e` / `e.toString()` — the same leak hides behind state wrappers: `${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}`, `err.toString()`. All of them render raw `PostgrestException`/stack internals to the end user. The static scanner does NOT catch these — this rule is review-enforced; grep for `.error}` and `$e` in any file you touch.
 
 **Fix:** Translate to a human-readable domain message in Portuguese. Do not expose system traces.
 
 ```dart
 // Wrong
 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+if (actionState.hasError) Text('Erro: ${actionState.error}');
+error: (err, st) => Text(err.toString()),
 
 // Right
 messenger.showSnackBar(const SnackBar(content: Text('Falha ao processar solicitação. Verifique os dados e tente novamente.')));
+if (actionState.hasError) const Text('Falha ao processar a revisão. Tente novamente.');
+// Best: omit the custom error builder — AsyncValueWidget's default is already sanitized
+// ('Não foi possível carregar os dados. Tente novamente.').
 ```
+
+---
+
+## 18. ACCENT-FILL-CONTRAST: `Colors.white` on accent fills fails WCAG AA
+
+**Problem:** Setting `Colors.white` as foreground on Indigo Zinc accent fills. White fails 4.5:1 on every accent: `primary #6E7CF6` = 3.6:1, `secondary #5EEAD4` = 1.5:1, `error #EF4444` = 3.8:1. Button labels are 13px — the WCAG "large text" 3:1 allowance does NOT apply.
+
+**Fix:** Foreground on accent fills is always `VeraProbColors.background` (dark). `background` passes on all accents (primary 5.5:1, secondary 13:1, error 5.2:1) and keeps `primary`-as-text on `background` valid (5.5:1). The theme already encodes this (`colorScheme.onPrimary/onSecondary/onError`, `ElevatedButtonTheme`) — never override it back to white at widget level.
+
+```dart
+// Wrong
+FilledButton.styleFrom(foregroundColor: Colors.white)
+
+// Right — inherit from theme, or if explicit style is required:
+FilledButton.styleFrom(foregroundColor: VeraProbColors.background)
+```
+
+New color token pairs MUST be validated in both directions (token-as-fill with its foreground, token-as-text on `background`/`surface`) at 4.5:1 text / 3:1 UI glyphs before commit.
+
+---
+
+## 19. GOLDEN-UNWIRED: goldenTest without a generation path
+
+**Problem:** Adding a `goldenTest` to a file that is NOT listed in `scripts/generate_goldens.sh` `TEST_FILES`. The `golden` tag is skipped in `make test` (`dart_test.yaml`), and `make goldens` only runs the hardcoded `TEST_FILES` list — so the baseline PNG is **never generated**. The test is dead weight locally and a guaranteed failure wherever goldens are compared. Same trap: duplicating golden coverage for a widget across two test files (baselines drift; one regen path updates only half).
+
+**Fix:** Goldens for a widget live in ONE dedicated `*_golden_test.dart` file (SSOT), and that file MUST be added to `TEST_FILES` in `scripts/generate_goldens.sh` in the same diff. Behaviour tests stay in the plain `*_test.dart` file with no `goldenTest` calls.
+
+```bash
+# scripts/generate_goldens.sh — register the new file or the baseline never exists
+TEST_FILES="... \
+test/features/admin/presentation/widgets/forensic_log_view_golden_test.dart \
+test/features/admin/presentation/widgets/my_new_widget_golden_test.dart"
+```
+
+Checklist when adding/moving any `goldenTest`:
+
+1. File name ends in `_golden_test.dart` and contains ONLY goldens.
+2. File path present in `generate_goldens.sh` `TEST_FILES`.
+3. Test description matches the script's `--name=[Gg]olden` filter (put "Golden" in the group name).
+4. Run `make goldens` (hermetic Docker — NEVER `--update-goldens` locally) and commit the PNGs with the test.
+5. Grep `goldens/ci/*.png` for orphans (baseline with no referencing test) and delete them.
+
+---
+
+## 20. NUM-CLAMP-DOWNCAST: `num.clamp` result used where `double` expected
+
+**Problem:** `num.clamp(num, num)` returns `num` even when receiver and limits are all `double`. Passing the result to a `double` parameter (`SizedBox(width: ...)`, `EdgeInsets`, etc.) is an implicit downcast — a compile error under Strict Mode (INV-7). Invisible until analyze/compile runs; the code reads correct.
+
+**Fix:** Append `.toDouble()` (or use `clampDouble` from `package:flutter/foundation.dart`).
+
+```dart
+// Wrong — masterWidth is num, SizedBox(width:) wants double?
+final masterWidth = (totalWidth * 0.35).clamp(minWidth, maxWidth);
+
+// Right
+final masterWidth = (totalWidth * 0.35).clamp(minWidth, maxWidth).toDouble();
+```
+
+Same family: `num.abs()`, `math.max/min<num>` mixing `int`/`double` args — check the inferred type whenever arithmetic feeds a widget parameter.
 

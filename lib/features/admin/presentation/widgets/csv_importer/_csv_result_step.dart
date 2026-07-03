@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/utils/csv_error_exporter.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_theme.dart';
 import 'package:veraprob/features/admin/providers/csv_import_providers.dart';
@@ -71,9 +72,10 @@ class CsvResultStep extends ConsumerWidget {
             alignment: Alignment.centerRight,
             child: FilledButton(
               onPressed: onClose,
+              // ACCENT-FILL-CONTRAST: dark fg on fill.
               style: FilledButton.styleFrom(
                 backgroundColor: CsvT.action,
-                foregroundColor: Colors.white,
+                foregroundColor: VeraProbColors.background,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(CsvT.radiusChip),
                 ),

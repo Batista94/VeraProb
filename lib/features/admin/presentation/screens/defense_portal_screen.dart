@@ -57,7 +57,14 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
               loading: () => const SkeletonListLoader(),
               data: (value) {
                 final filtered = _applyFilters(value);
-                if (filtered.isEmpty) return const _EmptyState();
+                if (filtered.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.shield_outlined,
+                    title: 'Nenhuma justificativa encontrada',
+                    description:
+                        'Nenhuma contestação foi submetida para este período.',
+                  );
+                }
                 return _JustificationTable(rows: filtered);
               },
             ),
@@ -115,7 +122,7 @@ class _HeaderState extends ConsumerState<_Header> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: VeraProbRadii.lgAll,
             ),
             child: Text(
               '$pendingCount pendente${pendingCount > 1 ? 's' : ''}',
@@ -131,9 +138,10 @@ class _HeaderState extends ConsumerState<_Header> {
           ),
           icon: const Icon(Icons.add, size: 16),
           label: const Text('Nova Justificativa'),
+          // ACCENT-FILL-CONTRAST: dark fg on fill.
           style: FilledButton.styleFrom(
             backgroundColor: VeraProbColors.primary,
-            foregroundColor: Colors.black,
+            foregroundColor: VeraProbColors.background,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           ),
         ),
@@ -176,17 +184,17 @@ class _FilterBar extends StatelessWidget {
               controller: searchController,
               onChanged: (_) => onSearch(),
               style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Buscar por contrato ou SET ID...',
-                prefixIcon: const Icon(Icons.search, size: 16),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                prefixIcon: Icon(Icons.search, size: 16),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
+                  borderRadius: VeraProbRadii.mdAll,
+                  borderSide: BorderSide(color: VeraProbColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
+                  borderRadius: VeraProbRadii.mdAll,
+                  borderSide: BorderSide(color: VeraProbColors.border),
                 ),
               ),
             ),
@@ -284,35 +292,3 @@ class _JustificationTable extends StatelessWidget {
 }
 
 // ── Empty State ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.shield_outlined,
-            size: 56,
-            color: VeraProbColors.textDisabled,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhuma justificativa encontrada',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Nenhuma contestação foi submetida para este período.',
-            style: TextStyle(color: VeraProbColors.textDisabled),
-          ),
-        ],
-      ),
-    );
-  }
-}

@@ -1,23 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/shared/providers.dart';
 import 'package:veraprob/features/admin/providers/drivers_provider.dart';
 import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 import 'widgets/driver_form_drawer.dart';
 import 'widgets/telegram_binding_dialog.dart';
-
-const Color _kNavyAccent = Color(0xFF1A237E);
-const Color _kTelegramBlue = Color(0xFF0D47A1);
-const Color _kStatusArchivedColor = Color(0xFF9E9E9E);
-const Color _kStatusNeutralBg = Color(0xFFF5F5F5);
-const Color _kStatusActiveColor = Color(0xFF1B5E20);
-const Color _kStatusActiveBg = Color(0xFFE8F5E9);
-const Color _kStatusInactiveColor = Color(0xFF616161);
-const Color _kStatusPendingColor = Color(0xFFE65100);
-const Color _kStatusPendingBg = Color(0xFFFFF3E0);
 
 class DriversScreen extends ConsumerStatefulWidget {
   const DriversScreen({super.key});
@@ -62,13 +54,13 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
       children: [
         // Main content
         Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(VeraProbSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
               _buildHeader(context, colorScheme, userRole),
-              const SizedBox(height: 24),
+              const SizedBox(height: VeraProbSpacing.lg),
               // Search bar
               _buildSearchBar(context),
               const SizedBox(height: 20),
@@ -84,7 +76,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                             colorScheme,
                             userRole,
                           ),
-                  AsyncLoading() => _buildSkeletonLoading(),
+                  AsyncLoading() => const SkeletonListLoader(),
                   AsyncError(:final error) => _buildDriversError(error),
                 },
               ),
@@ -131,11 +123,11 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
           ),
           child: Icon(Icons.people_alt, size: 28, color: colorScheme.primary),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: VeraProbSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,20 +136,19 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 'Motoristas da Frota',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: _kNavyAccent,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: VeraProbSpacing.xs),
               Text(
                 'Cadastro administrativo dos motoristas vinculados à operação.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: VeraProbSpacing.md),
         // Toggle: show archived drivers (supervisors can audit history — INV-3)
         TextButton.icon(
           onPressed: () {
@@ -166,15 +157,17 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           icon: Icon(
             showArchived ? Icons.visibility_off_outlined : Icons.history,
             size: 18,
-            color: showArchived ? Colors.orange.shade700 : Colors.grey.shade600,
+            color: showArchived
+                ? VeraProbColors.warning
+                : VeraProbColors.textSecondary,
           ),
           label: Text(
             showArchived ? 'Ocultar arquivados' : 'Ver arquivados',
             style: TextStyle(
               fontSize: 13,
               color: showArchived
-                  ? Colors.orange.shade700
-                  : Colors.grey.shade600,
+                  ? VeraProbColors.warning
+                  : VeraProbColors.textSecondary,
             ),
           ),
         ),
@@ -189,7 +182,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
             if (imported) ref.invalidate(driversListProvider);
           },
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: VeraProbSpacing.sm),
         if (userRole.hasPermission(UserRole.admin))
           FilledButton.icon(
             onPressed: _openDrawer,
@@ -235,127 +228,19 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.people_outline,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Nenhum motorista cadastrado ainda.',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Clique em "Cadastrar motorista" para começar.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: Icons.people_outline,
+      title: 'Nenhum motorista cadastrado ainda.',
+      description: 'Clique em "Cadastrar motorista" para começar.',
     );
   }
 
   Widget _buildDriversError(Object error) {
     LoggerService().error('Falha ao carregar motoristas', error: error);
-    return _buildErrorState();
-  }
-
-  Widget _buildErrorState() {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
-            'Não foi possível carregar os motoristas agora.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          SizedBox(height: 4),
-          Text(
-            'Tente novamente mais tarde.',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSkeletonLoading() {
-    return ListView.builder(
-      itemCount: 5,
-      itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const SizedBox(width: 16),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  flex: 3,
-                  child: Container(
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    height: 14,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Container(
-                  width: 60,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                const SizedBox(width: 16),
-              ],
-            ),
-          ),
-        );
-      },
+    return const EmptyState(
+      icon: Icons.error_outline,
+      title: 'Não foi possível carregar os motoristas agora.',
+      description: 'Tente novamente mais tarde.',
     );
   }
 
@@ -371,53 +256,18 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           // Table header
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            decoration: const BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const SizedBox(width: 52), // Avatar space
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    'NOME',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    'CNH',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-                SizedBox(
-                  width: 100,
-                  child: Text(
-                    'STATUS',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey.shade600,
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 116), // Actions space
+                SizedBox(width: 52), // Avatar space
+                Expanded(flex: 3, child: _TableHeaderLabel('NOME')),
+                Expanded(flex: 2, child: _TableHeaderLabel('CNH')),
+                SizedBox(width: 100, child: _TableHeaderLabel('STATUS')),
+                SizedBox(width: 116), // Actions space
               ],
             ),
           ),
@@ -426,7 +276,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
             child: ListView.separated(
               itemCount: drivers.length,
               separatorBuilder: (_, _) =>
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  const Divider(height: 1, color: VeraProbColors.border),
               itemBuilder: (context, index) {
                 final driver = drivers[index];
                 final isHighlighted = _highlightedDriverId == driver.id;
@@ -476,11 +326,14 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
               'Arquivar ${driver.name}?',
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            const SizedBox(height: 8),
-            Text(
+            const SizedBox(height: VeraProbSpacing.sm),
+            const Text(
               'O motorista será inativado e o vínculo do Telegram será revogado. '
               'Evidências e histórico forense são preservados (INV-3).',
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+              style: TextStyle(
+                fontSize: 13,
+                color: VeraProbColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -492,7 +345,9 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
           FilledButton.icon(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Colors.orange.shade700,
+              backgroundColor: VeraProbColors.warning,
+              // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+              foregroundColor: VeraProbColors.background,
             ),
             icon: const Icon(Icons.archive_outlined, size: 18),
             label: const Text('Arquivar'),
@@ -508,7 +363,6 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
         messenger.showSnackBar(
           SnackBar(
             content: Text('${driver.name} arquivado. Histórico preservado.'),
-            backgroundColor: Colors.orange.shade700,
           ),
         );
       } catch (e, stack) {
@@ -522,11 +376,32 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
             content: Text(
               'Não foi possível arquivar o motorista. Tente novamente.',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: VeraProbColors.error,
           ),
         );
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Table Header Label
+// ---------------------------------------------------------------------------
+class _TableHeaderLabel extends StatelessWidget {
+  final String label;
+  const _TableHeaderLabel(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w700,
+        color: VeraProbColors.textSecondary,
+        letterSpacing: 0.8,
+      ),
+    );
   }
 }
 
@@ -555,6 +430,17 @@ class _DriverRow extends StatefulWidget {
 class _DriverRowState extends State<_DriverRow> {
   bool _isHovered = false;
 
+  Color _rowColor(ColorScheme colorScheme, bool isArchived) {
+    if (widget.isHighlighted) {
+      return colorScheme.primaryContainer.withValues(alpha: 0.3);
+    }
+    if (isArchived) {
+      return VeraProbColors.surfaceElevated.withValues(alpha: 0.5);
+    }
+    if (_isHovered) return VeraProbColors.surfaceElevated;
+    return Colors.transparent;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -566,15 +452,7 @@ class _DriverRowState extends State<_DriverRow> {
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 250),
-        decoration: BoxDecoration(
-          color: widget.isHighlighted
-              ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-              : isArchived
-              ? Colors.grey.shade50.withValues(alpha: 0.7)
-              : _isHovered
-              ? Colors.grey.shade50
-              : Colors.white,
-        ),
+        decoration: BoxDecoration(color: _rowColor(colorScheme, isArchived)),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Opacity(
           opacity: isArchived ? 0.55 : 1.0,
@@ -584,20 +462,20 @@ class _DriverRowState extends State<_DriverRow> {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: isArchived
-                    ? Colors.grey.shade300
+                    ? VeraProbColors.surfaceElevated
                     : colorScheme.primaryContainer,
                 child: Text(
                   widget.driver.name[0].toUpperCase(),
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isArchived
-                        ? Colors.grey.shade500
+                        ? VeraProbColors.textDisabled
                         : colorScheme.primary,
                     fontSize: 15,
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: VeraProbSpacing.md),
               // Name
               Expanded(
                 flex: 3,
@@ -611,17 +489,17 @@ class _DriverRowState extends State<_DriverRow> {
                         decoration: isArchived
                             ? TextDecoration.lineThrough
                             : null,
-                        color: isArchived ? Colors.grey.shade500 : null,
+                        color: isArchived ? VeraProbColors.textDisabled : null,
                       ),
                     ),
                     if (isArchived) ...[
                       const SizedBox(width: 6),
-                      Tooltip(
+                      const Tooltip(
                         message: 'Arquivado — histórico forense preservado',
                         child: Icon(
                           Icons.archive_outlined,
                           size: 14,
-                          color: Colors.grey.shade400,
+                          color: VeraProbColors.textDisabled,
                         ),
                       ),
                     ],
@@ -633,9 +511,9 @@ class _DriverRowState extends State<_DriverRow> {
                 flex: 2,
                 child: Text(
                   widget.driver.licenseNumber,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade500,
+                    color: VeraProbColors.textSecondary,
                     fontFamily: 'monospace',
                   ),
                 ),
@@ -659,17 +537,17 @@ class _DriverRowState extends State<_DriverRow> {
                         icon: const Icon(
                           Icons.telegram,
                           size: 20,
-                          color: _kTelegramBlue,
+                          color: VeraProbColors.info,
                         ),
                         tooltip: 'Vincular Telegram',
                         onPressed: widget.onTelegramBind,
                       ),
                     if (widget.onArchive != null)
                       IconButton(
-                        icon: Icon(
+                        icon: const Icon(
                           Icons.archive_outlined,
                           size: 20,
-                          color: Colors.orange.shade600,
+                          color: VeraProbColors.warning,
                         ),
                         tooltip: 'Arquivar motorista',
                         onPressed: widget.onArchive,
@@ -696,31 +574,19 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Archived supersedes active/pending status for display purposes (INV-3).
-    final (label, color, bgColor) = isArchived
-        ? ('Arquivado', _kStatusArchivedColor, _kStatusNeutralBg)
+    final (label, color) = isArchived
+        ? ('Arquivado', VeraProbColors.textDisabled)
         : switch (status) {
-            DriverStatus.active => (
-              'Ativo',
-              _kStatusActiveColor,
-              _kStatusActiveBg,
-            ),
-            DriverStatus.inactive => (
-              'Inativo',
-              _kStatusInactiveColor,
-              _kStatusNeutralBg,
-            ),
-            DriverStatus.pending => (
-              'Pendente',
-              _kStatusPendingColor,
-              _kStatusPendingBg,
-            ),
+            DriverStatus.active => ('Ativo', VeraProbColors.success),
+            DriverStatus.inactive => ('Inativo', VeraProbColors.textSecondary),
+            DriverStatus.pending => ('Pendente', VeraProbColors.warning),
           };
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(VeraProbRadii.pill),
       ),
       child: Text(
         label,

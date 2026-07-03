@@ -54,7 +54,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.mdAll),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: 400,
@@ -100,7 +100,7 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
               Container(
                 decoration: BoxDecoration(
                   border: Border.all(color: VeraProbColors.border),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: VeraProbRadii.smAll,
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<EventType>(
@@ -174,17 +174,17 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                   hintStyle: VeraProbTypography.caption,
                   filled: true,
                   fillColor: VeraProbColors.background,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  border: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.smAll,
+                    borderSide: BorderSide(color: VeraProbColors.border),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.smAll,
+                    borderSide: BorderSide(color: VeraProbColors.border),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: const BorderSide(color: VeraProbColors.primary),
+                  focusedBorder: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.smAll,
+                    borderSide: BorderSide(color: VeraProbColors.primary),
                   ),
                   contentPadding: const EdgeInsets.all(10),
                 ),
@@ -211,14 +211,15 @@ class _OccurrenceModalState extends ConsumerState<OccurrenceModal> {
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: VeraProbColors.background,
                             ),
                           )
                         : const Icon(Icons.check, size: 16),
                     label: const Text('Confirmar'),
+                    // ACCENT-FILL-CONTRAST: dark fg on fill.
                     style: FilledButton.styleFrom(
                       backgroundColor: VeraProbColors.primary,
-                      foregroundColor: Colors.white,
+                      foregroundColor: VeraProbColors.background,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 10,
@@ -300,7 +301,7 @@ class _SeverityChip extends StatelessWidget {
           color: isSelected
               ? color.withValues(alpha: 0.15)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: VeraProbRadii.smAll,
           border: Border.all(
             color: isSelected ? color : VeraProbColors.border,
             width: isSelected ? 1.5 : 1,

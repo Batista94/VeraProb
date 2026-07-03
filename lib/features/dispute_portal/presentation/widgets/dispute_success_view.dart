@@ -31,11 +31,11 @@ class DisputeSuccessView extends StatelessWidget {
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: VeraProbRadii.xlAll,
         border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.1)),
         boxShadow: const [
           BoxShadow(
-            color: Colors.black12,
+            color: Color(0x1F000000), // box shadow
             blurRadius: 24,
             offset: Offset(0, 8),
           ),
@@ -68,9 +68,9 @@ class DisputeSuccessView extends StatelessWidget {
           const SizedBox(height: 32),
           Container(
             padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: VeraProbColors.background,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

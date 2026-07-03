@@ -51,7 +51,7 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
 
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520, maxHeight: 680),
         child: Padding(
@@ -256,7 +256,8 @@ class _CreateExecutionDialogState extends ConsumerState<CreateExecutionDialog> {
                                       height: 16,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        // ACCENT-FILL-CONTRAST: dark fg.
+                                        color: VeraProbColors.background,
                                       ),
                                     )
                                   : const Icon(Icons.check_outlined),

@@ -155,9 +155,10 @@ class SlaExecutionDetailDrawer extends ConsumerWidget {
                       },
                       icon: const Icon(Icons.search, size: 16),
                       label: const Text('Investigar Decisão'),
+                      // ACCENT-FILL-CONTRAST: dark fg on fill.
                       style: ElevatedButton.styleFrom(
                         backgroundColor: VeraProbColors.secondary,
-                        foregroundColor: Colors.white,
+                        foregroundColor: VeraProbColors.background,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
@@ -262,7 +263,7 @@ class _StatusSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
           ),
           child: Text(
             label,
@@ -441,9 +442,9 @@ class _SolicitarDefesaButtonState
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: VeraProbColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
               ),
               child: SelectableText(
                 link,

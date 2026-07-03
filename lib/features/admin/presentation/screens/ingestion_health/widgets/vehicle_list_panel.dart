@@ -319,17 +319,17 @@ class _FilterBar extends StatelessWidget {
                   : null,
               filled: true,
               fillColor: VeraProbColors.surfaceElevated,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: VeraProbColors.border),
+              border: const OutlineInputBorder(
+                borderRadius: VeraProbRadii.mdAll,
+                borderSide: BorderSide(color: VeraProbColors.border),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: VeraProbColors.border),
+              enabledBorder: const OutlineInputBorder(
+                borderRadius: VeraProbRadii.mdAll,
+                borderSide: BorderSide(color: VeraProbColors.border),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: VeraProbColors.primary),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: VeraProbRadii.mdAll,
+                borderSide: BorderSide(color: VeraProbColors.primary),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12),
             ),

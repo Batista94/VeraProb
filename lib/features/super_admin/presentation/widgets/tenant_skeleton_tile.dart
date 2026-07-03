@@ -90,18 +90,18 @@ class _TenantSkeletonTileState extends State<TenantSkeletonTile>
                       width: double.infinity,
                       height: 13,
                       margin: const EdgeInsets.only(right: 40),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: VeraProbColors.surface,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: VeraProbRadii.smAll,
                       ),
                     ),
                     const SizedBox(height: 6),
                     Container(
                       width: 60,
                       height: 11,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: VeraProbColors.surface,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: VeraProbRadii.smAll,
                       ),
                     ),
                   ],

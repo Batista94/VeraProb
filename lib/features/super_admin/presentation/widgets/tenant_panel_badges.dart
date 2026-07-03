@@ -12,7 +12,7 @@ class OrgStatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.pillAll,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -23,11 +23,7 @@ class OrgStatusBadge extends StatelessWidget {
           ],
           Text(
             label ?? '—',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+            style: VeraProbTypography.badge.copyWith(color: color),
           ),
         ],
       ),
@@ -45,7 +41,7 @@ class OrgStatusBadge extends StatelessWidget {
       case 'Churned':
         return (VeraProbColors.warning, Icons.cancel_outlined);
       case 'Arquivado':
-        return (Colors.amber, Icons.lock_outline);
+        return (VeraProbColors.neutral, Icons.lock_outline);
       case 'Excluído':
         return (VeraProbColors.error, Icons.delete_outline);
       default:
@@ -64,13 +60,11 @@ class PlanBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: VeraProbColors.secondary.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.pillAll,
       ),
       child: Text(
         planType?.toUpperCase() ?? '—',
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
+        style: VeraProbTypography.badge.copyWith(
           color: VeraProbColors.secondary,
         ),
       ),

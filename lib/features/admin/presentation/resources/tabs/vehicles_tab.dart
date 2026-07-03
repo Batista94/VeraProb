@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/shared/providers.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/features/admin/presentation/resources/tabs/vehicle_form_drawer.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
-const Color _kHeaderNavy = Color(0xFF1A237E);
 const TextStyle _kBtnLabel = TextStyle(
   fontSize: 14,
   fontWeight: FontWeight.w600,
@@ -17,14 +17,6 @@ const TextStyle _kChipText = TextStyle(
   fontSize: 11,
   fontWeight: FontWeight.w600,
 );
-const Color _kStatusAvailableText = Color(0xFF1B5E20);
-const Color _kStatusAvailableBg = Color(0xFFE8F5E9);
-const Color _kStatusInServiceText = Color(0xFF1565C0);
-const Color _kStatusInServiceBg = Color(0xFFE3F2FD);
-const Color _kStatusMaintenanceText = Color(0xFFE65100);
-const Color _kStatusMaintenanceBg = Color(0xFFFFF3E0);
-const Color _kStatusRetiredText = Color(0xFF616161);
-const Color _kStatusRetiredBg = Color(0xFFF5F5F5);
 
 class VehiclesTab extends ConsumerStatefulWidget {
   const VehiclesTab({super.key});
@@ -60,12 +52,12 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
     return Stack(
       children: [
         Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(VeraProbSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context, colorScheme, userRole),
-              const SizedBox(height: 24),
+              const SizedBox(height: VeraProbSpacing.lg),
               _buildSearchBar(),
               const SizedBox(height: 20),
               Expanded(
@@ -74,7 +66,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                     value.isEmpty
                         ? _buildEmptyState()
                         : _buildTable(context, value, colorScheme, userRole),
-                  AsyncLoading() => _buildSkeleton(),
+                  AsyncLoading() => const SkeletonListLoader(),
                   AsyncError(:final error) => _buildAsyncError(error),
                 },
               ),
@@ -84,7 +76,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         if (_isDrawerOpen) ...[
           GestureDetector(
             onTap: () {},
-            child: Container(color: Colors.black.withValues(alpha: 0.3)),
+            child: Container(color: const Color(0x4D000000)), // drawer scrim
           ),
           Positioned(
             right: 0,
@@ -116,7 +108,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: colorScheme.primaryContainer.withValues(alpha: 0.4),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
           ),
           child: Icon(
             Icons.directions_bus,
@@ -124,7 +116,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             color: colorScheme.primary,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: VeraProbSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,10 +125,9 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                 'Frota de Veículos',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  color: _kHeaderNavy,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: VeraProbSpacing.xs),
               Text(
                 'Cadastro de veículos operacionais vinculados à organização.',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -146,7 +137,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             ],
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: VeraProbSpacing.md),
         if (userRole.hasPermission(UserRole.admin))
           FilledButton.icon(
             onPressed: () => setState(() => _isDrawerOpen = true),
@@ -189,75 +180,19 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.directions_bus_outlined,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            'Nenhum veículo cadastrado ainda.',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Clique em "Cadastrar veículo" para começar.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
-          ),
-        ],
-      ),
+    return const EmptyState(
+      icon: Icons.directions_bus_outlined,
+      title: 'Nenhum veículo cadastrado ainda.',
+      description: 'Clique em "Cadastrar veículo" para começar.',
     );
   }
 
   Widget _buildAsyncError(Object error) {
     LoggerService().error('Falha ao carregar veículos', error: error);
-    return _buildErrorState();
-  }
-
-  Widget _buildErrorState() {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.grey),
-          SizedBox(height: 12),
-          Text(
-            'Não foi possível carregar os veículos agora.',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSkeleton() {
-    return ListView.builder(
-      itemCount: 5,
-      itemBuilder: (_, index) => Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: Container(
-          height: 56,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      ),
+    return const EmptyState(
+      icon: Icons.error_outline,
+      title: 'Não foi possível carregar os veículos agora.',
+      description: 'Tente novamente mais tarde.',
     );
   }
 
@@ -272,12 +207,10 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(12),
-              ),
-              border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+            decoration: const BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+              border: Border(bottom: BorderSide(color: VeraProbColors.border)),
             ),
             child: Row(
               children: [
@@ -291,7 +224,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Colors.grey,
+                      color: VeraProbColors.textSecondary,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -304,7 +237,7 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
             child: ListView.separated(
               itemCount: vehicles.length,
               separatorBuilder: (_, _) =>
-                  Divider(height: 1, color: Colors.grey.shade200),
+                  const Divider(height: 1, color: VeraProbColors.border),
               itemBuilder: (context, index) {
                 final vehicle = vehicles[index];
                 return _VehicleRow(
@@ -327,10 +260,10 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
       flex: flex,
       child: Text(
         label,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: Colors.grey.shade600,
+          color: VeraProbColors.textSecondary,
           letterSpacing: 0.8,
         ),
       ),
@@ -416,8 +349,8 @@ class _VehicleRowState extends State<_VehicleRow> {
           color: widget.isHighlighted
               ? colorScheme.primaryContainer.withValues(alpha: 0.3)
               : _isHovered
-              ? Colors.grey.shade50
-              : Colors.white,
+              ? VeraProbColors.surfaceElevated
+              : Colors.transparent,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         child: Row(
@@ -437,14 +370,20 @@ class _VehicleRowState extends State<_VehicleRow> {
               flex: 2,
               child: Text(
                 widget.vehicle.model ?? '—',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ),
             Expanded(
               flex: 1,
               child: Text(
                 '${widget.vehicle.capacity} pax',
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: VeraProbColors.textSecondary,
+                ),
               ),
             ),
             SizedBox(
@@ -458,10 +397,10 @@ class _VehicleRowState extends State<_VehicleRow> {
                 children: [
                   if (widget.onDelete != null)
                     IconButton(
-                      icon: Icon(
+                      icon: const Icon(
                         Icons.delete_outline,
                         size: 20,
-                        color: Colors.red.shade400,
+                        color: VeraProbColors.error,
                       ),
                       tooltip: 'Remover veículo',
                       onPressed: widget.onDelete,
@@ -483,33 +422,17 @@ class _VehicleStatusChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, bgColor) = switch (status) {
-      VehicleStatus.available => (
-        'Disponível',
-        _kStatusAvailableText,
-        _kStatusAvailableBg,
-      ),
-      VehicleStatus.inService => (
-        'Em Serviço',
-        _kStatusInServiceText,
-        _kStatusInServiceBg,
-      ),
-      VehicleStatus.maintenance => (
-        'Manutenção',
-        _kStatusMaintenanceText,
-        _kStatusMaintenanceBg,
-      ),
-      VehicleStatus.retired => (
-        'Aposentado',
-        _kStatusRetiredText,
-        _kStatusRetiredBg,
-      ),
+    final (label, color) = switch (status) {
+      VehicleStatus.available => ('Disponível', VeraProbColors.success),
+      VehicleStatus.inService => ('Em Serviço', VeraProbColors.info),
+      VehicleStatus.maintenance => ('Manutenção', VeraProbColors.warning),
+      VehicleStatus.retired => ('Aposentado', VeraProbColors.textSecondary),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(VeraProbRadii.pill),
       ),
       child: Text(
         label,

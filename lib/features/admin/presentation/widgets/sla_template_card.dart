@@ -52,7 +52,7 @@ class SlaTemplateCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: VeraProbColors.secondary.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: VeraProbRadii.mdAll,
                     ),
                     child: Text(
                       'SISTEMA',

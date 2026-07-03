@@ -90,15 +90,14 @@ class _CreateEndpointDialogState extends ConsumerState<CreateEndpointDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Os vereditos selados serão entregues via POST assinado '
               '(HMAC-SHA256) para esta URL.',
-              style: TextStyle(
-                fontSize: 13,
+              style: VeraProbTypography.bodySmall.copyWith(
                 color: VeraProbColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: VeraProbSpacing.md),
             TextField(
               key: const ValueKey('create-endpoint-url-field'),
               controller: _urlController,

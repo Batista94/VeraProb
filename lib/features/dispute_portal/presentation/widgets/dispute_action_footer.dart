@@ -102,7 +102,7 @@ class DisputeActionFooter extends StatelessWidget {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: VeraProbColors.background,
                             ),
                           ),
                           SizedBox(width: 8),

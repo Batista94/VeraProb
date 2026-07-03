@@ -69,7 +69,7 @@ class _LockedFieldTileState extends State<LockedFieldTile> {
                 ? VeraProbColors.surface.withValues(alpha: 0.05)
                 : VeraProbColors.surface,
             border: Border.all(color: _kLockedFieldBorder),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: VeraProbRadii.lgAll,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -58,7 +58,7 @@ class ErrorView extends StatelessWidget {
       decoration: BoxDecoration(
         color: VeraProbColors.background,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.5)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

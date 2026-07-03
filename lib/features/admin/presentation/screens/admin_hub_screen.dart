@@ -89,17 +89,7 @@ class AdminHubScreen extends ConsumerWidget {
         title: 'Conta & Governança',
         items: [
           const _HubItem(
-            label: 'Organização',
-            icon: Icons.business_outlined,
-            destination: AdminNav.orgSettings,
-          ),
-          const _HubItem(
-            label: 'Usuários',
-            icon: Icons.manage_accounts_outlined,
-            destination: AdminNav.userManagement,
-          ),
-          const _HubItem(
-            label: 'Ajustes',
+            label: 'Configurações',
             icon: Icons.settings_outlined,
             destination: AdminNav.settings,
           ),
@@ -208,7 +198,7 @@ class _HubCardState extends State<_HubCard> {
             scale: _hovered ? 1.0 : 0.98,
             duration: const Duration(milliseconds: 150),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: VeraProbRadii.lgAll,
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
@@ -216,7 +206,7 @@ class _HubCardState extends State<_HubCard> {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: VeraProbColors.surface.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: VeraProbRadii.lgAll,
                     border: Border.all(
                       color: _hovered
                           ? VeraProbColors.primary.withValues(alpha: 0.4)
@@ -300,14 +290,14 @@ class _HubOnboardingBanner extends ConsumerWidget {
     final stepIndex = progress.completedCount + 1;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: VeraProbRadii.lgAll,
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           decoration: BoxDecoration(
             color: VeraProbColors.surface.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             border: Border.all(
               color: VeraProbColors.primary.withValues(alpha: 0.2),
             ),
@@ -368,8 +358,8 @@ class _HubOnboardingBanner extends ConsumerWidget {
                   backgroundColor: VeraProbColors.primary.withValues(
                     alpha: 0.1,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: VeraProbRadii.mdAll,
                   ),
                 ),
                 onPressed: () => context.go(nextStep.destination.path),

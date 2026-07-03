@@ -114,7 +114,7 @@ class _EvidenceDropzoneState extends State<EvidenceDropzone> {
             ),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: Row(
@@ -168,14 +168,14 @@ class _EvidenceDropzoneState extends State<EvidenceDropzone> {
         ] else ...[
           InkWell(
             onTap: isBusy ? null : _pickFile,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             child: Container(
               padding: VeraProbSpacing.sectionPadding,
               decoration: BoxDecoration(
                 color: isBusy
                     ? VeraProbColors.surface
                     : VeraProbColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(
                   color: _inlineError != null
                       ? VeraProbColors.error

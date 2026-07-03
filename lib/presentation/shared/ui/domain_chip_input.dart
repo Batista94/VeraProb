@@ -91,7 +91,7 @@ class _DomainChipInputState extends State<DomainChipInput> {
         Container(
           decoration: BoxDecoration(
             color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: VeraProbRadii.lgAll,
             border: Border.all(
               color: _inputError != null
                   ? VeraProbColors.error
@@ -119,11 +119,9 @@ class _DomainChipInputState extends State<DomainChipInput> {
                           deleteIcon: const Icon(Icons.cancel, size: 18),
                           deleteIconColor: VeraProbColors.textSecondary,
                           onDeleted: () => _removeDomain(d),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            side: const BorderSide(
-                              color: VeraProbColors.border,
-                            ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: VeraProbRadii.mdAll,
+                            side: BorderSide(color: VeraProbColors.border),
                           ),
                         ),
                       )

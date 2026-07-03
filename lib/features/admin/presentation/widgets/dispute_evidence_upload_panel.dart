@@ -110,7 +110,7 @@ class DisputeEvidenceUploadPanel extends ConsumerWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -293,7 +293,7 @@ class _StorageGate extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
@@ -342,7 +342,7 @@ class _EvidenceChip extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: VeraProbRadii.xlAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
@@ -377,7 +377,7 @@ class _EvidenceChip extends StatelessWidget {
           const SizedBox(width: 4),
           InkWell(
             key: ValueKey('evidence-remove-${attachment.id}'),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             onTap: onRemove,
             child: const Padding(
               padding: EdgeInsets.all(4),
@@ -425,7 +425,7 @@ class _VerificationBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: VeraProbRadii.lgAll,
         ),
         child: Icon(icon, size: 12, color: color),
       ),

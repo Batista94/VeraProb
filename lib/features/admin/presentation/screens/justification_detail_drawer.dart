@@ -105,11 +105,12 @@ class _JustificationDetailDrawerState
                     if (canReview && status.isPending) ...[
                       const SizedBox(height: 24),
                       if (actionState.hasError)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
                           child: Text(
-                            'Erro: ${actionState.error}',
-                            style: const TextStyle(
+                            // UX-RAW-EXCEPTION fix
+                            'Falha ao processar a revisão. Tente novamente.',
+                            style: TextStyle(
                               color: VeraProbColors.error,
                               fontSize: 13,
                             ),
@@ -145,9 +146,10 @@ class _JustificationDetailDrawerState
                                 onPressed: actionState.isLoading
                                     ? null
                                     : () => _reject(id),
+                                // ACCENT-FILL-CONTRAST: dark fg on fill.
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VeraProbColors.error,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: VeraProbColors.background,
                                 ),
                                 child: actionState.isLoading
                                     ? const SizedBox(
@@ -155,7 +157,7 @@ class _JustificationDetailDrawerState
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: VeraProbColors.background,
                                         ),
                                       )
                                     : const Text('Confirmar Rejeição'),
@@ -177,14 +179,15 @@ class _JustificationDetailDrawerState
                                         height: 14,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          color: Colors.white,
+                                          color: VeraProbColors.background,
                                         ),
                                       )
                                     : const Icon(Icons.check, size: 16),
                                 label: const Text('Aprovar'),
+                                // ACCENT-FILL-CONTRAST: dark fg on fill.
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: VeraProbColors.success,
-                                  foregroundColor: Colors.white,
+                                  foregroundColor: VeraProbColors.background,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 12,
                                   ),

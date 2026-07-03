@@ -47,7 +47,7 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: VeraProbColors.surface, // Slate/Zinc palette (Industrial Deep)
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(

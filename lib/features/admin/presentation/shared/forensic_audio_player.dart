@@ -88,7 +88,7 @@ class _ForensicAudioPlayerState extends ConsumerState<ForensicAudioPlayer> {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -216,7 +216,7 @@ class _ForensicAudioPlayerState extends ConsumerState<ForensicAudioPlayer> {
                   ),
                   decoration: BoxDecoration(
                     color: VeraProbColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: VeraProbRadii.mdAll,
                   ),
                   child: Text(
                     '${_speeds[_speedIndex]}x',

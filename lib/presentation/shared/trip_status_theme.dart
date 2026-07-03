@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 import 'package:veraprob/application/normalization/models/trip_status_view.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
@@ -12,29 +13,29 @@ extension TripStatusUi on TripStatus {
   Color get color {
     switch (this) {
       case TripStatus.scheduled:
-        return const Color(0xFF448AFF);
+        return VeraProbColors.info;
       case TripStatus.dispatched:
-        return const Color(0xFFFFD600);
+        return VeraProbColors.warning;
       case TripStatus.enRoute:
-        return const Color(0xFF00C853);
+        return VeraProbColors.success;
       case TripStatus.atStop:
-        return const Color(0xFF00C853);
+        return VeraProbColors.success;
       case TripStatus.delayed:
-        return const Color(0xFFFF9100);
+        return VeraProbColors.warning;
       case TripStatus.interrupted:
-        return const Color(0xFFFF1744);
+        return VeraProbColors.error;
       case TripStatus.completed:
-        return const Color(0xFF78909C);
+        return VeraProbColors.neutral;
       case TripStatus.cancelled:
-        return const Color(0xFF37474F);
+        return VeraProbColors.textDisabled;
       case TripStatus.noShow:
-        return const Color(0xFFB71C1C);
+        return VeraProbColors.error;
       case TripStatus.offline:
-        return const Color(0xFF9E9E9E);
+        return VeraProbColors.neutral;
       case TripStatus.maintenance:
-        return const Color(0xFF212121);
+        return VeraProbColors.background;
       case TripStatus.detour:
-        return const Color(0xFFFF6D00);
+        return VeraProbColors.warning;
     }
   }
 
@@ -118,23 +119,23 @@ extension TripStatusViewUi on TripStatusView {
   Color get color {
     switch (this) {
       case TripStatusView.scheduled:
-        return const Color(0xFF448AFF);
+        return VeraProbColors.info;
       case TripStatusView.enRoute:
-        return const Color(0xFF00C853);
+        return VeraProbColors.success;
       case TripStatusView.atStop:
-        return const Color(0xFF00C853);
+        return VeraProbColors.success;
       case TripStatusView.delayed:
-        return const Color(0xFFFF9100);
+        return VeraProbColors.warning;
       case TripStatusView.interrupted:
-        return const Color(0xFFFF1744);
+        return VeraProbColors.error;
       case TripStatusView.completed:
-        return const Color(0xFF78909C);
+        return VeraProbColors.neutral;
       case TripStatusView.cancelled:
-        return const Color(0xFF37474F);
+        return VeraProbColors.textDisabled;
       case TripStatusView.noShow:
-        return const Color(0xFFB71C1C);
+        return VeraProbColors.error;
       case TripStatusView.maintenance:
-        return const Color(0xFF212121);
+        return VeraProbColors.background;
     }
   }
 

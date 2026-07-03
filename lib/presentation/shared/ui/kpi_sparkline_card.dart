@@ -32,12 +32,12 @@ class KpiSparklineCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: VeraProbRadii.xlAll,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: VeraProbColors.surface,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: VeraProbRadii.xlAll,
           border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
         ),
         child: ClipRect(
@@ -51,7 +51,7 @@ class KpiSparklineCard extends StatelessWidget {
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: VeraProbRadii.mdAll,
                     ),
                     child: Icon(icon, color: color, size: 18),
                   ),
@@ -92,7 +92,7 @@ class KpiSparklineCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: color.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: VeraProbRadii.lgAll,
                         border: Border.all(color: color.withValues(alpha: 0.3)),
                       ),
                       child: Text(

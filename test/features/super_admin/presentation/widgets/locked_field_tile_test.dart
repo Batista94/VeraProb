@@ -83,7 +83,7 @@ void main() {
         expect(border.top.color, const Color(0xFF2A3A5C));
 
         // Check border-radius.
-        expect(decoration.borderRadius, BorderRadius.circular(10));
+        expect(decoration.borderRadius, BorderRadius.circular(12));
       },
     );
 

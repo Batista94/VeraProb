@@ -166,7 +166,7 @@ class _ContractorManagementScreenState
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: VeraProbColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: const Icon(
               Icons.business,

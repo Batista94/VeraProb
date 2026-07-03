@@ -41,7 +41,7 @@ class ContractualRiskRadar extends ConsumerWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: VeraProbColors.warning.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
           ),
           child: const Icon(Icons.radar, color: VeraProbColors.warning),
         ),
@@ -179,13 +179,13 @@ class _KpiCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: VeraProbRadii.lgAll,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: VeraProbRadii.lgAll,
               border: Border.all(color: color.withValues(alpha: 0.25)),
             ),
             child: Column(
@@ -245,7 +245,7 @@ class RiskFeedList extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -390,7 +390,7 @@ class _FeedNodeItem extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(color: color.withValues(alpha: 0.2)),
               ),
               child: Material(
@@ -406,7 +406,7 @@ class _FeedNodeItem extends StatelessWidget {
                       ),
                     );
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -431,7 +431,7 @@ class _FeedNodeItem extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: color.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(4),
+                                borderRadius: VeraProbRadii.smAll,
                               ),
                               child: Text(
                                 node.execution.status.name.toUpperCase(),

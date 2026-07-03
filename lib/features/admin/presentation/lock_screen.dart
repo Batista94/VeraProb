@@ -165,7 +165,8 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
         children: [
           LayoutBuilder(
             builder: (context, constraints) {
-              final isDesktop = constraints.maxWidth >= 768;
+              final isDesktop =
+                  constraints.maxWidth >= VeraProbBreakpoints.compact;
 
               if (!isDesktop) {
                 return _buildLoginPanel(fullScreen: true);
@@ -291,14 +292,15 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: VeraProbColors.primary,
                               elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: VeraProbRadii.mdAll,
                               ),
                             ),
                             child: const Text(
                               'ACESSAR SISTEMA',
+                              // ACCENT-FILL-CONTRAST: dark fg on fill.
                               style: TextStyle(
-                                color: Colors.white,
+                                color: VeraProbColors.background,
                                 fontSize: 14,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 1,
@@ -489,7 +491,7 @@ class _TelemetryRowWidget extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             color: _verdictColor().withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             border: Border.all(color: _verdictColor().withValues(alpha: 0.3)),
           ),
           child: Text(

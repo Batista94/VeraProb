@@ -88,14 +88,14 @@ class _QuotaWarningBadge extends StatelessWidget {
     final color = warning.isCritical
         ? VeraProbColors.error
         : warning.isUrgent
-        ? Colors.orange
-        : VeraProbColors.warning;
+        ? VeraProbColors.warning
+        : VeraProbColors.info;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Row(

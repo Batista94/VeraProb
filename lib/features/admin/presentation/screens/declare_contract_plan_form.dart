@@ -647,7 +647,8 @@ class _DeclareContractPlanFormState
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      // ACCENT-FILL-CONTRAST: dark fg on fill.
+                      color: VeraProbColors.background,
                     ),
                   )
                 : Icon(isLastStep ? Icons.publish : Icons.arrow_forward),
@@ -760,7 +761,7 @@ class _DeclareContractPlanFormState
     final isLoading = commandStatus is AsyncLoading || _isSubmitting;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: (MediaQuery.sizeOf(context).width * 0.94).clamp(
@@ -790,7 +791,7 @@ class _DeclareContractPlanFormState
                     color: _errorIsWarning
                         ? VeraProbColors.warning.withValues(alpha: 0.1)
                         : VeraProbColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: _errorIsWarning
                           ? VeraProbColors.warning.withValues(alpha: 0.3)
@@ -826,7 +827,9 @@ class _DeclareContractPlanFormState
               ),
             Expanded(
               child: Stepper(
-                type: MediaQuery.sizeOf(context).width < 720
+                type:
+                    MediaQuery.sizeOf(context).width <
+                        VeraProbBreakpoints.medium
                     ? StepperType.vertical
                     : StepperType.horizontal,
                 currentStep: _currentStep,

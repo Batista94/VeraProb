@@ -156,7 +156,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: VeraProbColors.surfaceElevated,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(color: VeraProbColors.border),
                 ),
                 child: SelectableText(
@@ -319,7 +319,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
                 color: VeraProbColors.warning.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(
                   color: VeraProbColors.warning.withValues(alpha: 0.4),
                 ),
@@ -768,7 +768,7 @@ class _ForensicSealSection extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -842,7 +842,7 @@ class _HashRow extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: VeraProbRadii.smAll,
           onTap: () {
             final messenger = ScaffoldMessenger.of(context);
             Clipboard.setData(ClipboardData(text: hash));
@@ -916,7 +916,7 @@ class _ExecutionStatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Text(
         label,

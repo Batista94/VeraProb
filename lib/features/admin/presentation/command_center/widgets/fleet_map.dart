@@ -207,7 +207,7 @@ class _FleetMapState extends ConsumerState<FleetMap> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: VeraProbColors.surface.withValues(alpha: 0.9),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: VeraProbRadii.smAll,
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -274,15 +274,15 @@ class _MapControlButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: VeraProbColors.surface.withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(4),
+      borderRadius: VeraProbRadii.smAll,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         child: Container(
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Icon(icon, size: 16, color: VeraProbColors.textSecondary),

@@ -169,7 +169,8 @@ class _FinancialDashboard extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth >= 800 ? 2 : 1;
+        final crossAxisCount =
+            constraints.maxWidth >= VeraProbBreakpoints.compact ? 2 : 1;
         // Fixed-height cards: avoids fragile childAspectRatio.
         const cardHeight = 160.0;
 

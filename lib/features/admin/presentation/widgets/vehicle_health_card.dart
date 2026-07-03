@@ -89,7 +89,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
               color: widget.isSelected
                   ? VeraProbColors.surfaceElevated
                   : VeraProbColors.surface,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(
                 color: widget.isSelected
                     ? VeraProbColors.primary.withValues(alpha: 0.5)
@@ -105,7 +105,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
                   height: 36,
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                   ),
                   child: Icon(
                     _iconForStatus(widget.entry.hardwareStatus),
@@ -142,7 +142,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
                                 color: VeraProbColors.secondary.withValues(
                                   alpha: 0.2,
                                 ),
-                                borderRadius: BorderRadius.circular(3),
+                                borderRadius: VeraProbRadii.smAll,
                               ),
                               child: Text(
                                 'FANTASMA',
@@ -186,7 +186,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
                         children: [
                           Expanded(
                             child: ClipRRect(
-                              borderRadius: BorderRadius.circular(2),
+                              borderRadius: VeraProbRadii.smAll,
                               child: LinearProgressIndicator(
                                 value:
                                     (widget.entry.integrityScoreBps / 10000.0)
@@ -224,7 +224,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         color: VeraProbColors.critical.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: VeraProbRadii.mdAll,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -261,7 +261,7 @@ class _VehicleHealthCardState extends State<VehicleHealthCard>
                   child: DecoratedBox(
                     decoration: BoxDecoration(
                       color: _pulseAnimation.value,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: VeraProbRadii.mdAll,
                     ),
                   ),
                 ),

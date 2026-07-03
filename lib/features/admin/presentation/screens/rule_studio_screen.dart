@@ -37,7 +37,7 @@ class RuleStudioScreen extends ConsumerWidget {
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final wide = constraints.maxWidth >= 900;
+                final wide = constraints.maxWidth >= VeraProbBreakpoints.medium;
                 final active = _buildActiveColumn(
                   context,
                   ref,
@@ -294,7 +294,7 @@ class _RuleCardState extends ConsumerState<_RuleCard> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -400,7 +400,7 @@ class _ScheduledBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: VeraProbColors.warning.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(
           color: VeraProbColors.warning.withValues(alpha: 0.4),
         ),

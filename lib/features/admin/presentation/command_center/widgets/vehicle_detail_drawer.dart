@@ -49,7 +49,7 @@ class VehicleDetailDrawer extends ConsumerWidget {
         border: Border(left: BorderSide(color: VeraProbColors.border)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
+            color: Color(0x42000000), // drawer shadow
             blurRadius: 8,
             offset: Offset(-2, 0),
           ),
@@ -134,7 +134,7 @@ class _DrawerHeader extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: trip.status.color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: VeraProbRadii.smAll,
             ),
           ),
           const SizedBox(width: 10),
@@ -346,9 +346,10 @@ class _SuggestionSection extends ConsumerWidget {
               onPressed: _buildCallback(ref),
               icon: Icon(suggestion.action.icon, size: 16),
               label: Text(suggestion.actionLabel),
+              // ACCENT-FILL-CONTRAST: dark fg on fill.
               style: FilledButton.styleFrom(
                 backgroundColor: VeraProbColors.primary,
-                foregroundColor: Colors.white,
+                foregroundColor: VeraProbColors.background,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
@@ -567,11 +568,11 @@ class _ActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             border: Border.all(
               color: effectiveColor.withValues(alpha: enabled ? 0.4 : 0.2),
             ),

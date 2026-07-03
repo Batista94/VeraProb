@@ -75,8 +75,8 @@ class NotFoundPage extends StatelessWidget {
                         horizontal: VeraProbSpacing.lg,
                         vertical: VeraProbSpacing.md,
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: VeraProbRadii.lgAll,
                       ),
                     ),
                     child: const Row(

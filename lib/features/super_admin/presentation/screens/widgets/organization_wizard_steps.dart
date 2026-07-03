@@ -157,7 +157,7 @@ class Step1FiscalData extends StatelessWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: VeraProbColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: VeraProbColors.error.withValues(alpha: 0.4),
                     ),
@@ -188,7 +188,7 @@ class Step1FiscalData extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: VeraProbColors.warning.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(
                     color: VeraProbColors.warning.withValues(alpha: 0.4),
                   ),
@@ -396,7 +396,7 @@ class Step2Limits extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: VeraProbColors.superAdminSurface.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
               ),
               child: Wrap(
                 spacing: 8,
@@ -482,7 +482,7 @@ class Step2Limits extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: VeraProbColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(
                   color: VeraProbColors.warning.withValues(alpha: 0.5),
                 ),
@@ -849,7 +849,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: VeraProbColors.superAdminSurface.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,7 +922,7 @@ class _Step3AdminInviteState extends State<Step3AdminInvite> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(
                 color: VeraProbColors.warning.withValues(alpha: 0.5),
               ),

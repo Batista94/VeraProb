@@ -31,13 +31,13 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 1100;
+        final isWide = constraints.maxWidth >= VeraProbBreakpoints.wide;
 
         const leftPane = Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FinancialKpiRow(),
-            SizedBox(height: 24),
+            SizedBox(height: VeraProbSpacing.lg),
             _TelemetryConfidenceCard(),
           ],
         );
@@ -53,7 +53,9 @@ class DashboardScreen extends ConsumerWidget {
               curve: Curves.easeInOutCubic,
               child: ref.watch(onboardingBannerVisibleProvider)
                   ? Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.only(
+                        bottom: VeraProbSpacing.lg,
+                      ),
                       child: OnboardingProgressBanner(
                         onNavigate: (destIdx) {
                           context.go(AdminNav.values[destIdx].path);
@@ -66,19 +68,19 @@ class DashboardScreen extends ConsumerWidget {
                   : const SizedBox.shrink(),
             ),
             const _DashboardHeader(),
-            const SizedBox(height: 32),
+            const SizedBox(height: VeraProbSpacing.xl),
             if (isWide)
               const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 2, child: leftPane),
-                  SizedBox(width: 24),
+                  SizedBox(width: VeraProbSpacing.lg),
                   Expanded(flex: 1, child: RiskFeedList()),
                 ],
               )
             else ...[
               leftPane,
-              const SizedBox(height: 24),
+              const SizedBox(height: VeraProbSpacing.lg),
               const RiskFeedList(),
             ],
             const SizedBox(height: 40),
@@ -95,8 +97,8 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 24,
-      runSpacing: 24,
+      spacing: VeraProbSpacing.lg,
+      runSpacing: VeraProbSpacing.lg,
       crossAxisAlignment: WrapCrossAlignment.center,
       alignment: WrapAlignment.spaceBetween,
       children: [
@@ -107,15 +109,9 @@ class _DashboardHeader extends StatelessWidget {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: VeraProbColors.surface,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: VeraProbRadii.xlAll,
                 border: Border.all(color: VeraProbColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+                boxShadow: VeraProbElevation.raised,
               ),
               child: const Icon(
                 Icons.analytics_rounded,
@@ -189,14 +185,14 @@ class _TelemetryConfidenceCardState
       onExit: (_) => setState(() => _hovered = false),
       cursor: SystemMouseCursors.click,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         onTap: () => context.go(AppRoutes.ingestionHealth),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             color: VeraProbColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             border: Border.all(
               color: _hovered
                   ? health.color.withValues(alpha: 0.6)
@@ -320,8 +316,9 @@ class _DevSeedButton extends ConsumerWidget {
       icon: const Icon(Icons.bolt_rounded, size: 18),
       label: const Text('SIMULAR OPERAÇÃO'),
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.amber.shade900,
-        foregroundColor: Colors.white,
+        backgroundColor: VeraProbColors.warning,
+        // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+        foregroundColor: VeraProbColors.background,
         elevation: 4,
       ),
     );

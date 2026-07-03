@@ -87,8 +87,6 @@ extension AdminNavRoute on AdminNav {
     AdminNav.zones => '/admin/hub/zones',
     AdminNav.billingReports => '/admin/hub/billing-reports',
     AdminNav.slaTemplates => '/admin/hub/sla-templates',
-    AdminNav.orgSettings => '/admin/hub/org-settings',
-    AdminNav.userManagement => '/admin/hub/user-management',
     AdminNav.contractors => '/admin/hub/contractors',
     AdminNav.settings => '/admin/hub/settings',
     AdminNav.evidence => '/admin/hub/evidence',

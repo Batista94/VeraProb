@@ -75,7 +75,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
     final isEdit = widget.existing != null;
 
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(
@@ -105,7 +105,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                     ),
                     decoration: BoxDecoration(
                       color: VeraProbColors.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: VeraProbRadii.mdAll,
                       border: Border.all(
                         color: VeraProbColors.error.withValues(alpha: 0.4),
                       ),
@@ -195,7 +195,7 @@ class _ContractorFormDialogState extends ConsumerState<ContractorFormDialog> {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Colors.white,
+                                color: VeraProbColors.background,
                               ),
                             )
                           : const Text('Salvar'),

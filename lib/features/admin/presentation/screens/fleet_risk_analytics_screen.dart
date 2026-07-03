@@ -87,7 +87,7 @@ class _FleetRiskSentinelCard extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       padding: const EdgeInsets.all(16),
