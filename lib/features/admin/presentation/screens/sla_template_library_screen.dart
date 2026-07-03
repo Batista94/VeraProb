@@ -7,6 +7,7 @@ import 'package:veraprob/application/sla_audit/projections/sla_template_view.dar
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sla_template_providers.dart';
 import 'package:veraprob/features/admin/presentation/widgets/sla_template_card.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'sla_template_editor_dialog.dart';
 
 /// SLA Template Library screen with two sections:
@@ -233,7 +234,15 @@ class _SlaTemplateLibraryScreenState
   ) {
     final filtered = _filteredTemplates(value);
     if (filtered.isEmpty) {
-      return _EmptyState(onCreate: () => _showEditor(context));
+      return EmptyState(
+        icon: Icons.library_books_outlined,
+        title: 'Nenhum modelo customizado ainda.',
+        description: 'Clone um modelo do sistema ou crie um do zero.',
+        action: FilledButton(
+          onPressed: () => _showEditor(context),
+          child: const Text('Criar Primeiro Modelo'),
+        ),
+      );
     }
     return _buildGrid(filtered, isPreset: false);
   }
@@ -367,47 +376,6 @@ class _SectionHeader extends StatelessWidget {
           ),
         ],
       ],
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onCreate;
-  const _EmptyState({required this.onCreate});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.library_books_outlined,
-              size: 64,
-              color: VeraProbColors.textDisabled.withValues(alpha: 0.5),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Nenhum modelo customizado ainda.',
-              style: VeraProbTypography.bodyMedium.copyWith(
-                color: VeraProbColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Clone um modelo do sistema ou crie um do zero.',
-              style: VeraProbTypography.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: onCreate,
-              child: const Text('Criar Primeiro Modelo'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

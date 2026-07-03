@@ -57,7 +57,14 @@ class _DefensePortalScreenState extends ConsumerState<DefensePortalScreen> {
               loading: () => const SkeletonListLoader(),
               data: (value) {
                 final filtered = _applyFilters(value);
-                if (filtered.isEmpty) return const _EmptyState();
+                if (filtered.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.shield_outlined,
+                    title: 'Nenhuma justificativa encontrada',
+                    description:
+                        'Nenhuma contestação foi submetida para este período.',
+                  );
+                }
                 return _JustificationTable(rows: filtered);
               },
             ),
@@ -285,35 +292,3 @@ class _JustificationTable extends StatelessWidget {
 }
 
 // ── Empty State ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.shield_outlined,
-            size: 56,
-            color: VeraProbColors.textDisabled,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhuma justificativa encontrada',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Nenhuma contestação foi submetida para este período.',
-            style: TextStyle(color: VeraProbColors.textDisabled),
-          ),
-        ],
-      ),
-    );
-  }
-}

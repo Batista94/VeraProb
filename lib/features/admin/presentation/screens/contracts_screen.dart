@@ -11,6 +11,8 @@ import 'package:veraprob/state/session_recovery.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/widgets/universal_csv_importer.dart';
 
+import 'package:veraprob/presentation/shared/ui/ui.dart';
+
 import 'create_contract_form.dart';
 import 'contract_detail_screen.dart';
 
@@ -43,7 +45,13 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
 
   Widget _buildContractList(List<ContractSummaryView> value) {
     final contracts = _filterContracts(value);
-    if (contracts.isEmpty) return const _EmptyState();
+    if (contracts.isEmpty) {
+      return const EmptyState(
+        icon: Icons.description_outlined,
+        title: 'Nenhum contrato encontrado',
+        description: 'Crie um novo contrato para iniciar a auditoria de SLA.',
+      );
+    }
     return _ContractTable(contracts: contracts);
   }
 
@@ -648,39 +656,6 @@ class _SlaHealthBar extends StatelessWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.description_outlined,
-            size: 80,
-            color: VeraProbColors.border,
-          ),
-          SizedBox(height: 24),
-          Text(
-            'Nenhum contrato encontrado',
-            style: TextStyle(
-              color: VeraProbColors.textPrimary,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Crie um novo contrato para iniciar a auditoria de SLA.',
-            style: TextStyle(color: VeraProbColors.textSecondary),
-          ),
-        ],
-      ),
     );
   }
 }
