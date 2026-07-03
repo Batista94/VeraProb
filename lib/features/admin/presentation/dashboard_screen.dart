@@ -37,7 +37,7 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             FinancialKpiRow(),
-            SizedBox(height: 24),
+            SizedBox(height: VeraProbSpacing.lg),
             _TelemetryConfidenceCard(),
           ],
         );
@@ -53,7 +53,9 @@ class DashboardScreen extends ConsumerWidget {
               curve: Curves.easeInOutCubic,
               child: ref.watch(onboardingBannerVisibleProvider)
                   ? Padding(
-                      padding: const EdgeInsets.only(bottom: 24),
+                      padding: const EdgeInsets.only(
+                        bottom: VeraProbSpacing.lg,
+                      ),
                       child: OnboardingProgressBanner(
                         onNavigate: (destIdx) {
                           context.go(AdminNav.values[destIdx].path);
@@ -66,19 +68,19 @@ class DashboardScreen extends ConsumerWidget {
                   : const SizedBox.shrink(),
             ),
             const _DashboardHeader(),
-            const SizedBox(height: 32),
+            const SizedBox(height: VeraProbSpacing.xl),
             if (isWide)
               const Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(flex: 2, child: leftPane),
-                  SizedBox(width: 24),
+                  SizedBox(width: VeraProbSpacing.lg),
                   Expanded(flex: 1, child: RiskFeedList()),
                 ],
               )
             else ...[
               leftPane,
-              const SizedBox(height: 24),
+              const SizedBox(height: VeraProbSpacing.lg),
               const RiskFeedList(),
             ],
             const SizedBox(height: 40),
@@ -95,8 +97,8 @@ class _DashboardHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-      spacing: 24,
-      runSpacing: 24,
+      spacing: VeraProbSpacing.lg,
+      runSpacing: VeraProbSpacing.lg,
       crossAxisAlignment: WrapCrossAlignment.center,
       alignment: WrapAlignment.spaceBetween,
       children: [

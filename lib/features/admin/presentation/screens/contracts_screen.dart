@@ -224,7 +224,7 @@ class _ContractTable extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         child: LayoutBuilder(
           builder: (context, constraints) => SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -521,7 +521,8 @@ class _ContractTable extends ConsumerWidget {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          color: Colors.white,
+                          // ACCENT-FILL-CONTRAST: dark foreground on accent fill.
+                          color: VeraProbColors.background,
                         ),
                       )
                     : const Text('Clonar'),
