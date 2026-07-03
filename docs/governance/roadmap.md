@@ -1,7 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Revision:** 2026-07-02
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin — Transactional Outbox + dual-path dispatch, HMAC per-org, SSRF-hardened, CRUD endpoints, logs delivery visualizer & reveal-once modal; test-db 1459 PASS, deno 6/0, scanner [GO], lead-reviewer [GO]) · [NEXT: trilha de notificação Resend na resolução]
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** (adoção de tokens VeraProbColors/Typography/Radii/Breakpoints, eliminação de literais na UI, unificação de EmptyState e correção de breakpoints de Stepper) · [NEXT: trilha de notificação Resend na resolução]
 
 ---
 
@@ -61,10 +60,10 @@
 
 ---
 
-## UI/UX General Polish
+## UI/UX General Polish [CONCLUÍDO]
 
-- [ ] **Empty State UX:** Substituir placeholders 'Nenhum registro' por guias contextuais (Empty State Onboarding).
-- [ ] **Skeletal Loading:** Implementar Shimmer Effect em 100% das listas para melhorar a percepção de performance.
+- [x] **Empty State UX:** Substituir placeholders 'Nenhum registro' por guias contextuais (Empty State Onboarding) através da unificação com o componente global `EmptyState` (Fase P6).
+- [x] **Skeletal Loading:** Implementar Shimmer Effect / Skeletons nas listas para melhorar a percepção de performance.
 
 ---
 
