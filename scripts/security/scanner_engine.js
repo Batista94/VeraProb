@@ -384,7 +384,11 @@ const { execSync } = require("child_process");
 
 let fileStatuses = new Map();
 try {
-  const diffOutput = execSync(`git diff --name-status "${baseBranch}"`, { encoding: "utf8" });
+  const diffOutput = execSync(`git diff --name-status "${baseBranch}"`, {
+    encoding: "utf8",
+    // Prevent git CRLF/LF warnings on inherited stderr (Windows Git Bash / Cursor).
+    stdio: ["ignore", "pipe", "ignore"],
+  });
   diffOutput.split("\n").forEach(line => {
     const parts = line.trim().split(/\s+/);
     if (parts.length >= 2) {

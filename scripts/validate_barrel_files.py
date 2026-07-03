@@ -24,41 +24,22 @@ BLUE = '\033[0;34m'
 BOLD = '\033[1m'
 NC = '\033[0m'
 
-def has_stdin_data() -> bool:
+def read_stdin_file_list():
+    """Read changed file paths piped from pr_full_scanner.sh (bash wrapper)."""
     if sys.stdin.isatty():
-        return False
-    if sys.platform == "win32":
-        try:
-            import msvcrt
-            import ctypes
-            handle = msvcrt.get_osfhandle(sys.stdin.fileno())
-            total_bytes = ctypes.c_ulong(0)
-            res = ctypes.windll.kernel32.PeekNamedPipe(
-                handle, None, 0, None, ctypes.byref(total_bytes), None
-            )
-            return res != 0 and total_bytes.value > 0
-        except Exception:
-            return False
-    else:
-        try:
-            import select
-            r, _, _ = select.select([sys.stdin], [], [], 0.05)
-            return bool(r)
-        except Exception:
-            return False
+        return None
+    try:
+        data = sys.stdin.read()
+    except Exception:
+        return None
+    if not data or not data.strip():
+        return None
+    files = [f.replace("\\", "/").strip() for f in data.splitlines() if f.strip()]
+    files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
+    files = [f for f in files if not any(p in f for p in IGNORE_PATTERNS)]
+    return list(set(files))
 
 def get_changed_files(branch="main"):
-    # Priority 1: Stdin (passed from bash wrapper)
-    if has_stdin_data():
-        try:
-            stdin_data = sys.stdin.read().strip()
-            if stdin_data:
-                files = [f.replace("\\", "/").strip() for f in stdin_data.splitlines() if f.strip()]
-                files = [f for f in files if f.startswith(LIB_DIR) and f.endswith(".dart")]
-                return list(set([f for f in files if not any(p in f for p in IGNORE_PATTERNS)]))
-        except Exception:
-            pass
-
     files = []
 
     # Get staged files (critical for pre-commit hook context)
@@ -243,10 +224,14 @@ def main():
                         all_files.append(os.path.join(root, f).replace("\\", "/"))
             changed_files = all_files
         else:
-            changed_files = get_changed_files(args.branch)
-            
+            stdin_files = read_stdin_file_list()
+            if stdin_files is not None:
+                changed_files = stdin_files
+            else:
+                changed_files = get_changed_files(args.branch)
+
         if not changed_files:
-            # Silent success if no files to check
+            print(f"{GREEN}  No lib/*.dart files in scope — barrel validation skipped (INV-13).{NC}")
             sys.exit(0)
             
         print(f"  Scanning {len(changed_files)} files for barrel violations...")

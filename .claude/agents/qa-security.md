@@ -48,3 +48,7 @@ See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) f
 - Lesson 7 — Regression Ack Protocol (`// pr_scanner: ignore-regression` only after Council review; auto-ack = process violation).
 
 **INV-6 dual-guard (MFA Bypass Gating):** `EnvironmentConfig.skipMfaForSuperAdmin = isDev && _skipMfaDev`. No production code path may satisfy both; CI/CD pipelines MUST NOT set `SKIP_MFA_DEV` outside `env=dev`.
+
+**Global Catalog RLS Pattern:** Shared reference tables (`tenant_permissions`, `dispute_reason_codes`) use nullable `organization_id` with `NULL` = global row. Policy: `organization_id IS NULL OR org matches JWT` — never `USING(true)`. SSOT: `20260813000004_dispute_reason_codes.sql`.
+
+**pgTAP 1:1 governance:** Each migration timestamp requires its own `supabase/tests/{timestamp}*_test.sql` in the PR — do not consolidate cross-migration tests into a single file.

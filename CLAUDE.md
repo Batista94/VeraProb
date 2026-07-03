@@ -94,5 +94,4 @@ Loaded when Claude edits matching files:
 ## PERFORMANCE & BUDGET
 
 - Models: Sonnet (dev) | Opus (architecture/review).
-- Memory: prune history. Roadmap → `ROADMAP_HISTORY.md`.
 - Tokens: tables > bullets > paragraphs.
