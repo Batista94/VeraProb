@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/permissions_sync.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -289,6 +290,10 @@ class AdminLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep fine-grained permission claims fresh while the tenant shell is
+    // mounted (Pilar 2 §2.3): Realtime push + bounded current_perms_v() poll.
+    ref.watch(permissionsSyncProvider);
+
     final selectedIndex = navigationShell.currentIndex;
     final railDestinations = _buildDestinations(ref);
     final bottomDestinations = _buildBottomDestinations(ref);

@@ -4631,6 +4631,7 @@ export type Database = {
           key: string;
           label_pt: string;
           module: string;
+          organization_id: string | null;
         };
         Insert: {
           action: string;
@@ -4641,6 +4642,7 @@ export type Database = {
           key: string;
           label_pt: string;
           module: string;
+          organization_id?: string | null;
         };
         Update: {
           action?: string;
@@ -4651,8 +4653,31 @@ export type Database = {
           key?: string;
           label_pt?: string;
           module?: string;
+          organization_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       tenant_role_permissions: {
         Row: {
@@ -5603,6 +5628,10 @@ export type Database = {
         Args: { p_grants: Json };
         Returns: boolean;
       };
+      _rbac_live_check_permission: {
+        Args: { p_perm: string };
+        Returns: undefined;
+      };
       _rbac_validate_grants: { Args: { p_grants: Json }; Returns: undefined };
       _resolve_dispute_sla_days: {
         Args: { p_contract_id: string; p_organization_id: string };
@@ -5937,6 +5966,7 @@ export type Database = {
         Args: { p_description?: string; p_name: string; p_perm_grants?: Json };
         Returns: string;
       };
+      current_perms_v: { Args: never; Returns: number };
       custom_access_token_hook: { Args: { event: Json }; Returns: Json };
       deactivate_member: {
         Args: { p_target_user_id: string };
@@ -6467,6 +6497,10 @@ export type Database = {
       };
       revoke_tenant_role: {
         Args: { p_role_id: string; p_target_user: string };
+        Returns: undefined;
+      };
+      revoke_user_sessions: {
+        Args: { p_target_user: string };
         Returns: undefined;
       };
       schedule_contractual_rule: {

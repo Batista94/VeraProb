@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/infrastructure/auth/supabase_auth_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 
@@ -79,6 +80,57 @@ final currentUserRoleProvider = Provider<UserRole>((ref) {
   if (roleString == 'TENANT_ADMIN') return UserRole.admin;
   if (roleString == 'AUDITOR') return UserRole.auditor;
   return UserRole.operator;
+});
+
+/// Fine-grained permission keys (`module:action`) from the JWT claim
+/// `app_metadata.permissions`, injected by `custom_access_token_hook`.
+///
+/// Additive layer over [currentUserRoleProvider] (coarse trust root): this
+/// governs fine gating. Derives from [authStateProvider], so it recomputes on
+/// every `AuthChangeEvent` — a user switch zeroes the set automatically (no
+/// stale RAM cache). Boundary parse to `Set<String>` (INV-7 — no `dynamic`).
+final currentPermissionsProvider = Provider<Set<String>>((ref) {
+  final session = ref.watch(authStateProvider).value?.session;
+  final raw = _jwtAppMeta(session)?['permissions'];
+  if (raw is! List) return const <String>{};
+  return raw.whereType<String>().toSet();
+});
+
+/// ABAC-lite resource scopes from `app_metadata.perm_scopes`.
+///
+/// Maps a permission key to the allowlist of resource IDs it is restricted to.
+/// A permission present in [currentPermissionsProvider] but ABSENT here is
+/// unrestricted within the tenant (mirrors `public.has_permission_on`).
+final permScopesProvider = Provider<Map<String, Set<String>>>((ref) {
+  final session = ref.watch(authStateProvider).value?.session;
+  final raw = _jwtAppMeta(session)?['perm_scopes'];
+  if (raw is! Map) return const <String, Set<String>>{};
+  final result = <String, Set<String>>{};
+  raw.forEach((key, value) {
+    if (key is String && value is List) {
+      result[key] = value.whereType<String>().toSet();
+    }
+  });
+  return result;
+});
+
+/// Permissions version tag (`app_metadata.perms_v`) carried by the current
+/// access token — an epoch of `max(tenant_roles.updated_at)` over the user's
+/// active roles. Compared against `current_perms_v()` to detect stale claims.
+final tokenPermsVersionProvider = Provider<int>((ref) {
+  final session = ref.watch(authStateProvider).value?.session;
+  final raw = _jwtAppMeta(session)?['perms_v'];
+  return raw is num ? raw.toInt() : 0;
+});
+
+/// Fine-grained permission resolver ([PermissionService]) built from the
+/// current claims. Widgets call `hasPermission()` / `hasPermissionOn()` for
+/// UX gating; parity with the DB helpers is enforced by shared test cases.
+final permissionServiceProvider = Provider<PermissionService>((ref) {
+  return PermissionService(
+    permissions: ref.watch(currentPermissionsProvider),
+    scopes: ref.watch(permScopesProvider),
+  );
 });
 
 /// Current operator Display Name.
