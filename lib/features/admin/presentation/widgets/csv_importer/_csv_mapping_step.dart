@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/enums/csv_target_field.dart'; // pr_scanner: ignore
 import 'package:veraprob/features/admin/presentation/utils/csv_target_field_labels.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_theme.dart';
@@ -190,7 +191,7 @@ class _MappingRow extends StatelessWidget {
       decoration: CsvT.cardDecoration(radius: CsvT.radiusChip),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final narrow = constraints.maxWidth < 480;
+          final narrow = constraints.maxWidth < VeraProbBreakpoints.compact;
           final content = [
             // CSV header label + preview
             Expanded(

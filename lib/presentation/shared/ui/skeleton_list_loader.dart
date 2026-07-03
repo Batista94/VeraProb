@@ -32,7 +32,7 @@ class SkeletonListLoader extends StatelessWidget {
                     height: 16,
                     decoration: BoxDecoration(
                       color: VeraProbColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                       border: Border.all(
                         color: VeraProbColors.border.withValues(alpha: 0.4),
                       ),
@@ -44,7 +44,7 @@ class SkeletonListLoader extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       color: VeraProbColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                       border: Border.all(
                         color: VeraProbColors.border.withValues(alpha: 0.3),
                       ),

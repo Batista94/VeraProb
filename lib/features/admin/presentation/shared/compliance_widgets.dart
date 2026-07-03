@@ -53,7 +53,7 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -109,7 +109,7 @@ class _EvidenceComplianceChecklistState
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -147,7 +147,7 @@ class _EvidenceComplianceChecklistState
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: VeraProbRadii.smAll,
               child: LinearProgressIndicator(
                 value: progressFraction,
                 minHeight: 3,

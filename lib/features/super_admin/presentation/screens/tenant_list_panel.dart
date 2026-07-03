@@ -67,8 +67,8 @@ class _TenantListPanelState extends ConsumerState<TenantListPanel> {
                   horizontal: 12,
                   vertical: 10,
                 ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
+                border: const OutlineInputBorder(
+                  borderRadius: VeraProbRadii.mdAll,
                 ),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(

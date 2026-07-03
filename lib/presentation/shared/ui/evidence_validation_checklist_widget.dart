@@ -54,7 +54,7 @@ class EvidenceValidationChecklistWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
         border: Border.all(color: VeraProbColors.border),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +196,7 @@ class _FailureBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.12),
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

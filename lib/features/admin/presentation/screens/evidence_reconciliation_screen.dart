@@ -39,7 +39,13 @@ class EvidenceReconciliationScreen extends ConsumerWidget {
                 asyncValue: orphansAsync,
                 loading: () => const SkeletonListLoader(),
                 data: (value) => value.isEmpty
-                    ? const _EmptyState()
+                    ? const EmptyState(
+                        icon: Icons.check_circle_outline,
+                        iconColor: VeraProbColors.success,
+                        title: 'Nenhuma evidência órfã',
+                        description:
+                            'Todas as evidências foram vinculadas a execuções.',
+                      )
                     : ListView.separated(
                         itemCount: value.length,
                         separatorBuilder: (_, index) =>
@@ -80,7 +86,7 @@ class _Header extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: VeraProbRadii.lgAll,
             ),
             child: Text(
               '$count órfã${count > 1 ? 's' : ''}',
@@ -284,7 +290,7 @@ class _TypeBadge extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Icon(icon, color: color, size: 20),
     );
@@ -306,40 +312,6 @@ class _MetaChip extends StatelessWidget {
         const SizedBox(width: 4),
         Text(label, style: VeraProbTypography.caption),
       ],
-    );
-  }
-}
-
-// ── Empty State ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.check_circle_outline,
-            size: 56,
-            color: VeraProbColors.success,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhuma evidência órfã',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Todas as evidências foram vinculadas a execuções.',
-            style: TextStyle(color: VeraProbColors.textDisabled),
-          ),
-        ],
-      ),
     );
   }
 }

@@ -184,9 +184,9 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
 
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: VeraProbColors.border),
+      shape: const RoundedRectangleBorder(
+        borderRadius: VeraProbRadii.xlAll,
+        side: BorderSide(color: VeraProbColors.border),
       ),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
@@ -205,7 +205,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: VeraProbColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: VeraProbRadii.mdAll,
                         ),
                         child: const Icon(
                           Icons.description_rounded,
@@ -244,7 +244,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                     ),
                     decoration: BoxDecoration(
                       color: VeraProbColors.primary.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: VeraProbRadii.mdAll,
                       border: Border.all(
                         color: VeraProbColors.primary.withValues(alpha: 0.25),
                       ),
@@ -278,7 +278,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: VeraProbColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: VeraProbRadii.mdAll,
                         border: Border.all(
                           color: VeraProbColors.error.withValues(alpha: 0.3),
                         ),
@@ -398,7 +398,7 @@ class _CreateContractFormState extends ConsumerState<CreateContractForm> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: VeraProbColors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: VeraProbRadii.mdAll,
                         border: Border.all(
                           color: VeraProbColors.error.withValues(alpha: 0.3),
                         ),
@@ -483,7 +483,7 @@ class _DatePickerField extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: VeraProbRadii.mdAll,
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,

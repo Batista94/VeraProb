@@ -132,7 +132,7 @@ class _ZoneList extends ConsumerWidget {
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: VeraProbColors.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Icon(z.type.icon, color: VeraProbColors.primary, size: 20),
           ),

@@ -108,9 +108,9 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
             margin: const EdgeInsets.only(top: 10, bottom: 4),
             width: 36,
             height: 4,
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: VeraProbColors.border,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: VeraProbRadii.smAll,
             ),
           ),
           // ── Header ──
@@ -139,7 +139,7 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
                   ),
                   decoration: BoxDecoration(
                     color: VeraProbColors.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: VeraProbRadii.lgAll,
                   ),
                   child: Text(
                     _headerLabel,
@@ -215,7 +215,7 @@ class _EvidenceDossierModalState extends ConsumerState<EvidenceDossierModal> {
 
                 // ── Photo/document evidence → CachedNetworkImage ──
                 final image = ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: VeraProbRadii.mdAll,
                   child: CachedNetworkImage(
                     imageUrl: url,
                     httpHeaders: {'Authorization': 'Bearer $accessToken'},

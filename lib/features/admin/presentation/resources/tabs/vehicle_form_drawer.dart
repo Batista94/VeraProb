@@ -149,7 +149,7 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
                         color: colorScheme.primaryContainer.withValues(
                           alpha: 0.4,
                         ),
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: VeraProbRadii.mdAll,
                       ),
                       child: Icon(
                         Icons.directions_bus,

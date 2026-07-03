@@ -237,7 +237,7 @@ class _StepPill extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: VeraProbRadii.xlAll,
         border: Border.all(color: borderColor),
       ),
       child: Row(

@@ -45,7 +45,7 @@ class DeclarePlanDialogHeader extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: VeraProbColors.info.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: VeraProbRadii.lgAll,
                 border: Border.all(
                   color: VeraProbColors.info.withValues(alpha: 0.4),
                 ),

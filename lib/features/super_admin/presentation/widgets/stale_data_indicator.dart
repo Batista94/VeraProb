@@ -36,7 +36,7 @@ class StaleDataIndicator extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.9),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: VeraProbRadii.smAll,
             ),
             // ACCENT-FILL-CONTRAST: dark foreground on warning fill.
             child: const Row(

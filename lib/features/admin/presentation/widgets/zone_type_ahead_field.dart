@@ -199,7 +199,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
           alignment: Alignment.topLeft,
           child: Material(
             elevation: 4,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             child: ConstrainedBox(
               constraints: BoxConstraints(
                 maxHeight: 280,
@@ -255,7 +255,7 @@ class _ZoneTypeAheadFieldState extends State<ZoneTypeAheadField> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: VeraProbColors.warning.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(
           color: VeraProbColors.warning.withValues(alpha: 0.35),
         ),

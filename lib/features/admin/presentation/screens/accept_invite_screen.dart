@@ -250,7 +250,8 @@ class _AcceptInviteScreenState extends ConsumerState<AcceptInviteScreen> {
                     height: 18,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      // ACCENT-FILL-CONTRAST: dark fg on fill.
+                      color: VeraProbColors.background,
                     ),
                   )
                 : const Text('Ativar Acesso'),

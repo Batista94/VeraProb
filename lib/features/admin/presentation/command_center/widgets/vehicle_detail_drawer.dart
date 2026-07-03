@@ -134,7 +134,7 @@ class _DrawerHeader extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: trip.status.color,
-              borderRadius: BorderRadius.circular(2),
+              borderRadius: VeraProbRadii.smAll,
             ),
           ),
           const SizedBox(width: 10),
@@ -568,11 +568,11 @@ class _ActionButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: enabled ? onTap : null,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             border: Border.all(
               color: effectiveColor.withValues(alpha: enabled ? 0.4 : 0.2),
             ),

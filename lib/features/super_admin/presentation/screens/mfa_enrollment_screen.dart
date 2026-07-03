@@ -253,8 +253,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         // QR Code
         Container(
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(
+          decoration: const BoxDecoration(
+            color: Color(
               0xFFFFFFFF,
             ), // QR code requires white background for scanner readability
             borderRadius: VeraProbRadii.lgAll,
@@ -275,7 +275,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Row(
@@ -343,9 +343,9 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
         .map(
           (code) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: VeraProbColors.background,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: VeraProbRadii.smAll,
             ),
             child: Text(code, style: _kMonoCode),
           ),
@@ -371,7 +371,7 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Wrap(spacing: 12, runSpacing: 8, children: codeWidgets),
@@ -415,8 +415,8 @@ class _MfaEnrollmentScreenState extends ConsumerState<MfaEnrollmentScreen> {
             onPressed: _codesAcknowledged ? _navigateToShell : null,
             style: ElevatedButton.styleFrom(
               backgroundColor: VeraProbColors.superAdminSurface,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+              shape: const RoundedRectangleBorder(
+                borderRadius: VeraProbRadii.mdAll,
               ),
             ),
             child: const Text('CONTINUAR', style: _kCtaButtonText),

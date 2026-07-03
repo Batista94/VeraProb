@@ -117,7 +117,7 @@ class KpiBar extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: VeraProbColors.delayed.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: VeraProbRadii.smAll,
                 ),
                 child: Text(
                   'Atraso médio: ${summary.avgDelayMinutes} min',
@@ -163,14 +163,14 @@ class _KpiChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: VeraProbRadii.mdAll,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
           color: isSelected
               ? color.withValues(alpha: 0.25)
               : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(
             color: isSelected
                 ? color.withValues(alpha: 0.8)

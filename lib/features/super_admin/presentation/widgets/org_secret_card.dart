@@ -145,7 +145,7 @@ class _OrgSecretCardState extends ConsumerState<OrgSecretCard> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: VeraProbColors.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(color: VeraProbColors.warning),
                 ),
                 child: Column(

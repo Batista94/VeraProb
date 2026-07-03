@@ -196,7 +196,7 @@ class _RevealSecretModalState extends ConsumerState<RevealSecretModal>
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.warning),
       ),
       child: const Row(
@@ -237,7 +237,7 @@ class _RevealSecretModalState extends ConsumerState<RevealSecretModal>
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: VeraProbColors.surface,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Stack(
@@ -256,7 +256,7 @@ class _RevealSecretModalState extends ConsumerState<RevealSecretModal>
                   child: GestureDetector(
                     onTap: () => setState(() => _secretVisible = true),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                       child: Container(
                         color: VeraProbColors.surface.withValues(alpha: 0.95),
                         alignment: Alignment.center,

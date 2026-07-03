@@ -46,7 +46,7 @@ class _ReverseGeocodedAddressState
         color: _isHovered && isInteractive
             ? VeraProbColors.primary.withValues(alpha: 0.06)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

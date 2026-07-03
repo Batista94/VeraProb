@@ -199,9 +199,10 @@ class _SlaTemplateLibraryScreenState
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 900
+        final crossAxisCount =
+            constraints.maxWidth >= VeraProbBreakpoints.medium
             ? 3
-            : constraints.maxWidth > 650
+            : constraints.maxWidth >= VeraProbBreakpoints.compact
             ? 2
             : 1;
         return GridView.builder(
@@ -363,9 +364,9 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: VeraProbRadii.lgAll,
             ),
             child: Text(
               '$count',

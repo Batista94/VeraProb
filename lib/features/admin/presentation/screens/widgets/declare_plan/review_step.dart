@@ -83,9 +83,9 @@ class ReviewStep extends ConsumerWidget {
             child: Card(
               color: VeraProbColors.info.withValues(alpha: 0.10),
               elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: VeraProbColors.border),
+              shape: const RoundedRectangleBorder(
+                borderRadius: VeraProbRadii.mdAll,
+                side: BorderSide(color: VeraProbColors.border),
               ),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -251,7 +251,7 @@ class _RiskSummary extends ConsumerWidget {
     final hasBaseTripValue = allTurns.any((d) => d.baseValueCents > 0);
     final cardWidth =
         (MediaQuery.sizeOf(context).width - 80) /
-        (MediaQuery.sizeOf(context).width < 600 ? 1 : 2);
+        (VeraProbBreakpoints.isCompact(context) ? 1 : 2);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

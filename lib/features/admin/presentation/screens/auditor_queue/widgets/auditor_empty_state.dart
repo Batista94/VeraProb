@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 
@@ -9,31 +10,11 @@ class AuditorEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.gavel_outlined,
-            size: 56,
-            color: VeraProbColors.textDisabled,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Nenhum veredito pendente',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Todos os vereditos foram selados ou recusados.',
-            style: TextStyle(color: VeraProbColors.textDisabled),
-          ),
-          const SizedBox(height: 24),
-          const SimulateButton(),
-        ],
-      ),
+    return const EmptyState(
+      icon: Icons.gavel_outlined,
+      title: 'Nenhum veredito pendente',
+      description: 'Todos os vereditos foram selados ou recusados.',
+      action: SimulateButton(),
     );
   }
 }

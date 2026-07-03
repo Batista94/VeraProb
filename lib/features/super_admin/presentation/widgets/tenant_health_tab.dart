@@ -138,9 +138,9 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
               const SizedBox(height: VeraProbSpacing.md),
               Container(
                 height: 60,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: VeraProbColors.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                 ),
               ),
               const SizedBox(height: VeraProbSpacing.lg),
@@ -153,9 +153,9 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
               const SizedBox(height: VeraProbSpacing.md),
               Container(
                 height: 60,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   color: VeraProbColors.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                 ),
               ),
             ],

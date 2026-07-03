@@ -106,7 +106,7 @@ class _JustificationSubmissionFormState
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 520, maxHeight: 700),
         child: Column(
@@ -223,9 +223,10 @@ class _JustificationSubmissionFormState
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: _submitting ? null : _submit,
+                  // ACCENT-FILL-CONTRAST: dark fg on fill.
                   style: FilledButton.styleFrom(
                     backgroundColor: VeraProbColors.primary,
-                    foregroundColor: Colors.black,
+                    foregroundColor: VeraProbColors.background,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                   child: _submitting

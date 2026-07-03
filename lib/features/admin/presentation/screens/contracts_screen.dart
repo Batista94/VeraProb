@@ -572,7 +572,7 @@ class _FilterChip extends StatelessWidget {
       side: BorderSide(
         color: selected ? effectiveColor : VeraProbColors.border,
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
     );
   }
 }
@@ -597,7 +597,7 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
@@ -644,7 +644,7 @@ class _SlaHealthBar extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: VeraProbRadii.smAll,
                 child: LinearProgressIndicator(
                   value: pct / 100,
                   minHeight: 4,

@@ -80,11 +80,11 @@ class VeraProbRadii {
   static const double xl = 16.0;
   static const double pill = 999.0;
 
-  static BorderRadius get smAll => BorderRadius.circular(sm);
-  static BorderRadius get mdAll => BorderRadius.circular(md);
-  static BorderRadius get lgAll => BorderRadius.circular(lg);
-  static BorderRadius get xlAll => BorderRadius.circular(xl);
-  static BorderRadius get pillAll => BorderRadius.circular(pill);
+  static const BorderRadius smAll = BorderRadius.all(Radius.circular(sm));
+  static const BorderRadius mdAll = BorderRadius.all(Radius.circular(md));
+  static const BorderRadius lgAll = BorderRadius.all(Radius.circular(lg));
+  static const BorderRadius xlAll = BorderRadius.all(Radius.circular(xl));
+  static const BorderRadius pillAll = BorderRadius.all(Radius.circular(pill));
 }
 
 /// Motion tokens — duration and easing constants.
@@ -304,12 +304,12 @@ class AppTheme {
         centerTitle: false,
         toolbarHeight: 64,
       ),
-      cardTheme: CardThemeData(
+      cardTheme: const CardThemeData(
         color: VeraProbColors.surface,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: VeraProbRadii.lgAll,
-          side: const BorderSide(color: VeraProbColors.border, width: 1),
+          side: BorderSide(color: VeraProbColors.border, width: 1),
         ),
         margin: EdgeInsets.zero,
       ),
@@ -337,15 +337,15 @@ class AppTheme {
           color: VeraProbColors.primary,
         ),
         brightness: Brightness.dark,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: VeraProbRadii.mdAll,
-          side: const BorderSide(color: VeraProbColors.border),
+          side: BorderSide(color: VeraProbColors.border),
         ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: VeraProbColors.surface,
         elevation: 8,
-        shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
+        shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
         titleTextStyle: VeraProbTypography.sectionTitle.copyWith(fontSize: 18),
         contentTextStyle: VeraProbTypography.bodyMedium,
       ),
@@ -354,7 +354,7 @@ class AppTheme {
         contentTextStyle: VeraProbTypography.bodyMedium,
         actionTextColor: VeraProbColors.primary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.mdAll),
+        shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.mdAll),
       ),
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((states) {
@@ -378,7 +378,7 @@ class AppTheme {
           return Colors.transparent;
         }),
         side: const BorderSide(color: VeraProbColors.textDisabled),
-        shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.smAll),
+        shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.smAll),
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.all(VeraProbColors.primary),
@@ -390,20 +390,17 @@ class AppTheme {
           horizontal: 16,
           vertical: 16,
         ),
-        border: OutlineInputBorder(
+        border: const OutlineInputBorder(
           borderRadius: VeraProbRadii.mdAll,
-          borderSide: const BorderSide(color: VeraProbColors.border),
+          borderSide: BorderSide(color: VeraProbColors.border),
         ),
-        enabledBorder: OutlineInputBorder(
+        enabledBorder: const OutlineInputBorder(
           borderRadius: VeraProbRadii.mdAll,
-          borderSide: const BorderSide(color: VeraProbColors.border),
+          borderSide: BorderSide(color: VeraProbColors.border),
         ),
-        focusedBorder: OutlineInputBorder(
+        focusedBorder: const OutlineInputBorder(
           borderRadius: VeraProbRadii.mdAll,
-          borderSide: const BorderSide(
-            color: VeraProbColors.primary,
-            width: 1.5,
-          ),
+          borderSide: BorderSide(color: VeraProbColors.primary, width: 1.5),
         ),
         labelStyle: VeraProbTypography.fieldLabel,
         hintStyle: VeraProbTypography.caption,
@@ -413,7 +410,9 @@ class AppTheme {
           backgroundColor: VeraProbColors.primary,
           foregroundColor: VeraProbColors.background,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.mdAll),
+          shape: const RoundedRectangleBorder(
+            borderRadius: VeraProbRadii.mdAll,
+          ),
           elevation: 0,
           textStyle: VeraProbTypography.badge.copyWith(
             fontSize: 13,
@@ -425,7 +424,9 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: VeraProbColors.textPrimary,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.mdAll),
+          shape: const RoundedRectangleBorder(
+            borderRadius: VeraProbRadii.mdAll,
+          ),
           side: const BorderSide(color: VeraProbColors.border),
           textStyle: VeraProbTypography.badge.copyWith(
             fontSize: 13,
@@ -466,9 +467,9 @@ class AppTheme {
         headerBackgroundColor: VeraProbColors.surface,
         headerForegroundColor: VeraProbColors.textPrimary,
         surfaceTintColor: Colors.transparent,
-        shape: RoundedRectangleBorder(
+        shape: const RoundedRectangleBorder(
           borderRadius: VeraProbRadii.xlAll,
-          side: const BorderSide(color: VeraProbColors.border, width: 1),
+          side: BorderSide(color: VeraProbColors.border, width: 1),
         ),
         dayStyle: VeraProbTypography.bodyMedium,
         weekdayStyle: VeraProbTypography.caption,

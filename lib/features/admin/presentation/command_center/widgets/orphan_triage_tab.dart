@@ -76,7 +76,7 @@ class _ShadowCard extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(

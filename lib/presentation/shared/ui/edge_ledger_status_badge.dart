@@ -105,12 +105,12 @@ class _BadgeChip extends StatelessWidget {
       button: onTap != null,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: VeraProbRadii.xlAll,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: VeraProbRadii.xlAll,
             border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Row(
@@ -145,7 +145,7 @@ class _SyncingChip extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
           color: VeraProbColors.info.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: VeraProbRadii.xlAll,
           border: Border.all(color: VeraProbColors.info.withValues(alpha: 0.3)),
         ),
         child: const Row(

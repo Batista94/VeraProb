@@ -166,7 +166,7 @@ class _ForensicDossierModalState extends ConsumerState<ForensicDossierModal>
 
     return Dialog(
       backgroundColor: VeraProbColors.background,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
       child: Container(
         width: 1100,
         constraints: BoxConstraints(
@@ -261,7 +261,7 @@ class _DossierHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: VeraProbRadii.smAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: Text(
@@ -423,7 +423,7 @@ class _EvidenceManifestCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -467,7 +467,7 @@ class _EvidenceManifestCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: badgeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: VeraProbRadii.lgAll,
                   ),
                   child: Row(
                     children: [
@@ -546,7 +546,7 @@ class _RawEvidenceCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -771,7 +771,7 @@ class _CustodyAuthenticView extends ConsumerWidget {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: VeraProbColors.success.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(
               color: VeraProbColors.success.withValues(alpha: 0.3),
             ),
@@ -809,7 +809,7 @@ class _CustodyAuthenticView extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: VeraProbColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Column(
@@ -855,7 +855,7 @@ class _CustodyAuthenticView extends ConsumerWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: Row(
@@ -894,7 +894,7 @@ class _CustodyAuthenticView extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: VeraProbColors.surfaceElevated,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(color: VeraProbColors.border),
           ),
           child: Column(
@@ -1006,7 +1006,7 @@ class _FrozenRuleView extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: Column(
@@ -1032,9 +1032,9 @@ class _FrozenRuleView extends StatelessWidget {
                         horizontal: 6,
                         vertical: 2,
                       ),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: VeraProbColors.border,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: VeraProbRadii.smAll,
                       ),
                       child: Text(
                         'v${rule.ruleVersion}',
@@ -1065,7 +1065,7 @@ class _RuleBlockedView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
@@ -1106,7 +1106,7 @@ class _TamperedView extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: VeraProbColors.error.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(
               color: VeraProbColors.error.withValues(alpha: 0.3),
             ),

@@ -7,14 +7,18 @@ import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
 
 const Color _kImpersonationBannerColor = Color(0xFFB00020);
+
+// Security banner: pure white on #B00020 (7.7:1) for maximum visibility.
+// Deliberately outside the theme so impersonation is unmistakable.
+const Color _kBannerForeground = Colors.white; // raw-color: security banner
 const TextStyle _kImpersonationTextStyle = TextStyle(
-  color: Colors.white,
+  color: _kBannerForeground,
   fontFamily: 'monospace',
   fontWeight: FontWeight.bold,
   fontSize: 13,
 );
 const TextStyle _kImpersonationTimerStyle = TextStyle(
-  color: Colors.white,
+  color: _kBannerForeground,
   fontFamily: 'monospace',
   fontWeight: FontWeight.bold,
   fontSize: 14,
@@ -120,7 +124,7 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const Icon(Icons.visibility, color: Colors.white, size: 20),
+          const Icon(Icons.visibility, color: _kBannerForeground, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -133,8 +137,8 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(4),
+              color: _kBannerForeground.withValues(alpha: 0.2),
+              borderRadius: VeraProbRadii.smAll,
             ),
             child: Text(
               _formatDuration(_remaining),
@@ -150,14 +154,14 @@ class _ImpersonationBannerState extends ConsumerState<ImpersonationBanner> {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.white,
+                      color: _kBannerForeground,
                     ),
                   )
                 : const Icon(Icons.stop_circle_outlined, size: 16),
             label: const Text('Encerrar Sessão'),
             style: TextButton.styleFrom(
-              foregroundColor: Colors.white,
-              backgroundColor: Colors.white.withValues(alpha: 0.15),
+              foregroundColor: _kBannerForeground,
+              backgroundColor: _kBannerForeground.withValues(alpha: 0.15),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               textStyle: _kImpersonationButtonTextStyle,
             ),

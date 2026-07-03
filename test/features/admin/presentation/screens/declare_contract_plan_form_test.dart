@@ -1428,13 +1428,13 @@ void _testReturnShiftLogic() {
 
 void _testTenantIsolationAndResponsive() {
   // ── Group 20: Stepper type — horizontal vs vertical (UI Responsiveness) ───
-  // The stepper layout toggles at width=720. Tests cover both sides of the
+  // The stepper layout toggles at width=900. Tests cover both sides of the
   // threshold to guard against regression in the MediaQuery branch.
   group('Stepper type — horizontal vs vertical (UI Responsiveness)', () {
     testWidgets(
-      'vertical stepper rendered when width is 600 (below 720 threshold)',
+      'vertical stepper rendered when width is 899 (below 900 threshold)',
       (tester) async {
-        tester.view.physicalSize = const Size(600, 900);
+        tester.view.physicalSize = const Size(899, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
@@ -1472,9 +1472,9 @@ void _testTenantIsolationAndResponsive() {
     );
 
     testWidgets(
-      'horizontal stepper rendered when width is 800 (above 720 threshold)',
+      'horizontal stepper rendered when width is 1000 (above 900 threshold)',
       (tester) async {
-        tester.view.physicalSize = const Size(800, 900);
+        tester.view.physicalSize = const Size(1000, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 
@@ -1502,11 +1502,11 @@ void _testTenantIsolationAndResponsive() {
     );
 
     testWidgets(
-      'horizontal stepper rendered at exactly 720px — threshold is exclusive (<)',
+      'horizontal stepper rendered at exactly 900px — threshold is exclusive (<)',
       (tester) async {
-        // The source uses width < 720 → vertical, so at exactly 720 the result
+        // The source uses < 900 → vertical, so at exactly 900 the result
         // is horizontal. This pins the boundary condition.
-        tester.view.physicalSize = const Size(720, 900);
+        tester.view.physicalSize = const Size(900, 900);
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.resetPhysicalSize);
 

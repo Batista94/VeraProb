@@ -176,7 +176,7 @@ class _ReasonBanner extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: VeraProbColors.info.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.info.withValues(alpha: 0.3)),
       ),
       child: Row(
@@ -214,7 +214,7 @@ class _ContextView extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: VeraProbColors.superAdminSurface.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.5)),
       ),
       child: Column(

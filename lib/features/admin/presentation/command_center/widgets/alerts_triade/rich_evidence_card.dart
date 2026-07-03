@@ -50,7 +50,7 @@ class RichEvidenceCard extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -413,7 +413,7 @@ class _EvidencePeekWidget extends ConsumerWidget {
   static Widget _placeholder() => Container(
     width: _kSize,
     height: _kSize,
-    decoration: BoxDecoration(
+    decoration: const BoxDecoration(
       color: VeraProbColors.surfaceElevated,
       borderRadius: VeraProbRadii.mdAll,
     ),

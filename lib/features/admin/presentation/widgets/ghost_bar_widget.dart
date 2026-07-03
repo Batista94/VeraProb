@@ -114,7 +114,7 @@ class _GhostColumn extends StatelessWidget {
                       color: VeraProbColors.textDisabled.withValues(
                         alpha: 0.25,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                     ),
                   ),
                   // Foreground bar — violation magnitude
@@ -125,7 +125,7 @@ class _GhostColumn extends StatelessWidget {
                       color: foregroundColor.withValues(
                         alpha: isThreshold ? 0.4 : 0.85,
                       ),
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                     ),
                   ),
                 ],

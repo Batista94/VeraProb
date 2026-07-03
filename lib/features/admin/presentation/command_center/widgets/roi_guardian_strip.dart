@@ -105,7 +105,7 @@ class _RoiAtualMetric extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
             border: Border.all(color: _kLabelColor.withValues(alpha: 0.4)),
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
           ),
           child: const Column(
             mainAxisSize: MainAxisSize.min,

@@ -164,7 +164,7 @@ class _AmendmentNode extends StatelessWidget {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: VeraProbColors.surface,
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(
                     color: isFirst
                         ? VeraProbColors.primary.withValues(alpha: 0.4)
@@ -197,7 +197,7 @@ class _AmendmentNode extends StatelessWidget {
                               color: VeraProbColors.primary.withValues(
                                 alpha: 0.12,
                               ),
-                              borderRadius: BorderRadius.circular(3),
+                              borderRadius: VeraProbRadii.smAll,
                             ),
                             child: Text(
                               'VIGENTE',

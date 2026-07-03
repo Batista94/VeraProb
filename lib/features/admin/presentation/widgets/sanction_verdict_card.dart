@@ -2053,7 +2053,7 @@ class _DisputeSlaChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2492,7 +2492,7 @@ class _PortalProvenanceBadge extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         decoration: BoxDecoration(
           color: VeraProbColors.primary.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(3),
+          borderRadius: VeraProbRadii.smAll,
           border: Border.all(
             color: VeraProbColors.primary.withValues(alpha: 0.3),
             width: 0.5,
@@ -2671,10 +2671,10 @@ class _TestimonyBlockState extends State<_TestimonyBlock> {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(6),
-        border: const Border(
+        borderRadius: VeraProbRadii.mdAll,
+        border: Border(
           left: BorderSide(color: VeraProbColors.primary, width: 2),
         ),
       ),
@@ -2822,10 +2822,7 @@ class _PortalAttachmentThumb extends ConsumerWidget {
             isImage: _isImage,
           ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: preview,
-        ),
+        child: ClipRRect(borderRadius: VeraProbRadii.mdAll, child: preview),
       ),
     );
   }
@@ -2944,7 +2941,7 @@ class _PortalAttachmentLightbox extends StatelessWidget {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: VeraProbColors.background.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: VeraProbRadii.mdAll,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

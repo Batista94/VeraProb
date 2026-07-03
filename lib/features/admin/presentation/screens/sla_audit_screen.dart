@@ -128,7 +128,7 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border.withValues(alpha: 0.1)),
       ),
       child: Column(
@@ -168,7 +168,7 @@ class _SummaryCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: VeraProbRadii.smAll,
             ),
             child: Wrap(
               spacing: 8,
@@ -219,7 +219,7 @@ class _SlaExceptionsTable extends ConsumerWidget {
         return PanelContainer(
           padding: EdgeInsets.zero,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: VeraProbRadii.lgAll,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: SingleChildScrollView(
@@ -311,7 +311,7 @@ class _StatusBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Text(

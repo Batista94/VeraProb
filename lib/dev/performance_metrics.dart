@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Core performance metrics repository (Dev-Only overlay). Previously used
 /// by the Stress Mode simulation; now retained as a standalone perf HUD.
@@ -166,7 +167,7 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
         width: 240,
         decoration: BoxDecoration(
           color: Colors.black.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: VeraProbRadii.mdAll,
           border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.5)),
           boxShadow: [
             BoxShadow(

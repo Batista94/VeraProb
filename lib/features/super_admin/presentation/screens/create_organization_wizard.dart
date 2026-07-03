@@ -484,7 +484,7 @@ class _CreateOrganizationWizardState
               padding: const EdgeInsets.all(VeraProbSpacing.sm),
               decoration: BoxDecoration(
                 color: VeraProbColors.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
               ),
               child: Row(
                 children: [
@@ -515,7 +515,7 @@ class _CreateOrganizationWizardState
                 padding: const EdgeInsets.all(VeraProbSpacing.sm),
                 decoration: BoxDecoration(
                   color: VeraProbColors.surfaceElevated.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: VeraProbRadii.mdAll,
                   border: Border.all(color: VeraProbColors.border),
                 ),
                 child: Row(
@@ -569,7 +569,7 @@ class _CreateOrganizationWizardState
               padding: const EdgeInsets.all(VeraProbSpacing.sm),
               decoration: BoxDecoration(
                 color: VeraProbColors.warning.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(
                   color: VeraProbColors.warning.withValues(alpha: 0.3),
                 ),
@@ -617,7 +617,7 @@ class _CreateOrganizationWizardState
 
   @override
   Widget build(BuildContext context) {
-    final bool isNarrow = MediaQuery.sizeOf(context).width < 720;
+    final bool isNarrow = VeraProbBreakpoints.isCompact(context);
     final StepState step0State = _currentStep > 0
         ? StepState.complete
         : StepState.indexed;
@@ -783,7 +783,7 @@ class _SecretRevealSection extends StatelessWidget {
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.4)),
       ),
       child: Column(

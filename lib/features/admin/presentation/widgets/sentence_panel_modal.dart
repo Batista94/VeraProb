@@ -99,7 +99,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
 
     return Dialog(
       backgroundColor: VeraProbColors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 500),
         child: Padding(
@@ -122,7 +122,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: VeraProbColors.warning.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: VeraProbColors.warning.withValues(alpha: 0.4),
                     ),
@@ -236,8 +236,8 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                   labelText: requireText
                       ? 'Comentário obrigatório (mínimo 10 caracteres)'
                       : 'Descreva o motivo (opcional)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+                  border: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.mdAll,
                   ),
                   isDense: true,
                   contentPadding: const EdgeInsets.symmetric(
@@ -257,7 +257,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                   ),
                   decoration: BoxDecoration(
                     color: VeraProbColors.error.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: VeraProbColors.error.withValues(alpha: 0.3),
                     ),

@@ -310,7 +310,7 @@ class _BillingCycleReportsScreenState
           ),
         ];
 
-        if (constraints.maxWidth < 600) {
+        if (constraints.maxWidth < VeraProbBreakpoints.compact) {
           return GridView.count(
             crossAxisCount: 2,
             shrinkWrap: true,
@@ -353,7 +353,7 @@ class _BillingCycleReportsScreenState
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: VeraProbColors.error.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.error),
       ),
       child: Row(

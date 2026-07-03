@@ -122,7 +122,7 @@ class _HeaderState extends ConsumerState<_Header> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: VeraProbColors.warning.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: VeraProbRadii.lgAll,
             ),
             child: Text(
               '$pendingCount pendente${pendingCount > 1 ? 's' : ''}',
@@ -184,17 +184,17 @@ class _FilterBar extends StatelessWidget {
               controller: searchController,
               onChanged: (_) => onSearch(),
               style: const TextStyle(fontSize: 13),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Buscar por contrato ou SET ID...',
-                prefixIcon: const Icon(Icons.search, size: 16),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                prefixIcon: Icon(Icons.search, size: 16),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
+                  borderRadius: VeraProbRadii.mdAll,
+                  borderSide: BorderSide(color: VeraProbColors.border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: VeraProbColors.border),
+                  borderRadius: VeraProbRadii.mdAll,
+                  borderSide: BorderSide(color: VeraProbColors.border),
                 ),
               ),
             ),

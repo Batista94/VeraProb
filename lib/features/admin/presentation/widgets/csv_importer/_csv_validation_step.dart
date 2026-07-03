@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/application/admin/csv_preflight_validator.dart';
 import 'package:veraprob/features/admin/presentation/widgets/csv_importer/_csv_theme.dart';
 import 'package:veraprob/features/admin/providers/csv_import_providers.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// Step 2 — preflight validation report: summary + error table + import CTA.
 class CsvValidationStep extends ConsumerWidget {
@@ -92,7 +93,7 @@ class _SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             child: LinearProgressIndicator(
               value: pct,
               minHeight: 6,

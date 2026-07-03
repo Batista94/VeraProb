@@ -606,7 +606,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: VeraProbColors.surface,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: VeraProbRadii.smAll,
                 border: Border.all(color: VeraProbColors.border),
               ),
               child: SelectableText(

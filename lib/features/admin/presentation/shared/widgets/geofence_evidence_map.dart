@@ -51,7 +51,7 @@ class GeofenceEvidenceMap extends StatelessWidget {
     final bounds = _computeBounds();
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: VeraProbRadii.mdAll,
       child: SizedBox(
         height: height,
         child: FlutterMap(

@@ -510,6 +510,47 @@ else
   echo -e "  ${GREEN}Test folder layout is strictly compliant with Clean Architecture (C4).${NC}"
 fi
 
+# 8.5: RAW-COLOR — raw Material Colors.* in presentation layers (BLOCK)
+# Design-system tokens (VeraProbColors) are mandatory in lib/features/ and
+# lib/presentation/. Allowed without comment: Colors.transparent (idiom, no
+# token) and Colors.black* (scrims/shadows/barriers — never the fg-on-accent
+# bug class). Every other raw color needs a same-line justification comment:
+# `// raw-color: <reason>` (map layer, security banner, QR).
+echo -e "  [8.5] RAW-COLOR: scanning changed presentation files for raw Colors.* ..."
+if [[ -n "$DART_CHANGED" ]]; then
+  RAW_COLOR_FILES=$(echo "$DART_CHANGED" | grep -E "^lib/(features|presentation)/" || true)
+  if [[ -n "$RAW_COLOR_FILES" ]]; then
+    RAW_COLOR_BLOCK_FOUND=0
+    while IFS= read -r f; do
+      [[ -z "$f" ]] && continue
+      if [[ -f "$f" ]]; then
+        if grep -q "pr_scanner: ignore" "$f"; then
+          continue
+        fi
+        RAW_HITS=$(grep -nE '\bColors\.[a-z]' "$f" \
+          | grep -v "Colors\.transparent" \
+          | grep -v "Colors\.black" \
+          | grep -v "raw-color:" \
+          | grep -vE '^[0-9]+:\s*//' \
+          || true)
+        if [[ -n "$RAW_HITS" ]]; then
+          echo -e "  ${RED}${BOLD}[BLOCK]${NC} Raw Colors.* in presentation layer: $f (use VeraProbColors tokens, or justify with // raw-color: <reason>)"
+          echo "$RAW_HITS" | head -5 | while IFS= read -r line; do echo -e "    ${RED}→ $line${NC}"; done
+          TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+          RAW_COLOR_BLOCK_FOUND=1
+        fi
+      fi
+    done <<< "$RAW_COLOR_FILES"
+    if [[ $RAW_COLOR_BLOCK_FOUND -eq 0 ]]; then
+      echo -e "  ${GREEN}No unjustified raw Colors.* in changed presentation files.${NC}"
+    fi
+  else
+    echo -e "  ${GREEN}No changed lib/features|presentation files. Check skipped.${NC}"
+  fi
+else
+  echo -e "  ${GREEN}No Dart files changed. Check skipped.${NC}"
+fi
+
 # ── Step 9: Governance & Process Audit (Forensic Mode) ──────────────────────
 echo -e "\n${BOLD}${BLUE}Step 9: Governance & Process Audit...${NC}"
 

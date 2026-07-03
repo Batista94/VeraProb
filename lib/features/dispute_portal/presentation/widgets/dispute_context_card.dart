@@ -14,9 +14,9 @@ class DisputeContextCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: VeraProbColors.surfaceElevated,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: VeraProbColors.border),
+      shape: const RoundedRectangleBorder(
+        borderRadius: VeraProbRadii.lgAll,
+        side: BorderSide(color: VeraProbColors.border),
       ),
       child: Padding(
         padding: VeraProbSpacing.sectionPadding,
@@ -34,7 +34,7 @@ class DisputeContextCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: VeraProbColors.warning.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: VeraProbRadii.smAll,
                     border: Border.all(
                       color: VeraProbColors.warning.withValues(alpha: 0.3),
                     ),

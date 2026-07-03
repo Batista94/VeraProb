@@ -55,7 +55,7 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
   Widget _buildMetadataCard() {
     return Card(
       color: VeraProbColors.surfaceElevated,
-      shape: RoundedRectangleBorder(borderRadius: VeraProbRadii.smAll),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.smAll),
       margin: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(VeraProbSpacing.md),

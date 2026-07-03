@@ -5,6 +5,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/command_center/logic/alert_grouping.dart';
 import 'package:veraprob/features/admin/presentation/command_center/models/driver_alert_group.dart';
 import 'package:veraprob/features/admin/presentation/command_center/widgets/alerts_triade/rich_evidence_card.dart';
+import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/sla_providers.dart';
@@ -118,7 +119,12 @@ class _AlertsTriadeDrawerState extends ConsumerState<AlertsTriadeDrawer> {
                       ),
               AsyncData(:final value) =>
                 value.isEmpty
-                    ? const _EmptyState()
+                    ? EmptyState(
+                        icon: Icons.verified_outlined,
+                        iconColor: VeraProbColors.onTime.withValues(alpha: 0.4),
+                        title: 'Operação Limpa',
+                        description: 'Nenhum alerta contratual pendente.',
+                      )
                     : _GroupedAlertsList(alerts: value),
             },
           ),
@@ -371,41 +377,6 @@ class _DriverGroupCardState extends State<_DriverGroupCard> {
   }
 }
 
-// ── Empty State ──────────────────────────────────────────
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.verified_outlined,
-            size: 48,
-            color: VeraProbColors.onTime.withValues(alpha: 0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Operação Limpa',
-            style: VeraProbTypography.sectionTitle.copyWith(
-              color: VeraProbColors.onTime.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Nenhum alerta contratual pendente.',
-            style: VeraProbTypography.bodySmall.copyWith(
-              color: VeraProbColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ── Loading Placeholder ──────────────────────────────────
 class _LoadingPlaceholder extends StatelessWidget {
   const _LoadingPlaceholder();
@@ -455,7 +426,7 @@ class _SkeletonCard extends StatelessWidget {
                     Container(
                       width: 80,
                       height: 12,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: VeraProbColors.surfaceElevated,
                         borderRadius: VeraProbRadii.smAll,
                       ),
@@ -463,7 +434,7 @@ class _SkeletonCard extends StatelessWidget {
                     Container(
                       width: 140,
                       height: 12,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: VeraProbColors.surfaceElevated,
                         borderRadius: VeraProbRadii.smAll,
                       ),

@@ -31,7 +31,7 @@ class SlaBreachBadge extends ConsumerWidget {
           color: Colors.transparent,
           child: InkWell(
             key: const ValueKey('sla-breach-badge'),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             onTap: () {
               ref.read(disputeOverdueOnlyProvider.notifier).set(true);
               ref
@@ -42,7 +42,7 @@ class SlaBreachBadge extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: red.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(color: red.withValues(alpha: 0.5)),
               ),
               child: Row(

@@ -183,7 +183,7 @@ class _SidebarHeader extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
               color: VeraProbColors.primary.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: VeraProbRadii.lgAll,
             ),
             child: Text(
               '$tripCount',
@@ -242,16 +242,16 @@ class _SearchSortBar extends StatelessWidget {
                     horizontal: 8,
                     vertical: 0,
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  border: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.mdAll,
+                    borderSide: BorderSide(color: VeraProbColors.border),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
-                    borderSide: const BorderSide(color: VeraProbColors.border),
+                  enabledBorder: const OutlineInputBorder(
+                    borderRadius: VeraProbRadii.mdAll,
+                    borderSide: BorderSide(color: VeraProbColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: VeraProbRadii.mdAll,
                     borderSide: BorderSide(
                       color: VeraProbColors.primary.withValues(alpha: 0.6),
                     ),
@@ -266,12 +266,12 @@ class _SearchSortBar extends StatelessWidget {
           // Sort toggle
           InkWell(
             onTap: onSortToggle,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: VeraProbRadii.smAll,
             child: Container(
               width: 30,
               height: 30,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: VeraProbRadii.smAll,
                 border: Border.all(color: VeraProbColors.border),
               ),
               child: Icon(
@@ -320,7 +320,7 @@ class _TripCard extends StatelessWidget {
                   height: 24,
                   decoration: BoxDecoration(
                     color: trip.status.color,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: VeraProbRadii.smAll,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -379,7 +379,7 @@ class _TripCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: VeraProbColors.delayed.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(3),
+                        borderRadius: VeraProbRadii.smAll,
                       ),
                       child: Text(
                         trip.delayDisplay,
@@ -464,7 +464,7 @@ class _ActiveFilterBanner extends StatelessWidget {
           const Spacer(),
           InkWell(
             onTap: onClear,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: VeraProbRadii.lgAll,
             child: const Padding(
               padding: EdgeInsets.all(2),
               child: Icon(

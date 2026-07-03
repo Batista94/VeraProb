@@ -277,7 +277,7 @@ class _EffectiveDateRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(

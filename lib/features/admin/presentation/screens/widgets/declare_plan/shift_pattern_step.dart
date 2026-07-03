@@ -76,7 +76,7 @@ class ShiftPatternStep extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: VeraProbColors.info.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(
               color: VeraProbColors.info.withValues(alpha: 0.25),
             ),
@@ -170,9 +170,9 @@ class ShiftPatternStep extends StatelessWidget {
           children: [
             Expanded(
               child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: VeraProbColors.border),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: VeraProbRadii.mdAll,
+                  side: BorderSide(color: VeraProbColors.border),
                 ),
                 leading: const Icon(Icons.flight_takeoff),
                 title: const Text('Horário de Partida'),
@@ -193,9 +193,9 @@ class ShiftPatternStep extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: VeraProbColors.border),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: VeraProbRadii.mdAll,
+                  side: BorderSide(color: VeraProbColors.border),
                 ),
                 leading: const Icon(Icons.flight_land),
                 title: const Text('Horário de Chegada'),

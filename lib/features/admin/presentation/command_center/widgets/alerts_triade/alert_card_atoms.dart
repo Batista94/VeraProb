@@ -48,7 +48,9 @@ class AlertActionButton extends StatelessWidget {
           foregroundColor: btnColor,
           side: BorderSide(color: btnColor.withValues(alpha: 0.3)),
           padding: const EdgeInsets.symmetric(horizontal: 8),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          shape: const RoundedRectangleBorder(
+            borderRadius: VeraProbRadii.mdAll,
+          ),
           textStyle: VeraProbTypography.badge,
         ),
         child: loading

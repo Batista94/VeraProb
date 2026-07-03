@@ -1,0 +1,106 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @playwright/mcp@latest",
+        "--browser",
+        "chrome"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "browser_navigate",
+        "browser_snapshot",
+        "browser_wait_for",
+        "browser_tabs",
+        "browser_close",
+        "browser_take_screenshot",
+        "browser_console_messages",
+        "browser_resize",
+        "browser_click",
+        "browser_type",
+        "browser_file_upload",
+        "browser_select_option",
+        "browser_press_key"
+      ],
+      "disabledTools": []
+    },
+    "postgres": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @henkey/postgres-mcp-server",
+        "--connection-string",
+        "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+      ],
+      "env": {},
+      "autoApprove": [
+        "pg_execute_query",
+        "pg_execute_mutation",
+        "pg_execute_sql",
+        "pg_manage_schema"
+      ],
+      "disabled": false
+    },
+    "docker": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-docker"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "list_containers",
+        "fetch_container_logs"
+      ],
+      "disabledTools": [
+        "remove_container",
+        "remove_image",
+        "remove_network",
+        "remove_volume",
+        "create_volume"
+      ]
+    },
+    "fetch": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "fetch"
+      ]
+    },
+    "memory": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "C:\\Users\\wes_b\\Projects\\VeraProb\\.agents\\scripts\\memory-proxy.cmd"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "create_entities",
+        "add_observations",
+        "search_nodes",
+        "read_graph",
+        "create_relations"
+      ]
+    },
+    "sequential-thinking": {
+      "command": "cmd",
+      "args": [
+        "/c",
+        "npx -y @modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {},
+      "autoApprove": [
+        "sequentialthinking"
+      ],
+      "disabled": false
+    }
+  }
+}

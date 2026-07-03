@@ -28,7 +28,7 @@ class InvestigationModal extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       backgroundColor: VeraProbColors.background,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.xlAll),
       child: Container(
         width: 1100,
         constraints: BoxConstraints(
@@ -67,7 +67,7 @@ class InvestigationModal extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: VeraProbColors.surfaceElevated,
-                      borderRadius: BorderRadius.circular(4),
+                      borderRadius: VeraProbRadii.smAll,
                       border: Border.all(color: VeraProbColors.border),
                     ),
                     child: Text(
@@ -258,7 +258,7 @@ class _ContextHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Row(
@@ -312,7 +312,7 @@ class _LedgerTimelinePanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -449,7 +449,7 @@ class _TimelineEvent extends StatelessWidget {
                 color: isTriggering
                     ? VeraProbColors.primary.withValues(alpha: 0.08)
                     : VeraProbColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: VeraProbRadii.mdAll,
                 border: Border.all(
                   color: isTriggering
                       ? VeraProbColors.primary.withValues(alpha: 0.3)
@@ -478,7 +478,7 @@ class _TimelineEvent extends StatelessWidget {
                             color: VeraProbColors.primary.withValues(
                               alpha: 0.15,
                             ),
-                            borderRadius: BorderRadius.circular(3),
+                            borderRadius: VeraProbRadii.smAll,
                           ),
                           child: Text(
                             'AUDITADO',
@@ -520,7 +520,7 @@ class _TimelineEvent extends StatelessWidget {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: VeraProbColors.background,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: VeraProbRadii.smAll,
                         border: Border.all(color: VeraProbColors.border),
                       ),
                       child: Column(
@@ -632,7 +632,7 @@ class _EvaluationTracePanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -745,7 +745,7 @@ class _TraceCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -848,7 +848,7 @@ class _DecisionRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: VeraProbColors.info.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: VeraProbRadii.smAll,
                 ),
                 child: Text(
                   'P${decision.rulePriority}',
@@ -871,7 +871,7 @@ class _DecisionRow extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: outcomeColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: VeraProbRadii.smAll,
                 ),
                 child: Text(
                   decision.outcome,
@@ -914,9 +914,9 @@ class _DecisionRow extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: VeraProbColors.background,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: VeraProbRadii.smAll,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

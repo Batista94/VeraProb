@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 /// A compact badge showing trip status with color and label.
 class StatusBadge extends StatelessWidget {
@@ -18,7 +19,7 @@ class StatusBadge extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: status.color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: VeraProbRadii.smAll,
         border: Border.all(color: status.color.withValues(alpha: 0.3)),
       ),
       child: Row(

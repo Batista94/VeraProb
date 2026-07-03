@@ -26,7 +26,7 @@ class FleetHealthSummaryBar extends StatelessWidget {
       padding: const EdgeInsets.all(VeraProbSpacing.md),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
@@ -79,7 +79,7 @@ class FleetHealthSummaryBar extends StatelessWidget {
               const SizedBox(width: VeraProbSpacing.sm),
               Expanded(
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: VeraProbRadii.smAll,
                   child: LinearProgressIndicator(
                     value: (healthView.fleetActiveRatioBps / 10000.0).clamp(
                       0.0,
@@ -135,7 +135,7 @@ class _StatusChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(

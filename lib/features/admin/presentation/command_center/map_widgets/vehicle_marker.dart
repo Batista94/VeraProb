@@ -3,8 +3,15 @@ import 'package:veraprob/application/normalization/models/trip_status_view.dart'
 import 'package:veraprob/application/normalization/models/motion_state.dart';
 import 'package:veraprob/application/projections/models/attention_state.dart';
 import 'package:veraprob/presentation/shared/trip_status_theme.dart';
+import 'package:veraprob/core/theme/app_theme.dart';
 
 const Color _kCriticalRing = Color(0xFFFF1744);
+
+// Map-layer palette: markers render over arbitrary tile imagery, not theme
+// surfaces — fixed white/black keep legibility regardless of map colors.
+const Color _kMapForeground = Colors.white; // raw-color: over map tiles
+const Color _kMapForegroundDim = Colors.white70; // raw-color: over map tiles
+const Color _kMapShadow = Colors.black; // raw-color: map-layer shadow base
 
 /// A map marker representing a vehicle, colored by trip status.
 ///
@@ -61,10 +68,10 @@ class VehicleMarkerWidget extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: VeraProbRadii.smAll,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.3),
+                      color: _kMapShadow.withValues(alpha: 0.3),
                       blurRadius: 2,
                       offset: const Offset(0, 1),
                     ),
@@ -73,7 +80,7 @@ class VehicleMarkerWidget extends StatelessWidget {
                 child: Text(
                   routeLabel,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: _kMapForeground,
                     fontSize: 9,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0.3,
@@ -113,14 +120,14 @@ class VehicleMarkerWidget extends StatelessWidget {
           // Red ring ONLY for CRITICAL, white for everything else
           color: isCritical
               ? _kCriticalRing
-              : (isSelected ? Colors.white : Colors.white70),
+              : (isSelected ? _kMapForeground : _kMapForegroundDim),
           width: isCritical ? (isSelected ? 3.5 : 2.5) : (isSelected ? 3 : 1.5),
         ),
         boxShadow: [
           // Strong glow for selected vehicle
           if (isSelected)
             BoxShadow(
-              color: Colors.white.withValues(alpha: 0.5),
+              color: _kMapForeground.withValues(alpha: 0.5),
               blurRadius: 12,
               spreadRadius: 4,
             ),
@@ -131,7 +138,7 @@ class VehicleMarkerWidget extends StatelessWidget {
               spreadRadius: 1,
             ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.4),
+            color: _kMapShadow.withValues(alpha: 0.4),
             blurRadius: 2,
             offset: const Offset(0, 1),
           ),
@@ -140,7 +147,7 @@ class VehicleMarkerWidget extends StatelessWidget {
       child:
           (motionState == MotionState.dwellingAtStop ||
               status == TripStatusView.atStop)
-          ? Icon(Icons.hail, size: isSelected ? 10 : 8, color: Colors.white)
+          ? Icon(Icons.hail, size: isSelected ? 10 : 8, color: _kMapForeground)
           : null,
     );
 

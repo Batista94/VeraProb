@@ -26,14 +26,14 @@ class RuleImpactSimulationPanel extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: VeraProbColors.surfaceElevated,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: Column(
         children: [
           InkWell(
             onTap: onToggle,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               child: Row(
@@ -123,7 +123,7 @@ class _ImpactBody extends StatelessWidget {
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: VeraProbColors.warning.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: VeraProbRadii.mdAll,
           ),
           child: const Row(
             children: [

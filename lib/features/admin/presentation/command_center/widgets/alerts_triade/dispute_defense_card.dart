@@ -48,7 +48,7 @@ class DisputeDefenseCard extends ConsumerWidget {
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: VeraProbColors.surface,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: VeraProbRadii.mdAll,
         border: Border.all(
           color: VeraProbColors.delayed.withValues(alpha: 0.5),
         ),

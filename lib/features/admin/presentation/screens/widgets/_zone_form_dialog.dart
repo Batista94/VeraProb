@@ -237,7 +237,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.existingZone != null;
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: (MediaQuery.sizeOf(context).width * 0.92).clamp(
@@ -376,7 +376,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             margin: const EdgeInsets.only(top: 4),
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
             child: ListView.builder(
@@ -437,7 +437,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: VeraProbColors.success.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: VeraProbColors.success.withValues(alpha: 0.35),
                     ),
@@ -488,7 +488,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: VeraProbColors.warning.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: VeraProbRadii.mdAll,
                     border: Border.all(
                       color: VeraProbColors.warning.withValues(alpha: 0.3),
                     ),
@@ -567,7 +567,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
     final zoom = hasPin ? _pinZoom : _defaultZoom;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: VeraProbRadii.mdAll,
       child: Stack(
         children: [
           FlutterMap(
@@ -605,8 +605,8 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             left: 8,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: const Color(0x8C000000), // map scrim
+              decoration: const BoxDecoration(
+                color: Color(0x8C000000), // map scrim
                 borderRadius: VeraProbRadii.smAll,
               ),
               child: const Row(
@@ -657,7 +657,7 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: VeraProbColors.error.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: VeraProbRadii.mdAll,
               border: Border.all(
                 color: VeraProbColors.error.withValues(alpha: 0.3),
               ),

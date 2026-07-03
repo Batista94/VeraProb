@@ -38,7 +38,7 @@ class EvidenceVolumeCard extends StatelessWidget {
       width: 240,
       child: Card(
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: const RoundedRectangleBorder(borderRadius: VeraProbRadii.lgAll),
         clipBehavior: Clip.antiAlias,
         child: Container(
           decoration: BoxDecoration(gradient: AppTheme.primaryGradient),

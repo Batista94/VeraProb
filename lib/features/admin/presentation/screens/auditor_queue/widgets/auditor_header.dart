@@ -33,7 +33,7 @@ class AuditorHeader extends ConsumerWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 720;
+        final isNarrow = constraints.maxWidth < VeraProbBreakpoints.compact;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -116,7 +116,7 @@ class AuditorTabs extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: VeraProbColors.surface.withValues(alpha: 0.3),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: VeraProbRadii.lgAll,
         border: Border.all(color: VeraProbColors.border),
       ),
       child: SingleChildScrollView(
@@ -217,9 +217,9 @@ class _TabItemState extends State<TabItem> {
             color: widget.isSelected
                 ? activeColor.withValues(alpha: bgAlpha)
                 : (_isHovered
-                      ? Colors.white.withValues(alpha: bgAlpha)
+                      ? VeraProbColors.textPrimary.withValues(alpha: bgAlpha)
                       : Colors.transparent),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: VeraProbRadii.mdAll,
             border: Border.all(
               color: widget.isSelected
                   ? activeColor.withValues(alpha: 0.3)
