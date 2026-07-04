@@ -20,11 +20,16 @@ class SettingsHubScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
-    with SingleTickerProviderStateMixin {
+        // TickerProviderStateMixin (not Single*): a live roles:manage flip recreates
+        // the TabController, so more than one ticker exists over this State's life.
+        with
+        TickerProviderStateMixin {
   late TabController _tabController;
-  // `roles:manage` gates the Access & Profiles tab (Pilar 3). Read once —
-  // permissions are stable within a session (a switch remounts the shell).
-  late final bool _canManageAccess;
+  // `roles:manage` gates the Access & Profiles tab (Pilar 3). Seeded here and
+  // kept live: PermissionsSyncController can force a session refresh while this
+  // State stays mounted in the shell's IndexedStack, so a mid-session grant or
+  // revoke must re-shape the tabs (see the ref.listen in build).
+  late bool _canManageAccess;
 
   @override
   void initState() {
@@ -58,6 +63,24 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
     }
   }
 
+  /// Re-shapes the tab set when the live `roles:manage` grant flips. Assigns the
+  /// new controller (length is immutable, so it cannot be mutated in place),
+  /// clamping the active index into the new range, THEN disposes the old one.
+  void _syncAccessTab(bool canManage) {
+    final oldController = _tabController;
+    final newLength = canManage ? 4 : 3;
+    final newController = TabController(
+      length: newLength,
+      vsync: this,
+      initialIndex: oldController.index.clamp(0, newLength - 1),
+    );
+    setState(() {
+      _canManageAccess = canManage;
+      _tabController = newController;
+    });
+    oldController.dispose();
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
@@ -66,6 +89,13 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Live permission parity: a mid-session grant/revoke of `roles:manage`
+    // re-shapes the tabs (RPCs stay authoritative — this is UX parity only).
+    ref.listen(permissionServiceProvider, (previous, next) {
+      final canManage = next.hasPermission('roles:manage');
+      if (canManage != _canManageAccess) _syncAccessTab(canManage);
+    });
+
     // De-chromed: the admin shell already provides the AppBar (P3 rule).
     return Scaffold(
       backgroundColor: VeraProbColors.background,

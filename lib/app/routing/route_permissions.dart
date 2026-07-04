@@ -8,6 +8,12 @@ import 'package:veraprob/app/routing/app_routes.dart';
 /// sidebar/hub visibility filters — UX/defense-in-depth only. RLS and the
 /// SECURITY DEFINER RPCs remain the source of truth; a spoofed client cannot
 /// read tenant data by bypassing this map.
+///
+/// Parity rule for new entries: gate a route here only when the backend also
+/// enforces that permission per-route (RLS/RPC). Per-action gates
+/// (`sla:approve`, `financial:export`) and query-param tabs (`roles:manage` on
+/// `settings?tab=access`, already blocked in the screen + RPCs) stay out —
+/// gating them here would break UI↔backend parity.
 const Map<String, String> kRoutePermissions = <String, String>{
   '/admin/financial-impact': 'financial:read',
   '/admin/hub/billing-reports': 'financial:read',

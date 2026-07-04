@@ -161,7 +161,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           path,
           perms,
           onDenied: (route, perm) =>
-              unawaited(_logAccessDenied(client, route, perm)),
+              unawaited(logAccessDenied(client, route, perm)),
         );
         if (redirectTo != null) return redirectTo;
       }
@@ -383,7 +383,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 /// derives org + actor server-side from the JWT (SECURITY DEFINER); the client
 /// supplies only the attempted [route] and the missing [requiredPerm]. Errors
 /// are swallowed: a failed audit write must never block the silent eject.
-Future<void> _logAccessDenied(
+@visibleForTesting
+Future<void> logAccessDenied(
   sb.SupabaseClient client,
   String route,
   String requiredPerm,
