@@ -15,6 +15,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
@@ -25,6 +26,14 @@ Widget _wrap(Widget child) {
   return ProviderScope(
     overrides: [
       currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+      // No roles:manage → Access tab hidden (3 tabs). Also keeps the widget off
+      // the real authState/Supabase chain now read in initState / build.
+      permissionServiceProvider.overrideWith(
+        (ref) => const PermissionService(
+          permissions: <String>{},
+          scopes: <String, Set<String>>{},
+        ),
+      ),
       currentOperatorNameProvider.overrideWith((ref) => 'Operador Teste'),
       currentOperatorIdProvider.overrideWith((ref) => 'op-123'),
       orgSettingsProvider.overrideWith(

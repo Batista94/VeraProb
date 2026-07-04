@@ -8,6 +8,8 @@ import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/admin/access_management_service.dart';
+import 'package:veraprob/state/providers/access_providers.dart';
 import 'package:veraprob/application/admin/change_user_role_command.dart';
 import 'package:veraprob/application/admin/remove_member_command.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
@@ -23,6 +25,9 @@ class UserManagementTab extends ConsumerWidget {
     final membersAsync = ref.watch(orgMembersProvider);
     final invitationsAsync = ref.watch(orgInvitationsProvider);
     final currentUserId = ref.watch(currentOperatorIdProvider);
+    final canManageAccess = ref
+        .watch(permissionServiceProvider)
+        .hasPermission('roles:manage');
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -70,97 +75,103 @@ class UserManagementTab extends ConsumerWidget {
                               }
                               final member = value[i ~/ 2];
                               final isSelf = member.userId == currentUserId;
-                              return ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: VeraProbColors.primary
-                                      .withValues(alpha: 0.1),
-                                  child: Text(
-                                    member.email[0].toUpperCase(),
-                                    style: const TextStyle(
-                                      color: VeraProbColors.primary,
-                                      fontWeight: FontWeight.bold,
+                              return Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  ListTile(
+                                    leading: CircleAvatar(
+                                      backgroundColor: VeraProbColors.primary
+                                          .withValues(alpha: 0.1),
+                                      child: Text(
+                                        member.email[0].toUpperCase(),
+                                        style: const TextStyle(
+                                          color: VeraProbColors.primary,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      member.email,
+                                      style: VeraProbTypography.kpiLabel,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    subtitle: Text(
+                                      'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
+                                      style: VeraProbTypography.caption,
+                                    ),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (!isSelf)
+                                          DropdownButton<UserRole>(
+                                            value: member.role,
+                                            underline: const SizedBox(),
+                                            items: const [
+                                              DropdownMenuItem(
+                                                value: UserRole.admin,
+                                                child: Text('Administrador'),
+                                              ),
+                                              DropdownMenuItem(
+                                                value: UserRole.operator,
+                                                child: Text('Operador'),
+                                              ),
+                                              DropdownMenuItem(
+                                                value: UserRole.auditor,
+                                                child: Text('Auditor'),
+                                              ),
+                                            ],
+                                            onChanged: (newRole) => _changeRole(
+                                              context,
+                                              ref,
+                                              member.userId,
+                                              newRole!,
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: VeraProbColors.surface,
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
+                                              border: Border.all(
+                                                color: VeraProbColors.border,
+                                              ),
+                                            ),
+                                            child: const Text(
+                                              'Você (Admin)',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ),
+                                        const SizedBox(width: 16),
+                                        if (!isSelf)
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.person_off_outlined,
+                                              color: VeraProbColors.warning,
+                                              size: 20,
+                                            ),
+                                            tooltip: 'Inativar membro',
+                                            onPressed: () => _confirmDeactivate(
+                                              context,
+                                              ref,
+                                              member.userId,
+                                              member.email,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                ),
-                                title: Text(
-                                  member.email,
-                                  style: VeraProbTypography.kpiLabel,
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                                subtitle: Text(
-                                  'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
-                                  style: VeraProbTypography.caption,
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (!isSelf)
-                                      DropdownButton<UserRole>(
-                                        value: member.role,
-                                        underline: const SizedBox(),
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: UserRole.admin,
-                                            child: Text('Administrador'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: UserRole.operator,
-                                            child: Text('Operador'),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: UserRole.auditor,
-                                            child: Text('Auditor'),
-                                          ),
-                                        ],
-                                        onChanged: (newRole) => _changeRole(
-                                          context,
-                                          ref,
-                                          member.userId,
-                                          newRole!,
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 4,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: VeraProbColors.surface,
-                                          borderRadius: BorderRadius.circular(
-                                            4,
-                                          ),
-                                          border: Border.all(
-                                            color: VeraProbColors.border,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Você (Admin)',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    const SizedBox(width: 16),
-                                    if (!isSelf)
-                                      IconButton(
-                                        icon: const Icon(
-                                          Icons.person_off_outlined,
-                                          color: VeraProbColors.warning,
-                                          size: 20,
-                                        ),
-                                        tooltip: 'Inativar membro',
-                                        onPressed: () => _confirmDeactivate(
-                                          context,
-                                          ref,
-                                          member.userId,
-                                          member.email,
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                  if (canManageAccess)
+                                    _MemberRolesRow(userId: member.userId),
+                                ],
                               );
                             }),
                           ),
@@ -717,5 +728,217 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
         ),
       );
     }
+  }
+}
+
+/// Fine-grained access profiles assigned to a member (Pilar 3.1 multi-role).
+///
+/// Chips = active `tenant_roles`; delete revokes, the trailing action opens the
+/// assignment dialog. Visible only to `roles:manage` holders. The RPCs own the
+/// subset guard + four-eyes routing — this is convenience UI.
+class _MemberRolesRow extends ConsumerWidget {
+  final String userId;
+
+  const _MemberRolesRow({required this.userId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final rolesAsync = ref.watch(tenantRolesProvider);
+    final assignmentsAsync = ref.watch(activeRoleAssignmentsProvider);
+
+    final roles = rolesAsync.value ?? const <TenantRole>[];
+    if (roles.isEmpty) return const SizedBox.shrink();
+
+    final assignedRoleIds = (assignmentsAsync.value ?? const <RoleAssignment>[])
+        .where((a) => a.userId == userId)
+        .map((a) => a.roleId)
+        .toSet();
+    final assigned = roles.where((r) => assignedRoleIds.contains(r.id));
+    final available = roles.where((r) => !assignedRoleIds.contains(r.id));
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 72, right: 16, bottom: 12),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 4,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          for (final role in assigned)
+            Chip(
+              label: Text(role.name, style: VeraProbTypography.caption),
+              backgroundColor: VeraProbColors.primary.withValues(alpha: 0.1),
+              deleteIcon: const Icon(Icons.close, size: 14),
+              onDeleted: () => _revoke(context, ref, role),
+            ),
+          if (available.isNotEmpty)
+            ActionChip(
+              avatar: const Icon(Icons.add, size: 14),
+              label: const Text('Perfil'),
+              onPressed: () => _assign(context, ref, available.toList()),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _assign(
+    BuildContext context,
+    WidgetRef ref,
+    List<TenantRole> available,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final result = await showDialog<_AssignResult>(
+      context: context,
+      builder: (_) => _AssignRoleDialog(available: available),
+    );
+    if (result == null) return;
+    try {
+      await ref
+          .read(accessManagementServiceProvider)
+          .assignRole(
+            userId: userId,
+            roleId: result.roleId,
+            validUntilUtc: result.validUntilUtc,
+          );
+      ref.invalidate(activeRoleAssignmentsProvider);
+      ref.invalidate(pendingRoleChangesProvider);
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Perfil atribuído. Se sensível, aguarda um segundo administrador.',
+          ),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível atribuir o perfil. Verifique suas permissões e tente novamente.',
+          ),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _revoke(
+    BuildContext context,
+    WidgetRef ref,
+    TenantRole role,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ref
+          .read(accessManagementServiceProvider)
+          .revokeRole(userId: userId, roleId: role.id);
+      ref.invalidate(activeRoleAssignmentsProvider);
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Perfil "${role.name}" removido.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível remover o perfil. Tente novamente.'),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
+    }
+  }
+}
+
+class _AssignResult {
+  final String roleId;
+  final DateTime? validUntilUtc;
+  const _AssignResult(this.roleId, this.validUntilUtc);
+}
+
+class _AssignRoleDialog extends StatefulWidget {
+  final List<TenantRole> available;
+  const _AssignRoleDialog({required this.available});
+
+  @override
+  State<_AssignRoleDialog> createState() => _AssignRoleDialogState();
+}
+
+class _AssignRoleDialogState extends State<_AssignRoleDialog> {
+  late String _roleId = widget.available.first.id;
+  DateTime? _validUntilUtc;
+
+  Future<void> _pickDate() async {
+    final nowUtc = DateTime.now().toUtc();
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: nowUtc,
+      lastDate: nowUtc.add(const Duration(days: 365 * 2)),
+      initialDate: _validUntilUtc ?? nowUtc.add(const Duration(days: 30)),
+    );
+    if (picked != null) {
+      setState(() => _validUntilUtc = picked.toUtc());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final expiryLabel = _validUntilUtc == null
+        ? 'Permanente'
+        : 'Até ${_validUntilUtc!.toLocal().toString().split(' ')[0]}';
+    return AlertDialog(
+      title: const Text('Atribuir Perfil de Acesso'),
+      content: SizedBox(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            DropdownButtonFormField<String>(
+              initialValue: _roleId,
+              decoration: const InputDecoration(labelText: 'Perfil'),
+              items: [
+                for (final r in widget.available)
+                  DropdownMenuItem(value: r.id, child: Text(r.name)),
+              ],
+              onChanged: (v) => setState(() => _roleId = v ?? _roleId),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Validade: $expiryLabel',
+                    style: VeraProbTypography.caption,
+                  ),
+                ),
+                TextButton.icon(
+                  icon: const Icon(Icons.event_outlined, size: 16),
+                  label: const Text('Definir'),
+                  onPressed: _pickDate,
+                ),
+                if (_validUntilUtc != null)
+                  IconButton(
+                    icon: const Icon(Icons.clear, size: 16),
+                    tooltip: 'Tornar permanente',
+                    onPressed: () => setState(() => _validUntilUtc = null),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () =>
+              Navigator.pop(context, _AssignResult(_roleId, _validUntilUtc)),
+          child: const Text('Atribuir'),
+        ),
+      ],
+    );
   }
 }

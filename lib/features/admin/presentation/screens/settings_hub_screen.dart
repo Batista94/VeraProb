@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
@@ -8,26 +9,32 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
 /// Roteado via `/admin/hub/settings`.
-/// Suporta deep link por query parameter `?tab=` (`org` ou `users`).
-class SettingsHubScreen extends StatefulWidget {
+/// Suporta deep link por query parameter `?tab=` (`org`, `users` ou `access`).
+class SettingsHubScreen extends ConsumerStatefulWidget {
   final String? initialTab;
 
   const SettingsHubScreen({super.key, this.initialTab});
 
   @override
-  State<SettingsHubScreen> createState() => _SettingsHubScreenState();
+  ConsumerState<SettingsHubScreen> createState() => _SettingsHubScreenState();
 }
 
-class _SettingsHubScreenState extends State<SettingsHubScreen>
+class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  // `roles:manage` gates the Access & Profiles tab (Pilar 3). Read once —
+  // permissions are stable within a session (a switch remounts the shell).
+  late final bool _canManageAccess;
 
   @override
   void initState() {
     super.initState();
+    _canManageAccess = ref
+        .read(permissionServiceProvider)
+        .hasPermission('roles:manage');
     final initialIndex = _getInitialIndex(widget.initialTab);
     _tabController = TabController(
-      length: 3,
+      length: _canManageAccess ? 4 : 3,
       vsync: this,
       initialIndex: initialIndex,
     );
@@ -36,6 +43,7 @@ class _SettingsHubScreenState extends State<SettingsHubScreen>
   int _getInitialIndex(String? tab) {
     if (tab == 'org') return 1;
     if (tab == 'users') return 2;
+    if (tab == 'access' && _canManageAccess) return 3;
     return 0; // default to general settings
   }
 
@@ -83,20 +91,22 @@ class _SettingsHubScreenState extends State<SettingsHubScreen>
             indicatorColor: VeraProbColors.primary,
             isScrollable: true,
             tabAlignment: TabAlignment.start,
-            tabs: const [
-              Tab(text: 'Geral'),
-              Tab(text: 'Organização'),
-              Tab(text: 'Equipe'),
+            tabs: [
+              const Tab(text: 'Geral'),
+              const Tab(text: 'Organização'),
+              const Tab(text: 'Equipe'),
+              if (_canManageAccess) const Tab(text: 'Acessos'),
             ],
           ),
           const Divider(height: 1, color: VeraProbColors.border),
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                _GeneralSettingsTab(),
-                OrgSettingsTab(),
-                UserManagementTab(),
+              children: [
+                const _GeneralSettingsTab(),
+                const OrgSettingsTab(),
+                const UserManagementTab(),
+                if (_canManageAccess) const AccessManagementTab(),
               ],
             ),
           ),

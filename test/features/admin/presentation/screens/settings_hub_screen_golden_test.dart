@@ -6,6 +6,7 @@ import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
@@ -15,6 +16,15 @@ Widget _wrap(Widget child) {
   return ProviderScope(
     overrides: [
       currentUserRoleProvider.overrideWith((ref) => UserRole.superAdmin),
+      // Empty perms → Access tab stays hidden; also keeps the golden off the
+      // real authState/Supabase chain (permissionServiceProvider is read in
+      // SettingsHubScreen.initState).
+      permissionServiceProvider.overrideWith(
+        (ref) => const PermissionService(
+          permissions: <String>{},
+          scopes: <String, Set<String>>{},
+        ),
+      ),
       currentOperatorNameProvider.overrideWith((ref) => 'Steve Rogers'),
       currentOperatorIdProvider.overrideWith((ref) => 'op-123'),
       orgSettingsProvider.overrideWith(
