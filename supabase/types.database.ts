@@ -6360,6 +6360,10 @@ export type Database = {
           submitted_at_utc: string;
         }[];
       };
+      log_access_denied: {
+        Args: { p_required_perm: string; p_route: string };
+        Returns: undefined;
+      };
       longtransactionsenabled: { Args: never; Returns: boolean };
       mark_alert_viewed: {
         Args: { p_alert_id: string; p_user_id: string };

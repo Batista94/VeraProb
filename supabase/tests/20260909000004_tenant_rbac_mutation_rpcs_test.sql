@@ -22,8 +22,20 @@ ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO public.tenant_roles (id, organization_id, name, description, is_system) VALUES
   ('00000000-0000-0000-0000-0000000009c3', '00000000-0000-0000-0000-0000000009b1',
-   'Org B Role', 'Cross-tenant bait', false)
+   'Org B Role', 'Cross-tenant bait', false),
+  ('00000000-0000-0000-0000-0000000009c5', '00000000-0000-0000-0000-0000000009a1',
+   'Org A Manage', 'Backs live-check for roles:manage', false)
 ON CONFLICT (id) DO NOTHING;
+
+-- Live grant backing the escalation caller's roles:manage claim (F4 live-check).
+INSERT INTO public.tenant_role_permissions (tenant_role_id, permission_key) VALUES
+  ('00000000-0000-0000-0000-0000000009c5', 'roles:manage')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.user_tenant_roles (user_id, tenant_role_id, organization_id) VALUES
+  ('00000000-0000-0000-0000-0000000009a2', '00000000-0000-0000-0000-0000000009c5',
+   '00000000-0000-0000-0000-0000000009a1')
+ON CONFLICT (user_id, tenant_role_id) DO NOTHING;
 
 SELECT has_function('public', 'create_tenant_role', ARRAY['text', 'text', 'jsonb']);
 SELECT has_function('public', 'assign_tenant_role', ARRAY['uuid', 'uuid', 'timestamp with time zone']);

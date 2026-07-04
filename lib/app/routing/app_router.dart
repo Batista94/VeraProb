@@ -8,9 +8,10 @@ import 'package:sentry_flutter/sentry_flutter.dart'
     show SentryNavigatorObserver;
 import 'package:supabase_flutter/supabase_flutter.dart'
     as sb
-    show AuthResponse, AuthState;
+    show AuthResponse, AuthState, SupabaseClient;
 
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/app/routing/routing_utils.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
@@ -144,6 +145,25 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             return AppRoutes.adminHub; // Silent redirect to admin hub
           }
         }
+      }
+
+      // Fine-grained route guard (Pilar 3): a protected route requires a
+      // specific permission claim. Missing → silent eject to the admin hub
+      // (anti-oracle, INV-26) + fire-and-forget ACCESS_DENIED audit. The guard
+      // is UX/defense-in-depth; RLS/RPCs remain the source of truth.
+      if (session != null && requiredPermissionFor(path) != null) {
+        final claims = decodeJwtPayload(session.accessToken);
+        final meta = claims['app_metadata'] as Map<String, dynamic>?;
+        final perms =
+            (meta?['permissions'] as List?)?.whereType<String>() ??
+            const <String>[];
+        final redirectTo = rbacRouteRedirect(
+          path,
+          perms,
+          onDenied: (route, perm) =>
+              unawaited(_logAccessDenied(client, route, perm)),
+        );
+        if (redirectTo != null) return redirectTo;
       }
 
       // Preserve legacy deep links to unified settings screen
@@ -358,6 +378,28 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   ref.onDispose(router.dispose);
   return router;
 });
+
+/// Fire-and-forget ACCESS_DENIED audit sink for the route guard. The RPC
+/// derives org + actor server-side from the JWT (SECURITY DEFINER); the client
+/// supplies only the attempted [route] and the missing [requiredPerm]. Errors
+/// are swallowed: a failed audit write must never block the silent eject.
+Future<void> _logAccessDenied(
+  sb.SupabaseClient client,
+  String route,
+  String requiredPerm,
+) async {
+  try {
+    await client.rpc<void>(
+      'log_access_denied',
+      params: <String, String>{
+        'p_route': route,
+        'p_required_perm': requiredPerm,
+      },
+    );
+  } catch (_) {
+    // ponytail: best-effort audit; guard already ejected. No user impact.
+  }
+}
 
 /// Renders the Tenants branch with [tenantId] preselected.
 ///
