@@ -30,49 +30,46 @@ void main() {
   group('rbacRouteRedirect', () {
     test('ungated route proceeds, never fires onDenied', () {
       var fired = false;
-      final redirect = rbacRouteRedirect(
-        '/admin/dashboard',
-        const ['telemetry:read'],
-        onDenied: (_, _) => fired = true,
-      );
+      final redirect = rbacRouteRedirect('/admin/dashboard', const [
+        'telemetry:read',
+      ], onDenied: (_, _) => fired = true);
       expect(redirect, isNull);
       expect(fired, isFalse);
     });
 
-    test('coarse operator is ejected + ACCESS_DENIED fired with route/perm', () {
-      String? route;
-      String? perm;
-      final redirect = rbacRouteRedirect(
-        '/admin/financial-impact',
-        const ['telemetry:read'],
-        onDenied: (r, p) {
-          route = r;
-          perm = p;
-        },
-      );
-      expect(redirect, AppRoutes.adminHub);
-      expect(route, '/admin/financial-impact');
-      expect(perm, 'financial:read');
-    });
+    test(
+      'coarse operator is ejected + ACCESS_DENIED fired with route/perm',
+      () {
+        String? route;
+        String? perm;
+        final redirect = rbacRouteRedirect(
+          '/admin/financial-impact',
+          const ['telemetry:read'],
+          onDenied: (r, p) {
+            route = r;
+            perm = p;
+          },
+        );
+        expect(redirect, AppRoutes.adminHub);
+        expect(route, '/admin/financial-impact');
+        expect(perm, 'financial:read');
+      },
+    );
 
     test('holding the exact permission proceeds silently', () {
       var fired = false;
-      final redirect = rbacRouteRedirect(
-        '/admin/financial-impact',
-        const ['financial:read'],
-        onDenied: (_, _) => fired = true,
-      );
+      final redirect = rbacRouteRedirect('/admin/financial-impact', const [
+        'financial:read',
+      ], onDenied: (_, _) => fired = true);
       expect(redirect, isNull);
       expect(fired, isFalse);
     });
 
     test('wildcard (TENANT_ADMIN) proceeds silently', () {
       var fired = false;
-      final redirect = rbacRouteRedirect(
-        '/admin/hub/billing-reports',
-        const ['*'],
-        onDenied: (_, _) => fired = true,
-      );
+      final redirect = rbacRouteRedirect('/admin/hub/billing-reports', const [
+        '*',
+      ], onDenied: (_, _) => fired = true);
       expect(redirect, isNull);
       expect(fired, isFalse);
     });

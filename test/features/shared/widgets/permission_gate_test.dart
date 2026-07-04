@@ -9,7 +9,10 @@ import 'package:veraprob/features/shared/widgets/permission_gate.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 String _makeJwt(Map<String, dynamic> appMetadata) {
-  final payload = <String, dynamic>{'sub': 'user-1', 'app_metadata': appMetadata};
+  final payload = <String, dynamic>{
+    'sub': 'user-1',
+    'app_metadata': appMetadata,
+  };
   final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
   return 'header.$encoded.signature';
 }
@@ -38,9 +41,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          authStateProvider.overrideWith((ref) => controller.stream),
-        ],
+        overrides: [authStateProvider.overrideWith((ref) => controller.stream)],
         child: const Directionality(
           textDirection: TextDirection.ltr,
           child: PermissionGate(

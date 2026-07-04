@@ -139,9 +139,10 @@ class AdminHubScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = (constraints.maxWidth / 280)
-                    .floor()
-                    .clamp(1, 4);
+                final columns = (constraints.maxWidth / 280).floor().clamp(
+                  1,
+                  4,
+                );
                 return GridView.count(
                   crossAxisCount: columns,
                   shrinkWrap: true,
