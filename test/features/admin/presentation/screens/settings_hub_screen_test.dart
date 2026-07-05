@@ -177,4 +177,19 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'deep link ?tab=access sem roles:manage cai silenciosamente na aba Geral',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const SettingsHubScreen(initialTab: 'access')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('CONFIGURAÇÕES DO SISTEMA'), findsOneWidget);
+      expect(find.text('Acessos'), findsNothing);
+      expect(find.byType(AccessManagementTab), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

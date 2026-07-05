@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,29 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/features/shared/widgets/permission_gate.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-
-String _makeJwt(Map<String, dynamic> appMetadata) {
-  final payload = <String, dynamic>{
-    'sub': 'user-1',
-    'app_metadata': appMetadata,
-  };
-  final encoded = base64Url.encode(utf8.encode(jsonEncode(payload)));
-  return 'header.$encoded.signature';
-}
+import 'package:veraprob/testing/fakes/fake_jwt.dart';
 
 AuthState _authStateFor(Map<String, dynamic> appMetadata) {
-  final session = Session(
-    accessToken: _makeJwt(appMetadata),
-    tokenType: 'bearer',
-    user: User(
-      id: 'user-1',
-      appMetadata: const <String, dynamic>{},
-      userMetadata: const <String, dynamic>{},
-      aud: 'authenticated',
-      createdAt: DateTime.now().toUtc().toIso8601String(),
-    ),
+  return AuthState(
+    AuthChangeEvent.signedIn,
+    fakeSessionWithAppMeta(appMetadata),
   );
-  return AuthState(AuthChangeEvent.signedIn, session);
 }
 
 void main() {
