@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show ProviderException;
+import 'package:intl/intl.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
@@ -749,12 +750,12 @@ class _MemberRolesRow extends ConsumerWidget {
     final roles = rolesAsync.value ?? const <TenantRole>[];
     if (roles.isEmpty) return const SizedBox.shrink();
 
-    final assignedRoleIds = (assignmentsAsync.value ?? const <RoleAssignment>[])
-        .where((a) => a.userId == userId)
-        .map((a) => a.roleId)
-        .toSet();
-    final assigned = roles.where((r) => assignedRoleIds.contains(r.id));
-    final available = roles.where((r) => !assignedRoleIds.contains(r.id));
+    final assignmentByRoleId = <String, RoleAssignment>{
+      for (final a in assignmentsAsync.value ?? const <RoleAssignment>[])
+        if (a.userId == userId) a.roleId: a,
+    };
+    final assigned = roles.where((r) => assignmentByRoleId.containsKey(r.id));
+    final available = roles.where((r) => !assignmentByRoleId.containsKey(r.id));
 
     return Padding(
       padding: const EdgeInsets.only(left: 72, right: 16, bottom: 12),
@@ -764,11 +765,11 @@ class _MemberRolesRow extends ConsumerWidget {
         crossAxisAlignment: WrapCrossAlignment.center,
         children: [
           for (final role in assigned)
-            Chip(
-              label: Text(role.name, style: VeraProbTypography.caption),
-              backgroundColor: VeraProbColors.primary.withValues(alpha: 0.1),
-              deleteIcon: const Icon(Icons.close, size: 14),
-              onDeleted: () => _revoke(context, ref, role),
+            _buildRoleChip(
+              context,
+              ref,
+              role,
+              assignmentByRoleId[role.id]!.validUntilUtc,
             ),
           if (available.isNotEmpty)
             ActionChip(
@@ -778,6 +779,44 @@ class _MemberRolesRow extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+
+  /// Time-bound assignments render in Amber with the expiry date; permanent
+  /// ones keep the primary tint. Foreground stays the semantic color over a
+  /// tint (never white over an accent fill — ACCENT-FILL-CONTRAST).
+  Widget _buildRoleChip(
+    BuildContext context,
+    WidgetRef ref,
+    TenantRole role,
+    DateTime? validUntilUtc,
+  ) {
+    final expiring = validUntilUtc != null;
+    final label = expiring
+        ? '${role.name} · até ${DateFormat('dd/MM/yyyy').format(validUntilUtc.toLocal())}'
+        : role.name;
+    return Chip(
+      avatar: expiring
+          ? const Icon(
+              Icons.schedule_outlined,
+              size: 14,
+              color: VeraProbColors.warning,
+            )
+          : null,
+      label: Text(
+        label,
+        style: expiring
+            ? VeraProbTypography.caption.copyWith(color: VeraProbColors.warning)
+            : VeraProbTypography.caption,
+      ),
+      backgroundColor: expiring
+          ? VeraProbColors.warning.withValues(alpha: 0.12)
+          : VeraProbColors.primary.withValues(alpha: 0.1),
+      side: expiring
+          ? BorderSide(color: VeraProbColors.warning.withValues(alpha: 0.4))
+          : null,
+      deleteIcon: const Icon(Icons.close, size: 14),
+      onDeleted: () => _revoke(context, ref, role),
     );
   }
 
@@ -885,7 +924,7 @@ class _AssignRoleDialogState extends State<_AssignRoleDialog> {
   Widget build(BuildContext context) {
     final expiryLabel = _validUntilUtc == null
         ? 'Permanente'
-        : 'Até ${_validUntilUtc!.toLocal().toString().split(' ')[0]}';
+        : 'Até ${DateFormat('dd/MM/yyyy').format(_validUntilUtc!.toLocal())}';
     return AlertDialog(
       title: const Text('Atribuir Perfil de Acesso'),
       content: SizedBox(

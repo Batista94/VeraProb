@@ -24,13 +24,15 @@ import '../../../infrastructure/postgres/postgres_test_config.dart';
 
 const _uuid = Uuid();
 
+int _cnpjCounter = 0;
+
 /// Generates a unique 14-digit CNPJ-like string for test isolation.
 String _uniqueCnpj() {
-  final ts = DateTime.now().toUtc().microsecondsSinceEpoch.toString().padLeft(
-    14,
-    '0',
-  );
-  return ts.substring(ts.length - 14);
+  _cnpjCounter++;
+  final ts = DateTime.now().toUtc().microsecondsSinceEpoch.toString();
+  final paddedCounter = _cnpjCounter.toString().padLeft(4, '0');
+  final combined = '$ts$paddedCounter'.padLeft(14, '0');
+  return combined.substring(combined.length - 14);
 }
 
 /// Valid plan types accepted by the RPC.

@@ -108,6 +108,13 @@ class RoleChangeRequest {
     required this.createdAtUtc,
   });
 
+  /// Target role id carried in the payload (UPDATE_ROLE_PERMISSIONS and
+  /// GRANT_ROLE; `null` for CREATE_ROLE).
+  String? get roleId => payload['role_id'] as String?;
+
+  /// Proposed role name carried in the payload (CREATE_ROLE only).
+  String? get proposedRoleName => payload['name'] as String?;
+
   /// Permission keys carried in the request payload (empty for GRANT_ROLE).
   List<String> get proposedPermissionKeys {
     final grants = payload['perm_grants'];

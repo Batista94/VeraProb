@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import 'package:veraprob/application/admin/access_management_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
@@ -455,6 +456,20 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     );
   }
 
+  Widget _buildPermissionLabel(TenantPermission perm) {
+    final label = Text(
+      perm.labelPt,
+      style: VeraProbTypography.bodyMedium.copyWith(
+        color: perm.isSensitive
+            ? VeraProbColors.warning
+            : VeraProbColors.textPrimary,
+      ),
+      overflow: TextOverflow.ellipsis,
+    );
+    if (perm.description.isEmpty) return label;
+    return Tooltip(message: perm.description, child: label);
+  }
+
   Widget _buildPermissionTile(TenantPermission perm) {
     final selected = _selection.containsKey(perm.key);
     // Subset-guard preview: an admin cannot grant a permission they lack.
@@ -474,17 +489,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
           contentPadding: EdgeInsets.zero,
           title: Row(
             children: [
-              Flexible(
-                child: Text(
-                  perm.labelPt,
-                  style: VeraProbTypography.bodyMedium.copyWith(
-                    color: perm.isSensitive
-                        ? VeraProbColors.warning
-                        : VeraProbColors.textPrimary,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
+              Flexible(child: _buildPermissionLabel(perm)),
               if (perm.isSensitive) ...[
                 const SizedBox(width: 6),
                 const Icon(
@@ -678,6 +683,14 @@ class _PendingApprovalsSection extends ConsumerWidget {
     if (requests.isEmpty) return const SizedBox.shrink();
 
     final currentUserId = ref.watch(currentOperatorIdProvider);
+    final roles = ref.watch(tenantRolesProvider).value ?? const <TenantRole>[];
+    final rolesById = <String, TenantRole>{for (final r in roles) r.id: r};
+    final labelByKey = <String, String>{
+      for (final p
+          in ref.watch(permissionDictionaryProvider).value ??
+              const <TenantPermission>[])
+        p.key: p.labelPt,
+    };
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -708,6 +721,8 @@ class _PendingApprovalsSection extends ConsumerWidget {
             _ApprovalRow(
               request: req,
               isOwnRequest: req.requestedBy == currentUserId,
+              targetRole: req.roleId == null ? null : rolesById[req.roleId],
+              labelByKey: labelByKey,
             ),
         ],
       ),
@@ -716,10 +731,20 @@ class _PendingApprovalsSection extends ConsumerWidget {
 }
 
 class _ApprovalRow extends ConsumerStatefulWidget {
-  const _ApprovalRow({required this.request, required this.isOwnRequest});
+  const _ApprovalRow({
+    required this.request,
+    required this.isOwnRequest,
+    required this.targetRole,
+    required this.labelByKey,
+  });
 
   final RoleChangeRequest request;
   final bool isOwnRequest;
+
+  /// Resolved role for UPDATE_ROLE_PERMISSIONS/GRANT_ROLE payloads (`null` for
+  /// CREATE_ROLE or when the role vanished from the catalog).
+  final TenantRole? targetRole;
+  final Map<String, String> labelByKey;
 
   @override
   ConsumerState<_ApprovalRow> createState() => _ApprovalRowState();
@@ -762,54 +787,154 @@ class _ApprovalRowState extends ConsumerState<_ApprovalRow> {
     }
   }
 
+  /// Diff against the role's current grants. CREATE_ROLE has no current set
+  /// (everything is an addition); GRANT_ROLE carries no permission keys.
+  ({Set<String> added, Set<String> removed}) get _diff {
+    final req = widget.request;
+    if (req.requestType == 'GRANT_ROLE') {
+      return (added: const <String>{}, removed: const <String>{});
+    }
+    final proposed = req.proposedPermissionKeys.toSet();
+    final current = req.requestType == 'UPDATE_ROLE_PERMISSIONS'
+        ? (widget.targetRole?.permissionKeys ?? const <String>{})
+        : const <String>{};
+    return (
+      added: proposed.difference(current),
+      removed: current.difference(proposed),
+    );
+  }
+
+  String get _title {
+    final req = widget.request;
+    final roleName = req.requestType == 'CREATE_ROLE'
+        ? req.proposedRoleName
+        : widget.targetRole?.name;
+    final label = _requestTypeLabel(req.requestType);
+    return roleName == null || roleName.isEmpty ? label : '$label · $roleName';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final req = widget.request;
-    final keys = req.proposedPermissionKeys;
-    final summary = keys.isEmpty
-        ? _requestTypeLabel(req.requestType)
-        : '${_requestTypeLabel(req.requestType)} · ${keys.join(', ')}';
+    final diff = _diff;
+    final requestedAt = DateFormat(
+      'dd/MM/yyyy',
+    ).format(widget.request.createdAtUtc.toLocal());
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              summary,
-              style: VeraProbTypography.caption,
-              overflow: TextOverflow.ellipsis,
-            ),
+          Row(
+            children: [
+              Expanded(child: _buildTitle(requestedAt)),
+              _buildTrailing(),
+            ],
           ),
-          if (widget.isOwnRequest)
-            Text(
-              'Aguardando outro administrador',
-              style: VeraProbTypography.caption.copyWith(
-                color: VeraProbColors.textSecondary,
-                fontStyle: FontStyle.italic,
+          if (diff.added.isNotEmpty || diff.removed.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  for (final key in diff.added)
+                    _DiffChip(
+                      label: widget.labelByKey[key] ?? key,
+                      added: true,
+                    ),
+                  for (final key in diff.removed)
+                    _DiffChip(
+                      label: widget.labelByKey[key] ?? key,
+                      added: false,
+                    ),
+                ],
               ),
-            )
-          else if (_busy)
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else ...[
-            TextButton(
-              onPressed: () => _decide(approve: false),
-              style: TextButton.styleFrom(
-                foregroundColor: VeraProbColors.error,
-              ),
-              child: const Text('Rejeitar'),
             ),
-            const SizedBox(width: 4),
-            FilledButton(
-              onPressed: () => _decide(approve: true),
-              child: const Text('Aprovar'),
-            ),
-          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildTitle(String requestedAt) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          _title,
+          style: VeraProbTypography.caption.copyWith(
+            color: VeraProbColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          overflow: TextOverflow.ellipsis,
+        ),
+        Text(
+          'Solicitado em $requestedAt',
+          style: VeraProbTypography.caption.copyWith(
+            color: VeraProbColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTrailing() {
+    if (widget.isOwnRequest) {
+      return Text(
+        'Aguardando outro administrador',
+        style: VeraProbTypography.caption.copyWith(
+          color: VeraProbColors.textSecondary,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    if (_busy) {
+      return const SizedBox(
+        width: 16,
+        height: 16,
+        child: CircularProgressIndicator(strokeWidth: 2),
+      );
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextButton(
+          onPressed: () => _decide(approve: false),
+          style: TextButton.styleFrom(foregroundColor: VeraProbColors.error),
+          child: const Text('Rejeitar'),
+        ),
+        const SizedBox(width: 4),
+        FilledButton(
+          onPressed: () => _decide(approve: true),
+          child: const Text('Aprovar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// One permission in a four-eyes diff: Emerald tint for additions, Red tint
+/// for removals. Tinted surfaces keep the semantic color as foreground text
+/// (never an accent fill — ACCENT-FILL-CONTRAST does not apply to tints).
+class _DiffChip extends StatelessWidget {
+  const _DiffChip({required this.label, required this.added});
+
+  final String label;
+  final bool added;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = added ? VeraProbColors.success : VeraProbColors.error;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        '${added ? '+' : '−'} $label',
+        style: VeraProbTypography.caption.copyWith(color: color),
       ),
     );
   }
