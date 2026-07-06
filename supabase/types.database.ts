@@ -7469,6 +7469,14 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: string;
       };
+      test_hold_financial_guard_lock: {
+        Args: {
+          p_contract_id: string;
+          p_organization_id: string;
+          p_seconds: number;
+        };
+        Returns: undefined;
+      };
       test_tamper_raw_telemetry_payload: {
         Args: { p_new_payload: Json; p_record_id: string };
         Returns: undefined;
