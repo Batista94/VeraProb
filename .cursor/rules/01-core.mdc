@@ -1,0 +1,13 @@
+---
+description: Regra base (Core) e filosofia de código (Ponytail). Sempre aplicável.
+globs: ["*"]
+alwaysApply: true
+---
+
+# VeraProb — Regra Base (Cursor)
+
+Esta é a regra fundamental de atuação no projeto. Para detalhes completos, o Single Source of Truth (SSOT) é `AGENTS.md`.
+
+- **Missão:** Proteção SLA/Finance + Governança Forense. Motor Forense Agnóstico. Nunca tome atalhos MVP; este é um projeto B2B enterprise.
+- **Filosofia Ponytail:** Use a solução mais preguiçosa que funcione *com segurança*. Evite abstrações especulativas (como interfaces com uma única implementação). A prioridade é a alteração mais curta e nativa possível.
+- **Fluxo do Cursor:** Não tente escrever "Step 0" no chat e não force fluxos de TDD estritos antes da edição de código. Concentre-se em gerar a solução correta no código. A validação (TDD e integridade) será validada no painel de terminal posteriormente via `make check`.

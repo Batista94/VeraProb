@@ -1,68 +1,8 @@
-# VeraProb — Cursor Rules (Bootstrap)
+# VeraProb — Cursor Rules
 
-Cursor-specific bootstrap. **Navigation index:** [`AGENTS.md`](AGENTS.md) (also injected as workspace context). Do NOT duplicate SSOT content here — read SSOT files proactively with your file tools.
+> **ATENÇÃO AO AGENTE CURSOR (COMPOSER 2.5):**
+> Este repositório migrou para **regras modulares (.mdc)** na pasta `.cursor/rules/`.
+> 
+> Você não precisa ler todos os manuais no chat, e você **não deve tentar rodar fluxos de TDD estritos ou escrever blocos de "Step 0" manualmente**. Apenas confie no seu loop de agente interno. As regras específicas de tecnologia e negócios serão injetadas automaticamente no seu contexto dependendo dos arquivos que você estiver editando.
 
----
-
-## 1. MISSION & PRINCIPLES
-
-See **Mission** and **Ponytail** in [`AGENTS.md`](AGENTS.md). Enterprise-grade B2B — never MVP shortcuts; shortest safe diff wins.
-
----
-
-## 2. AUTONOMOUS INVOCATION OF AGENTS & SKILLS
-
-You have full autonomy and are **required** to proactively read agent instructions and skill manuals before modifying code, without waiting for the user to tell you to do so. Match tasks to the following triggers and load the context files using your file reading tools immediately:
-
-### A. Agent Personas Triggers:
-Each persona file lives in [`.claude/agents/`](.claude/agents/). Load the persona **and** its bundled skills (same turn, before coding).
-
-- **Architect:** New domain entities, directory/layer boundaries, agnostic-core refactors → read [`.claude/agents/architect.md`](.claude/agents/architect.md) + [`.agents/skills/ingestion-streaming-architect/SKILL.md`](.agents/skills/ingestion-streaming-architect/SKILL.md) when the task touches API endpoints, webhooks, Edge Functions, or high-write ingestion tables.
-- **Senior Engineer:** Flutter, Riverpod, Dart, SQL migrations, performance, debugging → read [`.claude/agents/senior-engineer.md`](.claude/agents/senior-engineer.md).
-- **QA/Security:** Schema, RLS, RBAC, idempotency, telemetry/evidence, agentic workflows → read [`.claude/agents/qa-security.md`](.claude/agents/qa-security.md) + [`.agents/skills/hostile-defense-attorney/SKILL.md`](.agents/skills/hostile-defense-attorney/SKILL.md) for every schema/RLS/audit/evidence change + [`.agents/skills/prompt-injection-auditor/SKILL.md`](.agents/skills/prompt-injection-auditor/SKILL.md) when the task involves LLM endpoints, Skills, or agent instructions (INV-11).
-- **UX/Operations:** OCC screens, penalty display, forensic reports, dispatch/CFO UI → read [`.claude/agents/ux-operations.md`](.claude/agents/ux-operations.md).
-- **Lead Reviewer:** PR/diff review, integration safety → read [`.claude/agents/lead-reviewer.md`](.claude/agents/lead-reviewer.md) + [`.agents/skills/veraprob-pr-scanner/SKILL.md`](.agents/skills/veraprob-pr-scanner/SKILL.md).
-- **Business Maverick:** ROI, roadmap, SLA margin-erosion → read [`.claude/agents/business-maverick.md`](.claude/agents/business-maverick.md).
-
-### B. Specialized Skills Triggers:
-- **Ponytail (ALWAYS — default `full`):** Before ANY code generation or modification, you MUST read and apply [`.agents/skills/ponytail/SKILL.md`](.agents/skills/ponytail/SKILL.md) — shortest safe diff, reuse existing patterns, no speculative abstractions. Before declaring a task finished, skim the diff with [`.agents/skills/ponytail-review/SKILL.md`](.agents/skills/ponytail-review/SKILL.md).
-- **UI/UX Optimization:** When editing any widget, styling, layout, or user interactions, you MUST read: [`.agents/skills/ui-ux-pro-max/SKILL.md`](.agents/skills/ui-ux-pro-max/SKILL.md).
-- **Database Migrations / Queries:** When writing or optimizing SQL migrations, database views, or pgTAP tests, you MUST read: [`.agents/skills/supabase-postgres-best-practices/SKILL.md`](.agents/skills/supabase-postgres-best-practices/SKILL.md).
-- **Forensic Validation:** When verifying if changes comply with all invariants, you MUST read: [`.agents/skills/forensic-scanner/SKILL.md`](.agents/skills/forensic-scanner/SKILL.md).
-- **PR Scanning:** Before declaring a task finished, read [`.agents/skills/veraprob-pr-scanner/SKILL.md`](.agents/skills/veraprob-pr-scanner/SKILL.md) and run `bash scripts/security/pr_full_scanner.sh`.
-- **Firecrawl (on-demand only):** External web research (docs, specs, third-party APIs) — read [`.claude/skills/firecrawl/SKILL.md`](.claude/skills/firecrawl/SKILL.md). Not part of forensic/tenant workflows; never proactive for in-repo coding.
-
-### C. Domain-Specific Protocols (from [`CLAUDE.md`](CLAUDE.md) — Cursor-only bootstrap; file unchanged for Claude Code/Kiro):
-- **SuperAdmin:** Multi-tenant escapes MUST use `SuperAdminBypassTenantValidator`. MFA mandatory for sensitive transitions (Archive/Quota/Delete).
-- **Telegram:** Integration via `TelegramBindingToken` (short TTL). Evidence links strictly bound to `organization_id` (INV-1).
-- **E2E (`test/integration/e2e/**`):** Run via `make test-e2e` or `make test-e2e-file FILE=...` (never raw `flutter test` — requires `SKIP_MFA_DEV`). Call `cancelModal(tester)` before navigating past non-dismissible modals. Match literal widget types/labels in screen files. Zero analyze warnings in touched test files.
-
-### D. Windows / Cursor Toolchain (parity with Claude Code / Antigravity)
-- **PR scanner:** Run via Git Bash — `bash scripts/security/pr_full_scanner.sh`. Do **not** merge stderr into stdout (`2>&1`) when debugging Step 1; git CRLF warnings (`warning: in the working copy...`) are not JSON. Read [`.agents/skills/veraprob-pr-scanner/SKILL.md`](.agents/skills/veraprob-pr-scanner/SKILL.md) before interpreting results.
-- **LF encoding:** All tracked text files use **LF** (pre-commit Integrity Guard). After Windows edits: `python scripts/security/check_integrity.py` or `git add --renormalize .` on failing paths.
-- **DB workflow:** After migrations — `supabase db reset` or `supabase migration up`, then `make test-db`, then `bash scripts/sync_db_types.sh` and commit `supabase/types.database.ts`.
-- **Make on Windows:** Prefer Git Bash for `make test-db`, `make check`, and scanner targets (Makefile assumes bash semantics).
-
----
-
-## 3. MANDATORY SSOT READS (Proactive — No User Prompt Required)
-
-Enforce all **28 Forensic Invariants (INV-1 to INV-28)**. Never rely on memory alone — open the SSOT before coding:
-
-| When | Read (full SSOT) |
-|------|------------------|
-| ANY structural, domain, security, or migration work | [`.kiro/steering/forensic-standards.md`](.kiro/steering/forensic-standards.md) |
-| Editing `lib/**/*.dart`, `test/**/*.dart`, or `supabase/migrations/**/*.sql` | [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) — apply all 20 CI block recipes |
-| UI, E2E, Wasm async, auth lifecycle, golden tests, modal flows | [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) |
-| OCC screens, penalty display, forensic reports, design tokens | [`.kiro/steering/ux-standards.md`](.kiro/steering/ux-standards.md) |
-| New SQL migration | Also follow **Database Governance** in [`AGENTS.md`](AGENTS.md) + migration test plan under `forensic_records/plans/` |
-
-**Code style, complexity gates, protocols, out-of-scope:** [`AGENTS.md`](AGENTS.md) — follow without duplication here.
-
----
-
-## 4. WORKFLOW & PROTOCOLS
-
-1. **TDD:** Write a failing test (`IntegrityException`) BEFORE writing implementation code.
-2. **Step 0:** State Ponytail + consulted Skills (from `.agents/skills/`) and relevant Invariant Check (`INV-X`) before any code change.
-3. **Integrity checks:** Run `make check` or `bash scripts/security/pr_full_scanner.sh` to ensure compliance before declaring a task done.
+**Para referências absolutas, SSOTs e regras universais não cobertas pelas `.mdc`, consulte o índice oficial do repositório em `AGENTS.md`.**

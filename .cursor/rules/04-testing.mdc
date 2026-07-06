@@ -1,0 +1,16 @@
+---
+description: Regras para Testes Unitários, Widget Tests, E2E e Integração (pgTAP).
+globs: ["test/**/*.dart", "supabase/tests/**/*.sql", "supabase/functions/tests/**/*.ts"]
+---
+
+# VeraProb — Fluxo de Testes
+
+Você está editando arquivos de teste. A documentação primária do repositório reside em `AGENTS.md`. 
+
+- **Segurança (TDD Base):** O projeto preza pelo TDD. Se você criar ou modificar código de produção, deve ser coberto por testes (gerando `IntegrityException` antes do sucesso).
+- **Rodando Testes Localmente:**
+  - `make test`: Testes unitários e de widget (sequenciais).
+  - `make test-db`: Testes de banco forenses via pgTAP.
+  - `make test-e2e`: Bateria E2E (nunca rode testes E2E diretamente com flutter test, precisa de dart-defines específicos).
+- **Golden Tests:** Ao alterar UI que envolva layout visual, as baselines devem ser criadas via `make goldens` e o arquivo deve constar no script `scripts/generate_goldens.sh`. Não atualize goldens manualmente fora do target hermético (Docker).
+- **Qualidade de Teste:** É proibido deixar variáveis ou testes vazios, mocks que ignoram a validação principal, ou `unnecessary_underscores`.
