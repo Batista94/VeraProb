@@ -375,6 +375,7 @@ export type Database = {
           effective_at_utc: string;
           financial_ceiling_cents: number | null;
           id: string;
+          monthly_penalty_cap_cents: number | null;
           notes: string | null;
           organization_id: string;
           penalty_multiplier_bps: number;
@@ -386,6 +387,7 @@ export type Database = {
           effective_at_utc: string;
           financial_ceiling_cents?: number | null;
           id?: string;
+          monthly_penalty_cap_cents?: number | null;
           notes?: string | null;
           organization_id: string;
           penalty_multiplier_bps: number;
@@ -397,6 +399,7 @@ export type Database = {
           effective_at_utc?: string;
           financial_ceiling_cents?: number | null;
           id?: string;
+          monthly_penalty_cap_cents?: number | null;
           notes?: string | null;
           organization_id?: string;
           penalty_multiplier_bps?: number;
@@ -418,6 +421,68 @@ export type Database = {
           },
           {
             foreignKeyName: "contract_financial_amendments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      contract_penalty_monthly_accrual: {
+        Row: {
+          accrued_cents: number;
+          cap_cents_snapshot: number;
+          cap_reached_at_utc: string | null;
+          contract_id: string;
+          month_utc: string;
+          organization_id: string;
+          updated_at_utc: string;
+          warned_at_utc: string | null;
+        };
+        Insert: {
+          accrued_cents?: number;
+          cap_cents_snapshot: number;
+          cap_reached_at_utc?: string | null;
+          contract_id: string;
+          month_utc: string;
+          organization_id: string;
+          updated_at_utc?: string;
+          warned_at_utc?: string | null;
+        };
+        Update: {
+          accrued_cents?: number;
+          cap_cents_snapshot?: number;
+          cap_reached_at_utc?: string | null;
+          contract_id?: string;
+          month_utc?: string;
+          organization_id?: string;
+          updated_at_utc?: string;
+          warned_at_utc?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: false;
+            referencedRelation: "contracts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
@@ -693,6 +758,7 @@ export type Database = {
           id: string;
           latitude: number | null;
           longitude: number | null;
+          monthly_penalty_cap_cents: number | null;
           name: string;
           notes: string | null;
           organization_id: string;
@@ -722,6 +788,7 @@ export type Database = {
           id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          monthly_penalty_cap_cents?: number | null;
           name: string;
           notes?: string | null;
           organization_id: string;
@@ -751,6 +818,7 @@ export type Database = {
           id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          monthly_penalty_cap_cents?: number | null;
           name?: string;
           notes?: string | null;
           organization_id?: string;
@@ -1622,6 +1690,49 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: "contractual_service_executions";
             referencedColumns: ["set_id"];
+          },
+        ];
+      };
+      financial_guard_credits: {
+        Row: {
+          credited_at_utc: string;
+          credited_cents: number;
+          organization_id: string;
+          sanction_ledger_entry_id: string;
+        };
+        Insert: {
+          credited_at_utc?: string;
+          credited_cents: number;
+          organization_id: string;
+          sanction_ledger_entry_id: string;
+        };
+        Update: {
+          credited_at_utc?: string;
+          credited_cents?: number;
+          organization_id?: string;
+          sanction_ledger_entry_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -5790,6 +5901,7 @@ export type Database = {
           p_contract_id: string;
           p_effective_at_utc: string;
           p_financial_ceiling_cents: number;
+          p_monthly_penalty_cap_cents?: number;
           p_notes: string;
           p_penalty_multiplier_bps: number;
         };
@@ -6433,6 +6545,10 @@ export type Database = {
       };
       read_dispute_portal: { Args: { p_token: string }; Returns: Json };
       read_infraction_context: { Args: { p_token: string }; Returns: Json };
+      reconcile_financial_guard: {
+        Args: { p_organization_id?: string };
+        Returns: number;
+      };
       record_forensic_failure: {
         Args: { p_org_id: string };
         Returns: undefined;
