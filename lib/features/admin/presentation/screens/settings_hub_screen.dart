@@ -5,6 +5,7 @@ import 'package:veraprob/features/admin/presentation/screens/access_management_t
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
@@ -152,8 +153,29 @@ class _GeneralSettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final operatorName = ref.watch(currentOperatorNameProvider);
-    final operatorId = ref.watch(currentOperatorIdProvider);
+    final authState = ref.watch(authStateProvider).value;
+    final user = authState?.session?.user;
+    final rawName = user?.userMetadata?['name'] as String?;
+    final rawEmail = user?.email ?? '';
+    final role = ref.watch(currentUserRoleProvider);
+
+    String operatorName = 'Usuário';
+    if (rawName != null && rawName.trim().isNotEmpty) {
+      operatorName = rawName.trim();
+    } else if (rawEmail.isNotEmpty) {
+      operatorName = rawEmail;
+    }
+
+    final roleLabel = switch (role) {
+      UserRole.admin => 'Administrador',
+      UserRole.operator => 'Operador',
+      UserRole.auditor => 'Auditor',
+      UserRole.contractorViewer => 'Visualizador',
+      UserRole.superAdmin => 'Super Administrador',
+    };
+
+    final displayIdentity = '$operatorName ($roleLabel)';
+    final operatorId = user?.id ?? 'Não autenticado';
 
     return SingleChildScrollView(
       child: Padding(
@@ -179,12 +201,12 @@ class _GeneralSettingsTab extends ConsumerWidget {
             const _SectionHeader(title: 'Sessão Atual'),
             _SettingTile(
               label: 'Operador Conectado',
-              value: operatorName,
+              value: displayIdentity,
               icon: Icons.person_outline,
             ),
             _SettingTile(
               label: 'ID do Operador',
-              value: operatorId ?? 'Não autenticado',
+              value: operatorId,
               icon: Icons.badge_outlined,
             ),
 

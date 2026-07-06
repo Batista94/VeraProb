@@ -376,24 +376,28 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
       byModule.putIfAbsent(p.module, () => <TenantPermission>[]).add(p);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildHeader(),
-        if (_touchesSensitive) ...[
-          const SizedBox(height: 8),
-          const _SensitiveBanner(),
-        ],
-        const SizedBox(height: VeraProbSpacing.sm),
-        Expanded(
-          child: ListView(
-            children: [
-              for (final entry in byModule.entries)
-                _buildModuleGroup(entry.key, entry.value),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildHeader(),
+          if (_touchesSensitive) ...[
+            const SizedBox(height: 8),
+            const _SensitiveBanner(),
+          ],
+          const SizedBox(height: VeraProbSpacing.sm),
+          Expanded(
+            child: ListView(
+              children: [
+                for (final entry in byModule.entries)
+                  _buildModuleGroup(entry.key, entry.value),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
+      bottomNavigationBar: _buildBottomActions(),
     );
   }
 
@@ -407,31 +411,40 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
         ),
       );
     }
-    return Row(
-      children: [
-        Flexible(
-          child: Text(
-            widget.role!.name,
-            style: VeraProbTypography.sectionTitle,
-            overflow: TextOverflow.ellipsis,
-          ),
+    return Text(
+      widget.role!.name,
+      style: VeraProbTypography.sectionTitle,
+      overflow: TextOverflow.ellipsis,
+    );
+  }
+
+  Widget _buildBottomActions() {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(
+          top: VeraProbSpacing.md,
+          bottom: VeraProbSpacing.sm,
         ),
-        const Spacer(),
-        FilledButton.icon(
-          icon: _saving
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VeraProbColors.background,
-                  ),
-                )
-              : const Icon(Icons.save_outlined, size: 18),
-          label: const Text('Salvar'),
-          onPressed: (_saving || _isSystem) ? null : _save,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            FilledButton.icon(
+              icon: _saving
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: VeraProbColors.background,
+                      ),
+                    )
+                  : const Icon(Icons.save_outlined, size: 18),
+              label: const Text('Salvar'),
+              onPressed: (_saving || _isSystem) ? null : _save,
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

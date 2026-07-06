@@ -60,7 +60,7 @@ void main() async {
               .add(const Duration(days: 30))
               .toIso8601String(),
           'monthly_penalty_cap_cents': 5000000,
-        }
+        },
       ], onConflict: 'id');
     }
   });

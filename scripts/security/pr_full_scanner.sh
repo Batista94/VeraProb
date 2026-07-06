@@ -323,7 +323,19 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
        # Trigger reload to ensure cache is current
        bash "$SCRIPT_DIR/../refresh_schema_cache.sh" > /dev/null 2>&1
 
-       HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -I "http://localhost:54321/rest/v1/")
+       # Aguardar o recarregamento do cache (PostgREST pode retornar 503 temporariamente)
+       RETRY_COUNT=0
+       HEALTH_CHECK="503"
+       while [[ "$RETRY_COUNT" -lt 5 ]]; do
+         HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -I "http://localhost:54321/rest/v1/")
+         if [[ "$HEALTH_CHECK" == "503" ]]; then
+           sleep 1
+           RETRY_COUNT=$((RETRY_COUNT + 1))
+         else
+           break
+         fi
+       done
+
        if [[ "$HEALTH_CHECK" -lt 200 || "$HEALTH_CHECK" -ge 400 ]]; then
           echo -e "  ${RED}${BOLD}[BLOCK]${NC} PostgREST API is unhealthy (HTTP $HEALTH_CHECK) after migration sync."
           TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
