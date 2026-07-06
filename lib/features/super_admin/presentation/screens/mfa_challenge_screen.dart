@@ -18,10 +18,9 @@ const _kScreenTitle = TextStyle(
 );
 const _kSubtitle = TextStyle(color: VeraProbColors.textSecondary, fontSize: 13);
 const _kLoadingCaption = TextStyle(color: VeraProbColors.textSecondary);
-const _kOtpField = TextStyle(
-  fontSize: 28,
+TextStyle get _kOtpField => VeraProbTypography.mono(
+  size: 28,
   letterSpacing: 8,
-  fontFamily: 'monospace',
   color: VeraProbColors.textPrimary,
 );
 const _kErrorBody = TextStyle(color: VeraProbColors.error, fontSize: 13);

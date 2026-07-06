@@ -103,7 +103,7 @@ class _CreateEndpointDialogState extends ConsumerState<CreateEndpointDialog> {
               controller: _urlController,
               enabled: !_isSaving,
               autofocus: true,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+              style: VeraProbTypography.mono(size: 13),
               decoration: InputDecoration(
                 labelText: 'URL do endpoint (HTTPS)',
                 hintText: 'https://erp.suaempresa.com.br/webhooks/veraprob',

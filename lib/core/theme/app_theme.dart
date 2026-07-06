@@ -233,11 +233,18 @@ class VeraProbTypography {
   );
 
   /// Monospaced style for hashes, IDs, and forensic data.
-  static TextStyle get mono => base.copyWith(
+  static TextStyle mono({
+    double size = 12,
+    Color color = VeraProbColors.textPrimary,
+    FontWeight? weight,
+    double? letterSpacing,
+  }) => base.copyWith(
     fontFamily: 'monospace',
-    fontSize: 12,
+    fontSize: size,
+    fontWeight: weight,
+    letterSpacing: letterSpacing,
+    color: color,
     fontFeatures: [const FontFeature.tabularFigures()],
-    color: VeraProbColors.textPrimary,
   );
 }
 

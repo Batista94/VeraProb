@@ -511,10 +511,9 @@ class _DriverRowState extends State<_DriverRow> {
                 flex: 2,
                 child: Text(
                   widget.driver.licenseNumber,
-                  style: const TextStyle(
-                    fontSize: 14,
+                  style: VeraProbTypography.mono(
+                    size: 14,
                     color: VeraProbColors.textSecondary,
-                    fontFamily: 'monospace',
                   ),
                 ),
               ),

@@ -12,7 +12,7 @@ O objetivo deste plano é certificar os fluxos de entrada (Importador Universal 
 
 * **Perfil:** Admin — Org Alpha (Inquilino Piloto)
 * **E-mail:** `admin-a@veraprob.dev`
-* **Senha:** `veraprob123!`
+* **Senha:** `123456`
 * **Org ID:** `00000000-0000-0000-0000-000000000001` (CNPJ: `78.423.287/0001-50`)
 
 ### 🚀 Inicialização do Ambiente

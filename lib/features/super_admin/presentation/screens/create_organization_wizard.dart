@@ -535,9 +535,8 @@ class _CreateOrganizationWizardState
                           const SizedBox(height: 2),
                           SelectableText(
                             entry.value,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 12,
+                            style: VeraProbTypography.mono(
+                              size: 12,
                               color: VeraProbColors.textSecondary,
                             ),
                           ),
@@ -810,9 +809,8 @@ class _SecretRevealSection extends StatelessWidget {
               Expanded(
                 child: SelectableText(
                   secret,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 11,
+                  style: VeraProbTypography.mono(
+                    size: 11,
                     color: VeraProbColors.textPrimary,
                   ),
                 ),

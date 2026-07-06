@@ -975,10 +975,7 @@ class _AllowedDomainsSection extends StatelessWidget {
           children: domains.map((domain) {
             return Chip(
               key: Key('domain_chip_$domain'),
-              label: Text(
-                domain,
-                style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-              ),
+              label: Text(domain, style: VeraProbTypography.mono(size: 12)),
               deleteIcon: enabled ? const Icon(Icons.close, size: 14) : null,
               onDeleted: enabled ? () => onRemove(domain) : null,
               backgroundColor: VeraProbColors.superAdminSurface.withValues(

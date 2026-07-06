@@ -359,10 +359,9 @@ class _VehicleRowState extends State<_VehicleRow> {
               flex: 2,
               child: Text(
                 widget.vehicle.plate,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  fontFamily: 'monospace',
+                style: VeraProbTypography.mono(
+                  weight: FontWeight.w600,
+                  size: 14,
                 ),
               ),
             ),

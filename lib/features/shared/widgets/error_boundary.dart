@@ -82,10 +82,9 @@ class ErrorView extends StatelessWidget {
           Text(
             error.exceptionAsString(),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12,
+            style: VeraProbTypography.mono(
+              size: 12,
               color: VeraProbColors.textSecondary,
-              fontFamily: 'monospace',
             ),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,

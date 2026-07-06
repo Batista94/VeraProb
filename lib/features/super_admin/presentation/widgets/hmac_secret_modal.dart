@@ -81,9 +81,8 @@ class _HmacSecretModalState extends State<HmacSecretModal> {
                 Expanded(
                   child: Text(
                     widget.secret,
-                    style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 18,
+                    style: VeraProbTypography.mono(
+                      size: 18,
                       color: VeraProbColors.textPrimary,
                       letterSpacing: 2,
                     ),

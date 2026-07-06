@@ -446,8 +446,8 @@ class _FeedNodeItem extends StatelessWidget {
                         const SizedBox(height: 8),
                         Text(
                           'SET ID: ${node.execution.setId.substring(0, 8)}...',
-                          style: VeraProbTypography.caption.copyWith(
-                            fontFamily: 'monospace',
+                          style: VeraProbTypography.mono(
+                            size: 12,
                             color: VeraProbColors.textSecondary,
                           ),
                         ),

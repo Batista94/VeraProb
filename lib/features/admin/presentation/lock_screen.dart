@@ -459,10 +459,9 @@ class _TelemetryRowWidget extends StatelessWidget {
           width: 80,
           child: Text(
             row.vehicleId,
-            style: const TextStyle(
+            style: VeraProbTypography.mono(
               color: VeraProbColors.neutral,
-              fontSize: 11,
-              fontFamily: 'monospace',
+              size: 11,
             ),
           ),
         ),
@@ -470,20 +469,18 @@ class _TelemetryRowWidget extends StatelessWidget {
           width: 120,
           child: Text(
             row.event,
-            style: const TextStyle(
+            style: VeraProbTypography.mono(
               color: VeraProbColors.textSecondary,
-              fontSize: 11,
-              fontFamily: 'monospace',
+              size: 11,
             ),
           ),
         ),
         Expanded(
           child: Text(
             row.coords,
-            style: const TextStyle(
+            style: VeraProbTypography.mono(
               color: VeraProbColors.textDisabled,
-              fontSize: 11,
-              fontFamily: 'monospace',
+              size: 11,
             ),
           ),
         ),
@@ -496,12 +493,11 @@ class _TelemetryRowWidget extends StatelessWidget {
           ),
           child: Text(
             row.verdict,
-            style: TextStyle(
+            style: VeraProbTypography.mono(
               color: _verdictColor(),
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
+              size: 10,
+              weight: FontWeight.w700,
               letterSpacing: 0.5,
-              fontFamily: 'monospace',
             ),
           ),
         ),

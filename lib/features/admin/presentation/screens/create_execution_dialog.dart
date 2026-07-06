@@ -413,9 +413,8 @@ class _SuccessCard extends StatelessWidget {
         const SizedBox(height: 8),
         SelectableText(
           setId,
-          style: const TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 11,
+          style: VeraProbTypography.mono(
+            size: 11,
             color: VeraProbColors.primary,
           ),
         ),

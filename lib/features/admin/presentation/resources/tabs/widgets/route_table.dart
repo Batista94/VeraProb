@@ -165,10 +165,9 @@ class _RouteRowState extends State<RouteRow> {
                         const SizedBox(width: VeraProbSpacing.sm),
                         Text(
                           widget.route.color ?? '',
-                          style: const TextStyle(
-                            fontSize: 12,
+                          style: VeraProbTypography.mono(
+                            size: 12,
                             color: VeraProbColors.textSecondary,
-                            fontFamily: 'monospace',
                           ),
                         ),
                       ],

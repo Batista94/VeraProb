@@ -244,11 +244,7 @@ class _RevealSecretModalState extends ConsumerState<RevealSecretModal>
             children: [
               SelectableText(
                 secret,
-                style: const TextStyle(
-                  fontFamily: 'monospace',
-                  fontSize: 12,
-                  letterSpacing: 0.5,
-                ),
+                style: VeraProbTypography.mono(size: 12, letterSpacing: 0.5),
               ),
               // Blur overlay quando segredo não foi explicitamente revelado.
               if (!_secretVisible)

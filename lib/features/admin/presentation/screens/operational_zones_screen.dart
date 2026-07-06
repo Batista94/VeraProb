@@ -174,12 +174,14 @@ class _ZoneList extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     geoLabel,
-                    style: VeraProbTypography.caption.copyWith(
-                      color: hasGeofence
-                          ? VeraProbColors.success
-                          : VeraProbColors.warning,
-                      fontFamily: hasGeofence ? 'monospace' : null,
-                    ),
+                    style: hasGeofence
+                        ? VeraProbTypography.mono(
+                            color: VeraProbColors.success,
+                            size: 11,
+                          )
+                        : VeraProbTypography.caption.copyWith(
+                            color: VeraProbColors.warning,
+                          ),
                   ),
                 ],
               ),
@@ -191,9 +193,9 @@ class _ZoneList extends ConsumerWidget {
             children: [
               Text(
                 z.id.substring(0, 8),
-                style: VeraProbTypography.caption.copyWith(
+                style: VeraProbTypography.mono(
                   color: VeraProbColors.textDisabled,
-                  fontFamily: 'monospace',
+                  size: 11,
                 ),
               ),
               const SizedBox(width: 4),

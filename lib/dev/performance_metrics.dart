@@ -178,6 +178,7 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
         ),
         child: DefaultTextStyle(
           style: const TextStyle(
+            // ponytail: opt-out
             fontFamily: 'monospace',
             fontSize: 12,
             color: Colors.greenAccent,
@@ -214,6 +215,7 @@ class _PerformanceOverlayHudState extends ConsumerState<PerformanceOverlayHud>
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     textStyle: const TextStyle(
                       fontSize: 10,
+                      // ponytail: opt-out
                       fontFamily: 'monospace',
                     ),
                   ),

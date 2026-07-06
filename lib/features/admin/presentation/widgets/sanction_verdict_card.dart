@@ -289,14 +289,12 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                                     Text(
                                       '${evidence.primaryEvidenceLat.toStringAsFixed(4)}, '
                                       '${evidence.primaryEvidenceLng.toStringAsFixed(4)}',
-                                      style: VeraProbTypography.caption
-                                          .copyWith(
-                                            fontFamily: 'monospace',
-                                            fontSize: 10,
-                                            color: isFocused
-                                                ? VeraProbColors.primary
-                                                : VeraProbColors.textDisabled,
-                                          ),
+                                      style: VeraProbTypography.mono(
+                                        size: 10,
+                                        color: isFocused
+                                            ? VeraProbColors.primary
+                                            : VeraProbColors.textDisabled,
+                                      ),
                                     ),
                                     const Spacer(),
                                     if (isFocused)
@@ -1901,9 +1899,8 @@ class _ForensicSealRow extends StatelessWidget {
           ),
           child: Text(
             'SHA-256: ${item.shortEvidenceHash}...',
-            style: VeraProbTypography.caption.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 10,
+            style: VeraProbTypography.mono(
+              size: 10,
               color: VeraProbColors.textDisabled,
             ),
           ),
@@ -2631,9 +2628,8 @@ class _PortalSubmissionTile extends StatelessWidget {
             'SHA-256: $shortHash · ${summary.mimeTypeDetected ?? '—'}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: VeraProbTypography.caption.copyWith(
-              fontFamily: 'monospace',
-              fontSize: 10,
+            style: VeraProbTypography.mono(
+              size: 10,
               color: VeraProbColors.textDisabled,
             ),
           ),
@@ -2785,9 +2781,8 @@ class _TestimonyBlockState extends State<_TestimonyBlock> {
                     'Selo: $shortSeal',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VeraProbTypography.caption.copyWith(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
+                    style: VeraProbTypography.mono(
+                      size: 10,
                       color: VeraProbColors.textDisabled,
                     ),
                   ),
@@ -3019,9 +3014,8 @@ class _PortalAttachmentLightbox extends StatelessWidget {
                     'SHA-256: $sha256',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: VeraProbTypography.caption.copyWith(
-                      fontFamily: 'monospace',
-                      fontSize: 10,
+                    style: VeraProbTypography.mono(
+                      size: 10,
                       color: VeraProbColors.textDisabled,
                     ),
                   ),

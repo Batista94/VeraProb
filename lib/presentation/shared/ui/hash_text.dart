@@ -63,7 +63,7 @@ class _HashTextState extends State<HashText> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveStyle = widget.style ?? VeraProbTypography.mono;
+    final effectiveStyle = widget.style ?? VeraProbTypography.mono();
 
     return Row(
       mainAxisSize: MainAxisSize.min,

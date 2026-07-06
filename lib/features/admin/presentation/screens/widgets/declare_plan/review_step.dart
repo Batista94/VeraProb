@@ -177,9 +177,8 @@ class ReviewStep extends ConsumerWidget {
               const SizedBox(width: 6),
               Text(
                 'SHA-256: ${hashDisplay.length > 16 ? '${hashDisplay.substring(0, 16)}…' : hashDisplay}',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontFamily: 'monospace',
+                style: VeraProbTypography.mono(
+                  size: 11,
                   color: VeraProbColors.textDisabled,
                 ),
               ),

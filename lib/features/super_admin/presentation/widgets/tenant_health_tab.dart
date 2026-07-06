@@ -282,9 +282,9 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
               Text('Versão: ', style: VeraProbTypography.bodySmall),
               Text(
                 health.schemaVersion,
-                style: VeraProbTypography.bodyMedium.copyWith(
-                  fontFamily: 'monospace',
-                  fontWeight: FontWeight.w600,
+                style: VeraProbTypography.mono(
+                  size: VeraProbTypography.bodyMedium.fontSize ?? 14,
+                  weight: FontWeight.w600,
                 ),
               ),
             ],

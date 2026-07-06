@@ -101,10 +101,9 @@ class _ShadowCard extends ConsumerWidget {
               const Spacer(),
               Text(
                 DateFormat('dd/MM HH:mm:ss').format(ts),
-                style: const TextStyle(
+                style: VeraProbTypography.mono(
                   color: VeraProbColors.textSecondary,
-                  fontFamily: 'monospace',
-                  fontSize: 11,
+                  size: 11,
                 ),
               ),
             ],
@@ -202,10 +201,9 @@ class _CandidateRow extends ConsumerWidget {
           Expanded(
             child: Text(
               '$setId · $startLabel · $status',
-              style: const TextStyle(
+              style: VeraProbTypography.mono(
                 color: VeraProbColors.textPrimary,
-                fontFamily: 'monospace',
-                fontSize: 11,
+                size: 11,
               ),
               overflow: TextOverflow.ellipsis,
             ),

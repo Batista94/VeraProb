@@ -175,10 +175,7 @@ class _OrgSecretCardState extends ConsumerState<OrgSecretCard> {
                         Expanded(
                           child: SelectableText(
                             _generatedSecret!,
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 11,
-                            ),
+                            style: VeraProbTypography.mono(size: 11),
                           ),
                         ),
                         IconButton(
@@ -267,10 +264,7 @@ class _InfoRow extends StatelessWidget {
               ),
             ),
           ),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-          ),
+          Text(value, style: VeraProbTypography.mono(size: 12)),
         ],
       ),
     );
