@@ -14,6 +14,7 @@ import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart'
     show DisputeResolution;
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart'; // pr_scanner: ignore
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/shared/domain_error_text.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
@@ -748,6 +749,9 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
     required Color confidenceColor,
     required bool isLoading,
   }) {
+    final guardStamp = ref
+        .watch(financialGuardStampProvider(item.ledgerEntryId))
+        .value;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -779,6 +783,7 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
                     ),
                   ),
                 ),
+                _buildCapGuardChips(guardStamp),
                 const SizedBox(height: 4),
                 Row(
                   children: [
@@ -836,6 +841,57 @@ class _SanctionVerdictCardState extends ConsumerState<SanctionVerdictCard> {
               ],
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  /// Financial-guard cap signals for the auditor: an amber "TETO ATINGIDO"
+  /// badge with the struck-through original fine when the guard truncated the
+  /// penalty, or a neutral "TETO EM VERIFICAÇÃO" badge when the cap check was
+  /// deferred under lock contention (reconciliation pending). Absent stamp or
+  /// clean (untruncated) sanction → nothing.
+  Widget _buildCapGuardChips(FinancialGuardStamp? stamp) {
+    if (stamp == null) return const SizedBox.shrink();
+    if (stamp.capCheckDeferred) {
+      return const Padding(
+        padding: EdgeInsets.only(top: 8),
+        child: Tooltip(
+          message:
+              'Verificação de teto adiada por contenção — reconciliação pendente',
+          child: VeraProbChip(
+            label: 'TETO EM VERIFICAÇÃO',
+            color: VeraProbColors.textSecondary,
+            icon: Icons.hourglass_top_rounded,
+          ),
+        ),
+      );
+    }
+    if (!stamp.capTruncated) return const SizedBox.shrink();
+    final original = stamp.originalFineCents;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          const VeraProbChip(
+            label: 'TETO ATINGIDO',
+            color: VeraProbColors.delayed,
+            icon: Icons.warning_amber_rounded,
+          ),
+          if (original != null) ...[
+            const SizedBox(width: 8),
+            Tooltip(
+              message: 'Multa original truncada pelo teto mensal do contrato',
+              child: Text(
+                SanctionQueueItemView.formatCents(original),
+                style: VeraProbTypography.bodyMedium.copyWith(
+                  color: VeraProbColors.textSecondary,
+                  decoration: TextDecoration.lineThrough,
+                  decorationColor: VeraProbColors.textSecondary,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
