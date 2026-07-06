@@ -33,6 +33,35 @@ void main() async {
         PostgresTestConfig.serviceRoleKey,
       );
       await PostgresTestConfig.ensureSentinelOrg(client: client);
+
+      await client.from('contracts').upsert([
+        {
+          'id': '00000000-0000-0000-0000-000000000100',
+          'organization_id': orgId,
+          'name': 'Queue Test Contract 1',
+          'contractor_name': 'Queue Test Contractor 1',
+          'status': 'draft',
+          'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
+          'valid_until_utc': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 30))
+              .toIso8601String(),
+          'monthly_penalty_cap_cents': 5000000,
+        },
+        {
+          'id': '00000000-0000-0000-0000-000000000200',
+          'organization_id': orgId,
+          'name': 'Queue Test Contract 2',
+          'contractor_name': 'Queue Test Contractor 2',
+          'status': 'draft',
+          'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
+          'valid_until_utc': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 30))
+              .toIso8601String(),
+          'monthly_penalty_cap_cents': 5000000,
+        }
+      ], onConflict: 'id');
     }
   });
 

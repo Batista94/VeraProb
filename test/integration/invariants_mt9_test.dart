@@ -57,6 +57,20 @@ void main() async {
 
         await PostgresTestConfig.ensureSentinelOrg(client: client);
 
+        await client.from('contracts').upsert({
+          'id': contractId,
+          'organization_id': orgId,
+          'name': 'MT9 Test Contract',
+          'contractor_name': 'MT9 Test Contractor',
+          'status': 'draft',
+          'valid_from_utc': DateTime.now().toUtc().toIso8601String(),
+          'valid_until_utc': DateTime.now()
+              .toUtc()
+              .add(const Duration(days: 30))
+              .toIso8601String(),
+          'monthly_penalty_cap_cents': 5000000,
+        }, onConflict: 'id');
+
         // Seed: insert a SANCTION_RECOMMENDED ledger entry.
         // The trigger `trg_auto_enqueue_sanction` auto-populates the queue.
         final row = await client
