@@ -4,10 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
 const double _kSuccessTitleFontSize = 18.0;
-const TextStyle _kMonospaceProtocolStyle = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 16,
-  fontWeight: FontWeight.w600,
+TextStyle get _kMonospaceProtocolStyle => VeraProbTypography.mono(
+  size: 16,
+  weight: FontWeight.w600,
   color: VeraProbColors.textPrimary,
 );
 

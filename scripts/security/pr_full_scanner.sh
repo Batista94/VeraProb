@@ -105,6 +105,12 @@ if [[ "$NODE_CMD" == *"node.exe"* ]]; then
   fi
 fi
 
+# -- Extract JSON object from scanner stdout (ignore git/noise lines on Windows) --
+parse_scanner_json() {
+  local raw="$1"
+  printf '%s' "$raw" | $NODE_CMD "$SCRIPT_DIR_WIN/parse_scan_json.js" 2>/dev/null
+}
+
 # ── Step 1: Deterministic Pattern Scan (Single-Pass Node.js Engine) ──────────
 echo -e "\n${BOLD}${BLUE}Step 1: Deterministic Pattern Scan (Lead Reviewer Mode)...${NC}"
 
@@ -116,17 +122,18 @@ if [[ -z "$(echo "$CHANGED_FILES" | tr -d '[:space:]')" ]]; then
   echo "No changes detected in Git Diff."
   SCAN_JSON='{"blocks":0,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
 else
-  # Node.js single-pass engine returns structured JSON
-  SCAN_JSON_RAW=$(echo "$CHANGED_FILES" | $NODE_CMD "$SCRIPT_DIR_WIN/scanner_engine.js" "--base-branch=$BASE_BRANCH" 2>&1)
+  # Node.js single-pass engine: JSON on stdout only; git warnings stay on stderr.
+  SCAN_JSON_RAW=$(echo "$CHANGED_FILES" | $NODE_CMD "$SCRIPT_DIR_WIN/scanner_engine.js" "--base-branch=$BASE_BRANCH")
   NODE_EXIT=$?
-
-  # Extract the last line (actual JSON) and ignore any warnings printed by git/node
-  SCAN_JSON=$(echo "$SCAN_JSON_RAW" | tail -n 1)
-  SCAN_LOGS=$(echo "$SCAN_JSON_RAW" | head -n -1)
+  SCAN_JSON=$(parse_scanner_json "$SCAN_JSON_RAW" || true)
 
   if [[ $NODE_EXIT -ne 0 ]]; then
     echo -e "  ${RED}${BOLD}[ERROR]${NC} Node.js scanner engine crashed or failed to execute."
     echo -e "          Output: $(echo "$SCAN_JSON_RAW" | head -n 2)"
+    SCAN_JSON='{"blocks":1,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
+  elif [[ -z "$SCAN_JSON" ]]; then
+    echo -e "  ${RED}${BOLD}[ERROR]${NC} Failed to parse scanner JSON (stdout polluted — check git CRLF warnings)."
+    echo -e "          Raw tail: $(echo "$SCAN_JSON_RAW" | tail -n 3)"
     SCAN_JSON='{"blocks":1,"warns":0,"has_regression":false,"violations":[],"regression_files":[]}'
   else
     # Display violations in human-readable format
@@ -211,14 +218,49 @@ fi
 BARREL_ARGS="--branch=$BASE_BRANCH"
 [[ "${FULL_SCAN:-0}" == "1" ]] && BARREL_ARGS="$BARREL_ARGS --full"
 
-BARREL_RESULTS=$(echo "$CHANGED_FILES" | $PYTHON_CMD "$BARREL_SCRIPT_WIN" $BARREL_ARGS 2>&1)
-BARREL_EXIT=$?
-
-if [[ $BARREL_EXIT -eq 2 ]]; then
-  echo -e "  ${RED}${BOLD}[ERROR]${NC} Barrel validator crashed."
-  echo -e "          $BARREL_RESULTS"
+BARREL_DART_FILES=""
+BARREL_EXIT=0
+if [[ -n "${CHANGED_FILES:-}" ]]; then
+  BARREL_DART_FILES=$(echo "$CHANGED_FILES" | grep -E '^lib/.*\.dart$' | grep -vE '\.(g|freezed)\.dart$' || true)
 fi
-echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+
+if [[ "${FULL_SCAN:-0}" == "1" ]]; then
+  BARREL_RESULTS=$($PYTHON_CMD "$BARREL_SCRIPT_WIN" $BARREL_ARGS 2>&1)
+  BARREL_EXIT=$?
+
+  if [[ $BARREL_EXIT -eq 2 ]]; then
+    echo -e "  ${RED}${BOLD}[ERROR]${NC} Barrel validator crashed."
+    echo -e "          $BARREL_RESULTS"
+  elif [[ $BARREL_EXIT -eq 1 ]]; then
+    echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+    TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+  else
+    if [[ -n "$BARREL_RESULTS" ]]; then
+      echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+    else
+      echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Barrel validator produced no output (exit $BARREL_EXIT)."
+    fi
+  fi
+elif [[ -z "$(echo "$BARREL_DART_FILES" | tr -d '[:space:]')" ]]; then
+  echo -e "  ${GREEN}No lib/*.dart changes — barrel validation skipped (INV-13).${NC}"
+else
+  BARREL_RESULTS=$(printf '%s\n' "$BARREL_DART_FILES" | $PYTHON_CMD "$BARREL_SCRIPT_WIN" $BARREL_ARGS 2>&1)
+  BARREL_EXIT=$?
+
+  if [[ $BARREL_EXIT -eq 2 ]]; then
+    echo -e "  ${RED}${BOLD}[ERROR]${NC} Barrel validator crashed."
+    echo -e "          $BARREL_RESULTS"
+  elif [[ $BARREL_EXIT -eq 1 ]]; then
+    echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+    TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+  else
+    if [[ -n "$BARREL_RESULTS" ]]; then
+      echo "$BARREL_RESULTS" | grep -v "INTERNAL ERROR" || true
+    else
+      echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Barrel validator produced no output (exit $BARREL_EXIT)."
+    fi
+  fi
+fi
 
 # ── Step 4: Type Parity Verification (QA Mode) ──────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 4: Type Parity Verification (INV-7)...${NC}"
@@ -281,7 +323,19 @@ if [[ -n "${CHANGED_FILES:-}" ]]; then
        # Trigger reload to ensure cache is current
        bash "$SCRIPT_DIR/../refresh_schema_cache.sh" > /dev/null 2>&1
 
-       HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -I "http://localhost:54321/rest/v1/")
+       # Aguardar o recarregamento do cache (PostgREST pode retornar 503 temporariamente)
+       RETRY_COUNT=0
+       HEALTH_CHECK="503"
+       while [[ "$RETRY_COUNT" -lt 5 ]]; do
+         HEALTH_CHECK=$(curl -s -o /dev/null -w "%{http_code}" -I "http://localhost:54321/rest/v1/")
+         if [[ "$HEALTH_CHECK" == "503" ]]; then
+           sleep 1
+           RETRY_COUNT=$((RETRY_COUNT + 1))
+         else
+           break
+         fi
+       done
+
        if [[ "$HEALTH_CHECK" -lt 200 || "$HEALTH_CHECK" -ge 400 ]]; then
           echo -e "  ${RED}${BOLD}[BLOCK]${NC} PostgREST API is unhealthy (HTTP $HEALTH_CHECK) after migration sync."
           TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
@@ -326,14 +380,14 @@ else
 
   if [[ -n "$CORE_ERRORS" ]]; then
     COUNT=$(echo "$CORE_ERRORS" | wc -l | tr -d ' ')
-    echo -e "  ${RED}${BOLD}[BLOCK]${NC} flutter analyze: $COUNT error(s) in core layers (domain/application/infrastructure)."
+    echo -e "  ${RED}${BOLD}[BLOCK]${NC} flutter analyze: $COUNT errors in core layers (domain/application/infrastructure)."
     echo "$CORE_ERRORS" | head -10 | while IFS= read -r line; do echo -e "    ${RED}→ $line${NC}"; done
     TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
   fi
 
   if [[ -n "$PRES_ERRORS" ]]; then
     COUNT=$(echo "$PRES_ERRORS" | wc -l | tr -d ' ')
-    echo -e "  ${YELLOW}${BOLD}[WARN]${NC} flutter analyze: $COUNT error(s) in presentation/feature layers."
+    echo -e "  ${YELLOW}${BOLD}[WARN]${NC} flutter analyze: $COUNT errors in presentation/feature layers."
     echo "$PRES_ERRORS" | head -10 | while IFS= read -r line; do echo -e "    ${YELLOW}→ $line${NC}"; done
     TOTAL_WARNS=$((TOTAL_WARNS + 1))
   fi
@@ -673,6 +727,21 @@ fi
 
 # ── Step 10: Deno Test Suite (Edge Functions) ────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 10: Deno Test Suite (Edge Functions)...${NC}"
+
+# Windows/GitBash/WSL fallback for Deno.
+# $USER is unset on Windows (it sets $USERNAME instead), so a literal
+# "/c/Users/$USER/.deno/bin" check never matches on this platform. Glob
+# instead so detection doesn't depend on env vars that may not propagate
+# (hook subprocesses, WSL's /mnt/c mount, etc.).
+if ! command -v deno >/dev/null 2>&1; then
+  for deno_dir in "$HOME/.deno/bin" /c/Users/*/.deno/bin /mnt/c/Users/*/.deno/bin; do
+    if [[ -d "$deno_dir" ]]; then
+      export PATH="$deno_dir:$PATH"
+      break
+    fi
+  done
+fi
+
 if [[ "${SKIP_DENO_TESTS:-0}" == "1" ]]; then
   echo -e "  ${YELLOW}[SKIP]${NC} SKIP_DENO_TESTS=1."
 elif ! command -v deno >/dev/null 2>&1; then

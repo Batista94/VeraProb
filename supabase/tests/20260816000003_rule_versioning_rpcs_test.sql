@@ -26,7 +26,8 @@ SELECT has_function('public', 'update_contractual_rule', ARRAY['uuid', 'uuid', '
 SELECT has_function('public', 'schedule_contractual_rule', ARRAY['uuid', 'uuid', 'sla_rule_type', 'jsonb', 'integer', 'timestamp with time zone']);
 SELECT has_function('public', 'activate_scheduled_rule', ARRAY['uuid']);
 SELECT has_function('public', 'retire_contractual_rule', ARRAY['uuid']);
-SELECT has_function('public', 'amend_contract_financial_terms', ARRAY['uuid', 'bigint', 'integer', 'timestamp with time zone', 'text']);
+-- v2 (20260913000005): + p_monthly_penalty_cap_cents BIGINT DEFAULT NULL
+SELECT has_function('public', 'amend_contract_financial_terms', ARRAY['uuid', 'bigint', 'integer', 'timestamp with time zone', 'text', 'bigint']);
 
 -- ── 6-15. Grant regression guards (INV-REVOKE-FROM-PUBLIC) ──────────────────
 SELECT ok(has_function_privilege('authenticated',
@@ -58,10 +59,10 @@ SELECT ok(has_function_privilege('service_role',
   'EXECUTE'), 'service_role EXECUTE retire_contractual_rule');
 
 SELECT ok(has_function_privilege('authenticated',
-  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text)',
+  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text, bigint)',
   'EXECUTE'), 'authenticated EXECUTE amend_contract_financial_terms');
 SELECT ok(has_function_privilege('service_role',
-  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text)',
+  'public.amend_contract_financial_terms(uuid, bigint, integer, timestamp with time zone, text, bigint)',
   'EXECUTE'), 'service_role EXECUTE amend_contract_financial_terms');
 
 -- ── Org A TENANT_ADMIN context ───────────────────────────────────────────────

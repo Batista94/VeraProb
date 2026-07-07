@@ -372,10 +372,9 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
               const SizedBox(height: 12),
               Text(
                 token.code,
-                style: TextStyle(
-                  fontSize: 36,
-                  fontWeight: FontWeight.w800,
-                  fontFamily: 'monospace',
+                style: VeraProbTypography.mono(
+                  size: 36,
+                  weight: FontWeight.w800,
                   letterSpacing: 8,
                   color: isExpiringSoon
                       ? VeraProbColors.warning

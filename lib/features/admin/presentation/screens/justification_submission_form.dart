@@ -529,10 +529,9 @@ class _EvidenceSection extends StatelessWidget {
               title: Text(e.value.name, style: const TextStyle(fontSize: 13)),
               subtitle: Text(
                 '${e.value.hash.substring(0, 16)}...',
-                style: const TextStyle(
-                  fontSize: 11,
+                style: VeraProbTypography.mono(
+                  size: 11,
                   color: VeraProbColors.textDisabled,
-                  fontFamily: 'monospace',
                 ),
               ),
               trailing: IconButton(

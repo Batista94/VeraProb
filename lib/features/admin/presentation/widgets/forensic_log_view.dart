@@ -126,7 +126,7 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
         Expanded(
           child: Text(
             '${widget.log.attemptCount} · despachado em $formatted',
-            style: VeraProbTypography.mono.copyWith(fontSize: 12),
+            style: VeraProbTypography.mono(size: 12),
           ),
         ),
       ],
@@ -252,7 +252,7 @@ class _MonoJsonView extends StatelessWidget {
       ),
       child: SelectableText(
         sanitized,
-        style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        style: VeraProbTypography.mono(size: 12),
       ),
     );
   }
@@ -280,11 +280,7 @@ class _SanitizedText extends StatelessWidget {
       ),
       child: SelectableText(
         sanitized,
-        style: const TextStyle(
-          fontFamily: 'monospace',
-          fontSize: 12,
-          color: VeraProbColors.error,
-        ),
+        style: VeraProbTypography.mono(size: 12, color: VeraProbColors.error),
       ),
     );
   }

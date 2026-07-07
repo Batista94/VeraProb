@@ -108,8 +108,13 @@ class SanctionQueueItemView extends Equatable {
   });
 
   /// Formatted fine amount as BRL string (e.g., "R$ 1.500,00").
-  String get formattedFine {
-    final value = verdictEvidence.fineCents.cents / 100.0;
+  String get formattedFine => formatCents(verdictEvidence.fineCents.cents);
+
+  /// Formats a raw cents value as a BRL string (e.g., "R$ 1.500,00").
+  /// Public so the UI can format the pre-truncation original fine (sealed by
+  /// the financial guard) without duplicating the BRL formatter.
+  static String formatCents(int cents) {
+    final value = cents / 100.0;
     final whole = value.floor();
     final decimal = ((value - whole) * 100).round().toString().padLeft(2, '0');
     return 'R\$ ${_formatThousands(whole)},$decimal';

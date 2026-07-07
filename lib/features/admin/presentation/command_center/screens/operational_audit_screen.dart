@@ -328,9 +328,9 @@ class _AuditTab extends ConsumerWidget {
                 children: [
                   Text(
                     DateFormat('HH:mm:ss').format(log.timestamp.toLocal()),
-                    style: _cellStyle.copyWith(
-                      fontFamily: 'monospace',
-                      fontWeight: FontWeight.w500,
+                    style: VeraProbTypography.mono(
+                      size: 13,
+                      weight: FontWeight.w500,
                     ),
                   ),
                   const Text(
@@ -422,7 +422,7 @@ class _AuditTab extends ConsumerWidget {
               flex: 3,
               child: Text(
                 log.vehiclePlate ?? '-',
-                style: _cellStyle.copyWith(fontFamily: 'monospace'),
+                style: VeraProbTypography.mono(size: 13),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -723,9 +723,8 @@ class _AuditSidePanel extends ConsumerWidget {
                 ),
                 child: SelectableText(
                   log.details!,
-                  style: const TextStyle(
-                    fontFamily: 'monospace',
-                    fontSize: 13,
+                  style: VeraProbTypography.mono(
+                    size: 13,
                     color: VeraProbColors.textPrimary,
                   ),
                 ),
@@ -773,12 +772,17 @@ class _DetailRow extends StatelessWidget {
               Expanded(
                 child: SelectableText(
                   value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: VeraProbColors.textPrimary,
-                    fontFamily: isMonospace ? 'monospace' : null,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: isMonospace
+                      ? VeraProbTypography.mono(
+                          size: 14,
+                          color: VeraProbColors.textPrimary,
+                          weight: FontWeight.w500,
+                        )
+                      : const TextStyle(
+                          fontSize: 14,
+                          color: VeraProbColors.textPrimary,
+                          fontWeight: FontWeight.w500,
+                        ),
                 ),
               ),
               if (isCopyable &&

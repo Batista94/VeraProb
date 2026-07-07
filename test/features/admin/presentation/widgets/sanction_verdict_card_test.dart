@@ -358,6 +358,7 @@ List<Override> _baseOverrides({
   String? contractName = 'Test Contract',
   String? currentOperatorId = 'test-user',
   Stream<Map<String, int>>? portalEvidenceStream,
+  FinancialGuardStamp? financialGuardStamp,
 }) {
   return [
     // PKG3: deterministic realtime tick. Default = empty (never emits) so cards
@@ -389,6 +390,9 @@ List<Override> _baseOverrides({
       _FakeGenerateForensicDossierHandler(),
     ),
     verdictProvenanceProvider.overrideWith((ref, id) async => null),
+    financialGuardStampProvider.overrideWith(
+      (ref, id) async => financialGuardStamp,
+    ),
   ];
 }
 
@@ -1007,6 +1011,81 @@ void main() {
   _sealedEvidenceAndStyleTests();
 
   _portalRealtimeTests();
+
+  _financialGuardStampTests();
+}
+
+void _financialGuardStampTests() {
+  Widget buildWithStamp(FinancialGuardStamp? stamp) {
+    final item = _makeItem();
+    return ProviderScope(
+      overrides: _baseOverrides(
+        item: item,
+        notifier: _MockSanctionActionNotifier(),
+        financialGuardStamp: stamp,
+      ),
+      child: MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(child: SanctionVerdictCard(item: item)),
+        ),
+      ),
+    );
+  }
+
+  group('SanctionVerdictCard — Financial Guard cap stamp (P2)', () {
+    testWidgets('truncated: TETO ATINGIDO chip + struck-through original', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        buildWithStamp((
+          originalFineCents: 200000,
+          capTruncated: true,
+          capCheckDeferred: false,
+        )),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('TETO ATINGIDO'), findsOneWidget);
+      // Effective (truncated) fine stays the KPI; original shown struck-through.
+      expect(find.text('R\$ 1.500,00'), findsOneWidget);
+      final original = tester.widget<Text>(find.text('R\$ 2.000,00'));
+      expect(original.style?.decoration, TextDecoration.lineThrough);
+    });
+
+    testWidgets('null/legacy stamp: no cap chip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(buildWithStamp(null));
+      await tester.pumpAndSettle();
+
+      expect(find.text('TETO ATINGIDO'), findsNothing);
+      expect(find.text('TETO EM VERIFICAÇÃO'), findsNothing);
+    });
+
+    testWidgets('deferred: TETO EM VERIFICAÇÃO chip', (tester) async {
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+
+      await tester.pumpWidget(
+        buildWithStamp((
+          originalFineCents: null,
+          capTruncated: false,
+          capCheckDeferred: true,
+        )),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('TETO EM VERIFICAÇÃO'), findsOneWidget);
+      expect(find.text('TETO ATINGIDO'), findsNothing);
+    });
+  });
 }
 
 void _portalRealtimeTests() {

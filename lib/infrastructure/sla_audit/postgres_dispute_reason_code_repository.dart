@@ -20,12 +20,23 @@ class PostgresDisputeReasonCodeRepository extends BasePostgresRepository
     return withErrorHandler('dispute_reason_code', null, () async {
       final rows = await client
           .from('dispute_reason_codes')
-          .select('code, category, label_pt, label_en, is_active')
+          .select('code, category, label_pt, label_en, is_active, applies_to')
           .eq('is_active', true)
           .order('category')
           .order('code');
       return rows.map((r) => mapRow(r)).toList(growable: false);
     });
+  }
+
+  static DisputeReasonContext _mapContext(String? val) {
+    switch (val) {
+      case 'REJECTION':
+        return DisputeReasonContext.rejection;
+      case 'RESOLUTION':
+        return DisputeReasonContext.resolution;
+      default:
+        return DisputeReasonContext.all;
+    }
   }
 
   @visibleForTesting
@@ -36,5 +47,6 @@ class PostgresDisputeReasonCodeRepository extends BasePostgresRepository
         labelPt: row['label_pt'] as String,
         labelEn: row['label_en'] as String,
         isActive: row['is_active'] as bool,
+        appliesTo: _mapContext(row['applies_to'] as String?),
       );
 }

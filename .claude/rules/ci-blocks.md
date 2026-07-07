@@ -465,3 +465,40 @@ final masterWidth = (totalWidth * 0.35).clamp(minWidth, maxWidth).toDouble();
 
 Same family: `num.abs()`, `math.max/min<num>` mixing `int`/`double` args — check the inferred type whenever arithmetic feeds a widget parameter.
 
+---
+
+## 21. ALWAYS-TRUE-RLS-POLICY: PERMISSIVE `USING(true)` on client roles
+
+**Problem:** A PERMISSIVE RLS policy with `USING (true)` or `WITH CHECK (true)` exposed to `public`, `authenticated`, or `anon` is an always-true cross-tenant hole. The PR scanner (`ALWAYS-TRUE-RLS-POLICY-BLOCK`) and standing test `inv22_always_true_policy_invariant_test.sql` block this regression class.
+
+**Fix by table type:**
+
+| Table type | Correct pattern |
+|------------|-----------------|
+| Tenant-scoped rows | `organization_id::text = auth.jwt() ->> 'organization_id'` (INV-2) |
+| Global shared catalog | **Global Catalog RLS Pattern** — `organization_id UUID` nullable; `NULL` = global; policy `organization_id IS NULL OR org match` |
+| Internal / service-only | RESTRICTIVE `USING(false)` for `authenticated`; access via `service_role` or SECURITY DEFINER RPC |
+
+SSOT reference migration: `supabase/migrations/20260813000004_dispute_reason_codes.sql`.
+
+```sql
+-- Wrong
+CREATE POLICY p ON public.my_catalog FOR SELECT TO authenticated USING (true);
+
+-- Wrong (scanner bypass / tautology gaming)
+CREATE POLICY p ON public.my_catalog FOR SELECT TO authenticated USING (key IS NOT NULL);
+
+-- Right — Global Catalog RLS Pattern
+CREATE TABLE public.my_catalog (
+  key TEXT PRIMARY KEY,
+  organization_id UUID REFERENCES public.organizations(id),  -- NULL = global
+  ...
+);
+CREATE POLICY my_catalog_select ON public.my_catalog FOR SELECT TO authenticated
+  USING (
+    organization_id IS NULL
+    OR organization_id::text = auth.jwt() ->> 'organization_id'
+  );
+```
+
+**Prohibited:** `pr_scanner: allow-permissive-true-policy` for editable catalogs (Council bypass is only for irremediable platform tables like `spatial_ref_sys`).

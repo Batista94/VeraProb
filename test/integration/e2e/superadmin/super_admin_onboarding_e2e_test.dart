@@ -26,18 +26,20 @@ import '../helpers/superadmin_test_config.dart';
 
 const _uuid = Uuid();
 
+int _cnpjCounter = 0;
+
 /// Generates a structurally valid CNPJ using the modulo-11 algorithm.
 ///
 /// Uses timestamp-derived digits for the first 12 positions (base), then
 /// computes the two check digits deterministically so the result passes
 /// [CnpjValidator.isValid].
 String _uniqueCnpj() {
-  final ts = DateTime.now().toUtc().millisecondsSinceEpoch.toString().padLeft(
-    14,
-    '0',
-  );
+  _cnpjCounter++;
+  final ts = DateTime.now().toUtc().millisecondsSinceEpoch.toString();
+  final paddedCounter = _cnpjCounter.toString().padLeft(4, '0');
+  final combined = '$ts$paddedCounter'.padLeft(14, '0');
   // Take last 12 digits as the base (positions 0–11); compute check digits.
-  final base = ts.substring(ts.length - 12);
+  final base = combined.substring(combined.length - 12);
   final nums = base.split('').map(int.parse).toList();
 
   const w1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
@@ -93,6 +95,9 @@ void main() async {
       });
 
       tearDownAll(() async {
+        try {
+          await Supabase.instance.dispose();
+        } catch (_) {}
         await serviceRoleClient.dispose();
       });
 

@@ -275,9 +275,8 @@ class _JustificationTable extends StatelessWidget {
               0,
               contractId.length > 8 ? 8 : contractId.length,
             ),
-            style: const TextStyle(
-              fontFamily: 'monospace',
-              fontSize: 12,
+            style: VeraProbTypography.mono(
+              size: 12,
               color: VeraProbColors.textSecondary,
             ),
           ),

@@ -375,6 +375,7 @@ export type Database = {
           effective_at_utc: string;
           financial_ceiling_cents: number | null;
           id: string;
+          monthly_penalty_cap_cents: number | null;
           notes: string | null;
           organization_id: string;
           penalty_multiplier_bps: number;
@@ -386,6 +387,7 @@ export type Database = {
           effective_at_utc: string;
           financial_ceiling_cents?: number | null;
           id?: string;
+          monthly_penalty_cap_cents?: number | null;
           notes?: string | null;
           organization_id: string;
           penalty_multiplier_bps: number;
@@ -397,6 +399,7 @@ export type Database = {
           effective_at_utc?: string;
           financial_ceiling_cents?: number | null;
           id?: string;
+          monthly_penalty_cap_cents?: number | null;
           notes?: string | null;
           organization_id?: string;
           penalty_multiplier_bps?: number;
@@ -418,6 +421,68 @@ export type Database = {
           },
           {
             foreignKeyName: "contract_financial_amendments_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      contract_penalty_monthly_accrual: {
+        Row: {
+          accrued_cents: number;
+          cap_cents_snapshot: number;
+          cap_reached_at_utc: string | null;
+          contract_id: string;
+          month_utc: string;
+          organization_id: string;
+          updated_at_utc: string;
+          warned_at_utc: string | null;
+        };
+        Insert: {
+          accrued_cents?: number;
+          cap_cents_snapshot: number;
+          cap_reached_at_utc?: string | null;
+          contract_id: string;
+          month_utc: string;
+          organization_id: string;
+          updated_at_utc?: string;
+          warned_at_utc?: string | null;
+        };
+        Update: {
+          accrued_cents?: number;
+          cap_cents_snapshot?: number;
+          cap_reached_at_utc?: string | null;
+          contract_id?: string;
+          month_utc?: string;
+          organization_id?: string;
+          updated_at_utc?: string;
+          warned_at_utc?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_contract_id_fkey";
+            columns: ["contract_id"];
+            isOneToOne: false;
+            referencedRelation: "contracts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contract_penalty_monthly_accrual_organization_id_fkey";
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
@@ -693,6 +758,7 @@ export type Database = {
           id: string;
           latitude: number | null;
           longitude: number | null;
+          monthly_penalty_cap_cents: number | null;
           name: string;
           notes: string | null;
           organization_id: string;
@@ -722,6 +788,7 @@ export type Database = {
           id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          monthly_penalty_cap_cents?: number | null;
           name: string;
           notes?: string | null;
           organization_id: string;
@@ -751,6 +818,7 @@ export type Database = {
           id?: string;
           latitude?: number | null;
           longitude?: number | null;
+          monthly_penalty_cap_cents?: number | null;
           name?: string;
           notes?: string | null;
           organization_id?: string;
@@ -1622,6 +1690,49 @@ export type Database = {
             isOneToOne: true;
             referencedRelation: "contractual_service_executions";
             referencedColumns: ["set_id"];
+          },
+        ];
+      };
+      financial_guard_credits: {
+        Row: {
+          credited_at_utc: string;
+          credited_cents: number;
+          organization_id: string;
+          sanction_ledger_entry_id: string;
+        };
+        Insert: {
+          credited_at_utc?: string;
+          credited_cents: number;
+          organization_id: string;
+          sanction_ledger_entry_id: string;
+        };
+        Update: {
+          credited_at_utc?: string;
+          credited_cents?: number;
+          organization_id?: string;
+          sanction_ledger_entry_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_guard_credits_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -2927,6 +3038,64 @@ export type Database = {
           received_at_utc?: string;
         };
         Relationships: [];
+      };
+      role_change_requests: {
+        Row: {
+          created_at: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          id: string;
+          organization_id: string;
+          payload: Json;
+          request_type: string;
+          requested_by: string;
+          status: string;
+        };
+        Insert: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          id?: string;
+          organization_id: string;
+          payload: Json;
+          request_type: string;
+          requested_by: string;
+          status?: string;
+        };
+        Update: {
+          created_at?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          id?: string;
+          organization_id?: string;
+          payload?: Json;
+          request_type?: string;
+          requested_by?: string;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "role_change_requests_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_change_requests_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "role_change_requests_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       routes: {
         Row: {
@@ -4563,6 +4732,155 @@ export type Database = {
           },
         ];
       };
+      tenant_permissions: {
+        Row: {
+          action: string;
+          created_at: string;
+          description: string;
+          is_scopable: boolean;
+          is_sensitive: boolean;
+          key: string;
+          label_pt: string;
+          module: string;
+          organization_id: string | null;
+        };
+        Insert: {
+          action: string;
+          created_at?: string;
+          description?: string;
+          is_scopable?: boolean;
+          is_sensitive?: boolean;
+          key: string;
+          label_pt: string;
+          module: string;
+          organization_id?: string | null;
+        };
+        Update: {
+          action?: string;
+          created_at?: string;
+          description?: string;
+          is_scopable?: boolean;
+          is_sensitive?: boolean;
+          key?: string;
+          label_pt?: string;
+          module?: string;
+          organization_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_permissions_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tenant_role_permissions: {
+        Row: {
+          permission_key: string;
+          scope: Json | null;
+          tenant_role_id: string;
+        };
+        Insert: {
+          permission_key: string;
+          scope?: Json | null;
+          tenant_role_id: string;
+        };
+        Update: {
+          permission_key?: string;
+          scope?: Json | null;
+          tenant_role_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tenant_role_permissions_permission_key_fkey";
+            columns: ["permission_key"];
+            isOneToOne: false;
+            referencedRelation: "tenant_permissions";
+            referencedColumns: ["key"];
+          },
+          {
+            foreignKeyName: "tenant_role_permissions_tenant_role_id_fkey";
+            columns: ["tenant_role_id"];
+            isOneToOne: false;
+            referencedRelation: "tenant_roles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tenant_roles: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          deleted_at: string | null;
+          description: string | null;
+          id: string;
+          is_system: boolean;
+          name: string;
+          organization_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          description?: string | null;
+          id?: string;
+          is_system?: boolean;
+          name: string;
+          organization_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          deleted_at?: string | null;
+          description?: string | null;
+          id?: string;
+          is_system?: boolean;
+          name?: string;
+          organization_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       trips_audit: {
         Row: {
           created_at: string | null;
@@ -4700,6 +5018,68 @@ export type Database = {
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_tenant_roles: {
+        Row: {
+          created_at: string;
+          granted_by: string | null;
+          organization_id: string;
+          revoked_at: string | null;
+          tenant_role_id: string;
+          user_id: string;
+          valid_from: string;
+          valid_until: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          granted_by?: string | null;
+          organization_id: string;
+          revoked_at?: string | null;
+          tenant_role_id: string;
+          user_id: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          granted_by?: string | null;
+          organization_id?: string;
+          revoked_at?: string | null;
+          tenant_role_id?: string;
+          user_id?: string;
+          valid_from?: string;
+          valid_until?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_tenant_roles_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_tenant_roles_tenant_role_id_fkey";
+            columns: ["tenant_role_id"];
+            isOneToOne: false;
+            referencedRelation: "tenant_roles";
             referencedColumns: ["id"];
           },
         ];
@@ -5340,6 +5720,30 @@ export type Database = {
         Args: { ""?: string; att_name: string; tbl: unknown };
         Returns: string;
       };
+      _rbac_apply_grants: {
+        Args: { p_grants: Json; p_role_id: string };
+        Returns: undefined;
+      };
+      _rbac_assert_roles_manage: { Args: never; Returns: undefined };
+      _rbac_assert_subset_grant: {
+        Args: { p_grants: Json };
+        Returns: undefined;
+      };
+      _rbac_audit: {
+        Args: { p_event_type: string; p_payload: Json };
+        Returns: undefined;
+      };
+      _rbac_caller_org_id: { Args: never; Returns: string };
+      _rbac_grant_keys: { Args: { p_grants: Json }; Returns: string[] };
+      _rbac_grants_touch_sensitive: {
+        Args: { p_grants: Json };
+        Returns: boolean;
+      };
+      _rbac_live_check_permission: {
+        Args: { p_perm: string };
+        Returns: undefined;
+      };
+      _rbac_validate_grants: { Args: { p_grants: Json }; Returns: undefined };
       _resolve_dispute_sla_days: {
         Args: { p_contract_id: string; p_organization_id: string };
         Returns: number;
@@ -5497,10 +5901,15 @@ export type Database = {
           p_contract_id: string;
           p_effective_at_utc: string;
           p_financial_ceiling_cents: number;
+          p_monthly_penalty_cap_cents?: number;
           p_notes: string;
           p_penalty_multiplier_bps: number;
         };
         Returns: string;
+      };
+      approve_role_change: {
+        Args: { p_request_id: string };
+        Returns: undefined;
       };
       approve_sanction: {
         Args: {
@@ -5513,6 +5922,14 @@ export type Database = {
           p_reviewer_reason?: string;
         };
         Returns: Json;
+      };
+      assign_tenant_role: {
+        Args: {
+          p_role_id: string;
+          p_target_user: string;
+          p_valid_until?: string;
+        };
+        Returns: string;
       };
       attach_dispute_evidence: {
         Args: {
@@ -5657,6 +6074,11 @@ export type Database = {
         };
         Returns: string;
       };
+      create_tenant_role: {
+        Args: { p_description?: string; p_name: string; p_perm_grants?: Json };
+        Returns: string;
+      };
+      current_perms_v: { Args: never; Returns: number };
       custom_access_token_hook: { Args: { event: Json }; Returns: Json };
       deactivate_member: {
         Args: { p_target_user_id: string };
@@ -6009,6 +6431,11 @@ export type Database = {
         Returns: Json;
       };
       gettransactionid: { Args: never; Returns: unknown };
+      has_permission: { Args: { perm: string }; Returns: boolean };
+      has_permission_on: {
+        Args: { perm: string; resource_id: string };
+        Returns: boolean;
+      };
       invite_user: {
         Args: {
           p_email: string;
@@ -6044,6 +6471,10 @@ export type Database = {
           submission_id: string;
           submitted_at_utc: string;
         }[];
+      };
+      log_access_denied: {
+        Args: { p_required_perm: string; p_route: string };
+        Returns: undefined;
       };
       longtransactionsenabled: { Args: never; Returns: boolean };
       mark_alert_viewed: {
@@ -6114,6 +6545,10 @@ export type Database = {
       };
       read_dispute_portal: { Args: { p_token: string }; Returns: Json };
       read_infraction_context: { Args: { p_token: string }; Returns: Json };
+      reconcile_financial_guard: {
+        Args: { p_organization_id?: string };
+        Returns: number;
+      };
       record_forensic_failure: {
         Args: { p_org_id: string };
         Returns: undefined;
@@ -6127,6 +6562,10 @@ export type Database = {
           p_submission_id: string;
         };
         Returns: string;
+      };
+      reject_role_change: {
+        Args: { p_request_id: string };
+        Returns: undefined;
       };
       reject_sanction: {
         Args: {
@@ -6174,6 +6613,14 @@ export type Database = {
       };
       revoke_invitation: {
         Args: { p_invitation_id: string };
+        Returns: undefined;
+      };
+      revoke_tenant_role: {
+        Args: { p_role_id: string; p_target_user: string };
+        Returns: undefined;
+      };
+      revoke_user_sessions: {
+        Args: { p_target_user: string };
         Returns: undefined;
       };
       schedule_contractual_rule: {
@@ -7022,6 +7469,14 @@ export type Database = {
         Args: { p_user_id: string };
         Returns: string;
       };
+      test_hold_financial_guard_lock: {
+        Args: {
+          p_contract_id: string;
+          p_organization_id: string;
+          p_seconds: number;
+        };
+        Returns: undefined;
+      };
       test_tamper_raw_telemetry_payload: {
         Args: { p_new_payload: Json; p_record_id: string };
         Returns: undefined;
@@ -7062,6 +7517,10 @@ export type Database = {
       update_member_role: {
         Args: { p_new_role: string; p_target_user_id: string };
         Returns: undefined;
+      };
+      update_tenant_role_permissions: {
+        Args: { p_perm_grants: Json; p_role_id: string };
+        Returns: string;
       };
       updategeometrysrid: {
         Args: {

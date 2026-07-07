@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/permissions_sync.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
@@ -40,6 +42,24 @@ class AdminLayout extends ConsumerWidget {
   void _goBranch(WidgetRef ref, int index) {
     navigationShell.goBranch(index);
     ref.read(selectedContractIdProvider.notifier).set(null);
+  }
+
+  /// Sidebar pillar indices (real `AdminNav` indices, in order) the current
+  /// session may see. A pillar whose route carries a fine-grained permission
+  /// (`route_permissions`) is dropped when the claim is absent — the router
+  /// guard already blocks direct navigation; this removes the dead entry point
+  /// too (Pilar 3). `adminHub` is ungated, so the collapse target for deep hub
+  /// screens is always present.
+  List<int> _visiblePillars(WidgetRef ref) {
+    final service = ref.watch(permissionServiceProvider);
+    final visible = <int>[];
+    for (var i = 0; i < pillarCount; i++) {
+      final required = requiredPermissionFor(AdminNav.values[i].path);
+      if (required == null || service.hasPermission(required)) {
+        visible.add(i);
+      }
+    }
+    return visible;
   }
 
   /// The 6 operational pillars rendered in the sidebar rail. Badges are live
@@ -254,8 +274,12 @@ class AdminLayout extends ConsumerWidget {
     WidgetRef ref,
     bool isWideScreen,
     int selectedIndex,
+    List<int> visiblePillars,
     List<NavigationRailDestination> destinations,
   ) {
+    // Map the real branch index onto its position in the filtered rail. The
+    // collapse target (adminHub) is always visible, so indexOf never fails.
+    final railPos = visiblePillars.indexOf(railIndexFor(selectedIndex));
     return Container(
       decoration: const BoxDecoration(
         color: VeraProbColors.background,
@@ -271,10 +295,11 @@ class AdminLayout extends ConsumerWidget {
                   extended: isWideScreen,
                   minWidth: 72,
                   minExtendedWidth: 220,
-                  selectedIndex: railIndexFor(selectedIndex),
-                  onDestinationSelected: (railIndex) {
-                    if (railIndex == selectedIndex) return;
-                    _goBranch(ref, railIndex);
+                  selectedIndex: railPos < 0 ? null : railPos,
+                  onDestinationSelected: (railPos) {
+                    final target = visiblePillars[railPos];
+                    if (target == selectedIndex) return;
+                    _goBranch(ref, target);
                   },
                   useIndicator: true,
                   destinations: destinations,
@@ -289,9 +314,17 @@ class AdminLayout extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Keep fine-grained permission claims fresh while the tenant shell is
+    // mounted (Pilar 2 §2.3): Realtime push + bounded current_perms_v() poll.
+    ref.watch(permissionsSyncProvider);
+
     final selectedIndex = navigationShell.currentIndex;
-    final railDestinations = _buildDestinations(ref);
-    final bottomDestinations = _buildBottomDestinations(ref);
+    final visiblePillars = _visiblePillars(ref);
+    final allRail = _buildDestinations(ref);
+    final allBottom = _buildBottomDestinations(ref);
+    final railDestinations = [for (final i in visiblePillars) allRail[i]];
+    final bottomDestinations = [for (final i in visiblePillars) allBottom[i]];
+    final bottomPos = visiblePillars.indexOf(railIndexFor(selectedIndex));
     final isCompact = VeraProbBreakpoints.isCompact(context);
     final isExpandedRail =
         MediaQuery.sizeOf(context).width >= VeraProbBreakpoints.medium;
@@ -329,11 +362,13 @@ class AdminLayout extends ConsumerWidget {
                       alpha: 0.15,
                     ),
                     // Deep hub branches (index >= pillarCount) collapse onto
-                    // the Admin pillar — raw index asserts out of range.
-                    selectedIndex: railIndexFor(selectedIndex),
-                    onDestinationSelected: (idx) {
-                      if (idx == selectedIndex) return;
-                      _goBranch(ref, idx);
+                    // the Admin pillar; positions are filtered by permission,
+                    // so remap through visiblePillars.
+                    selectedIndex: bottomPos < 0 ? 0 : bottomPos,
+                    onDestinationSelected: (pos) {
+                      final target = visiblePillars[pos];
+                      if (target == selectedIndex) return;
+                      _goBranch(ref, target);
                     },
                     destinations: bottomDestinations,
                   )
@@ -346,6 +381,7 @@ class AdminLayout extends ConsumerWidget {
                     ref,
                     isExpandedRail,
                     selectedIndex,
+                    visiblePillars,
                     railDestinations,
                   ),
                 Expanded(

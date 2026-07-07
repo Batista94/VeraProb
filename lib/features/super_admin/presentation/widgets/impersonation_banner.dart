@@ -13,12 +13,14 @@ const Color _kImpersonationBannerColor = Color(0xFFB00020);
 const Color _kBannerForeground = Colors.white; // raw-color: security banner
 const TextStyle _kImpersonationTextStyle = TextStyle(
   color: _kBannerForeground,
+  // ponytail: opt-out
   fontFamily: 'monospace',
   fontWeight: FontWeight.bold,
   fontSize: 13,
 );
 const TextStyle _kImpersonationTimerStyle = TextStyle(
   color: _kBannerForeground,
+  // ponytail: opt-out
   fontFamily: 'monospace',
   fontWeight: FontWeight.bold,
   fontSize: 14,

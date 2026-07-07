@@ -161,7 +161,7 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                 ),
                 child: SelectableText(
                   reviewLink,
-                  style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  style: VeraProbTypography.mono(size: 12),
                 ),
               ),
             ],
@@ -832,9 +832,8 @@ class _HashRow extends StatelessWidget {
         Expanded(
           child: Text(
             _truncated,
-            style: const TextStyle(
-              fontSize: 11,
-              fontFamily: 'monospace',
+            style: VeraProbTypography.mono(
+              size: 11,
               color: VeraProbColors.textSecondary,
             ),
             overflow: TextOverflow.ellipsis,

@@ -4,26 +4,6 @@ import 'package:veraprob/application/projections/forensic_ledger_view.dart';
 import 'package:veraprob/state/providers/forensic_ledger_providers.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 
-// TODO(design): migrate to VeraProbTypography tokens once monospace variant is added
-const TextStyle _kMonoIdle = TextStyle(
-  color: VeraProbColors.textDisabled,
-  fontFamily: 'monospace',
-  fontSize: 11,
-  letterSpacing: 1.2,
-);
-
-const TextStyle _kMonoTime = TextStyle(
-  color: VeraProbColors.textSecondary,
-  fontFamily: 'monospace',
-  fontSize: 11,
-);
-
-const TextStyle _kMonoNarrative = TextStyle(
-  color: VeraProbColors.textPrimary,
-  fontFamily: 'monospace',
-  fontSize: 11,
-);
-
 /// Activity Console Strip (SOC/NOC Style)
 ///
 /// A fixed horizontal strip at the bottom of the Command Center that consumes
@@ -96,10 +76,14 @@ class _ForensicConsoleStripState extends ConsumerState<ForensicConsoleStrip> {
 
   Widget _buildLedgerList(List<ForensicLedgerEntry> value) {
     if (value.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'FORENSIC LEDGER ACTIVE • WAITING FOR EVENTS',
-          style: _kMonoIdle,
+          style: VeraProbTypography.mono(
+            size: 11,
+            color: VeraProbColors.textDisabled,
+            letterSpacing: 1.2,
+          ),
         ),
       );
     }
@@ -160,13 +144,22 @@ class _ConsoleItem extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('[$time]', style: _kMonoTime),
+          Text(
+            '[$time]',
+            style: VeraProbTypography.mono(
+              size: 11,
+              color: VeraProbColors.textSecondary,
+            ),
+          ),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 350),
             child: Text(
               narrative,
-              style: _kMonoNarrative,
+              style: VeraProbTypography.mono(
+                size: 11,
+                color: VeraProbColors.textPrimary,
+              ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
             ),
@@ -200,17 +193,13 @@ class _ErrorConsole extends StatelessWidget {
   const _ErrorConsole();
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
           'Erro ao exibir registros forenses.',
-          style: TextStyle(
-            color: VeraProbColors.error,
-            fontFamily: 'monospace',
-            fontSize: 11,
-          ),
+          style: VeraProbTypography.mono(size: 11, color: VeraProbColors.error),
         ),
       ),
     );

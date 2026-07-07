@@ -18,9 +18,8 @@ const _kScreenTitle = TextStyle(
   color: VeraProbColors.textPrimary,
 );
 const _kSubtitle = TextStyle(color: VeraProbColors.textSecondary, fontSize: 13);
-const _kMonoSecret = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 14,
+TextStyle get _kMonoSecret => VeraProbTypography.mono(
+  size: 14,
   color: VeraProbColors.textPrimary,
   letterSpacing: 2,
 );
@@ -28,18 +27,14 @@ const _kInstructionLabel = TextStyle(
   color: VeraProbColors.textPrimary,
   fontWeight: FontWeight.w600,
 );
-const _kOtpField = TextStyle(
-  fontSize: 24,
+TextStyle get _kOtpField => VeraProbTypography.mono(
+  size: 24,
   letterSpacing: 8,
-  fontFamily: 'monospace',
   color: VeraProbColors.textPrimary,
 );
 const _kWarningBody = TextStyle(color: VeraProbColors.warning, fontSize: 13);
-const _kMonoCode = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 13,
-  color: VeraProbColors.textPrimary,
-);
+TextStyle get _kMonoCode =>
+    VeraProbTypography.mono(size: 13, color: VeraProbColors.textPrimary);
 const _kCtaButtonText = TextStyle(
   color: VeraProbColors.textPrimary,
   fontWeight: FontWeight.bold,

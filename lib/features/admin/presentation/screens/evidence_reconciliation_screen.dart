@@ -128,8 +128,8 @@ class _OrphanEvidenceCard extends ConsumerWidget {
                   children: [
                     SelectableText(
                       '🔐 ${evidence.forensicHash.substring(0, 16)}…',
-                      style: VeraProbTypography.bodySmall.copyWith(
-                        fontFamily: 'monospace',
+                      style: VeraProbTypography.mono(
+                        size: 12,
                         color: VeraProbColors.textSecondary,
                       ),
                     ),

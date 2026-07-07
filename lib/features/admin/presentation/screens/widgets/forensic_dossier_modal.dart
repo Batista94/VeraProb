@@ -499,8 +499,8 @@ class _EvidenceManifestCard extends StatelessWidget {
               Expanded(
                 child: SelectableText(
                   attachment.sha256Hash,
-                  style: VeraProbTypography.caption.copyWith(
-                    fontFamily: 'monospace',
+                  style: VeraProbTypography.mono(
+                    size: 11,
                     color: VeraProbColors.textDisabled,
                   ),
                 ),
@@ -593,9 +593,9 @@ class _RawEvidenceCard extends StatelessWidget {
                     flex: 3,
                     child: Text(
                       r.value,
-                      style: VeraProbTypography.bodyMedium.copyWith(
-                        fontFamily: 'monospace',
-                        fontWeight: FontWeight.w600,
+                      style: VeraProbTypography.mono(
+                        size: 13,
+                        weight: FontWeight.w600,
                         color: r.highlight
                             ? VeraProbColors.error
                             : VeraProbColors.textPrimary,
@@ -910,8 +910,8 @@ class _CustodyAuthenticView extends ConsumerWidget {
                   Expanded(
                     child: SelectableText(
                       snapshot.integrityHash,
-                      style: VeraProbTypography.caption.copyWith(
-                        fontFamily: 'monospace',
+                      style: VeraProbTypography.mono(
+                        size: 11,
                         color: VeraProbColors.textPrimary,
                       ),
                     ),

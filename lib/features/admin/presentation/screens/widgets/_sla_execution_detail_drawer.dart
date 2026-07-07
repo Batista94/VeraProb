@@ -448,9 +448,8 @@ class _SolicitarDefesaButtonState
               ),
               child: SelectableText(
                 link,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontFamily: 'monospace',
+                style: VeraProbTypography.mono(
+                  size: 12,
                   color: VeraProbColors.primary,
                 ),
               ),

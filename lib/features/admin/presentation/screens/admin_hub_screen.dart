@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
@@ -23,6 +24,15 @@ class AdminHubScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(currentUserRoleProvider);
     final canSeeEvidence = role.hasPermission(UserRole.auditor);
+
+    // Fine-grained gate (Pilar 3): drop launcher cards whose route carries a
+    // permission the session lacks (route_permissions). Mirrors the sidebar
+    // filter; the router guard remains the enforcing boundary.
+    final service = ref.watch(permissionServiceProvider);
+    bool allowed(_HubItem item) {
+      final required = requiredPermissionFor(item.path);
+      return required == null || service.hasPermission(required);
+    }
 
     final groups = <_HubGroup>[
       const _HubGroup(
@@ -123,28 +133,36 @@ class AdminHubScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         const _HubOnboardingBanner(),
         const SizedBox(height: 20),
-        for (final group in groups) ...[
-          _GroupHeader(title: group.title),
-          const SizedBox(height: 12),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = (constraints.maxWidth / 280).floor().clamp(1, 4);
-              return GridView.count(
-                crossAxisCount: columns,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 16,
-                crossAxisSpacing: 16,
-                childAspectRatio: 2.6,
-                children: [
-                  for (final item in group.items)
-                    _HubCard(item: item, onTap: () => context.go(item.path)),
-                ],
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-        ],
+        for (final group in groups)
+          if (group.items.any(allowed)) ...[
+            _GroupHeader(title: group.title),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final columns = (constraints.maxWidth / 280).floor().clamp(
+                  1,
+                  4,
+                );
+                return GridView.count(
+                  crossAxisCount: columns,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 16,
+                  crossAxisSpacing: 16,
+                  childAspectRatio: 2.6,
+                  children: [
+                    for (final item in group.items)
+                      if (allowed(item))
+                        _HubCard(
+                          item: item,
+                          onTap: () => context.go(item.path),
+                        ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 32),
+          ],
       ],
     );
   }
@@ -194,48 +212,53 @@ class _HubCardState extends State<_HubCard> {
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
           child: AnimatedScale(
             scale: _hovered ? 1.0 : 0.98,
             duration: const Duration(milliseconds: 150),
-            child: ClipRRect(
-              borderRadius: VeraProbRadii.lgAll,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 64),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: VeraProbColors.surface.withValues(alpha: 0.7),
-                    borderRadius: VeraProbRadii.lgAll,
-                    border: Border.all(
-                      color: _hovered
-                          ? VeraProbColors.primary.withValues(alpha: 0.4)
-                          : VeraProbColors.border.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        widget.item.icon,
-                        size: 22,
+            child: IgnorePointer(
+              ignoring:
+                  true, // Fix for Wasm CanvasKit BackdropFilter scroll capture
+              child: ClipRRect(
+                borderRadius: VeraProbRadii.lgAll,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 64),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.surface.withValues(alpha: 0.7),
+                      borderRadius: VeraProbRadii.lgAll,
+                      border: Border.all(
                         color: _hovered
-                            ? VeraProbColors.primary
-                            : VeraProbColors.textSecondary,
+                            ? VeraProbColors.primary.withValues(alpha: 0.4)
+                            : VeraProbColors.border.withValues(alpha: 0.1),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          widget.item.label,
-                          style: VeraProbTypography.dataValue,
-                          overflow: TextOverflow.ellipsis,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          widget.item.icon,
+                          size: 22,
+                          color: _hovered
+                              ? VeraProbColors.primary
+                              : VeraProbColors.textSecondary,
                         ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: VeraProbColors.textDisabled,
-                      ),
-                    ],
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            widget.item.label,
+                            style: VeraProbTypography.dataValue,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: VeraProbColors.textDisabled,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

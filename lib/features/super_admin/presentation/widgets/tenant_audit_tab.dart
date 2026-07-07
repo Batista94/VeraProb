@@ -11,11 +11,8 @@ import 'package:intl/intl.dart';
 const _kErrorText = TextStyle(color: VeraProbColors.error);
 const _kEmptyText = TextStyle(color: VeraProbColors.textSecondary);
 const _kSectionLabel = TextStyle(fontWeight: FontWeight.bold, fontSize: 12);
-const _kMonoPayloadText = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 10,
-  color: VeraProbColors.textSecondary,
-);
+TextStyle get _kMonoPayloadText =>
+    VeraProbTypography.mono(size: 10, color: VeraProbColors.textSecondary);
 
 /// UUID v4 regex for validating SuperAdmin actor IDs.
 final _uuidRegExp = RegExp(
@@ -316,9 +313,7 @@ class _CopyableIdRow extends StatelessWidget {
             Flexible(
               child: Text(
                 value,
-                style: VeraProbTypography.caption.copyWith(
-                  fontFamily: 'monospace',
-                ),
+                style: VeraProbTypography.mono(size: 12),
                 overflow: TextOverflow.ellipsis,
               ),
             ),

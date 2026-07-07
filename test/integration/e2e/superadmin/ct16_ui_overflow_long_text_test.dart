@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,6 +55,9 @@ void main() {
     });
 
     tearDownAll(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
       if (!supabaseAvailable) return;
       await SuperAdminDataFactory.cleanup(testOrgLongName);
       await SuperAdminDataFactory.cleanup(testOrgBrazilianChars);

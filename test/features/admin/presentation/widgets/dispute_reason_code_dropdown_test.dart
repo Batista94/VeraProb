@@ -40,6 +40,7 @@ Widget _host({
           child: DisputeReasonCodeDropdown(
             selectedCode: selected,
             onChanged: onChanged ?? (_) {},
+            isAccept: true,
           ),
         ),
       ),

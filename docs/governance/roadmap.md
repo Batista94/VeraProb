@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** (adoção de tokens VeraProbColors/Typography/Radii/Breakpoints, eliminação de literais na UI, unificação de EmptyState e correção de breakpoints de Stepper) · [NEXT: trilha de notificação Resend na resolução]
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · [NEXT: trilha de notificação Resend na resolução]
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1459+ passing · 130 files · `make test-db` ✅ |
-| Migrations | 331 committed ✅ |
+| DB Tests (pgTAP) | 1459+ passing · 151 files · `make test-db` ✅ |
+| Migrations | 351 committed ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -17,12 +17,12 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 4 itens de Readiness pendentes.
+**Status:** EM ANDAMENTO — 2 itens de Readiness pendentes.
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
-- [ ] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
-- [ ] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
+- [x] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
+- [x] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
 - [ ] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 

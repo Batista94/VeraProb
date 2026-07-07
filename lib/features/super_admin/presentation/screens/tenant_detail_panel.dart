@@ -22,11 +22,8 @@ const _kLegalNameStyle = TextStyle(
   fontSize: 13,
 );
 const _kActionButtonText = TextStyle(fontSize: 12);
-const _kMonoIdStyle = TextStyle(
-  fontFamily: 'monospace',
-  fontSize: 11,
-  color: VeraProbColors.textDisabled,
-);
+TextStyle get _kMonoIdStyle =>
+    VeraProbTypography.mono(size: 11, color: VeraProbColors.textDisabled);
 
 /// Right panel: detail view for a selected tenant organization.
 class TenantDetailPanel extends ConsumerStatefulWidget {

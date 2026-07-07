@@ -175,8 +175,8 @@ class DeliveryLogPanel extends ConsumerWidget {
           subtitle: Text(
             'Tentativa ${log.attemptCount} · ${_formatUtc(log.createdAt)} · '
             '${log.id.substring(0, 8)}',
-            style: VeraProbTypography.mono.copyWith(
-              fontSize: 11,
+            style: VeraProbTypography.mono(
+              size: 11,
               color: VeraProbColors.textSecondary,
             ),
           ),

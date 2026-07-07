@@ -17,6 +17,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Força Maior',
       labelEn: 'Force Majeure',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'SENSOR_FAULT',
@@ -24,6 +25,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Falha de Sensor',
       labelEn: 'Sensor Fault',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'GPS_SIGNAL_LOSS',
@@ -31,6 +33,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Perda de Sinal GPS',
       labelEn: 'GPS Signal Loss',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'CONTRACT_EXCEPTION',
@@ -38,6 +41,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Exceção Contratual',
       labelEn: 'Contract Exception',
       isActive: true,
+      appliesTo: DisputeReasonContext.all,
     ),
     DisputeReasonCode(
       code: 'ROUTE_DEVIATION',
@@ -45,6 +49,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Desvio de Rota Autorizado',
       labelEn: 'Authorized Route Deviation',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'WEATHER_EVENT',
@@ -52,6 +57,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Evento Climático',
       labelEn: 'Weather Event',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'TRAFFIC_INCIDENT',
@@ -59,6 +65,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Acidente/Interdição de Via',
       labelEn: 'Traffic Incident',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'ASSET_BREAKDOWN',
@@ -66,6 +73,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Pane do Ativo (Veículo)',
       labelEn: 'Asset Breakdown (Vehicle)',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'OPERATOR_EMERGENCY',
@@ -73,6 +81,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Emergência do Operador',
       labelEn: 'Operator Emergency',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'REGULATORY_INTERVENTION',
@@ -80,6 +89,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Intervenção Regulatória (Blitz)',
       labelEn: 'Regulatory Intervention',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'COMMUNICATION_FAILURE',
@@ -87,6 +97,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Falha de Comunicação',
       labelEn: 'Communication Failure',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'SCHEDULING_ERROR',
@@ -94,6 +105,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Erro de Programação',
       labelEn: 'Scheduling Error',
       isActive: true,
+      appliesTo: DisputeReasonContext.all,
     ),
     DisputeReasonCode(
       code: 'THIRD_PARTY_INCIDENT',
@@ -101,6 +113,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Incidente com Terceiro',
       labelEn: 'Third-Party Incident',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'INFRASTRUCTURE_FAULT',
@@ -108,6 +121,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Falha de Infraestrutura',
       labelEn: 'Infrastructure Fault',
       isActive: true,
+      appliesTo: DisputeReasonContext.resolution,
     ),
     DisputeReasonCode(
       code: 'OTHER',
@@ -115,6 +129,7 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Outro (ver comentário)',
       labelEn: 'Other (see comment)',
       isActive: true,
+      appliesTo: DisputeReasonContext.all,
     ),
     DisputeReasonCode(
       code: 'LEGACY_UNCLASSIFIED',
@@ -122,6 +137,23 @@ class InMemoryDisputeReasonCodeRepository
       labelPt: 'Legado Não Classificado',
       labelEn: 'Legacy Unclassified',
       isActive: true,
+      appliesTo: DisputeReasonContext.all,
+    ),
+    DisputeReasonCode(
+      code: 'INSUFFICIENT_EVIDENCE',
+      category: 'OPERATIONAL',
+      labelPt: 'Evidência Insuficiente',
+      labelEn: 'Insufficient Evidence',
+      isActive: true,
+      appliesTo: DisputeReasonContext.rejection,
+    ),
+    DisputeReasonCode(
+      code: 'POLICY_VIOLATION_CONFIRMED',
+      category: 'CONTRACTUAL',
+      labelPt: 'Violação de Política Confirmada',
+      labelEn: 'Policy Violation Confirmed',
+      isActive: true,
+      appliesTo: DisputeReasonContext.rejection,
     ),
   ];
 

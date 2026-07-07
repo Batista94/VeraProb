@@ -103,6 +103,9 @@ void main() {
     });
 
     tearDownAll(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
       if (!supabaseAvailable) return;
       if (!edgeFunctionsAvailable) return;
       await SuperAdminDataFactory.cleanup(testOrgRaceCondition);

@@ -110,6 +110,7 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 18 | ACCENT-FILL-CONTRAST | `Colors.white` foreground on accent fills (primary/secondary/error) fails WCAG AA — use `background` |
 | 19 | GOLDEN-UNWIRED | `goldenTest` in file absent from `generate_goldens.sh` TEST_FILES — baseline never generated |
 | 20 | NUM-CLAMP-DOWNCAST | `num.clamp` result passed to `double` parameter — implicit downcast blocked by Strict Mode |
+| 21 | ALWAYS-TRUE-RLS-POLICY | PERMISSIVE `USING(true)` for client roles — use Global Catalog RLS Pattern or org predicate |
 
 ## Lessons Learned — Index
 
@@ -136,8 +137,9 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 ## Database Governance
 
 - Append-Only migrations. Never modify a merged `.sql` file.
-- Every new `supabase/migrations/*.sql` requires a matching `forensic_records/plans/{timestamp}*_test_plan.md` (1:1).
+- Every new `supabase/migrations/*.sql` requires a matching `forensic_records/plans/{timestamp}*_test_plan.md` **and** `supabase/tests/{timestamp}*_test.sql` (both 1:1 per migration timestamp — consolidating multiple migrations into one pgTAP file does not satisfy the scanner).
 - `supabase/types.database.ts` regenerated + committed with any migration.
+- **Global Catalog RLS Pattern:** shared reference tables use `organization_id UUID` nullable (`NULL` = global row). Policy: `organization_id IS NULL OR organization_id matches JWT` — never `USING(true)`. SSOT: `20260813000004_dispute_reason_codes.sql`.
 - No blocking ALTER — use 3-step CHECK NOT VALID → VALIDATE → SET NOT NULL pattern. Full recipe in [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #1.
 - Destructive DDL (DROP TABLE/COLUMN, DELETE, TRUNCATE) blocked. Requires `-- INV-DB: zero-downtime-verified` bypass comment after Council approval.
 - Soft-delete only (`deleted_at` or archive status). No hard `DELETE`.

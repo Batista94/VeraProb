@@ -12,11 +12,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:veraprob/application/projections/providers/feed_health_projection_provider.dart';
+import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/providers/vehicles_provider.dart';
 import 'package:veraprob/state/providers/alert_providers.dart';
+import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
 import 'package:veraprob/state/providers/contractor_providers.dart';
 import 'package:veraprob/state/providers/justification_providers.dart';
@@ -54,9 +56,18 @@ GoRouter _buildRouter(int initialBranch) {
   );
 }
 
-Widget _wrap(GoRouter router) {
+Widget _wrap(GoRouter router, {Set<String> permissions = const {'*'}}) {
   return ProviderScope(
     overrides: [
+      // AdminLayout always renders for an authenticated user; supply perms so
+      // pillar visibility (Pilar 3 filter) is deterministic. Default '*' = all
+      // 6 pillars visible; passing a narrower set drops the gated pillars.
+      permissionServiceProvider.overrideWith(
+        (ref) => PermissionService(
+          permissions: permissions,
+          scopes: const <String, Set<String>>{},
+        ),
+      ),
       pendingSanctionsCountProvider.overrideWithValue(0),
       pendingJustificationsCountProvider.overrideWithValue(0),
       activeAlertsStreamProvider.overrideWith(_EmptyAlertsNotifier.new),
@@ -114,6 +125,23 @@ void main() {
 
       final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
       expect(bar.selectedIndex, 2);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('compact + sem financial:read oculta o pilar financeiro', (
+      tester,
+    ) async {
+      await setViewport(tester, const Size(500, 900));
+
+      // Narrow perms (no financial:read) → the gated pillar drops from the bar.
+      await tester.pumpWidget(
+        _wrap(_buildRouter(0), permissions: const {'telemetry:read'}),
+      );
+      await tester.pump();
+
+      final bar = tester.widget<NavigationBar>(find.byType(NavigationBar));
+      expect(bar.destinations.length, pillarCount - 1);
 
       await tester.pumpWidget(const SizedBox.shrink());
     });

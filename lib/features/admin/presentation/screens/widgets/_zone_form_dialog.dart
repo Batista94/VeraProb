@@ -453,11 +453,10 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                       Expanded(
                         child: Text(
                           '${_lat!.toStringAsFixed(6)}, ${_lng!.toStringAsFixed(6)}',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 12,
+                          style: VeraProbTypography.mono(
+                            size: 12,
                             color: VeraProbColors.success,
-                            fontWeight: FontWeight.w600,
+                            weight: FontWeight.w600,
                           ),
                         ),
                       ),

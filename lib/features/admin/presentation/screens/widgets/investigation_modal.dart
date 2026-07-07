@@ -504,8 +504,8 @@ class _TimelineEvent extends StatelessWidget {
                   // Raw enum kept as forensic subtitle (MODO AUDITORIA citability).
                   Text(
                     entry.type,
-                    style: VeraProbTypography.caption.copyWith(
-                      fontFamily: 'monospace',
+                    style: VeraProbTypography.mono(
+                      size: 12,
                       color: VeraProbColors.textSecondary,
                     ),
                   ),
@@ -943,9 +943,7 @@ class _DecisionRow extends StatelessWidget {
                           ),
                           Text(
                             '${e.value}',
-                            style: VeraProbTypography.bodySmall.copyWith(
-                              fontFamily: 'monospace',
-                            ),
+                            style: VeraProbTypography.mono(size: 12),
                           ),
                         ],
                       ),

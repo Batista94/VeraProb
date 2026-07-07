@@ -51,6 +51,9 @@ void main() {
     });
 
     tearDownAll(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
       if (!supabaseAvailable) return;
       await serviceRoleClient.dispose();
     });

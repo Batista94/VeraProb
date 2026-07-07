@@ -102,10 +102,7 @@ class RichEvidenceCard extends ConsumerWidget {
               if (alert.context['forensic_hash_prefix'] != null) ...[
                 Text(
                   '🔐 ${alert.context['forensic_hash_prefix']}…',
-                  style: VeraProbTypography.caption.copyWith(
-                    fontFamily: 'monospace',
-                    fontSize: 10,
-                  ),
+                  style: VeraProbTypography.mono(size: 10),
                 ),
                 const SizedBox(width: 6),
               ],

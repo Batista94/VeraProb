@@ -10,7 +10,7 @@ void main() {
     test('returns the full seeded global catalogue, all active', () async {
       final codes = await repo.findAllActive();
 
-      expect(codes, hasLength(16));
+      expect(codes, hasLength(18));
       expect(codes.every((c) => c.isActive), isTrue);
     });
 

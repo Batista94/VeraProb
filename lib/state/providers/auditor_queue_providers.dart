@@ -261,6 +261,42 @@ final verdictProvenanceProvider = FutureProvider.autoDispose
       );
     });
 
+// ── Financial guard stamp enrichment (INV-3 append-only, INV-4) ──────────────
+
+/// Cap-truncation provenance for a sanction, read from the guard-owned
+/// top-level keys `enforce_financial_guard()` seals into the ledger row.
+/// `originalFineCents` is null on legacy/passthrough rows (no guard keys).
+typedef FinancialGuardStamp = ({
+  int? originalFineCents,
+  bool capTruncated,
+  bool capCheckDeferred,
+});
+
+/// Lazily resolves the financial-guard stamp for a queue item from its
+/// [ledgerEntryId]. Null when the row is invisible under RLS or carries no
+/// guard keys (uncapped / passthrough) → UI shows no cap signal. The keys are
+/// immutable (INV-3), so a single fetch per card is sufficient.
+final financialGuardStampProvider = FutureProvider.autoDispose
+    .family<FinancialGuardStamp?, String>((ref, ledgerEntryId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
+
+      final row = await ref
+          .watch(supabaseClientProvider)
+          .from('sla_audit_ledger_v2')
+          .select('payload')
+          .eq('id', ledgerEntryId)
+          .eq('organization_id', organizationId)
+          .maybeSingle();
+      final payload = row?['payload'] as Map<String, dynamic>?;
+      if (payload == null) return null;
+      return (
+        originalFineCents: (payload['original_fine_cents'] as num?)?.toInt(),
+        capTruncated: payload['cap_truncated'] as bool? ?? false,
+        capCheckDeferred: payload['cap_check_deferred'] as bool? ?? false,
+      );
+    });
+
 // ── Contract name enrichment ──────────────────────────────────────────────────
 
 /// Resolves the human-readable contract name for a given [contractId].

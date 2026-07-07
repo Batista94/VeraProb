@@ -197,10 +197,9 @@ class _ForensicAudioPlayerState extends ConsumerState<ForensicAudioPlayer> {
                   final dur = _player.duration ?? Duration.zero;
                   return Text(
                     '${_formatDuration(pos)} / ${_formatDuration(dur)}',
-                    style: VeraProbTypography.caption.copyWith(
-                      fontFamily: 'monospace',
+                    style: VeraProbTypography.mono(
+                      size: 10,
                       color: VeraProbColors.textSecondary,
-                      fontSize: 10,
                     ),
                   );
                 },
