@@ -18,30 +18,31 @@ SELECT function_privs_are(
   'PUBLIC should not have privileges on test_hold_financial_guard_lock'
 );
 
--- Prepare dummy org and contract
-INSERT INTO public.organizations (id, name) VALUES 
+-- Prepare dummy org and a CAPLESS contract.
+-- We reproduce the legacy overshoot (a full fine booked without accrual)
+-- WITHOUT toggling triggers on the partitioned parent. `ALTER TABLE
+-- sla_audit_ledger_v2 DISABLE/ENABLE TRIGGER` segfaults local PG inside a
+-- transaction (see reference_local_pg_segfaults #2) — instead we insert while
+-- the contract is capless (guard passthrough leaves the full fine, no accrual)
+-- and impose the cap afterwards.
+INSERT INTO public.organizations (id, name) VALUES
   ('00000000-0000-0000-0000-000000000123', 'Test Org') ON CONFLICT DO NOTHING;
 
-INSERT INTO public.contracts (id, organization_id, name, contractor_name, valid_from_utc, valid_until_utc, monthly_penalty_cap_cents, status) VALUES 
-  ('11111111-1111-1111-1111-111111111123', '00000000-0000-0000-0000-000000000123', 'Test Contract', 'Contractor', '2020-01-01', '2030-01-01', 10000, 'active') ON CONFLICT DO NOTHING;
+INSERT INTO public.contracts (id, organization_id, name, contractor_name, valid_from_utc, valid_until_utc, monthly_penalty_cap_cents, status) VALUES
+  ('11111111-1111-1111-1111-111111111123', '00000000-0000-0000-0000-000000000123', 'Test Contract', 'Contractor', '2020-01-01', '2030-01-01', NULL, 'active') ON CONFLICT DO NOTHING;
 
--- Simulate the old bug: a row was inserted with a massive fine, bypassing the cap (e.g. legacy deferred row)
-ALTER TABLE public.sla_audit_ledger_v2 DISABLE TRIGGER trg_financial_guard;
+-- Guard passthrough (contract capless) → full 15000 fine booked, no accrual row.
+INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, contract_id, occurred_at_utc, payload) VALUES
+  ('00000000-0000-0000-0000-000000000123', 'SANCTION_RECOMMENDED', '11111111-1111-1111-1111-111111111123', now(), '{"verdict_evidence": {"fine_cents": 15000}}');
 
-INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, contract_id, occurred_at_utc, payload) VALUES 
-  ('00000000-0000-0000-0000-000000000123', 'SANCTION_RECOMMENDED', '11111111-1111-1111-1111-111111111123', now(), '{"verdict_evidence": {"fine_cents": 15000}, "cap_check_deferred": true}');
-
-ALTER TABLE public.sla_audit_ledger_v2 ENABLE TRIGGER trg_financial_guard;
-
--- Set accrued to 0 so reconcile corrects it and logs drift
-UPDATE public.contract_penalty_monthly_accrual 
-  SET accrued_cents = 0 
-WHERE organization_id = '00000000-0000-0000-0000-000000000123' AND contract_id = '11111111-1111-1111-1111-111111111123';
+-- Impose the cap AFTER the legacy fine is booked.
+UPDATE public.contracts SET monthly_penalty_cap_cents = 10000
+ WHERE id = '11111111-1111-1111-1111-111111111123';
 
 -- Run the reconcile function
 SELECT public.reconcile_financial_guard('00000000-0000-0000-0000-000000000123');
 
--- Check if accrued_cents was clamped to monthly_penalty_cap_cents (10000) instead of 13000
+-- Check if accrued_cents was clamped to monthly_penalty_cap_cents (10000) instead of 15000
 SELECT results_eq(
   $$ SELECT accrued_cents FROM public.contract_penalty_monthly_accrual WHERE organization_id = '00000000-0000-0000-0000-000000000123' AND contract_id = '11111111-1111-1111-1111-111111111123' $$,
   $$ VALUES (10000::bigint) $$,
@@ -61,12 +62,15 @@ SELECT results_eq(
   'System audit log drift payload should have expected_cents equal to the cap'
 );
 
--- Verify expected behavior without clamp: insert an independent small sanction under a different contract
-INSERT INTO public.contracts (id, organization_id, name, contractor_name, valid_from_utc, valid_until_utc, monthly_penalty_cap_cents, status) VALUES 
-  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000123', 'Test Contract 2', 'Contractor 2', '2020-01-01', '2030-01-01', 10000, 'active') ON CONFLICT DO NOTHING;
+-- Under-cap path (no clamp): a second capless contract booked below the cap.
+INSERT INTO public.contracts (id, organization_id, name, contractor_name, valid_from_utc, valid_until_utc, monthly_penalty_cap_cents, status) VALUES
+  ('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000123', 'Test Contract 2', 'Contractor 2', '2020-01-01', '2030-01-01', NULL, 'active') ON CONFLICT DO NOTHING;
 
-INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, contract_id, occurred_at_utc, payload) VALUES 
+INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, contract_id, occurred_at_utc, payload) VALUES
   ('00000000-0000-0000-0000-000000000123', 'SANCTION_RECOMMENDED', '22222222-2222-2222-2222-222222222222', now(), '{"verdict_evidence": {"fine_cents": 3000}}');
+
+UPDATE public.contracts SET monthly_penalty_cap_cents = 10000
+ WHERE id = '22222222-2222-2222-2222-222222222222';
 
 SELECT public.reconcile_financial_guard('00000000-0000-0000-0000-000000000123');
 

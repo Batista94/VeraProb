@@ -79,6 +79,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
   }
 
   // ── Send via Resend ─────────────────────────────────────────────────────────
+  // Local E2E testing bypass: Skip sending actual email for test domains
+  if (email.endsWith("@e2e.veraprob.dev")) {
+    console.warn(`[notify-invite] Skipping Resend for E2E test email: ${email}`);
+    return Response.json({ ok: true, skipped: true }, { status: 200 });
+  }
+
   const apiKey = Deno.env.get("RESEND_API_KEY");
   if (!apiKey) {
     console.warn("[notify-invite] RESEND_API_KEY not set — skipping send");

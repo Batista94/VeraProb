@@ -37,9 +37,10 @@ SELECT ok(
   'RLS is enabled on dispute_reason_codes (INV-2)');
 
 -- ── Seed catalogue ───────────────────────────────────────────────────────────
+-- 16 original seeds + 2 REJECTION codes added by 20260914000001 (taxonomy).
 SELECT is(
   (SELECT count(*)::int FROM public.dispute_reason_codes WHERE organization_id IS NULL),
-  16, 'global closed catalogue seeds exactly 16 codes (Q2)');
+  18, 'global closed catalogue seeds exactly 18 codes (Q2)');
 
 -- B6: industry-agnostic codes present (transport wording only in labels).
 SELECT is(
@@ -76,7 +77,7 @@ SET LOCAL request.jwt.claims =
 -- Global rows are visible to any tenant.
 SELECT is(
   (SELECT count(*)::int FROM public.dispute_reason_codes WHERE organization_id IS NULL),
-  16, 'authenticated tenant sees all 16 global codes (drc_select_global)');
+  18, 'authenticated tenant sees all 18 global codes (drc_select_global)');
 
 -- Org B private code is invisible to Org RC (INV-22 tenant isolation).
 SELECT is(

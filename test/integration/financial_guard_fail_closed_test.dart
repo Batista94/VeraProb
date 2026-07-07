@@ -167,20 +167,15 @@ void main() async {
           reason: 'Exactly one FINANCIAL_CAP_DEFERRED log expected',
         );
 
-        // 4. Run reconcile_financial_guard, expect 0 corrections for this specific setup
-        // Because expected fine is 0 (we mutated the ledger fine to 0), and accrued is 0.
-        final corrections = await seed.rpc<int>(
+        // 4. Run reconcile_financial_guard. It scans every capped contract in the
+        // org, so the global correction count is not a reliable per-test signal
+        // (sibling contracts in a shared DB may legitimately drift). Assert instead
+        // that reconcile logs NO drift for OUR fail-closed contract — the fine sealed
+        // as 0 with 0 accrual is already self-consistent, nothing to correct.
+        await seed.rpc<int>(
           'reconcile_financial_guard',
           params: {'p_organization_id': _orgId},
         );
-        expect(
-          corrections,
-          0,
-          reason: 'Reconcile should make 0 corrections for fail-closed row',
-        );
-
-        // The reconcile checks all contracts. We want to make sure it doesn't flag this one.
-        // Wait, there might be other contracts out of sync in a dirty DB. We should just verify no DRIFT was logged for OUR contract.
         final driftLogs = await seed
             .from('system_audit_log')
             .select()

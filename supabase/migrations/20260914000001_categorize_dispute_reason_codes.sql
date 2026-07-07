@@ -1,5 +1,4 @@
 -- =============================================================================
--- pr_scanner: ignore-regression
 -- 20260914000001_categorize_dispute_reason_codes.sql
 -- Context: Updates applies_to column in dispute_reason_codes based on action type
 -- Invariants: INV-DB (Append-Only), INV-22 (Global Catalog)
