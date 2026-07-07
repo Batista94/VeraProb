@@ -728,13 +728,18 @@ fi
 # ── Step 10: Deno Test Suite (Edge Functions) ────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 10: Deno Test Suite (Edge Functions)...${NC}"
 
-# Windows/GitBash fallback for Deno
+# Windows/GitBash/WSL fallback for Deno.
+# $USER is unset on Windows (it sets $USERNAME instead), so a literal
+# "/c/Users/$USER/.deno/bin" check never matches on this platform. Glob
+# instead so detection doesn't depend on env vars that may not propagate
+# (hook subprocesses, WSL's /mnt/c mount, etc.).
 if ! command -v deno >/dev/null 2>&1; then
-  if [[ -d "/c/Users/$USER/.deno/bin" ]]; then
-    export PATH="/c/Users/$USER/.deno/bin:$PATH"
-  elif [[ -d "$HOME/.deno/bin" ]]; then
-    export PATH="$HOME/.deno/bin:$PATH"
-  fi
+  for deno_dir in "$HOME/.deno/bin" /c/Users/*/.deno/bin /mnt/c/Users/*/.deno/bin; do
+    if [[ -d "$deno_dir" ]]; then
+      export PATH="$deno_dir:$PATH"
+      break
+    fi
+  done
 fi
 
 if [[ "${SKIP_DENO_TESTS:-0}" == "1" ]]; then
