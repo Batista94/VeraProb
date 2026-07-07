@@ -40,6 +40,8 @@ const USERS = [
     password: '123456',
     label: 'Admin — Org Alpha',
     org_id: '00000000-0000-0000-0000-000000000001',
+    baseRole: 'TENANT_ADMIN',
+    tenantRoleName: 'Administrador',
   },
   {
     id: '210b892e-2f05-4eff-bb45-c3664141022b',
@@ -47,6 +49,35 @@ const USERS = [
     password: '123456',
     label: 'Admin — Org Beta',
     org_id: '00000000-0000-0000-0000-000000000002',
+    baseRole: 'TENANT_ADMIN',
+    tenantRoleName: 'Administrador',
+  },
+  {
+    id: '33333333-3333-3333-3333-333333333333',
+    email: 'validador@veraprob.dev',
+    password: '123456',
+    label: 'Validador — Org Alpha',
+    org_id: '00000000-0000-0000-0000-000000000001',
+    baseRole: 'OPERATOR',
+    tenantRoleName: 'Validador',
+  },
+  {
+    id: '44444444-4444-4444-4444-444444444444',
+    email: 'auditor@veraprob.dev',
+    password: '123456',
+    label: 'Auditor — Org Alpha',
+    org_id: '00000000-0000-0000-0000-000000000001',
+    baseRole: 'VIEWER',
+    tenantRoleName: 'Auditor',
+  },
+  {
+    id: '55555555-5555-5555-5555-555555555555',
+    email: 'operador@veraprob.dev',
+    password: '123456',
+    label: 'Operador — Org Alpha',
+    org_id: '00000000-0000-0000-0000-000000000001',
+    baseRole: 'OPERATOR',
+    tenantRoleName: 'Operador',
   },
 ];
 
@@ -201,10 +232,11 @@ async function ensureSuperAdmin(url, serviceKey, user) {
 }
 
 async function ensureTenantAdmin(url, serviceKey, user) {
+  const baseRole = user.baseRole || 'TENANT_ADMIN';
   const res = await post(
     `${url}/rest/v1/user_roles`,
     { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-    { user_id: user.id, organization_id: user.org_id, role: 'TENANT_ADMIN', is_active: true },
+    { user_id: user.id, organization_id: user.org_id, role: baseRole, is_active: true },
   );
   if (res.status === 200 || res.status === 201 || res.status === 204 || res.status === 409) {
     // Sync raw_app_meta_data so getCurrentUser() (which reads user.appMetadata)
@@ -212,10 +244,32 @@ async function ensureTenantAdmin(url, serviceKey, user) {
     const res2 = await put(
       `${url}/auth/v1/admin/users/${user.id}`,
       authHeaders(serviceKey),
-      { app_metadata: { org_id: user.org_id, role: 'TENANT_ADMIN' } },
+      { app_metadata: { org_id: user.org_id, role: baseRole } },
     );
     if (!res2.ok) {
       throw new Error(`app_metadata update failed: HTTP ${res2.status}: ${JSON.stringify(res2.data)}`);
+    }
+
+    // Now, assign the specific tenant_role if requested
+    if (user.tenantRoleName) {
+      const resRole = await fetch(
+        `${url}/rest/v1/tenant_roles?organization_id=eq.${user.org_id}&name=eq.${encodeURIComponent(user.tenantRoleName)}&select=id`,
+        { headers: authHeaders(serviceKey) }
+      );
+      const roles = await resRole.json();
+      if (roles && roles.length > 0) {
+        const roleId = roles[0].id;
+        const resAssign = await post(
+          `${url}/rest/v1/user_role_assignments`,
+          { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+          { user_id: user.id, role_id: roleId }
+        );
+        if (![200, 201, 204, 409].includes(resAssign.status)) {
+          throw new Error(`HTTP ${resAssign.status} (assign): ${JSON.stringify(resAssign.data)}`);
+        }
+      } else {
+        console.log(`\n  AVISO: tenant_role '${user.tenantRoleName}' não encontrado na Org ${user.org_id}`);
+      }
     }
     return;
   }
