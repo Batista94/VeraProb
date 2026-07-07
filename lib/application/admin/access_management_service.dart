@@ -127,6 +127,46 @@ class RoleChangeRequest {
   }
 }
 
+/// Highest-privilege active tenant-role name for [userId] (most permission
+/// keys wins; Administrador → all keys → wins). Name tie-break. null if none.
+String? highestPrivilegeRoleName({
+  required String userId,
+  required List<RoleAssignment> assignments,
+  required List<TenantRole> roles,
+}) {
+  final userRoleIds = assignments
+      .where((a) => a.userId == userId)
+      .map((a) => a.roleId)
+      .toSet();
+  if (userRoleIds.isEmpty) return null;
+
+  final userRoles = roles.where((r) => userRoleIds.contains(r.id)).toList();
+  if (userRoles.isEmpty) return null;
+
+  userRoles.sort((a, b) {
+    final aCount = a.permissionKeys.length;
+    final bCount = b.permissionKeys.length;
+    if (aCount != bCount) return bCount.compareTo(aCount); // Descending
+    return a.name.compareTo(b.name); // Alphabetical tie-break
+  });
+
+  return userRoles.first.name;
+}
+
+/// Union of permission keys [userId] holds via active tenant roles.
+Set<String> memberHeldPermissionKeys({
+  required String userId,
+  required List<RoleAssignment> assignments,
+  required List<TenantRole> roles,
+}) {
+  final userRoleIds = assignments
+      .where((a) => a.userId == userId)
+      .map((a) => a.roleId)
+      .toSet();
+  final userRoles = roles.where((r) => userRoleIds.contains(r.id));
+  return userRoles.expand((r) => r.permissionKeys).toSet();
+}
+
 /// Decoupled from infrastructure (Supabase). Implemented by
 /// `PostgresAccessManagementService`.
 abstract class AccessManagementService {

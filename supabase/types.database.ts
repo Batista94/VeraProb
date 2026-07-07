@@ -5724,6 +5724,14 @@ export type Database = {
         Args: { p_grants: Json; p_role_id: string };
         Returns: undefined;
       };
+      _rbac_assert_can_grant_role: {
+        Args: { p_role_id: string };
+        Returns: undefined;
+      };
+      _rbac_assert_can_manage_target: {
+        Args: { p_target_user: string };
+        Returns: undefined;
+      };
       _rbac_assert_roles_manage: { Args: never; Returns: undefined };
       _rbac_assert_subset_grant: {
         Args: { p_grants: Json };
@@ -5741,6 +5749,10 @@ export type Database = {
       };
       _rbac_live_check_permission: {
         Args: { p_perm: string };
+        Returns: undefined;
+      };
+      _rbac_sync_coarse_role_admin: {
+        Args: { p_org: string; p_user: string };
         Returns: undefined;
       };
       _rbac_validate_grants: { Args: { p_grants: Json }; Returns: undefined };

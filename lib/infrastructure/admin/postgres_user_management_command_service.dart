@@ -44,6 +44,17 @@ class PostgresUserManagementCommandService
     );
   }
 
+  @override
+  Future<void> reactivateMember({
+    required String organizationId,
+    required String targetUserId,
+  }) async {
+    await _client.rpc(
+      'reactivate_member',
+      params: {'p_target_user_id': targetUserId},
+    );
+  }
+
   String _mapRoleToDb(UserRole role) {
     switch (role) {
       case UserRole.admin:

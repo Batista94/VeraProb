@@ -5,6 +5,7 @@ import 'package:veraprob/domain/admin/quota_warning.dart';
 import 'package:veraprob/application/admin/accept_invitation_handler.dart';
 import 'package:veraprob/application/admin/change_user_role_handler.dart';
 import 'package:veraprob/application/admin/deactivate_member_handler.dart';
+import 'package:veraprob/application/admin/reactivate_member_handler.dart';
 import 'package:veraprob/application/admin/invitation_command_service.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/remove_member_handler.dart';
@@ -148,6 +149,15 @@ final deactivateMemberHandlerProvider = Provider<DeactivateMemberHandler>((
     tenantValidator: ref.watch(tenantValidationServiceProvider),
     commandService: ref.watch(userManagementCommandServiceProvider),
     queryService: ref.watch(userManagementQueryServiceProvider),
+  );
+});
+
+final reactivateMemberHandlerProvider = Provider<ReactivateMemberHandler>((
+  ref,
+) {
+  return ReactivateMemberHandler(
+    tenantValidator: ref.watch(tenantValidationServiceProvider),
+    commandService: ref.watch(userManagementCommandServiceProvider),
   );
 });
 

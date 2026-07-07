@@ -6,6 +6,8 @@ import 'package:veraprob/features/admin/presentation/screens/org_settings_screen
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/admin/access_management_service.dart';
+import 'package:veraprob/state/providers/access_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
@@ -189,6 +191,11 @@ class _GeneralSettingsTab extends ConsumerWidget {
     final rawName = user?.userMetadata?['name'] as String?;
     final rawEmail = user?.email ?? '';
     final role = ref.watch(currentUserRoleProvider);
+    final userId = ref.watch(currentOperatorIdProvider);
+    final roles = ref.watch(tenantRolesProvider).value ?? const <TenantRole>[];
+    final assignments =
+        ref.watch(activeRoleAssignmentsProvider).value ??
+        const <RoleAssignment>[];
 
     String operatorName = 'Usuário';
     if (rawName != null && rawName.trim().isNotEmpty) {
@@ -197,15 +204,26 @@ class _GeneralSettingsTab extends ConsumerWidget {
       operatorName = rawEmail;
     }
 
-    final roleLabel = switch (role) {
+    // The parenthetical reflects the person's real profile in the tool: their
+    // highest-privilege tenant role (which alone knows "Validador"), falling
+    // back to the coarse trust-root label when no tenant role is assigned.
+    final coarseLabel = switch (role) {
       UserRole.admin => 'Administrador',
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
       UserRole.contractorViewer => 'Visualizador',
       UserRole.superAdmin => 'Super Administrador',
     };
+    final profileLabel = userId == null
+        ? coarseLabel
+        : highestPrivilegeRoleName(
+                userId: userId,
+                assignments: assignments,
+                roles: roles,
+              ) ??
+              coarseLabel;
 
-    final displayIdentity = '$operatorName ($roleLabel)';
+    final displayIdentity = '$operatorName ($profileLabel)';
     final operatorId = user?.id ?? 'Não autenticado';
 
     return SingleChildScrollView(

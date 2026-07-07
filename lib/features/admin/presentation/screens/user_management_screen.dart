@@ -10,25 +10,54 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/admin/access_management_service.dart';
+import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/state/providers/access_providers.dart';
-import 'package:veraprob/application/admin/change_user_role_command.dart';
 import 'package:veraprob/application/admin/remove_member_command.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/application/admin/revoke_invitation_command.dart';
 
-/// Screen for managing organization members and their roles.
-/// Also shows pending invitations and allows sending new invites.
-class UserManagementTab extends ConsumerWidget {
+/// Coarse trust-root label — fallback when a member has no tenant-role profile
+/// (superAdmin, or admin with no custom role assigned).
+String _coarseRoleLabel(UserRole role) => switch (role) {
+  UserRole.admin => 'Administrador',
+  UserRole.operator => 'Operador',
+  UserRole.auditor => 'Auditor',
+  UserRole.contractorViewer => 'Visualizador',
+  UserRole.superAdmin => 'Super Administrador',
+};
+
+/// Screen for managing organization members and their access profiles.
+///
+/// Profiles are unified on tenant roles (Palantir-tier): the `+ Perfil` chips
+/// are the single assignment surface, hierarchy-gated so a member can only grant
+/// roles fully within their own permission ceiling and cannot manage members who
+/// hold permissions they lack — mirroring the DB guards in
+/// `assign_tenant_role`/`revoke_tenant_role`. Deactivated members move to the
+/// Arquivados section for reactivation/consultation.
+class UserManagementTab extends ConsumerStatefulWidget {
   const UserManagementTab({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<UserManagementTab> createState() => _UserManagementTabState();
+}
+
+class _UserManagementTabState extends ConsumerState<UserManagementTab> {
+  String _emailFilter = '';
+  String? _profileFilter; // null = Todos
+
+  @override
+  Widget build(BuildContext context) {
     final membersAsync = ref.watch(orgMembersProvider);
     final invitationsAsync = ref.watch(orgInvitationsProvider);
     final currentUserId = ref.watch(currentOperatorIdProvider);
+    final roles = ref.watch(tenantRolesProvider).value ?? const <TenantRole>[];
+    final assignments =
+        ref.watch(activeRoleAssignmentsProvider).value ??
+        const <RoleAssignment>[];
+    final perms = ref.watch(permissionServiceProvider);
     final canManageUsers =
-        ref.watch(permissionServiceProvider).hasPermission('users:manage') ||
-        ref.watch(permissionServiceProvider).hasPermission('roles:manage');
+        perms.hasPermission('users:manage') ||
+        perms.hasPermission('roles:manage');
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -49,7 +78,7 @@ class UserManagementTab extends ConsumerWidget {
                 FilledButton.icon(
                   icon: const Icon(Icons.person_add_outlined, size: 18),
                   label: const Text('Convidar'),
-                  onPressed: () => _showInviteDialog(context, ref),
+                  onPressed: () => _showInviteDialog(context),
                 ),
             ],
           ),
@@ -60,125 +89,21 @@ class UserManagementTab extends ConsumerWidget {
               color: VeraProbColors.textSecondary,
             ),
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          _buildFilterBar(roles),
+          const SizedBox(height: 16),
           Expanded(
             child: ListView(
               children: [
                 switch (membersAsync) {
-                  AsyncData(:final value) =>
-                    value.isEmpty
-                        ? const SizedBox.shrink()
-                        : Column(
-                            children: List.generate(value.length * 2 - 1, (i) {
-                              if (i.isOdd) {
-                                return const Divider(
-                                  color: VeraProbColors.border,
-                                );
-                              }
-                              final member = value[i ~/ 2];
-                              final isSelf = member.userId == currentUserId;
-                              return Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: VeraProbColors.primary
-                                          .withValues(alpha: 0.1),
-                                      child: Text(
-                                        member.email[0].toUpperCase(),
-                                        style: const TextStyle(
-                                          color: VeraProbColors.primary,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                    title: Text(
-                                      member.email,
-                                      style: VeraProbTypography.kpiLabel,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                    subtitle: Text(
-                                      'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
-                                      style: VeraProbTypography.caption,
-                                    ),
-                                    trailing: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        if (!isSelf)
-                                          DropdownButton<UserRole>(
-                                            value: member.role,
-                                            underline: const SizedBox(),
-                                            items: const [
-                                              DropdownMenuItem(
-                                                value: UserRole.admin,
-                                                child: Text('Administrador'),
-                                              ),
-                                              DropdownMenuItem(
-                                                value: UserRole.operator,
-                                                child: Text('Operador'),
-                                              ),
-                                              DropdownMenuItem(
-                                                value: UserRole.auditor,
-                                                child: Text('Auditor'),
-                                              ),
-                                            ],
-                                            onChanged: canManageUsers
-                                                ? (newRole) => _changeRole(
-                                                    context,
-                                                    ref,
-                                                    member.userId,
-                                                    newRole!,
-                                                  )
-                                                : null,
-                                          )
-                                        else
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: VeraProbColors.surface,
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
-                                              border: Border.all(
-                                                color: VeraProbColors.border,
-                                              ),
-                                            ),
-                                            child: const Text(
-                                              'Você (Admin)',
-                                              style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                          ),
-                                        const SizedBox(width: 16),
-                                        if (!isSelf && canManageUsers)
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.person_off_outlined,
-                                              color: VeraProbColors.warning,
-                                              size: 20,
-                                            ),
-                                            tooltip: 'Inativar membro',
-                                            onPressed: () => _confirmDeactivate(
-                                              context,
-                                              ref,
-                                              member.userId,
-                                              member.email,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (canManageUsers)
-                                    _MemberRolesRow(userId: member.userId),
-                                ],
-                              );
-                            }),
-                          ),
+                  AsyncData(:final value) => _buildMembersSection(
+                    context,
+                    value,
+                    currentUserId,
+                    canManageUsers,
+                    roles,
+                    assignments,
+                  ),
                   AsyncLoading() => const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -189,16 +114,13 @@ class UserManagementTab extends ConsumerWidget {
                     ),
                   ),
                 },
-
                 if (canManageUsers)
                   switch (invitationsAsync) {
                     AsyncData(:final value) => _buildInvitations(
                       context,
-                      ref,
                       value,
                     ),
-                    AsyncLoading() => const SizedBox.shrink(),
-                    AsyncError() => const SizedBox.shrink(),
+                    _ => const SizedBox.shrink(),
                   },
               ],
             ),
@@ -208,11 +130,265 @@ class UserManagementTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildInvitations(
+  Widget _buildFilterBar(List<TenantRole> roles) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            decoration: const InputDecoration(
+              isDense: true,
+              prefixIcon: Icon(Icons.search, size: 18),
+              hintText: 'Filtrar por e-mail',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (v) => setState(() => _emailFilter = v.trim()),
+          ),
+        ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 200,
+          child: DropdownButtonFormField<String?>(
+            initialValue: _profileFilter,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Perfil',
+              border: OutlineInputBorder(),
+            ),
+            items: [
+              const DropdownMenuItem<String?>(
+                value: null,
+                child: Text('Todos'),
+              ),
+              for (final r in roles)
+                DropdownMenuItem<String?>(value: r.name, child: Text(r.name)),
+            ],
+            onChanged: (v) => setState(() => _profileFilter = v),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMembersSection(
     BuildContext context,
-    WidgetRef ref,
-    List<Invitation> value,
+    List<OrgMember> all,
+    String? currentUserId,
+    bool canManageUsers,
+    List<TenantRole> roles,
+    List<RoleAssignment> assignments,
   ) {
+    final active = all.where((m) => m.isActive).toList();
+    final archived = all.where((m) => !m.isActive).toList();
+
+    final filtered = active.where((m) {
+      if (_emailFilter.isNotEmpty &&
+          !m.email.toLowerCase().contains(_emailFilter.toLowerCase())) {
+        return false;
+      }
+      if (_profileFilter == null) return true;
+      final profile =
+          highestPrivilegeRoleName(
+            userId: m.userId,
+            assignments: assignments,
+            roles: roles,
+          ) ??
+          _coarseRoleLabel(m.role);
+      return profile == _profileFilter;
+    }).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (filtered.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 32),
+            child: Center(
+              child: Text(
+                active.isEmpty
+                    ? 'Nenhum membro ativo.'
+                    : 'Nenhum membro corresponde ao filtro.',
+                style: VeraProbTypography.bodyMedium.copyWith(
+                  color: VeraProbColors.textSecondary,
+                ),
+              ),
+            ),
+          )
+        else
+          for (int i = 0; i < filtered.length; i++) ...[
+            if (i > 0) const Divider(color: VeraProbColors.border),
+            _buildMemberTile(
+              context,
+              filtered[i],
+              filtered[i].userId == currentUserId,
+              canManageUsers,
+              roles,
+              assignments,
+              currentUserId,
+            ),
+          ],
+        if (archived.isNotEmpty)
+          _buildArchivedSection(context, archived, canManageUsers),
+      ],
+    );
+  }
+
+  Widget _buildMemberTile(
+    BuildContext context,
+    OrgMember member,
+    bool isSelf,
+    bool canManageUsers,
+    List<TenantRole> roles,
+    List<RoleAssignment> assignments,
+    String? currentUserId,
+  ) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ListTile(
+          leading: CircleAvatar(
+            backgroundColor: VeraProbColors.primary.withValues(alpha: 0.1),
+            child: Text(
+              member.email[0].toUpperCase(),
+              style: const TextStyle(
+                color: VeraProbColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          title: Text(
+            member.email,
+            style: VeraProbTypography.kpiLabel,
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+          subtitle: Text(
+            'Convidado em: ${member.invitedAt.toLocal().toString().split('.')[0]}',
+            style: VeraProbTypography.caption,
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (isSelf)
+                _buildSelfBadge(currentUserId, roles, assignments, member.role)
+              else if (canManageUsers)
+                IconButton(
+                  icon: const Icon(
+                    Icons.person_off_outlined,
+                    color: VeraProbColors.warning,
+                    size: 20,
+                  ),
+                  tooltip: 'Inativar membro',
+                  onPressed: () =>
+                      _confirmDeactivate(context, member.userId, member.email),
+                ),
+            ],
+          ),
+        ),
+        if (canManageUsers) _MemberRolesRow(userId: member.userId),
+      ],
+    );
+  }
+
+  /// Self-badge reflects the logged-in profile (case 3): highest-privilege
+  /// tenant role, falling back to the coarse label — never a hardcoded "Admin".
+  Widget _buildSelfBadge(
+    String? currentUserId,
+    List<TenantRole> roles,
+    List<RoleAssignment> assignments,
+    UserRole coarseRole,
+  ) {
+    final profile =
+        (currentUserId == null
+            ? null
+            : highestPrivilegeRoleName(
+                userId: currentUserId,
+                assignments: assignments,
+                roles: roles,
+              )) ??
+        _coarseRoleLabel(coarseRole);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: VeraProbColors.surface,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: VeraProbColors.border),
+      ),
+      child: Text(
+        'Você · $profile',
+        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+      ),
+    );
+  }
+
+  /// Deactivated members, retained for reactivation/consultation (case 4).
+  Widget _buildArchivedSection(
+    BuildContext context,
+    List<OrgMember> archived,
+    bool canManageUsers,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        const Divider(color: VeraProbColors.border),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            const Icon(
+              Icons.inventory_2_outlined,
+              size: 20,
+              color: VeraProbColors.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Arquivados (${archived.length})',
+              style: VeraProbTypography.kpiLabel,
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ...archived.map(
+          (m) => ListTile(
+            leading: CircleAvatar(
+              backgroundColor: VeraProbColors.textSecondary.withValues(
+                alpha: 0.1,
+              ),
+              child: Text(
+                m.email[0].toUpperCase(),
+                style: const TextStyle(
+                  color: VeraProbColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            title: Text(
+              m.email,
+              style: VeraProbTypography.kpiLabel.copyWith(
+                color: VeraProbColors.textSecondary,
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
+            subtitle: Text(
+              'Inativo · ${_coarseRoleLabel(m.role)}',
+              style: VeraProbTypography.caption,
+            ),
+            trailing: canManageUsers
+                ? TextButton.icon(
+                    icon: const Icon(Icons.restore, size: 16),
+                    label: const Text('Reativar'),
+                    onPressed: () =>
+                        _confirmReactivate(context, m.userId, m.email),
+                  )
+                : null,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInvitations(BuildContext context, List<Invitation> value) {
     final nowUtc = ref.read(dateTimeProviderProvider).nowUtc();
     final pending = value.where((i) => i.isActiveAt(nowUtc)).toList();
     if (pending.isEmpty) return const SizedBox.shrink();
@@ -240,72 +416,22 @@ class UserManagementTab extends ConsumerWidget {
         ...pending.map(
           (inv) => _PendingInvitationTile(
             invitation: inv,
-            onRevoke: () => _revokeInvitation(context, ref, inv),
+            onRevoke: () => _revokeInvitation(context, inv),
           ),
         ),
       ],
     );
   }
 
-  Future<void> _showInviteDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showInviteDialog(BuildContext context) async {
     await showDialog<void>(
       context: context,
       builder: (ctx) => _InviteUserDialog(parentRef: ref),
     );
   }
 
-  Future<void> _changeRole(
-    BuildContext context,
-    WidgetRef ref,
-    String userId,
-    UserRole newRole,
-  ) async {
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final orgId = ref.read(currentOrganizationIdProvider);
-      final callerRole = ref.read(currentUserRoleProvider);
-      final sessionId = ref.read(currentSessionIdProvider) ?? '';
-
-      if (orgId == null) {
-        throw StateError(
-          'Organization context unavailable for role: $callerRole',
-        );
-      }
-
-      await ref
-          .read(changeUserRoleHandlerProvider)
-          .handle(
-            ChangeUserRoleCommand(
-              organizationId: orgId,
-              callerRole: callerRole,
-              targetUserId: userId,
-              newRole: newRole,
-              sessionId: sessionId,
-            ),
-          );
-      ref.invalidate(orgMembersProvider);
-
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Permissão atualizada com sucesso.'),
-          backgroundColor: VeraProbColors.success,
-        ),
-      );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Não foi possível atualizar a permissão. Tente novamente.',
-          ),
-          backgroundColor: VeraProbColors.error,
-        ),
-      );
-    }
-  }
-
   Future<void> _confirmDeactivate(
     BuildContext context,
-    WidgetRef ref,
     String userId,
     String email,
   ) async {
@@ -341,9 +467,7 @@ class UserManagementTab extends ConsumerWidget {
         final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
         if (orgId == null) {
-          throw StateError(
-            'Organization context unavailable for role: $callerRole',
-          );
+          throw const DomainException('Contexto da organização indisponível.');
         }
 
         await ref
@@ -377,9 +501,79 @@ class UserManagementTab extends ConsumerWidget {
     }
   }
 
+  Future<void> _confirmReactivate(
+    BuildContext context,
+    String userId,
+    String email,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reativar Membro'),
+        content: Text(
+          'Deseja reativar o usuário $email? '
+          'Ele voltará a ter acesso ao sistema com seus perfis anteriores.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: VeraProbColors.success,
+            ),
+            child: const Text('Reativar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        final orgId = ref.read(currentOrganizationIdProvider);
+        final callerRole = ref.read(currentUserRoleProvider);
+        final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+        if (orgId == null) {
+          throw const DomainException('Contexto da organização indisponível.');
+        }
+
+        await ref
+            .read(reactivateMemberHandlerProvider)
+            .handle(
+              RemoveMemberCommand(
+                organizationId: orgId,
+                callerRole: callerRole,
+                targetUserId: userId,
+                sessionId: sessionId,
+              ),
+            );
+        ref.invalidate(orgMembersProvider);
+
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('Membro reativado com sucesso.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível reativar o membro. Verifique as permissões e tente novamente.',
+            ),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _revokeInvitation(
     BuildContext context,
-    WidgetRef ref,
     Invitation invitation,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -411,9 +605,7 @@ class UserManagementTab extends ConsumerWidget {
         final sessionId = ref.read(currentSessionIdProvider) ?? '';
 
         if (orgId == null) {
-          throw StateError(
-            'Organization context unavailable for role: $callerRole',
-          );
+          throw const DomainException('Contexto da organização indisponível.');
         }
 
         await ref
@@ -459,13 +651,7 @@ class _PendingInvitationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final roleLabel = switch (invitation.role) {
-      UserRole.admin => 'Administrador',
-      UserRole.operator => 'Operador',
-      UserRole.auditor => 'Auditor',
-      UserRole.contractorViewer => 'Visualizador Contratante',
-      UserRole.superAdmin => 'Super Administrador',
-    };
+    final roleLabel = _coarseRoleLabel(invitation.role);
     final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
       '.',
     )[0];
@@ -533,6 +719,9 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
   }
 
   Widget _buildFormDialog(BuildContext context) {
+    // Only '*' holders (system Administrador / superAdmin) may create another
+    // Administrador — the option is hidden entirely otherwise (case 2).
+    final canInviteAdmin = ref.read(currentPermissionsProvider).contains('*');
     return AlertDialog(
       title: const Text('Convidar Usuário'),
       content: SizedBox(
@@ -559,16 +748,17 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               DropdownButtonFormField<UserRole>(
                 initialValue: _selectedRole,
                 decoration: const InputDecoration(labelText: 'Perfil'),
-                items: const [
-                  DropdownMenuItem(
-                    value: UserRole.admin,
-                    child: Text('Administrador'),
-                  ),
-                  DropdownMenuItem(
+                items: [
+                  if (canInviteAdmin)
+                    const DropdownMenuItem(
+                      value: UserRole.admin,
+                      child: Text('Administrador'),
+                    ),
+                  const DropdownMenuItem(
                     value: UserRole.operator,
                     child: Text('Operador'),
                   ),
-                  DropdownMenuItem(
+                  const DropdownMenuItem(
                     value: UserRole.auditor,
                     child: Text('Auditor'),
                   ),
@@ -739,8 +929,11 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
 /// Fine-grained access profiles assigned to a member (Pilar 3.1 multi-role).
 ///
 /// Chips = active `tenant_roles`; delete revokes, the trailing action opens the
-/// assignment dialog. Visible only to `roles:manage` holders. The RPCs own the
-/// subset guard + four-eyes routing — this is convenience UI.
+/// assignment dialog. Hierarchy-gated (case 2): a caller only sees the `+ Perfil`
+/// action and delete affordance for roles fully within their own permission
+/// ceiling, and the whole row is view-only when the target holds any permission
+/// the caller lacks. The RPCs own the authoritative subset + four-eyes guard —
+/// this mirrors them for UX so blocked actions never render.
 class _MemberRolesRow extends ConsumerWidget {
   final String userId;
 
@@ -750,16 +943,40 @@ class _MemberRolesRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final rolesAsync = ref.watch(tenantRolesProvider);
     final assignmentsAsync = ref.watch(activeRoleAssignmentsProvider);
+    final perms = ref.watch(currentPermissionsProvider);
 
     final roles = rolesAsync.value ?? const <TenantRole>[];
     if (roles.isEmpty) return const SizedBox.shrink();
 
+    final allAssignments = assignmentsAsync.value ?? const <RoleAssignment>[];
     final assignmentByRoleId = <String, RoleAssignment>{
-      for (final a in assignmentsAsync.value ?? const <RoleAssignment>[])
+      for (final a in allAssignments)
         if (a.userId == userId) a.roleId: a,
     };
-    final assigned = roles.where((r) => assignmentByRoleId.containsKey(r.id));
-    final available = roles.where((r) => !assignmentByRoleId.containsKey(r.id));
+    final assigned = roles
+        .where((r) => assignmentByRoleId.containsKey(r.id))
+        .toList();
+
+    final isSuper = perms.contains('*');
+
+    // View-only when the target holds any permission the caller lacks
+    // (mirrors _rbac_assert_can_manage_target — no managing "up").
+    final heldByTarget = memberHeldPermissionKeys(
+      userId: userId,
+      assignments: allAssignments,
+      roles: roles,
+    );
+    final locked = !isSuper && heldByTarget.any((k) => !perms.contains(k));
+
+    // Caller may grant only roles fully within their own ceiling
+    // (mirrors _rbac_assert_can_grant_role — Administrador never appears for a
+    // Validador).
+    bool canGrant(TenantRole r) =>
+        isSuper || r.permissionKeys.every(perms.contains);
+
+    final available = roles
+        .where((r) => !assignmentByRoleId.containsKey(r.id) && canGrant(r))
+        .toList();
 
     return Padding(
       padding: const EdgeInsets.only(left: 72, right: 16, bottom: 12),
@@ -774,12 +991,13 @@ class _MemberRolesRow extends ConsumerWidget {
               ref,
               role,
               assignmentByRoleId[role.id]!.validUntilUtc,
+              deletable: !locked && canGrant(role),
             ),
-          if (available.isNotEmpty)
+          if (!locked && available.isNotEmpty)
             ActionChip(
               avatar: const Icon(Icons.add, size: 14),
               label: const Text('Perfil'),
-              onPressed: () => _assign(context, ref, available.toList()),
+              onPressed: () => _assign(context, ref, available),
             ),
         ],
       ),
@@ -788,13 +1006,15 @@ class _MemberRolesRow extends ConsumerWidget {
 
   /// Time-bound assignments render in Amber with the expiry date; permanent
   /// ones keep the primary tint. Foreground stays the semantic color over a
-  /// tint (never white over an accent fill — ACCENT-FILL-CONTRAST).
+  /// tint (never white over an accent fill — ACCENT-FILL-CONTRAST). The delete
+  /// affordance only renders when the caller may revoke the role.
   Widget _buildRoleChip(
     BuildContext context,
     WidgetRef ref,
     TenantRole role,
-    DateTime? validUntilUtc,
-  ) {
+    DateTime? validUntilUtc, {
+    required bool deletable,
+  }) {
     final expiring = validUntilUtc != null;
     final label = expiring
         ? '${role.name} · até ${DateFormat('dd/MM/yyyy').format(validUntilUtc.toLocal())}'
@@ -819,8 +1039,8 @@ class _MemberRolesRow extends ConsumerWidget {
       side: expiring
           ? BorderSide(color: VeraProbColors.warning.withValues(alpha: 0.4))
           : null,
-      deleteIcon: const Icon(Icons.close, size: 14),
-      onDeleted: () => _revoke(context, ref, role),
+      deleteIcon: deletable ? const Icon(Icons.close, size: 14) : null,
+      onDeleted: deletable ? () => _revoke(context, ref, role) : null,
     );
   }
 

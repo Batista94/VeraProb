@@ -12,12 +12,17 @@ class OrgMember {
   final DateTime invitedAt;
   final DateTime? lastSignIn;
 
+  /// `user_roles.is_active` — false = archived (deactivated), retained for
+  /// forensic history + reactivation (INV-3, soft-delete only).
+  final bool isActive;
+
   const OrgMember({
     required this.userId,
     required this.email,
     required this.role,
     required this.invitedAt,
     this.lastSignIn,
+    this.isActive = true,
   });
 }
 

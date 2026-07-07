@@ -14,7 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthState, AuthChangeEvent;
 import 'package:veraprob/application/admin/access_management_service.dart'
-    show TenantPermission, TenantRole;
+    show RoleAssignment, RolePermissionGrant, TenantPermission, TenantRole;
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
@@ -77,6 +77,9 @@ Widget _wrap(Widget child, {Set<String> perms = const <String>{}}) {
       orgInvitationsProvider.overrideWith((ref) => []),
       // Keep the Access tab hermetic when it mounts (revoke case) — no Supabase.
       tenantRolesProvider.overrideWith((ref) async => const <TenantRole>[]),
+      activeRoleAssignmentsProvider.overrideWith(
+        (ref) async => const <RoleAssignment>[],
+      ),
       permissionDictionaryProvider.overrideWith(
         (ref) async => const <TenantPermission>[],
       ),
@@ -93,6 +96,71 @@ void main() {
     expect(find.text('Configurações'), findsOneWidget);
     expect(find.text('CONFIGURAÇÕES DO SISTEMA'), findsOneWidget);
   });
+
+  testWidgets(
+    'Geral: sem perfil tenant atribuído, o rótulo usa o fallback coarse',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+      await tester.pumpAndSettle();
+
+      // _wrap fixa currentUserRoleProvider em UserRole.admin e não atribui
+      // nenhum tenant role a op-123 → cai no coarseLabel 'Administrador'.
+      expect(find.textContaining('(Administrador)'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Geral: usuário com perfil Validador mostra "(Validador)" em vez do coarse',
+    (tester) async {
+      const validador = TenantRole(
+        id: 'role-validador',
+        name: 'Validador',
+        description: null,
+        isSystem: false,
+        grants: [RolePermissionGrant(permissionKey: 'contracts:read')],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+            permissionServiceProvider.overrideWith(
+              (ref) => const PermissionService(
+                permissions: <String>{},
+                scopes: <String, Set<String>>{},
+              ),
+            ),
+            authStateProvider.overrideWith(
+              (ref) =>
+                  Stream.value(const AuthState(AuthChangeEvent.signedIn, null)),
+            ),
+            currentOperatorNameProvider.overrideWith((ref) => 'Operador Teste'),
+            currentOperatorIdProvider.overrideWith((ref) => 'op-123'),
+            orgSettingsProvider.overrideWith((ref) => null),
+            orgMembersProvider.overrideWith((ref) => const <OrgMember>[]),
+            orgInvitationsProvider.overrideWith((ref) => const []),
+            tenantRolesProvider.overrideWith((ref) async => const [validador]),
+            activeRoleAssignmentsProvider.overrideWith(
+              (ref) async => const [
+                RoleAssignment(
+                  userId: 'op-123',
+                  roleId: 'role-validador',
+                  validUntilUtc: null,
+                ),
+              ],
+            ),
+            permissionDictionaryProvider.overrideWith(
+              (ref) async => const <TenantPermission>[],
+            ),
+          ],
+          child: const MaterialApp(home: SettingsHubScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('(Validador)'), findsOneWidget);
+      expect(find.textContaining('(Administrador)'), findsNothing);
+    },
+  );
 
   testWidgets('initialTab users abre na aba Equipe', (tester) async {
     await tester.pumpWidget(
