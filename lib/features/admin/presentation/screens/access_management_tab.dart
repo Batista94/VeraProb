@@ -633,9 +633,9 @@ class _ScopePicker extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final contractsAsync = ref.watch(contractListProvider);
-    final label = selectedContractIds.isEmpty
-        ? 'Sem restrição (todo o tenant)'
-        : '${selectedContractIds.length} contrato(s) selecionado(s)';
+    final titleText = selectedContractIds.isEmpty
+        ? 'Restringir a recursos - Sem restrição (todo os contratos)'
+        : 'Restringir a contratos — ${selectedContractIds.length} contrato(s) selecionado(s)';
 
     return Padding(
       padding: const EdgeInsets.only(left: 32, bottom: 8),
@@ -644,7 +644,7 @@ class _ScopePicker extends ConsumerWidget {
         child: ExpansionTile(
           tilePadding: EdgeInsets.zero,
           title: Text(
-            'Restringir a recursos — $label',
+            titleText,
             style: VeraProbTypography.caption.copyWith(
               color: VeraProbColors.primary,
             ),

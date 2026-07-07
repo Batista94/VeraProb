@@ -15,7 +15,7 @@ const _dictionary = <TenantPermission>[
     module: 'financial',
     action: 'read',
     labelPt: 'Ler financeiro',
-    description: 'Visualizar dados financeiros do tenant',
+    description: 'Visualizar dados financeiros da organização',
     isSensitive: false,
     isScopable: true,
   ),
