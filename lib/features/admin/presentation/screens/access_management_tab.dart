@@ -171,54 +171,59 @@ class _RoleMasterList extends ConsumerWidget {
         .watch(permissionServiceProvider)
         .hasPermission('roles:manage');
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Flexible(
-              child: Text(
-                'Perfis (${roles.length})',
-                style: VeraProbTypography.kpiLabel,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const Spacer(),
-            if (canManageRoles)
-              Tooltip(
-                message: 'Novo Perfil de Acesso',
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Novo'),
-                  onPressed: onNew,
+    return Padding(
+      padding: EdgeInsets.only(
+        right: VeraProbBreakpoints.isCompact(context) ? 0 : VeraProbSpacing.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  'Perfis (${roles.length})',
+                  style: VeraProbTypography.kpiLabel,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-          ],
-        ),
-        const SizedBox(height: VeraProbSpacing.sm),
-        Expanded(
-          child: roles.isEmpty
-              ? const Center(
-                  child: Text(
-                    'Nenhum perfil personalizado ainda.',
-                    style: TextStyle(color: VeraProbColors.textSecondary),
+              const Spacer(),
+              if (canManageRoles)
+                Tooltip(
+                  message: 'Novo Perfil de Acesso',
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Novo'),
+                    onPressed: onNew,
                   ),
-                )
-              : ListView.separated(
-                  itemCount: roles.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, i) {
-                    final role = roles[i];
-                    return _RoleCard(
-                      role: role,
-                      userCount: counts[role.id] ?? 0,
-                      selected: role.id == selectedRoleId,
-                      onTap: () => onSelect(role.id),
-                    );
-                  },
                 ),
-        ),
-      ],
+            ],
+          ),
+          const SizedBox(height: VeraProbSpacing.sm),
+          Expanded(
+            child: roles.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Nenhum perfil personalizado ainda.',
+                      style: TextStyle(color: VeraProbColors.textSecondary),
+                    ),
+                  )
+                : ListView.separated(
+                    itemCount: roles.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 8),
+                    itemBuilder: (context, i) {
+                      final role = roles[i];
+                      return _RoleCard(
+                        role: role,
+                        userCount: counts[role.id] ?? 0,
+                        selected: role.id == selectedRoleId,
+                        onTap: () => onSelect(role.id),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -247,11 +252,12 @@ class _RoleCard extends StatelessWidget {
         borderRadius: VeraProbRadii.mdAll,
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Flexible(
                     child: Text(
@@ -385,24 +391,31 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _buildHeader(canManageRoles),
-          if (_touchesSensitive) ...[
-            const SizedBox(height: 8),
-            const _SensitiveBanner(),
-          ],
-          const SizedBox(height: VeraProbSpacing.sm),
-          Expanded(
-            child: ListView(
-              children: [
-                for (final entry in byModule.entries)
-                  _buildModuleGroup(entry.key, entry.value, canManageRoles),
-              ],
+      body: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: VeraProbBreakpoints.isCompact(context)
+              ? VeraProbSpacing.sm
+              : VeraProbSpacing.lg,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _buildHeader(canManageRoles),
+            if (_touchesSensitive) ...[
+              const SizedBox(height: 8),
+              const _SensitiveBanner(),
+            ],
+            const SizedBox(height: VeraProbSpacing.sm),
+            Expanded(
+              child: ListView(
+                children: [
+                  for (final entry in byModule.entries)
+                    _buildModuleGroup(entry.key, entry.value, canManageRoles),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomActions(canManageRoles),
     );
@@ -410,19 +423,28 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
 
   Widget _buildHeader(bool canManageRoles) {
     if (widget.role == null) {
-      return TextField(
-        controller: _nameController,
-        enabled: canManageRoles,
-        decoration: const InputDecoration(
-          labelText: 'Nome do Perfil',
-          hintText: 'Ex.: Operador Logístico',
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 24),
+        child: TextFormField(
+          controller: _nameController,
+          enabled: canManageRoles,
+          decoration: const InputDecoration(
+            labelText: 'Nome do Perfil',
+            hintText: 'Ex.: Operador Logístico',
+            filled: true,
+            fillColor: VeraProbColors.surface,
+            border: OutlineInputBorder(borderRadius: VeraProbRadii.mdAll),
+          ),
         ),
       );
     }
-    return Text(
-      widget.role!.name,
-      style: VeraProbTypography.sectionTitle,
-      overflow: TextOverflow.ellipsis,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Text(
+        widget.role!.name,
+        style: VeraProbTypography.sectionTitle,
+        overflow: TextOverflow.ellipsis,
+      ),
     );
   }
 
@@ -471,11 +493,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     bool canManageRoles,
   ) {
     return Padding(
-      padding: EdgeInsets.only(
-        bottom: 24,
-        left: VeraProbBreakpoints.isCompact(context) ? 0 : 4,
-        right: VeraProbBreakpoints.isCompact(context) ? 0 : 4,
-      ),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -491,17 +509,18 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
             ),
           ),
           Container(
+            clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
               color: VeraProbColors.surfaceElevated,
               borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Column(
               children: [
                 for (int i = 0; i < perms.length; i++) ...[
                   _buildPermissionTile(perms[i], canManageRoles),
-                  if (i < perms.length - 1) const SizedBox(height: 8),
+                  if (i < perms.length - 1)
+                    const Divider(height: 1, color: VeraProbColors.border),
                 ],
               ],
             ),
@@ -538,27 +557,63 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
 
     return Column(
       children: [
-        CheckboxListTile(
-          value: selected,
-          onChanged: locked ? null : (v) => _toggle(perm.key, v ?? false),
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-          title: Row(
-            children: [
-              Flexible(child: _buildPermissionLabel(perm)),
-              if (perm.isSensitive) ...[
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  size: 16,
-                  color: VeraProbColors.warning,
-                ),
-              ],
-            ],
+        Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: locked ? null : () => _toggle(perm.key, !selected),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Checkbox(
+                        value: selected,
+                        onChanged: locked
+                            ? null
+                            : (v) => _toggle(perm.key, v ?? false),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(child: _buildPermissionLabel(perm)),
+                            if (perm.isSensitive) ...[
+                              const SizedBox(width: 6),
+                              const Icon(
+                                Icons.warning_amber_rounded,
+                                size: 16,
+                                color: VeraProbColors.warning,
+                              ),
+                            ],
+                          ],
+                        ),
+                        if (perm.description.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            perm.description,
+                            style: VeraProbTypography.caption,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          subtitle: perm.description.isEmpty
-              ? null
-              : Text(perm.description, style: VeraProbTypography.caption),
         ),
         if (selected && perm.isScopable)
           _ScopePicker(

@@ -67,7 +67,7 @@ const USERS = [
     password: '123456',
     label: 'Auditor — Org Alpha',
     org_id: '00000000-0000-0000-0000-000000000001',
-    baseRole: 'VIEWER',
+    baseRole: 'AUDITOR',
     tenantRoleName: 'Auditor',
   },
   {
@@ -260,9 +260,9 @@ async function ensureTenantAdmin(url, serviceKey, user) {
       if (roles && roles.length > 0) {
         const roleId = roles[0].id;
         const resAssign = await post(
-          `${url}/rest/v1/user_role_assignments`,
+          `${url}/rest/v1/user_tenant_roles`,
           { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
-          { user_id: user.id, role_id: roleId }
+          { user_id: user.id, tenant_role_id: roleId, organization_id: user.org_id }
         );
         if (![200, 201, 204, 409].includes(resAssign.status)) {
           throw new Error(`HTTP ${resAssign.status} (assign): ${JSON.stringify(resAssign.data)}`);

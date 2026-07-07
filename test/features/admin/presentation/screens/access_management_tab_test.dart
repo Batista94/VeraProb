@@ -264,7 +264,7 @@ void main() {
 
       // Encontrar a primeira permissão escoplável (nossa 'Ler financeiro' de _dictionary)
       // e marcar o checkbox para expandir o ScopePicker.
-      final checkboxFinder = find.byType(CheckboxListTile).first;
+      final checkboxFinder = find.byType(Checkbox).first;
       expect(checkboxFinder, findsOneWidget);
 
       await tester.tap(checkboxFinder);
@@ -360,9 +360,9 @@ void main() {
       expect(find.byType(TextField), findsNothing);
 
       // Encontrar a primeira permissão e garantir que o onChanged seja null
-      final checkboxFinder = find.byType(CheckboxListTile).first;
+      final checkboxFinder = find.byType(Checkbox).first;
       expect(checkboxFinder, findsOneWidget);
-      final checkbox = tester.widget<CheckboxListTile>(checkboxFinder);
+      final checkbox = tester.widget<Checkbox>(checkboxFinder);
       expect(checkbox.onChanged, isNull);
     },
   );
