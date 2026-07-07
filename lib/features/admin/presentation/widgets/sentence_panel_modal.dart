@@ -203,6 +203,7 @@ class _SentencePanelModalState extends State<SentencePanelModal> {
                 label: widget.isAccept
                     ? 'Motivo da anulação (taxonomia)'
                     : 'Motivo da manutenção (taxonomia)',
+                isAccept: widget.isAccept,
               ),
               const SizedBox(height: 16),
               if (!widget.isAccept) ...[

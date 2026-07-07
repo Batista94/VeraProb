@@ -867,24 +867,49 @@ class _MemberRolesRow extends ConsumerWidget {
     TenantRole role,
   ) async {
     final messenger = ScaffoldMessenger.of(context);
-    try {
-      await ref
-          .read(accessManagementServiceProvider)
-          .revokeRole(userId: userId, roleId: role.id);
-      ref.invalidate(activeRoleAssignmentsProvider);
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text('Perfil "${role.name}" removido.'),
-          backgroundColor: VeraProbColors.success,
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Revogar Perfil de Acesso'),
+        content: Text(
+          'Deseja revogar o perfil "${role.name}"? O usuário perderá as permissões associadas imediatamente.',
         ),
-      );
-    } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(
-          content: Text('Não foi possível remover o perfil. Tente novamente.'),
-          backgroundColor: VeraProbColors.error,
-        ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: VeraProbColors.error),
+            child: const Text('Revogar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref
+            .read(accessManagementServiceProvider)
+            .revokeRole(userId: userId, roleId: role.id);
+        ref.invalidate(activeRoleAssignmentsProvider);
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text('Perfil "${role.name}" removido.'),
+            backgroundColor: VeraProbColors.success,
+          ),
+        );
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível remover o perfil. Tente novamente.',
+            ),
+            backgroundColor: VeraProbColors.error,
+          ),
+        );
+      }
     }
   }
 }

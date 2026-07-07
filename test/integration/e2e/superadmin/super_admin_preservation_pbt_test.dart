@@ -106,6 +106,9 @@ void main() async {
       });
 
       tearDownAll(() async {
+        try {
+          await Supabase.instance.dispose();
+        } catch (_) {}
         await serviceRoleClient.dispose();
       });
 

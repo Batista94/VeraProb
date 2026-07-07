@@ -22,6 +22,7 @@ class DisputeReasonCodeDropdown extends ConsumerWidget {
   final ValueChanged<String?> onChanged;
   final bool enabled;
   final String label;
+  final bool isAccept;
 
   const DisputeReasonCodeDropdown({
     super.key,
@@ -29,6 +30,7 @@ class DisputeReasonCodeDropdown extends ConsumerWidget {
     required this.onChanged,
     this.enabled = true,
     this.label = 'Motivo (taxonomia)',
+    required this.isAccept,
   });
 
   /// Display order + PT header for each catalogue category.
@@ -52,15 +54,27 @@ class DisputeReasonCodeDropdown extends ConsumerWidget {
         message: 'Não foi possível carregar os motivos. Tente novamente.',
         color: VeraProbColors.error,
       ),
-      AsyncData(:final value) =>
-        value.isEmpty
-            ? const _DropdownMessage(
-                icon: Icons.inbox_outlined,
-                message: 'Nenhum motivo disponível no catálogo.',
-                color: VeraProbColors.textDisabled,
-              )
-            : _buildMenu(value),
+      AsyncData(:final value) => _buildFiltered(value),
     };
+  }
+
+  Widget _buildFiltered(List<DisputeReasonCode> value) {
+    final ctx = isAccept
+        ? DisputeReasonContext.resolution
+        : DisputeReasonContext.rejection;
+    final filtered = value
+        .where(
+          (c) => c.appliesTo == DisputeReasonContext.all || c.appliesTo == ctx,
+        )
+        .toList();
+
+    return filtered.isEmpty
+        ? const _DropdownMessage(
+            icon: Icons.inbox_outlined,
+            message: 'Nenhum motivo disponível no catálogo.',
+            color: VeraProbColors.textDisabled,
+          )
+        : _buildMenu(filtered);
   }
 
   Widget _buildMenu(List<DisputeReasonCode> codes) {

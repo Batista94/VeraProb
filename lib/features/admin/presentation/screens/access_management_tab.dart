@@ -705,39 +705,53 @@ class _PendingApprovalsSection extends ConsumerWidget {
         p.key: p.labelPt,
     };
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VeraProbColors.surface,
-        borderRadius: VeraProbRadii.mdAll,
-        border: Border.all(color: VeraProbColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.how_to_reg_outlined,
-                size: 18,
-                color: VeraProbColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Aprovações Pendentes (${requests.length})',
-                style: VeraProbTypography.kpiLabel,
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          for (final req in requests)
-            _ApprovalRow(
-              request: req,
-              isOwnRequest: req.requestedBy == currentUserId,
-              targetRole: req.roleId == null ? null : rolesById[req.roleId],
-              labelByKey: labelByKey,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxHeight: 180),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: VeraProbColors.surface,
+          borderRadius: VeraProbRadii.mdAll,
+          border: Border.all(color: VeraProbColors.border),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.how_to_reg_outlined,
+                  size: 18,
+                  color: VeraProbColors.primary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Aprovações Pendentes (${requests.length})',
+                  style: VeraProbTypography.kpiLabel,
+                ),
+              ],
             ),
-        ],
+            const SizedBox(height: 8),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    for (final req in requests)
+                      _ApprovalRow(
+                        request: req,
+                        isOwnRequest: req.requestedBy == currentUserId,
+                        targetRole: req.roleId == null
+                            ? null
+                            : rolesById[req.roleId],
+                        labelByKey: labelByKey,
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

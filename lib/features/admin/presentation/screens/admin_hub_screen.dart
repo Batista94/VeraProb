@@ -212,48 +212,53 @@ class _HubCardState extends State<_HubCard> {
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(
           onTap: widget.onTap,
+          behavior: HitTestBehavior.opaque,
           child: AnimatedScale(
             scale: _hovered ? 1.0 : 0.98,
             duration: const Duration(milliseconds: 150),
-            child: ClipRRect(
-              borderRadius: VeraProbRadii.lgAll,
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                child: Container(
-                  constraints: const BoxConstraints(minHeight: 64),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: VeraProbColors.surface.withValues(alpha: 0.7),
-                    borderRadius: VeraProbRadii.lgAll,
-                    border: Border.all(
-                      color: _hovered
-                          ? VeraProbColors.primary.withValues(alpha: 0.4)
-                          : VeraProbColors.border.withValues(alpha: 0.1),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        widget.item.icon,
-                        size: 22,
+            child: IgnorePointer(
+              ignoring:
+                  true, // Fix for Wasm CanvasKit BackdropFilter scroll capture
+              child: ClipRRect(
+                borderRadius: VeraProbRadii.lgAll,
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 64),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: VeraProbColors.surface.withValues(alpha: 0.7),
+                      borderRadius: VeraProbRadii.lgAll,
+                      border: Border.all(
                         color: _hovered
-                            ? VeraProbColors.primary
-                            : VeraProbColors.textSecondary,
+                            ? VeraProbColors.primary.withValues(alpha: 0.4)
+                            : VeraProbColors.border.withValues(alpha: 0.1),
                       ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Text(
-                          widget.item.label,
-                          style: VeraProbTypography.dataValue,
-                          overflow: TextOverflow.ellipsis,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          widget.item.icon,
+                          size: 22,
+                          color: _hovered
+                              ? VeraProbColors.primary
+                              : VeraProbColors.textSecondary,
                         ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 14,
-                        color: VeraProbColors.textDisabled,
-                      ),
-                    ],
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            widget.item.label,
+                            style: VeraProbTypography.dataValue,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: VeraProbColors.textDisabled,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

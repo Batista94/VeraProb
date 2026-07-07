@@ -61,13 +61,13 @@ void main() async {
         // In parallel, we insert the SANCTION_RECOMMENDED (waits ~300ms before starting).
 
         final lockFuture = seed.rpc<dynamic>(
-        'test_hold_financial_guard_lock',
-        params: {
-          'p_organization_id': _orgId,
-          'p_contract_id': contractId,
-          'p_seconds': 4,
-        },
-      );
+          'test_hold_financial_guard_lock',
+          params: {
+            'p_organization_id': _orgId,
+            'p_contract_id': contractId,
+            'p_seconds': 4,
+          },
+        );
 
         // Wait 500ms to ensure the lock is acquired before we attempt our insert.
         await Future<void>.delayed(const Duration(milliseconds: 500));
@@ -95,9 +95,9 @@ void main() async {
             .single();
 
         final results = await Future.wait<dynamic>([
-        lockFuture as Future<dynamic>,
-        insertFuture as Future<dynamic>,
-      ]);
+          lockFuture as Future<dynamic>,
+          insertFuture as Future<dynamic>,
+        ]);
         final ledgerId = (results[1] as Map<String, dynamic>)['id'] as String;
 
         // 1. Verify ledger row was inserted and properly mutated
@@ -126,9 +126,15 @@ void main() async {
 
         final capMonthStr = payload['cap_month_utc'] as String?;
         expect(capMonthStr, isNotNull, reason: 'cap_month_utc must be present');
-        final normalizedStr = capMonthStr!.contains('T') ? capMonthStr : '${capMonthStr}T00:00:00Z';
+        final normalizedStr = capMonthStr!.contains('T')
+            ? capMonthStr
+            : '${capMonthStr}T00:00:00Z';
         final capMonth = DateTime.parse(normalizedStr).toUtc();
-        final currentMonth = DateTime.utc(DateTime.now().toUtc().year, DateTime.now().toUtc().month, 1);
+        final currentMonth = DateTime.utc(
+          DateTime.now().toUtc().year,
+          DateTime.now().toUtc().month,
+          1,
+        );
         expect(
           capMonth,
           currentMonth,
@@ -167,7 +173,11 @@ void main() async {
           'reconcile_financial_guard',
           params: {'p_organization_id': _orgId},
         );
-        expect(corrections, 0, reason: 'Reconcile should make 0 corrections for fail-closed row');
+        expect(
+          corrections,
+          0,
+          reason: 'Reconcile should make 0 corrections for fail-closed row',
+        );
 
         // The reconcile checks all contracts. We want to make sure it doesn't flag this one.
         // Wait, there might be other contracts out of sync in a dirty DB. We should just verify no DRIFT was logged for OUR contract.

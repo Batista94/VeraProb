@@ -11,8 +11,8 @@ class VeraProbColors {
 
   // ── Indigo Zinc Base ────────────────────────────────────────────────
   static const Color background = Color(0xFF09090B);
-  static const Color surface = Color(0xFF101013);
-  static const Color surfaceElevated = Color(0xFF18181D);
+  static const Color surface = Color(0xFF1C1C21);
+  static const Color surfaceElevated = Color(0xFF242429);
   static const Color border = Color(0x1AFFFFFF); // white @ 10%
 
   // ── Status Colors (desaturated for dark mode) ───────────────────────
@@ -31,7 +31,7 @@ class VeraProbColors {
   static const Color secondary = Color(0xFF5EEAD4); // Teal (apoio)
 
   // ── Text Hierarchy ───────────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFFE4E4E9);
+  static const Color textPrimary = Color(0xFFD4D4D8);
   static const Color textSecondary = Color(0xFF9B9BA6);
   static const Color textDisabled = Color(0xFF4E4E58);
 
@@ -201,14 +201,14 @@ class VeraProbTypography {
 
   static TextStyle get bodySmall => base.copyWith(
     fontSize: 12,
-    fontWeight: FontWeight.w400,
+    fontWeight: FontWeight.w500,
     color: VeraProbColors.textSecondary,
   );
 
   static TextStyle get caption => base.copyWith(
     fontSize: 11,
     fontWeight: FontWeight.w500,
-    color: VeraProbColors.textDisabled,
+    color: VeraProbColors.textSecondary,
   );
 
   static TextStyle get badge => base.copyWith(
@@ -467,6 +467,7 @@ class AppTheme {
         ),
         unselectedLabelTextStyle: VeraProbTypography.caption.copyWith(
           fontSize: 13,
+          color: VeraProbColors.textDisabled,
         ),
       ),
       datePickerTheme: DatePickerThemeData(

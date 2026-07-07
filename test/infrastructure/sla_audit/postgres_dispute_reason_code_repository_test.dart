@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/sla_audit/dispute_reason_code.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_dispute_reason_code_repository.dart';
 
 /// Pure-mapping coverage for the reason-code row decoder. The live `.select()`
@@ -12,6 +13,7 @@ void main() {
       'label_pt': 'Força Maior',
       'label_en': 'Force Majeure',
       'is_active': true,
+      'applies_to': 'RESOLUTION',
     });
 
     expect(code.code, 'FORCE_MAJEURE');
@@ -19,5 +21,6 @@ void main() {
     expect(code.labelPt, 'Força Maior');
     expect(code.labelEn, 'Force Majeure');
     expect(code.isActive, isTrue);
+    expect(code.appliesTo, DisputeReasonContext.resolution);
   });
 }

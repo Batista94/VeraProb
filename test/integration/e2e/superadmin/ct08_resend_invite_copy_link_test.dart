@@ -1,3 +1,4 @@
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,6 +56,9 @@ void main() {
     });
 
     tearDownAll(() async {
+      try {
+        await Supabase.instance.dispose();
+      } catch (_) {}
       if (!supabaseAvailable) return;
       if (!edgeFunctionsAvailable) return;
       await SuperAdminDataFactory.cleanup(testOrg);
@@ -377,3 +381,4 @@ void main() {
     });
   });
 }
+

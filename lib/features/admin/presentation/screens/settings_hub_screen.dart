@@ -11,16 +11,31 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
 /// Roteado via `/admin/hub/settings`.
 /// Suporta deep link por query parameter `?tab=` (`org`, `users` ou `access`).
-class SettingsHubScreen extends ConsumerStatefulWidget {
+class SettingsHubScreen extends ConsumerWidget {
   final String? initialTab;
 
   const SettingsHubScreen({super.key, this.initialTab});
 
   @override
-  ConsumerState<SettingsHubScreen> createState() => _SettingsHubScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AsyncValueWidget(
+      asyncValue: ref.watch(authStateProvider),
+      showRefreshIndicator: false,
+      data: (_) => _SettingsHubBody(initialTab: initialTab),
+    );
+  }
 }
 
-class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
+class _SettingsHubBody extends ConsumerStatefulWidget {
+  final String? initialTab;
+
+  const _SettingsHubBody({this.initialTab});
+
+  @override
+  ConsumerState<_SettingsHubBody> createState() => _SettingsHubBodyState();
+}
+
+class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
         // TickerProviderStateMixin (not Single*): a live roles:manage flip recreates
         // the TabController, so more than one ticker exists over this State's life.
         with
@@ -54,7 +69,7 @@ class _SettingsHubScreenState extends ConsumerState<SettingsHubScreen>
   }
 
   @override
-  void didUpdateWidget(SettingsHubScreen oldWidget) {
+  void didUpdateWidget(_SettingsHubBody oldWidget) {
     super.didUpdateWidget(oldWidget);
     // The shell's IndexedStack keeps this State alive, so a later deep link
     // (`?tab=users`) rebuilds with a new initialTab instead of remounting —

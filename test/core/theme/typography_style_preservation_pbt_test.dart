@@ -80,7 +80,7 @@ void main() {
       name: 'bodySmall',
       accessor: () => VeraProbTypography.bodySmall,
       expectedFontSize: 12,
-      expectedFontWeight: FontWeight.w400,
+      expectedFontWeight: FontWeight.w500,
       expectedLetterSpacing: null,
     ),
     TypographySpec(

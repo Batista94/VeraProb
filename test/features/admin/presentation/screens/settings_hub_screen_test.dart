@@ -11,6 +11,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart' show StateProvider;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'
+    show AuthState, AuthChangeEvent;
 import 'package:veraprob/application/admin/access_management_service.dart'
     show TenantPermission, TenantRole;
 import 'package:veraprob/application/admin/user_management_query_service.dart';
@@ -44,6 +46,9 @@ Widget _wrap(Widget child, {Set<String> perms = const <String>{}}) {
           permissions: ref.watch(_testPerms),
           scopes: const <String, Set<String>>{},
         ),
+      ),
+      authStateProvider.overrideWith(
+        (ref) => Stream.value(const AuthState(AuthChangeEvent.signedIn, null)),
       ),
       currentOperatorNameProvider.overrideWith((ref) => 'Operador Teste'),
       currentOperatorIdProvider.overrideWith((ref) => 'op-123'),
