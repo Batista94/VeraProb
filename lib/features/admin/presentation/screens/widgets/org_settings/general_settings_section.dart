@@ -102,7 +102,7 @@ class GeneralSettingsSection extends StatelessWidget {
               labelText: 'Tipo de Operação (cosmético)',
               prefixIcon: Icon(Icons.label_outline, size: 20),
               helperText:
-                  'Rótulo visual. Ex: CARGO, PASSENGER, URBAN_LOGISTICS. Não afeta regras do motor.',
+                  'Rótulo visual interno da sua organização (ex: Carga, Passageiros, Logística Urbana). Esta configuração não altera as regras do sistema.',
             ),
           ),
           const SizedBox(height: 32),

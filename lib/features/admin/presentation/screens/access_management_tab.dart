@@ -421,12 +421,20 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
   Widget _buildBottomActions() {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(
+        padding: EdgeInsets.only(
+          left: VeraProbBreakpoints.isCompact(context)
+              ? VeraProbSpacing.sm
+              : VeraProbSpacing.lg,
+          right: VeraProbBreakpoints.isCompact(context)
+              ? VeraProbSpacing.sm
+              : VeraProbSpacing.lg,
           top: VeraProbSpacing.md,
           bottom: VeraProbSpacing.sm,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.end,
+        child: Wrap(
+          alignment: WrapAlignment.end,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             FilledButton.icon(
               icon: _saving
@@ -449,23 +457,48 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
   }
 
   Widget _buildModuleGroup(String module, List<TenantPermission> perms) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 12, bottom: 4),
-          child: Text(
-            _moduleLabel(module).toUpperCase(),
-            style: VeraProbTypography.caption.copyWith(
-              color: VeraProbColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1,
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: 24,
+        left: VeraProbBreakpoints.isCompact(context) ? 0 : 4,
+        right: VeraProbBreakpoints.isCompact(context) ? 0 : 4,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              _moduleLabel(module).toUpperCase(),
+              style: VeraProbTypography.caption.copyWith(
+                color: VeraProbColors.textSecondary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1,
+              ),
             ),
           ),
-        ),
-        const Divider(height: 8, color: VeraProbColors.border),
-        for (final perm in perms) _buildPermissionTile(perm),
-      ],
+          Container(
+            decoration: BoxDecoration(
+              color: VeraProbColors.surfaceElevated,
+              borderRadius: VeraProbRadii.mdAll,
+              border: Border.all(color: VeraProbColors.border),
+            ),
+            child: Column(
+              children: [
+                for (int i = 0; i < perms.length; i++) ...[
+                  if (i > 0)
+                    const Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: VeraProbColors.border,
+                    ),
+                  _buildPermissionTile(perms[i]),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
