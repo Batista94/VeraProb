@@ -727,6 +727,16 @@ fi
 
 # ── Step 10: Deno Test Suite (Edge Functions) ────────────────────────────────
 echo -e "\n${BOLD}${BLUE}Step 10: Deno Test Suite (Edge Functions)...${NC}"
+
+# Windows/GitBash fallback for Deno
+if ! command -v deno >/dev/null 2>&1; then
+  if [[ -d "/c/Users/$USER/.deno/bin" ]]; then
+    export PATH="/c/Users/$USER/.deno/bin:$PATH"
+  elif [[ -d "$HOME/.deno/bin" ]]; then
+    export PATH="$HOME/.deno/bin:$PATH"
+  fi
+fi
+
 if [[ "${SKIP_DENO_TESTS:-0}" == "1" ]]; then
   echo -e "  ${YELLOW}[SKIP]${NC} SKIP_DENO_TESTS=1."
 elif ! command -v deno >/dev/null 2>&1; then
