@@ -26,9 +26,9 @@ class UserManagementTab extends ConsumerWidget {
     final membersAsync = ref.watch(orgMembersProvider);
     final invitationsAsync = ref.watch(orgInvitationsProvider);
     final currentUserId = ref.watch(currentOperatorIdProvider);
-    final canManageAccess = ref
-        .watch(permissionServiceProvider)
-        .hasPermission('roles:manage');
+    final canManageUsers =
+        ref.watch(permissionServiceProvider).hasPermission('users:manage') ||
+        ref.watch(permissionServiceProvider).hasPermission('roles:manage');
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -45,11 +45,12 @@ class UserManagementTab extends ConsumerWidget {
               const SizedBox(width: 12),
               Text('Gestão de Equipe', style: VeraProbTypography.sectionTitle),
               const Spacer(),
-              FilledButton.icon(
-                icon: const Icon(Icons.person_add_outlined, size: 18),
-                label: const Text('Convidar'),
-                onPressed: () => _showInviteDialog(context, ref),
-              ),
+              if (canManageUsers)
+                FilledButton.icon(
+                  icon: const Icon(Icons.person_add_outlined, size: 18),
+                  label: const Text('Convidar'),
+                  onPressed: () => _showInviteDialog(context, ref),
+                ),
             ],
           ),
           const SizedBox(height: 8),
@@ -122,12 +123,14 @@ class UserManagementTab extends ConsumerWidget {
                                                 child: Text('Auditor'),
                                               ),
                                             ],
-                                            onChanged: (newRole) => _changeRole(
-                                              context,
-                                              ref,
-                                              member.userId,
-                                              newRole!,
-                                            ),
+                                            onChanged: canManageUsers
+                                                ? (newRole) => _changeRole(
+                                                    context,
+                                                    ref,
+                                                    member.userId,
+                                                    newRole!,
+                                                  )
+                                                : null,
                                           )
                                         else
                                           Container(
@@ -152,7 +155,7 @@ class UserManagementTab extends ConsumerWidget {
                                             ),
                                           ),
                                         const SizedBox(width: 16),
-                                        if (!isSelf)
+                                        if (!isSelf && canManageUsers)
                                           IconButton(
                                             icon: const Icon(
                                               Icons.person_off_outlined,
@@ -170,7 +173,7 @@ class UserManagementTab extends ConsumerWidget {
                                       ],
                                     ),
                                   ),
-                                  if (canManageAccess)
+                                  if (canManageUsers)
                                     _MemberRolesRow(userId: member.userId),
                                 ],
                               );
@@ -187,15 +190,16 @@ class UserManagementTab extends ConsumerWidget {
                   ),
                 },
 
-                switch (invitationsAsync) {
-                  AsyncData(:final value) => _buildInvitations(
-                    context,
-                    ref,
-                    value,
-                  ),
-                  AsyncLoading() => const SizedBox.shrink(),
-                  AsyncError() => const SizedBox.shrink(),
-                },
+                if (canManageUsers)
+                  switch (invitationsAsync) {
+                    AsyncData(:final value) => _buildInvitations(
+                      context,
+                      ref,
+                      value,
+                    ),
+                    AsyncLoading() => const SizedBox.shrink(),
+                    AsyncError() => const SizedBox.shrink(),
+                  },
               ],
             ),
           ),

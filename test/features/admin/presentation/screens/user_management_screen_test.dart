@@ -42,7 +42,7 @@ Widget _wrap({required List<RoleAssignment> assignments}) {
       currentOperatorIdProvider.overrideWith((ref) => 'op-admin'),
       permissionServiceProvider.overrideWith(
         (ref) => const PermissionService(
-          permissions: <String>{'roles:manage'},
+          permissions: <String>{'roles:manage', 'users:manage'},
           scopes: <String, Set<String>>{},
         ),
       ),
@@ -99,6 +99,51 @@ void main() {
         find.text('Diretor Financeiro'),
       );
       expect(permanentLabel.style?.color, isNot(VeraProbColors.warning));
+    },
+  );
+
+  testWidgets(
+    'sem users:manage, o botão Convidar fica oculto e as ações de dropdown/remoção são desabilitadas',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+            currentOperatorIdProvider.overrideWith((ref) => 'op-admin'),
+            permissionServiceProvider.overrideWith(
+              (ref) => const PermissionService(
+                // Apenas roles:read para que a aba carregue, mas sem users:manage
+                permissions: <String>{'roles:read'},
+                scopes: <String, Set<String>>{},
+              ),
+            ),
+            orgMembersProvider.overrideWith(
+              (ref) => [
+                OrgMember(
+                  userId: 'u1',
+                  email: 'membro@teste.com',
+                  role: UserRole.operator,
+                  invitedAt: DateTime.utc(2026, 1, 1, 12),
+                ),
+              ],
+            ),
+            orgInvitationsProvider.overrideWith((ref) => []),
+            tenantRolesProvider.overrideWith((ref) => _roles),
+            activeRoleAssignmentsProvider.overrideWith((ref) => []),
+          ],
+          child: const MaterialApp(home: Scaffold(body: UserManagementTab())),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Convidar'), findsNothing);
+      expect(find.byIcon(Icons.person_off_outlined), findsNothing);
+
+      // The DropdownButton for roles should be disabled (onChanged == null).
+      final dropdown = tester.widget<DropdownButton<UserRole>>(
+        find.byType(DropdownButton<UserRole>),
+      );
+      expect(dropdown.onChanged, isNull);
     },
   );
 }

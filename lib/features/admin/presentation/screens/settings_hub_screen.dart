@@ -41,57 +41,64 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
         with
         TickerProviderStateMixin {
   late TabController _tabController;
-  // `roles:manage` gates the Access & Profiles tab (Pilar 3). Seeded here and
-  // kept live: PermissionsSyncController can force a session refresh while this
-  // State stays mounted in the shell's IndexedStack, so a mid-session grant or
-  // revoke must re-shape the tabs (see the ref.listen in build).
-  late bool _canManageAccess;
+
+  late bool _canManageOrg;
+  late bool _canViewAccess;
 
   @override
   void initState() {
     super.initState();
-    _canManageAccess = ref
-        .read(permissionServiceProvider)
-        .hasPermission('roles:manage');
+    _syncPermissions();
     final initialIndex = _getInitialIndex(widget.initialTab);
     _tabController = TabController(
-      length: _canManageAccess ? 4 : 3,
+      length: _getTabCount(),
       vsync: this,
       initialIndex: initialIndex,
     );
   }
 
+  void _syncPermissions() {
+    final perms = ref.read(permissionServiceProvider);
+    _canManageOrg =
+        perms.hasPermission('org:manage') ||
+        perms.hasPermission('roles:manage');
+    _canViewAccess =
+        perms.hasPermission('roles:read') ||
+        perms.hasPermission('roles:manage');
+  }
+
+  int _getTabCount() {
+    int count = 2; // Geral and Equipe are always visible
+    if (_canManageOrg) count++;
+    if (_canViewAccess) count++;
+    return count;
+  }
+
   int _getInitialIndex(String? tab) {
-    if (tab == 'org') return 1;
-    if (tab == 'users') return 2;
-    if (tab == 'access' && _canManageAccess) return 3;
+    if (tab == 'org' && _canManageOrg) return 1;
+    if (tab == 'users') return _canManageOrg ? 2 : 1;
+    if (tab == 'access' && _canViewAccess) return _canManageOrg ? 3 : 2;
     return 0; // default to general settings
   }
 
   @override
   void didUpdateWidget(_SettingsHubBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // The shell's IndexedStack keeps this State alive, so a later deep link
-    // (`?tab=users`) rebuilds with a new initialTab instead of remounting —
-    // without this, the query param is silently ignored after first visit.
     if (widget.initialTab != oldWidget.initialTab) {
       _tabController.animateTo(_getInitialIndex(widget.initialTab));
     }
   }
 
-  /// Re-shapes the tab set when the live `roles:manage` grant flips. Assigns the
-  /// new controller (length is immutable, so it cannot be mutated in place),
-  /// clamping the active index into the new range, THEN disposes the old one.
-  void _syncAccessTab(bool canManage) {
+  /// Re-shapes the tab set when live permissions flip.
+  void _syncTabs() {
     final oldController = _tabController;
-    final newLength = canManage ? 4 : 3;
+    final newLength = _getTabCount();
     final newController = TabController(
       length: newLength,
       vsync: this,
       initialIndex: oldController.index.clamp(0, newLength - 1),
     );
     setState(() {
-      _canManageAccess = canManage;
       _tabController = newController;
     });
     oldController.dispose();
@@ -105,14 +112,23 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
 
   @override
   Widget build(BuildContext context) {
-    // Live permission parity: a mid-session grant/revoke of `roles:manage`
-    // re-shapes the tabs (RPCs stay authoritative — this is UX parity only).
+    // Live permission parity
     ref.listen(permissionServiceProvider, (previous, next) {
-      final canManage = next.hasPermission('roles:manage');
-      if (canManage != _canManageAccess) _syncAccessTab(canManage);
+      final newCanManageOrg =
+          next.hasPermission('org:manage') ||
+          next.hasPermission('roles:manage');
+      final newCanViewAccess =
+          next.hasPermission('roles:read') ||
+          next.hasPermission('roles:manage');
+
+      if (newCanManageOrg != _canManageOrg ||
+          newCanViewAccess != _canViewAccess) {
+        _canManageOrg = newCanManageOrg;
+        _canViewAccess = newCanViewAccess;
+        _syncTabs();
+      }
     });
 
-    // De-chromed: the admin shell already provides the AppBar (P3 rule).
     return Scaffold(
       backgroundColor: VeraProbColors.background,
       body: Column(
@@ -139,9 +155,9 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
             tabAlignment: TabAlignment.start,
             tabs: [
               const Tab(text: 'Geral'),
-              const Tab(text: 'Organização'),
+              if (_canManageOrg) const Tab(text: 'Organização'),
               const Tab(text: 'Equipe'),
-              if (_canManageAccess) const Tab(text: 'Acessos'),
+              if (_canViewAccess) const Tab(text: 'Acessos'),
             ],
           ),
           const Divider(height: 1, color: VeraProbColors.border),
@@ -150,9 +166,9 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
               controller: _tabController,
               children: [
                 const _GeneralSettingsTab(),
-                const OrgSettingsTab(),
+                if (_canManageOrg) const OrgSettingsTab(),
                 const UserManagementTab(),
-                if (_canManageAccess) const AccessManagementTab(),
+                if (_canViewAccess) const AccessManagementTab(),
               ],
             ),
           ),

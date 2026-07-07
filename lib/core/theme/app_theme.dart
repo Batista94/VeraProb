@@ -393,11 +393,8 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: VeraProbColors.surface,
-        alignLabelWithHint: true,
-        floatingLabelBehavior: FloatingLabelBehavior.always,
-        floatingLabelStyle: VeraProbTypography.fieldLabel.copyWith(
-          backgroundColor: VeraProbColors.surface,
-        ),
+        floatingLabelStyle: VeraProbTypography.fieldLabel,
+        helperMaxLines: 3,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,

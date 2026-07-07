@@ -105,7 +105,9 @@ void main() {
   });
 
   testWidgets('initialTab org abre na aba Organização', (tester) async {
-    await tester.pumpWidget(_wrap(const SettingsHubScreen(initialTab: 'org')));
+    await tester.pumpWidget(
+      _wrap(const SettingsHubScreen(initialTab: 'org'), perms: {'org:manage'}),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(OrgSettingsTab), findsOneWidget);
@@ -129,7 +131,9 @@ void main() {
   });
 
   testWidgets('tap na aba Equipe monta a gestão de usuários', (tester) async {
-    await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+    await tester.pumpWidget(
+      _wrap(const SettingsHubScreen(), perms: {'users:manage'}),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Equipe'));
@@ -150,7 +154,7 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(SettingsHubScreen)),
     );
-    container.read(_testPerms.notifier).state = {'roles:manage'};
+    container.read(_testPerms.notifier).state = {'roles:read'};
     await tester.pumpAndSettle();
 
     expect(find.text('Acessos'), findsOneWidget);

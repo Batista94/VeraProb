@@ -145,6 +145,7 @@ class _OrgSettingsTabState extends ConsumerState<OrgSettingsTab>
     }
 
     return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 600),
         child: Column(

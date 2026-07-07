@@ -53,6 +53,7 @@ class GeneralSettingsSection extends StatelessWidget {
               helperText: isSuperAdmin
                   ? 'Atualização permitida para Super Admin.'
                   : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+              helperMaxLines: 3,
             ),
           ),
           const SizedBox(height: 24),
@@ -68,6 +69,7 @@ class GeneralSettingsSection extends StatelessWidget {
               helperText: isSuperAdmin
                   ? 'Atualização permitida para Super Admin.'
                   : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+              helperMaxLines: 3,
             ),
           ),
           const SizedBox(height: 24),
@@ -85,6 +87,7 @@ class GeneralSettingsSection extends StatelessWidget {
               helperText: isSuperAdmin
                   ? 'Atualização permitida para Super Admin.'
                   : 'Campos estruturais bloqueados por contrato. Contate o suporte para alterações.',
+              helperMaxLines: 3,
             ),
           ),
           const SizedBox(height: 24),
@@ -93,6 +96,7 @@ class GeneralSettingsSection extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'URL do Logotipo',
               helperText: 'Link para imagem SVG ou PNG da marca.',
+              helperMaxLines: 3,
             ),
           ),
           const SizedBox(height: 24),
@@ -103,6 +107,7 @@ class GeneralSettingsSection extends StatelessWidget {
               prefixIcon: Icon(Icons.label_outline, size: 20),
               helperText:
                   'Rótulo visual interno da sua organização (ex: Carga, Passageiros, Logística Urbana). Esta configuração não altera as regras do sistema.',
+              helperMaxLines: 3,
             ),
           ),
           const SizedBox(height: 32),

@@ -5756,6 +5756,10 @@ export type Database = {
         Args: { p_organization_id: string };
         Returns: number;
       };
+      _seed_default_tenant_roles: {
+        Args: { p_org_id: string };
+        Returns: undefined;
+      };
       _st_3dintersects: {
         Args: { geom1: unknown; geom2: unknown };
         Returns: boolean;

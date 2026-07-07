@@ -167,6 +167,10 @@ class _RoleMasterList extends ConsumerWidget {
       counts[a.roleId] = (counts[a.roleId] ?? 0) + 1;
     }
 
+    final canManageRoles = ref
+        .watch(permissionServiceProvider)
+        .hasPermission('roles:manage');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -180,14 +184,15 @@ class _RoleMasterList extends ConsumerWidget {
               ),
             ),
             const Spacer(),
-            Tooltip(
-              message: 'Novo Perfil de Acesso',
-              child: FilledButton.icon(
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('Novo'),
-                onPressed: onNew,
+            if (canManageRoles)
+              Tooltip(
+                message: 'Novo Perfil de Acesso',
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Novo'),
+                  onPressed: onNew,
+                ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: VeraProbSpacing.sm),
@@ -370,7 +375,9 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
   Widget build(BuildContext context) {
     // Watched to rebuild on auth/permission change; tiles read it inline so no
     // domain type leaks into a method signature (INV-7 / INV-13 convention).
-    ref.watch(permissionServiceProvider);
+    final canManageRoles = ref
+        .watch(permissionServiceProvider)
+        .hasPermission('roles:manage');
     final byModule = <String, List<TenantPermission>>{};
     for (final p in widget.dictionary) {
       byModule.putIfAbsent(p.module, () => <TenantPermission>[]).add(p);
@@ -381,7 +388,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _buildHeader(),
+          _buildHeader(canManageRoles),
           if (_touchesSensitive) ...[
             const SizedBox(height: 8),
             const _SensitiveBanner(),
@@ -391,20 +398,21 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
             child: ListView(
               children: [
                 for (final entry in byModule.entries)
-                  _buildModuleGroup(entry.key, entry.value),
+                  _buildModuleGroup(entry.key, entry.value, canManageRoles),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomActions(),
+      bottomNavigationBar: _buildBottomActions(canManageRoles),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool canManageRoles) {
     if (widget.role == null) {
       return TextField(
         controller: _nameController,
+        enabled: canManageRoles,
         decoration: const InputDecoration(
           labelText: 'Nome do Perfil',
           hintText: 'Ex.: Operador Logístico',
@@ -418,7 +426,8 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     );
   }
 
-  Widget _buildBottomActions() {
+  Widget _buildBottomActions(bool canManageRoles) {
+    if (!canManageRoles) return const SizedBox.shrink();
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.only(
@@ -456,7 +465,11 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     );
   }
 
-  Widget _buildModuleGroup(String module, List<TenantPermission> perms) {
+  Widget _buildModuleGroup(
+    String module,
+    List<TenantPermission> perms,
+    bool canManageRoles,
+  ) {
     return Padding(
       padding: EdgeInsets.only(
         bottom: 24,
@@ -483,16 +496,12 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
               borderRadius: VeraProbRadii.mdAll,
               border: Border.all(color: VeraProbColors.border),
             ),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             child: Column(
               children: [
                 for (int i = 0; i < perms.length; i++) ...[
-                  if (i > 0)
-                    const Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: VeraProbColors.border,
-                    ),
-                  _buildPermissionTile(perms[i]),
+                  _buildPermissionTile(perms[i], canManageRoles),
+                  if (i < perms.length - 1) const SizedBox(height: 8),
                 ],
               ],
             ),
@@ -516,7 +525,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     return Tooltip(message: perm.description, child: label);
   }
 
-  Widget _buildPermissionTile(TenantPermission perm) {
+  Widget _buildPermissionTile(TenantPermission perm, bool canManageRoles) {
     final selected = _selection.containsKey(perm.key);
     // Subset-guard preview: an admin cannot grant a permission they lack.
     // Wildcard (TENANT_ADMIN) holds everything, so nothing is disabled for them.
@@ -524,6 +533,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
     // the real boundary and maps such a save to a domain error.
     final locked =
         _isSystem ||
+        !canManageRoles ||
         !ref.read(permissionServiceProvider).hasPermission(perm.key);
 
     return Column(
@@ -552,6 +562,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
         ),
         if (selected && perm.isScopable)
           _ScopePicker(
+            locked: locked,
             selectedContractIds: _selection[perm.key] ?? const <String>{},
             onToggle: (id, v) => _toggleScopeContract(perm.key, id, v),
           ),
@@ -658,10 +669,12 @@ class _ScopePicker extends ConsumerWidget {
   const _ScopePicker({
     required this.selectedContractIds,
     required this.onToggle,
+    this.locked = false,
   });
 
   final Set<String> selectedContractIds;
   final void Function(String contractId, bool value) onToggle;
+  final bool locked;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -692,7 +705,9 @@ class _ScopePicker extends ConsumerWidget {
                       contentPadding: EdgeInsets.zero,
                       controlAffinity: ListTileControlAffinity.leading,
                       value: selectedContractIds.contains(c.id),
-                      onChanged: (v) => onToggle(c.id, v ?? false),
+                      onChanged: locked
+                          ? null
+                          : (v) => onToggle(c.id, v ?? false),
                       title: Text(
                         c.name,
                         style: VeraProbTypography.caption,
