@@ -824,10 +824,12 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
     // Default to 'Operador' if available
     if (_selectedTenantRoleId == null && availableRoles.isNotEmpty) {
       // Must set without triggering rebuild during build
-      _selectedTenantRoleId = availableRoles.firstWhere(
-        (r) => r.name == 'Operador',
-        orElse: () => availableRoles.first,
-      ).id;
+      _selectedTenantRoleId = availableRoles
+          .firstWhere(
+            (r) => r.name == 'Operador',
+            orElse: () => availableRoles.first,
+          )
+          .id;
     }
 
     return AlertDialog(
@@ -857,10 +859,7 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
                 initialValue: _selectedTenantRoleId,
                 decoration: const InputDecoration(labelText: 'Perfil'),
                 items: availableRoles.map((r) {
-                  return DropdownMenuItem(
-                    value: r.id,
-                    child: Text(r.name),
-                  );
+                  return DropdownMenuItem(value: r.id, child: Text(r.name));
                 }).toList(),
                 onChanged: (id) => setState(() => _selectedTenantRoleId = id),
               ),
@@ -960,8 +959,11 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
       final sessionId = widget.parentRef.read(currentSessionIdProvider) ?? '';
 
       final roles = ref.read(tenantRolesProvider).value ?? const <TenantRole>[];
-      final selectedRoleObj = roles.firstWhere((r) => r.id == _selectedTenantRoleId);
-      final derivedCoarseRole = (selectedRoleObj.isSystem && selectedRoleObj.name == 'Administrador')
+      final selectedRoleObj = roles.firstWhere(
+        (r) => r.id == _selectedTenantRoleId,
+      );
+      final derivedCoarseRole =
+          (selectedRoleObj.isSystem && selectedRoleObj.name == 'Administrador')
           ? UserRole.admin
           : UserRole.operator;
 
