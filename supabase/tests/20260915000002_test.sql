@@ -62,10 +62,9 @@ SELECT results_eq(
       ('roles:read'),
       ('sla:approve'),
       ('sla:read'),
-      ('telemetry:read'),
-      ('users:manage')
+      ('telemetry:read')
   $$,
-  'Validador profile has operational/approval access but NO roles:manage or org:manage'
+  'Validador profile has operational/approval access but NO roles:manage, org:manage, or users:manage (SoD)'
 );
 
 -- ── 4. Assert Administrador profile permissions ──────────────────────────────
@@ -121,11 +120,10 @@ SELECT results_eq(
       ('cadastros:read'),
       ('cadastros:write'),
       ('contracts:read'),
-      ('contracts:write'),
       ('sla:read'),
       ('telemetry:read')
   $$,
-  'Operador profile has operational mutations but NO financial, role, or user access'
+  'Operador profile has operational mutations but NO financial, role, user, or contract write access'
 );
 
 -- ── 7. Retroactive Seed Validation (Helper Function) ─────────────────────────
