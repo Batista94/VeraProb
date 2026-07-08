@@ -357,12 +357,12 @@ void main() {
         await tester.tap(find.text('Convidar'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(DropdownButtonFormField<UserRole>));
+        await tester.tap(find.byType(DropdownButtonFormField<String>));
         await tester.pumpAndSettle();
 
         expect(find.text('Administrador'), findsNothing);
         expect(find.text('Operador'), findsWidgets);
-        expect(find.text('Auditor'), findsWidgets);
+        expect(find.text('Validador'), findsWidgets);
       },
     );
 
@@ -381,7 +381,7 @@ void main() {
         await tester.tap(find.text('Convidar'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byType(DropdownButtonFormField<UserRole>));
+        await tester.tap(find.byType(DropdownButtonFormField<String>));
         await tester.pumpAndSettle();
 
         expect(find.text('Administrador'), findsWidgets);
