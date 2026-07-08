@@ -2030,6 +2030,7 @@ export type Database = {
           organization_id: string;
           revoked_at_utc: string | null;
           role: string;
+          tenant_role_id: string | null;
           token: string;
         };
         Insert: {
@@ -2042,6 +2043,7 @@ export type Database = {
           organization_id: string;
           revoked_at_utc?: string | null;
           role: string;
+          tenant_role_id?: string | null;
           token: string;
         };
         Update: {
@@ -2054,6 +2056,7 @@ export type Database = {
           organization_id?: string;
           revoked_at_utc?: string | null;
           role?: string;
+          tenant_role_id?: string | null;
           token?: string;
         };
         Relationships: [
@@ -2076,6 +2079,13 @@ export type Database = {
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invitations_tenant_role_id_fkey";
+            columns: ["tenant_role_id"];
+            isOneToOne: false;
+            referencedRelation: "tenant_roles";
             referencedColumns: ["id"];
           },
         ];
@@ -5687,6 +5697,10 @@ export type Database = {
         Returns: string;
       };
       _compute_easter: { Args: { p_year: number }; Returns: string };
+      _is_admin_profile: {
+        Args: { p_tenant_role_id: string };
+        Returns: boolean;
+      };
       _persist_evidence_snapshot: {
         Args: {
           p_contract: string;
@@ -6469,16 +6483,28 @@ export type Database = {
         Args: { perm: string; resource_id: string };
         Returns: boolean;
       };
-      invite_user: {
-        Args: {
-          p_email: string;
-          p_expires_at: string;
-          p_invitation_id: string;
-          p_role: string;
-          p_token: string;
-        };
-        Returns: undefined;
-      };
+      invite_user:
+        | {
+            Args: {
+              p_email: string;
+              p_expires_at: string;
+              p_invitation_id: string;
+              p_role: string;
+              p_token: string;
+            };
+            Returns: undefined;
+          }
+        | {
+            Args: {
+              p_email: string;
+              p_expires_at: string;
+              p_invitation_id: string;
+              p_role: string;
+              p_tenant_role_id: string;
+              p_token: string;
+            };
+            Returns: undefined;
+          };
       jsonb_canonical_text: { Args: { p_input: Json }; Returns: string };
       list_portal_justification_submissions: {
         Args: { p_organization_id: string; p_queue_entry_id: string };
