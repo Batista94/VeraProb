@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
+import 'package:veraprob/features/admin/presentation/screens/governance_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
@@ -12,7 +13,7 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
 /// Roteado via `/admin/hub/settings`.
-/// Suporta deep link por query parameter `?tab=` (`org`, `users` ou `access`).
+/// Suporta deep link por query parameter `?tab=` (`org`, `users`, `access` ou `history`).
 class SettingsHubScreen extends ConsumerWidget {
   final String? initialTab;
 
@@ -69,18 +70,29 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
         perms.hasPermission('roles:manage');
   }
 
-  int _getTabCount() {
-    int count = 2; // Geral and Equipe are always visible
-    if (_canManageOrg) count++;
-    if (_canViewAccess) count++;
-    return count;
-  }
+  /// Ordered keys of currently-visible tabs — single source of truth for both
+  /// the tab count and the deep-link index, so adding/removing a conditional
+  /// tab never requires re-deriving hardcoded arithmetic.
+  List<String> _visibleTabKeys() => [
+    'general',
+    if (_canManageOrg) 'org',
+    'users',
+    if (_canViewAccess) 'access',
+    if (_canViewAccess) 'history',
+  ];
+
+  int _getTabCount() => _visibleTabKeys().length;
 
   int _getInitialIndex(String? tab) {
-    if (tab == 'org' && _canManageOrg) return 1;
-    if (tab == 'users') return _canManageOrg ? 2 : 1;
-    if (tab == 'access' && _canViewAccess) return _canManageOrg ? 3 : 2;
-    return 0; // default to general settings
+    final key = switch (tab) {
+      'org' => 'org',
+      'users' => 'users',
+      'access' => 'access',
+      'history' => 'history',
+      _ => 'general',
+    };
+    final idx = _visibleTabKeys().indexOf(key);
+    return idx >= 0 ? idx : 0; // default to general settings
   }
 
   @override
@@ -160,6 +172,7 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
               if (_canManageOrg) const Tab(text: 'Organização'),
               const Tab(text: 'Equipe'),
               if (_canViewAccess) const Tab(text: 'Acessos'),
+              if (_canViewAccess) const Tab(text: 'Histórico'),
             ],
           ),
           const Divider(height: 1, color: VeraProbColors.border),
@@ -171,6 +184,7 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
                 if (_canManageOrg) const OrgSettingsTab(),
                 const UserManagementTab(),
                 if (_canViewAccess) const AccessManagementTab(),
+                if (_canViewAccess) const GovernanceAuditScreen(),
               ],
             ),
           ),

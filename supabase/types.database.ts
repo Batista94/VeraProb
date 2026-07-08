@@ -6442,6 +6442,23 @@ export type Database = {
         Args: { p_contract_id: string };
         Returns: Json;
       };
+      get_tenant_governance_log: {
+        Args: {
+          p_before?: string;
+          p_event_category?: string;
+          p_limit?: number;
+          p_search_email?: string;
+        };
+        Returns: {
+          actor_email: string;
+          actor_id: string;
+          event_type: string;
+          occurred_at: string;
+          reason: string;
+          target_email: string;
+          target_user_id: string;
+        }[];
+      };
       get_trip_compliance_status: {
         Args: { p_driver_id: string; p_org_id: string };
         Returns: Json;

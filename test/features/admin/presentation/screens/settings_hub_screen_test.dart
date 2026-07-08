@@ -15,6 +15,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthState, AuthChangeEvent;
 import 'package:veraprob/application/admin/access_management_service.dart'
     show RoleAssignment, RolePermissionGrant, TenantPermission, TenantRole;
+import 'package:veraprob/application/admin/governance_audit_query_service.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
@@ -22,6 +23,7 @@ import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
+import 'package:veraprob/features/admin/presentation/screens/governance_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
@@ -82,6 +84,9 @@ Widget _wrap(Widget child, {Set<String> perms = const <String>{}}) {
       ),
       permissionDictionaryProvider.overrideWith(
         (ref) async => const <TenantPermission>[],
+      ),
+      governanceAuditLogProvider.overrideWith(
+        (ref, category) async => const <GovernanceAuditEntry>[],
       ),
     ],
     child: MaterialApp(home: child),
@@ -254,6 +259,36 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('grant vivo de roles:read revela também a aba Histórico', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('Histórico'), findsNothing);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsHubScreen)),
+    );
+    container.read(_testPerms.notifier).state = {'roles:read'};
+    await tester.pumpAndSettle();
+
+    expect(find.text('Acessos'), findsOneWidget);
+    expect(find.text('Histórico'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('initialTab history abre na aba Histórico', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SettingsHubScreen(initialTab: 'history'),
+        perms: const {'roles:read'},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GovernanceAuditScreen), findsOneWidget);
+  });
 
   testWidgets(
     'deep link ?tab=access sem roles:manage cai silenciosamente na aba Geral',

@@ -11,6 +11,7 @@ import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/admin/remove_member_handler.dart';
 import 'package:veraprob/application/admin/revoke_invitation_handler.dart';
 import 'package:veraprob/application/admin/create_execution_handler.dart';
+import 'package:veraprob/application/admin/governance_audit_query_service.dart';
 import 'package:veraprob/application/admin/update_org_settings_handler.dart';
 import 'package:veraprob/application/admin/update_org_operational_params_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
@@ -223,6 +224,20 @@ final orgSettingsProvider = FutureProvider.autoDispose<Organization?>((
   if (orgId == null) return null;
   return ref.watch(organizationRepositoryProvider).findById(orgId);
 });
+
+/// Governance audit trail (Histórico tab). Category is the only server-side
+/// filter (real confidentiality boundary, enforced by the RPC's allowlist);
+/// email substring and period-preset are applied client-side over the
+/// fetched window, mirroring the existing member-list filter pattern.
+final governanceAuditLogProvider = FutureProvider.autoDispose
+    .family<List<GovernanceAuditEntry>, GovernanceEventCategory?>((
+      ref,
+      category,
+    ) async {
+      return ref
+          .watch(governanceAuditQueryServiceProvider)
+          .getEntries(limit: 200, category: category);
+    });
 
 // ── CSV Mapping Engine Providers ─────────────────────────────────────────────
 
