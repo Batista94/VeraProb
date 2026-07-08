@@ -25,6 +25,7 @@ import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/admin/invitation.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/state/providers/access_providers.dart';
@@ -676,6 +677,116 @@ void main() {
 
       expect(find.text('alice@teste.com'), findsOneWidget);
       expect(find.text('bob@teste.com'), findsOneWidget);
+    });
+  });
+
+  group('Case 6 — Filtro por status e ações de convite', () {
+    Widget wrapStatusFilter() {
+      return ProviderScope(
+        overrides: [
+          currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+          currentOperatorIdProvider.overrideWith((ref) => 'op-admin'),
+          permissionServiceProvider.overrideWith(
+            (ref) => const PermissionService(
+              permissions: <String>{'roles:manage', 'users:manage'},
+              scopes: <String, Set<String>>{},
+            ),
+          ),
+          orgMembersProvider.overrideWith(
+            (ref) => [
+              OrgMember(
+                userId: 'u-alice',
+                email: 'alice-active@teste.com',
+                role: UserRole.operator,
+                invitedAt: DateTime.utc(2026, 1, 1),
+              ),
+              OrgMember(
+                userId: 'u-bob',
+                email: 'bob-archived@teste.com',
+                role: UserRole.operator,
+                invitedAt: DateTime.utc(2026, 1, 1),
+                isActive: false,
+              ),
+            ],
+          ),
+          orgInvitationsProvider.overrideWith(
+            (ref) => [
+              Invitation(
+                id: 'inv-1',
+                organizationId: 'org-1',
+                email: 'pending@teste.com',
+                role: UserRole.operator,
+                token: 'tok-123',
+                invitedBy: 'u-admin',
+                createdAtUtc: DateTime.utc(2026, 1, 1),
+                expiresAtUtc: DateTime.utc(2030, 1, 1),
+              ),
+            ],
+          ),
+          tenantRolesProvider.overrideWith((ref) => const []),
+          activeRoleAssignmentsProvider.overrideWith((ref) => const []),
+        ],
+        child: const MaterialApp(home: Scaffold(body: UserManagementTab())),
+      );
+    }
+
+    testWidgets('renderiza 3 botões de ação no convite pendente', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapStatusFilter());
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.copy_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.send_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.cancel_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      'filtro status=pending oculta ativos e arquivados e mostra convites',
+      (tester) async {
+        await tester.pumpWidget(wrapStatusFilter());
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Todos').last);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Convite Pendente').last);
+        await tester.pumpAndSettle();
+
+        expect(find.text('alice-active@teste.com'), findsNothing);
+        expect(find.text('bob-archived@teste.com'), findsNothing);
+        expect(find.text('pending@teste.com'), findsOneWidget);
+      },
+    );
+
+    testWidgets('filtro status=active oculta convites e arquivados', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapStatusFilter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Todos').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Ativo').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('alice-active@teste.com'), findsOneWidget);
+      expect(find.text('bob-archived@teste.com'), findsNothing);
+      expect(find.text('pending@teste.com'), findsNothing);
+    });
+
+    testWidgets('filtro status=archived mostra apenas arquivados', (
+      tester,
+    ) async {
+      await tester.pumpWidget(wrapStatusFilter());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Todos').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Arquivado').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('alice-active@teste.com'), findsNothing);
+      expect(find.text('bob-archived@teste.com'), findsOneWidget);
+      expect(find.text('pending@teste.com'), findsNothing);
     });
   });
 }

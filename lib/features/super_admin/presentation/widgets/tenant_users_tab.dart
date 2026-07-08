@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/super_admin/presentation/widgets/reason_confirmation_dialog.dart';
+import 'package:veraprob/features/shared/widgets/invitation_action_buttons.dart';
 
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/super_admin_providers.dart';
@@ -553,58 +553,11 @@ class _TenantUsersTabState extends ConsumerState<TenantUsersTab> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isPending && inviteToken != null)
-                IconButton(
-                  icon: const Icon(Icons.copy_outlined, size: 18),
-                  tooltip: 'Copiar link de convite',
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  style: IconButton.styleFrom(
-                    minimumSize: Size.zero,
-                    padding: const EdgeInsets.all(4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () {
-                    final baseUri = Uri.base;
-                    final origin =
-                        (baseUri.scheme == 'http' || baseUri.scheme == 'https')
-                        ? baseUri.origin
-                        : 'http://localhost:3000';
-                    final link = '$origin/accept-invite?token=$inviteToken';
-                    Clipboard.setData(ClipboardData(text: link));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Link de convite copiado.')),
-                    );
-                  },
-                ),
-              if (isPending && !isOrgArchived)
-                IconButton(
-                  icon: const Icon(Icons.cancel_outlined, size: 18),
-                  tooltip: 'Revogar Convite',
-                  color: VeraProbColors.error,
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  style: IconButton.styleFrom(
-                    minimumSize: Size.zero,
-                    padding: const EdgeInsets.all(4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () => _revokeInvite(email),
-                ),
-              if ((isPending || !hasSignedIn) && !isOrgArchived)
-                IconButton(
-                  icon: const Icon(Icons.send_outlined, size: 18),
-                  tooltip: 'Reenviar Convite',
-                  visualDensity: VisualDensity.compact,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  style: IconButton.styleFrom(
-                    minimumSize: Size.zero,
-                    padding: const EdgeInsets.all(4),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  onPressed: () => _resendInvite(email),
+                InvitationActionButtons(
+                  token: inviteToken,
+                  onResend: () => _resendInvite(email),
+                  onRevoke: () => _revokeInvite(email),
+                  isDisabled: isOrgArchived,
                 ),
               if (!isPending && userId != null && !isOrgArchived)
                 IconButton(

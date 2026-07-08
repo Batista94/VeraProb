@@ -15,6 +15,9 @@ import 'package:veraprob/state/providers/access_providers.dart';
 import 'package:veraprob/application/admin/remove_member_command.dart';
 import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/application/admin/revoke_invitation_command.dart';
+import 'package:veraprob/features/shared/widgets/invitation_action_buttons.dart';
+
+enum _StatusFilter { all, active, archived, pending }
 
 /// Coarse trust-root label — fallback when a member has no tenant-role profile
 /// (superAdmin, or admin with no custom role assigned).
@@ -44,6 +47,7 @@ class UserManagementTab extends ConsumerStatefulWidget {
 class _UserManagementTabState extends ConsumerState<UserManagementTab> {
   String _emailFilter = '';
   String? _profileFilter; // null = Todos
+  _StatusFilter _statusFilter = _StatusFilter.all;
 
   @override
   Widget build(BuildContext context) {
@@ -96,14 +100,17 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
             child: ListView(
               children: [
                 switch (membersAsync) {
-                  AsyncData(:final value) => _buildMembersSection(
-                    context,
-                    value,
-                    currentUserId,
-                    canManageUsers,
-                    roles,
-                    assignments,
-                  ),
+                  AsyncData(:final value) =>
+                    _statusFilter == _StatusFilter.pending
+                        ? const SizedBox.shrink()
+                        : _buildMembersSection(
+                            context,
+                            value,
+                            currentUserId,
+                            canManageUsers,
+                            roles,
+                            assignments,
+                          ),
                   AsyncLoading() => const Center(
                     child: CircularProgressIndicator(),
                   ),
@@ -116,10 +123,11 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
                 },
                 if (canManageUsers)
                   switch (invitationsAsync) {
-                    AsyncData(:final value) => _buildInvitations(
-                      context,
-                      value,
-                    ),
+                    AsyncData(:final value) =>
+                      (_statusFilter == _StatusFilter.active ||
+                              _statusFilter == _StatusFilter.archived)
+                          ? const SizedBox.shrink()
+                          : _buildInvitations(context, value),
                     _ => const SizedBox.shrink(),
                   },
               ],
@@ -166,6 +174,35 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
             onChanged: (v) => setState(() => _profileFilter = v),
           ),
         ),
+        const SizedBox(width: 12),
+        SizedBox(
+          width: 200,
+          child: DropdownButtonFormField<_StatusFilter>(
+            initialValue: _statusFilter,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              isDense: true,
+              labelText: 'Status',
+              border: OutlineInputBorder(),
+            ),
+            items: const [
+              DropdownMenuItem(value: _StatusFilter.all, child: Text('Todos')),
+              DropdownMenuItem(
+                value: _StatusFilter.active,
+                child: Text('Ativo'),
+              ),
+              DropdownMenuItem(
+                value: _StatusFilter.archived,
+                child: Text('Arquivado'),
+              ),
+              DropdownMenuItem(
+                value: _StatusFilter.pending,
+                child: Text('Convite Pendente'),
+              ),
+            ],
+            onChanged: (v) => setState(() => _statusFilter = v!),
+          ),
+        ),
       ],
     );
   }
@@ -200,34 +237,39 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (filtered.isEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 32),
-            child: Center(
-              child: Text(
-                active.isEmpty
-                    ? 'Nenhum membro ativo.'
-                    : 'Nenhum membro corresponde ao filtro.',
-                style: VeraProbTypography.bodyMedium.copyWith(
-                  color: VeraProbColors.textSecondary,
+        if (_statusFilter == _StatusFilter.active ||
+            _statusFilter == _StatusFilter.all) ...[
+          if (filtered.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(
+                child: Text(
+                  active.isEmpty
+                      ? 'Nenhum membro ativo.'
+                      : 'Nenhum membro corresponde ao filtro.',
+                  style: VeraProbTypography.bodyMedium.copyWith(
+                    color: VeraProbColors.textSecondary,
+                  ),
                 ),
               ),
-            ),
-          )
-        else
-          for (int i = 0; i < filtered.length; i++) ...[
-            if (i > 0) const Divider(color: VeraProbColors.border),
-            _buildMemberTile(
-              context,
-              filtered[i],
-              filtered[i].userId == currentUserId,
-              canManageUsers,
-              roles,
-              assignments,
-              currentUserId,
-            ),
-          ],
-        if (archived.isNotEmpty)
+            )
+          else
+            for (int i = 0; i < filtered.length; i++) ...[
+              if (i > 0) const Divider(color: VeraProbColors.border),
+              _buildMemberTile(
+                context,
+                filtered[i],
+                filtered[i].userId == currentUserId,
+                canManageUsers,
+                roles,
+                assignments,
+                currentUserId,
+              ),
+            ],
+        ],
+        if (archived.isNotEmpty &&
+            (_statusFilter == _StatusFilter.archived ||
+                _statusFilter == _StatusFilter.all))
           _buildArchivedSection(context, archived, canManageUsers),
       ],
     );
@@ -417,6 +459,7 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
           (inv) => _PendingInvitationTile(
             invitation: inv,
             onRevoke: () => _revokeInvitation(context, inv),
+            onResend: () => _resendInvitation(context, inv),
           ),
         ),
       ],
@@ -572,6 +615,55 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
     }
   }
 
+  Future<void> _resendInvitation(
+    BuildContext context,
+    Invitation invitation,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final orgId = ref.read(currentOrganizationIdProvider);
+      final callerRole = ref.read(currentUserRoleProvider);
+      final currentUserId = ref.read(currentOperatorIdProvider);
+      final sessionId = ref.read(currentSessionIdProvider) ?? '';
+
+      if (orgId == null || currentUserId == null) {
+        throw const DomainException(
+          'Contexto da organização ou usuário indisponível.',
+        );
+      }
+
+      await ref
+          .read(inviteUserHandlerProvider)
+          .handle(
+            InviteUserCommand(
+              organizationId: orgId,
+              callerRole: callerRole,
+              invitedByUserId: currentUserId,
+              email: invitation.email,
+              roleToAssign: invitation.role,
+              sessionId: sessionId,
+            ),
+          );
+      ref.invalidate(orgInvitationsProvider);
+
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Convite reenviado com sucesso.'),
+          backgroundColor: VeraProbColors.success,
+        ),
+      );
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível reenviar o convite. Verifique as permissões.',
+          ),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
+    }
+  }
+
   Future<void> _revokeInvitation(
     BuildContext context,
     Invitation invitation,
@@ -643,10 +735,12 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
 class _PendingInvitationTile extends StatelessWidget {
   final Invitation invitation;
   final VoidCallback onRevoke;
+  final VoidCallback onResend;
 
   const _PendingInvitationTile({
     required this.invitation,
     required this.onRevoke,
+    required this.onResend,
   });
 
   @override
@@ -675,14 +769,10 @@ class _PendingInvitationTile extends StatelessWidget {
         '$roleLabel - Expira em: $expiryStr',
         style: VeraProbTypography.caption,
       ),
-      trailing: IconButton(
-        icon: const Icon(
-          Icons.cancel_outlined,
-          color: VeraProbColors.error,
-          size: 20,
-        ),
-        tooltip: 'Revogar convite',
-        onPressed: onRevoke,
+      trailing: InvitationActionButtons(
+        token: invitation.token,
+        onResend: onResend,
+        onRevoke: onRevoke,
       ),
     );
   }
