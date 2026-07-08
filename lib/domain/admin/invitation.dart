@@ -13,6 +13,7 @@ class Invitation extends Equatable {
   final DateTime expiresAtUtc;
   final DateTime? acceptedAtUtc;
   final DateTime? revokedAtUtc;
+  final String? tenantRoleId;
 
   const Invitation({
     required this.id,
@@ -25,6 +26,7 @@ class Invitation extends Equatable {
     required this.expiresAtUtc,
     this.acceptedAtUtc,
     this.revokedAtUtc,
+    this.tenantRoleId,
   });
 
   bool isExpiredAt(DateTime nowUtc) => nowUtc.isAfter(expiresAtUtc);
@@ -46,5 +48,6 @@ class Invitation extends Equatable {
     expiresAtUtc,
     acceptedAtUtc,
     revokedAtUtc,
+    tenantRoleId,
   ];
 }

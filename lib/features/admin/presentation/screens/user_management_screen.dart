@@ -127,7 +127,7 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
                       (_statusFilter == _StatusFilter.active ||
                               _statusFilter == _StatusFilter.archived)
                           ? const SizedBox.shrink()
-                          : _buildInvitations(context, value),
+                          : _buildInvitations(context, value, roles),
                     _ => const SizedBox.shrink(),
                   },
               ],
@@ -430,9 +430,37 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
     );
   }
 
-  Widget _buildInvitations(BuildContext context, List<Invitation> value) {
+  Widget _buildInvitations(
+    BuildContext context,
+    List<Invitation> value,
+    List<TenantRole> roles,
+  ) {
     final nowUtc = ref.read(dateTimeProviderProvider).nowUtc();
-    final pending = value.where((i) => i.isActiveAt(nowUtc)).toList();
+    final pending = value.where((i) {
+      if (!i.isActiveAt(nowUtc)) return false;
+      if (_emailFilter.isNotEmpty &&
+          !i.email.toLowerCase().contains(_emailFilter.toLowerCase())) {
+        return false;
+      }
+      if (_profileFilter != null) {
+        final profileName = i.tenantRoleId != null
+            ? roles
+                  .firstWhere(
+                    (r) => r.id == i.tenantRoleId,
+                    orElse: () => const TenantRole(
+                      id: '',
+                      name: 'Desconhecido',
+                      description: null,
+                      isSystem: false,
+                      grants: [],
+                    ),
+                  )
+                  .name
+            : _coarseRoleLabel(i.role);
+        if (profileName != _profileFilter) return false;
+      }
+      return true;
+    }).toList();
     if (pending.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -460,6 +488,7 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
             invitation: inv,
             onRevoke: () => _revokeInvitation(context, inv),
             onResend: () => _resendInvitation(context, inv),
+            roles: roles,
           ),
         ),
       ],
@@ -736,16 +765,31 @@ class _PendingInvitationTile extends StatelessWidget {
   final Invitation invitation;
   final VoidCallback onRevoke;
   final VoidCallback onResend;
+  final List<TenantRole> roles;
 
   const _PendingInvitationTile({
     required this.invitation,
     required this.onRevoke,
     required this.onResend,
+    required this.roles,
   });
 
   @override
   Widget build(BuildContext context) {
-    final roleLabel = _coarseRoleLabel(invitation.role);
+    final roleLabel = invitation.tenantRoleId != null
+        ? roles
+              .firstWhere(
+                (r) => r.id == invitation.tenantRoleId,
+                orElse: () => const TenantRole(
+                  id: '',
+                  name: 'Desconhecido',
+                  description: null,
+                  isSystem: false,
+                  grants: [],
+                ),
+              )
+              .name
+        : _coarseRoleLabel(invitation.role);
     final expiryStr = invitation.expiresAtUtc.toLocal().toString().split(
       '.',
     )[0];
@@ -1099,7 +1143,9 @@ class _MemberRolesRow extends ConsumerWidget {
               ref,
               role,
               assignmentByRoleId[role.id]!.validUntilUtc,
-              deletable: !locked && canGrant(role),
+              // ponytail: assigned.length > 1 mirrors the LastProfileGuard on
+              // the backend -- keeps the X hidden when it would always fail.
+              deletable: !locked && canGrant(role) && assigned.length > 1,
             ),
           if (!locked && available.isNotEmpty)
             ActionChip(
@@ -1164,7 +1210,7 @@ class _MemberRolesRow extends ConsumerWidget {
     );
     if (result == null) return;
     try {
-      await ref
+      final isPending = await ref
           .read(accessManagementServiceProvider)
           .assignRole(
             userId: userId,
@@ -1174,9 +1220,11 @@ class _MemberRolesRow extends ConsumerWidget {
       ref.invalidate(activeRoleAssignmentsProvider);
       ref.invalidate(pendingRoleChangesProvider);
       messenger.showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Perfil atribuído. Se sensível, aguarda um segundo administrador.',
+            isPending
+                ? 'Perfil sensível: aguarda aprovação de um segundo administrador.'
+                : 'Perfil atribuído com sucesso.',
           ),
           backgroundColor: VeraProbColors.success,
         ),
@@ -1232,14 +1280,12 @@ class _MemberRolesRow extends ConsumerWidget {
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (_) {
+      } catch (e) {
+        final msg = e.toString().contains('LastProfileGuard')
+            ? 'Não é possível remover o único perfil ativo do usuário.'
+            : 'Não foi possível remover o perfil. Tente novamente.';
         messenger.showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível remover o perfil. Tente novamente.',
-            ),
-            backgroundColor: VeraProbColors.error,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
         );
       }
     }

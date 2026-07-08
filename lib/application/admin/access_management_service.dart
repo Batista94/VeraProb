@@ -178,18 +178,24 @@ abstract class AccessManagementService {
   Future<List<RoleAssignment>> getActiveAssignments();
   Future<List<RoleChangeRequest>> getPendingRequests();
 
-  Future<void> createRole({
+  /// Returns `true` if the operation was enqueued for four-eyes approval,
+  /// `false` if applied immediately (single-admin bypass).
+  Future<bool> createRole({
     required String name,
     String? description,
     required List<RolePermissionGrant> grants,
   });
 
-  Future<void> updateRolePermissions({
+  /// Returns `true` if the operation was enqueued for four-eyes approval,
+  /// `false` if applied immediately (single-admin bypass).
+  Future<bool> updateRolePermissions({
     required String roleId,
     required List<RolePermissionGrant> grants,
   });
 
-  Future<void> assignRole({
+  /// Returns `true` if the assignment was enqueued for four-eyes approval,
+  /// `false` if applied immediately (single-admin bypass).
+  Future<bool> assignRole({
     required String userId,
     required String roleId,
     DateTime? validUntilUtc,

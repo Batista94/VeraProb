@@ -5756,6 +5756,7 @@ export type Database = {
         Returns: undefined;
       };
       _rbac_caller_org_id: { Args: never; Returns: string };
+      _rbac_count_approvers: { Args: { p_org_id: string }; Returns: number };
       _rbac_grant_keys: { Args: { p_grants: Json }; Returns: string[] };
       _rbac_grants_touch_sensitive: {
         Args: { p_grants: Json };

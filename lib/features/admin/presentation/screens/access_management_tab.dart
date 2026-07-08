@@ -643,14 +643,14 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
           contractScopeIds: entry.value,
         ),
     ];
-    final needsApproval = _touchesSensitive;
     final service = ref.read(accessManagementServiceProvider);
 
     try {
+      final bool isPending;
       if (widget.role == null) {
-        await service.createRole(name: name, grants: grants);
+        isPending = await service.createRole(name: name, grants: grants);
       } else {
-        await service.updateRolePermissions(
+        isPending = await service.updateRolePermissions(
           roleId: widget.role!.id,
           grants: grants,
         );
@@ -660,7 +660,7 @@ class _RoleMatrixEditorState extends ConsumerState<_RoleMatrixEditor> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            needsApproval
+            isPending
                 ? 'Alterações enviadas para aprovação de um segundo administrador.'
                 : 'Perfil salvo com sucesso.',
           ),
