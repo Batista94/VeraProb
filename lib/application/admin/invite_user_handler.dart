@@ -67,6 +67,7 @@ class InviteUserHandler {
     await _commandService.inviteUser(
       email: email,
       role: command.roleToAssign,
+      tenantRoleId: command.tenantRoleId,
       token: token,
       invitationId: invitationId,
       expiresAtUtc: expiresAtUtc,

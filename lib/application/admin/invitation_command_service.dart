@@ -9,6 +9,7 @@ abstract class InvitationCommandService {
   Future<void> inviteUser({
     required String email,
     required UserRole role,
+    String? tenantRoleId,
     required String token,
     required String invitationId,
     required DateTime expiresAtUtc,

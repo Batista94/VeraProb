@@ -790,7 +790,7 @@ class _InviteUserDialog extends ConsumerStatefulWidget {
 class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
-  UserRole _selectedRole = UserRole.operator;
+  String? _selectedTenantRoleId;
   bool _loading = false;
   String? _generatedToken;
 
@@ -812,6 +812,24 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
     // Only '*' holders (system Administrador / superAdmin) may create another
     // Administrador — the option is hidden entirely otherwise (case 2).
     final canInviteAdmin = ref.read(currentPermissionsProvider).contains('*');
+    final roles = ref.watch(tenantRolesProvider).value ?? const <TenantRole>[];
+
+    final availableRoles = roles.where((r) {
+      if (r.isSystem && r.name == 'Administrador' && !canInviteAdmin) {
+        return false;
+      }
+      return true;
+    }).toList();
+
+    // Default to 'Operador' if available
+    if (_selectedTenantRoleId == null && availableRoles.isNotEmpty) {
+      // Must set without triggering rebuild during build
+      _selectedTenantRoleId = availableRoles.firstWhere(
+        (r) => r.name == 'Operador',
+        orElse: () => availableRoles.first,
+      ).id;
+    }
+
     return AlertDialog(
       title: const Text('Convidar Usuário'),
       content: SizedBox(
@@ -835,25 +853,16 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<UserRole>(
-                initialValue: _selectedRole,
+              DropdownButtonFormField<String>(
+                initialValue: _selectedTenantRoleId,
                 decoration: const InputDecoration(labelText: 'Perfil'),
-                items: [
-                  if (canInviteAdmin)
-                    const DropdownMenuItem(
-                      value: UserRole.admin,
-                      child: Text('Administrador'),
-                    ),
-                  const DropdownMenuItem(
-                    value: UserRole.operator,
-                    child: Text('Operador'),
-                  ),
-                  const DropdownMenuItem(
-                    value: UserRole.auditor,
-                    child: Text('Auditor'),
-                  ),
-                ],
-                onChanged: (r) => setState(() => _selectedRole = r!),
+                items: availableRoles.map((r) {
+                  return DropdownMenuItem(
+                    value: r.id,
+                    child: Text(r.name),
+                  );
+                }).toList(),
+                onChanged: (id) => setState(() => _selectedTenantRoleId = id),
               ),
             ],
           ),
@@ -950,6 +959,12 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
       final userId = widget.parentRef.read(currentOperatorIdProvider);
       final sessionId = widget.parentRef.read(currentSessionIdProvider) ?? '';
 
+      final roles = ref.read(tenantRolesProvider).value ?? const <TenantRole>[];
+      final selectedRoleObj = roles.firstWhere((r) => r.id == _selectedTenantRoleId);
+      final derivedCoarseRole = (selectedRoleObj.isSystem && selectedRoleObj.name == 'Administrador')
+          ? UserRole.admin
+          : UserRole.operator;
+
       final token = await ref
           .read(inviteUserHandlerProvider)
           .handle(
@@ -958,7 +973,8 @@ class _InviteUserDialogState extends ConsumerState<_InviteUserDialog> {
               callerRole: callerRole,
               invitedByUserId: userId ?? '',
               email: _emailController.text,
-              roleToAssign: _selectedRole,
+              roleToAssign: derivedCoarseRole,
+              tenantRoleId: _selectedTenantRoleId,
               sessionId: sessionId,
             ),
           );

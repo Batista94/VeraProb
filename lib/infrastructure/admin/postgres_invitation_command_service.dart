@@ -12,6 +12,7 @@ class PostgresInvitationCommandService implements InvitationCommandService {
   Future<void> inviteUser({
     required String email,
     required UserRole role,
+    String? tenantRoleId,
     required String token,
     required String invitationId,
     required DateTime expiresAtUtc,
@@ -24,6 +25,7 @@ class PostgresInvitationCommandService implements InvitationCommandService {
         'p_token': token,
         'p_invitation_id': invitationId,
         'p_expires_at': expiresAtUtc.toIso8601String(),
+        'p_tenant_role_id': ?tenantRoleId,
       },
     );
   }

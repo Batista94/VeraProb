@@ -12,6 +12,7 @@ class InviteUserCommand {
   final String invitedByUserId;
   final String email;
   final UserRole roleToAssign;
+  final String? tenantRoleId;
 
   /// Session ID for tenant validation.
   final String sessionId;
@@ -22,6 +23,7 @@ class InviteUserCommand {
     required this.invitedByUserId,
     required this.email,
     required this.roleToAssign,
+    this.tenantRoleId,
     required this.sessionId,
   });
 }
