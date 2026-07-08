@@ -72,7 +72,15 @@ INSERT INTO public.tenant_role_permissions (tenant_role_id, permission_key) VALU
   ('00000000-0000-0000-0000-000000001092', 'telemetry:read')
 ON CONFLICT DO NOTHING;
 
--- Assign both roles to user 1042.
+-- Assign both roles + a fallback role to user 1042.
+-- The fallback ensures LastProfileGuard never fires during this test
+-- (which focuses on session-revocation behavior, not last-profile protection).
+INSERT INTO public.tenant_roles (id, organization_id, name, is_system) VALUES
+  ('00000000-0000-0000-0000-000000001093',
+   '00000000-0000-0000-0000-000000001004',
+   'AK-Fallback', false)
+ON CONFLICT (id) DO NOTHING;
+
 INSERT INTO public.user_tenant_roles (
   user_id, tenant_role_id, organization_id, granted_by
 ) VALUES
@@ -82,6 +90,10 @@ INSERT INTO public.user_tenant_roles (
    '00000000-0000-0000-0000-000000001041'),
   ('00000000-0000-0000-0000-000000001042',
    '00000000-0000-0000-0000-000000001092',
+   '00000000-0000-0000-0000-000000001004',
+   '00000000-0000-0000-0000-000000001041'),
+  ('00000000-0000-0000-0000-000000001042',
+   '00000000-0000-0000-0000-000000001093',
    '00000000-0000-0000-0000-000000001004',
    '00000000-0000-0000-0000-000000001041')
 ON CONFLICT DO NOTHING;

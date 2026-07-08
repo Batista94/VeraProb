@@ -119,12 +119,12 @@ class PostgresAccessManagementService implements AccessManagementService {
       );
 
   @override
-  Future<void> createRole({
+  Future<bool> createRole({
     required String name,
     String? description,
     required List<RolePermissionGrant> grants,
   }) async {
-    await _client.rpc<void>(
+    final id = await _client.rpc<String>(
       'create_tenant_role',
       params: <String, Object?>{
         'p_name': name,
@@ -132,29 +132,31 @@ class PostgresAccessManagementService implements AccessManagementService {
         'p_perm_grants': grants.map((g) => g.toJson()).toList(),
       },
     );
+    return _isPendingRequest(id);
   }
 
   @override
-  Future<void> updateRolePermissions({
+  Future<bool> updateRolePermissions({
     required String roleId,
     required List<RolePermissionGrant> grants,
   }) async {
-    await _client.rpc<void>(
+    final id = await _client.rpc<String>(
       'update_tenant_role_permissions',
       params: <String, Object?>{
         'p_role_id': roleId,
         'p_perm_grants': grants.map((g) => g.toJson()).toList(),
       },
     );
+    return _isPendingRequest(id);
   }
 
   @override
-  Future<void> assignRole({
+  Future<bool> assignRole({
     required String userId,
     required String roleId,
     DateTime? validUntilUtc,
   }) async {
-    await _client.rpc<void>(
+    final id = await _client.rpc<String>(
       'assign_tenant_role',
       params: <String, Object?>{
         'p_target_user': userId,
@@ -162,6 +164,19 @@ class PostgresAccessManagementService implements AccessManagementService {
         'p_valid_until': validUntilUtc?.toUtc().toIso8601String(),
       },
     );
+    return _isPendingRequest(id);
+  }
+
+  /// Checks whether [id] is a PENDING row in [role_change_requests].
+  /// O(1) — PK lookup on indexed UUID column.
+  Future<bool> _isPendingRequest(String id) async {
+    final rows = await _client
+        .from('role_change_requests')
+        .select('id')
+        .eq('id', id)
+        .eq('status', 'PENDING')
+        .limit(1);
+    return rows.isNotEmpty;
   }
 
   @override

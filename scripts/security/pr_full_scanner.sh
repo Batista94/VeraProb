@@ -733,7 +733,7 @@ echo -e "\n${BOLD}${BLUE}Step 10: Deno Test Suite (Edge Functions)...${NC}"
 # "/c/Users/$USER/.deno/bin" check never matches on this platform. Glob
 # instead so detection doesn't depend on env vars that may not propagate
 # (hook subprocesses, WSL's /mnt/c mount, etc.).
-if ! command -v deno >/dev/null 2>&1; then
+if ! command -v deno >/dev/null 2>&1 && ! command -v deno.exe >/dev/null 2>&1; then
   for deno_dir in "$HOME/.deno/bin" /c/Users/*/.deno/bin /mnt/c/Users/*/.deno/bin; do
     if [[ -d "$deno_dir" ]]; then
       export PATH="$deno_dir:$PATH"
@@ -742,9 +742,14 @@ if ! command -v deno >/dev/null 2>&1; then
   done
 fi
 
+DENO_CMD="deno"
+if command -v deno.exe >/dev/null 2>&1; then
+  DENO_CMD="deno.exe"
+fi
+
 if [[ "${SKIP_DENO_TESTS:-0}" == "1" ]]; then
   echo -e "  ${YELLOW}[SKIP]${NC} SKIP_DENO_TESTS=1."
-elif ! command -v deno >/dev/null 2>&1; then
+elif ! command -v "$DENO_CMD" >/dev/null 2>&1; then
   echo -e "  ${YELLOW}${BOLD}[WARN]${NC} Deno CLI not found. Install Deno. Skipping Deno tests."
   TOTAL_WARNS=$((TOTAL_WARNS + 1))
 else
@@ -769,8 +774,8 @@ else
   fi
 
   # Run Deno tests
-  echo "  Running: deno $DENO_CMD_ARGS"
-  if deno $DENO_CMD_ARGS; then
+  echo "  Running: $DENO_CMD $DENO_CMD_ARGS"
+  if $DENO_CMD $DENO_CMD_ARGS; then
     echo -e "  ${GREEN}Deno tests: all passed.${NC}"
   else
     echo -e "  ${RED}${BOLD}[BLOCK]${NC} Deno test suite failed."

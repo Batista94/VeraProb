@@ -739,7 +739,7 @@ void main() {
       /// Helper: mock a successful getUser() server-side response.
       void mockGetUserSuccess(supabase.User user) {
         when(
-          () => mockAuth.getUser(),
+          () => mockAuth.getUser(any()),
         ).thenAnswer((_) async => _FakeUserResponse(user));
       }
 
@@ -774,7 +774,7 @@ void main() {
 
         expect(result, isA<AuthUser>());
         expect(result!.tenantId, equals('org-123'));
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
 
       test(
@@ -788,7 +788,7 @@ void main() {
           final result = await repo.getUserBySessionId(jwt);
 
           expect(result, isNull);
-          verify(() => mockAuth.getUser()).called(1);
+          verify(() => mockAuth.getUser(any())).called(1);
         },
       );
 
@@ -803,7 +803,7 @@ void main() {
           // First call — cache miss
           final result1 = await repo.getUserBySessionId(jwt);
           expect(result1, isA<AuthUser>());
-          verify(() => mockAuth.getUser()).called(1);
+          verify(() => mockAuth.getUser(any())).called(1);
 
           // Second call — cache hit, NO server-side call
           final result2 = await repo.getUserBySessionId(jwt);
@@ -811,7 +811,7 @@ void main() {
           expect(result2!.tenantId, equals('org-123'));
 
           // getUser() still only called once
-          verifyNever(() => mockAuth.getUser());
+          verifyNever(() => mockAuth.getUser(any()));
         },
       );
 
@@ -835,14 +835,14 @@ void main() {
 
         // Simulate: after signOut, getUser() returns null
         when(
-          () => mockAuth.getUser(),
+          () => mockAuth.getUser(any()),
         ).thenAnswer((_) async => _FakeUserResponse(null));
         when(() => mockAuth.currentSession).thenReturn(null);
 
         // Next call — cache miss, getUser() returns null
         final result = await repo.getUserBySessionId(jwt);
         expect(result, isNull);
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
 
       test('cache invalidates on refreshSession', () async {
@@ -869,19 +869,19 @@ void main() {
 
         // Simulate: after refresh, getUser() returns null
         when(
-          () => mockAuth.getUser(),
+          () => mockAuth.getUser(any()),
         ).thenAnswer((_) async => _FakeUserResponse(null));
         when(() => mockAuth.currentSession).thenReturn(null);
 
         // Next call — cache miss
         final result = await repo.getUserBySessionId(jwt);
         expect(result, isNull);
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
 
       test('getUser() returns null (revoked user) returns null', () async {
         when(
-          () => mockAuth.getUser(),
+          () => mockAuth.getUser(any()),
         ).thenAnswer((_) async => _FakeUserResponse(null));
         when(() => mockAuth.currentSession).thenReturn(secureSession);
 
@@ -890,14 +890,14 @@ void main() {
         final result = await repo.getUserBySessionId(jwt);
 
         expect(result, isNull);
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
 
       test(
         'getUser() AuthException returns null and invalidates cache',
         () async {
           when(
-            () => mockAuth.getUser(),
+            () => mockAuth.getUser(any()),
           ).thenThrow(supabase.AuthException('Invalid JWT'));
           when(() => mockAuth.currentSession).thenReturn(secureSession);
 
@@ -910,9 +910,33 @@ void main() {
       );
 
       test(
+        'getUser() throws AuthFailureException for SocketException (offline)',
+        () async {
+          when(
+            () => mockAuth.getUser(any()),
+          ).thenThrow(const SocketException('No internet'));
+
+          final jwt = _buildJwt();
+
+          expect(
+            () => repo.getUserBySessionId(jwt),
+            throwsA(
+              isA<AuthFailureException>().having(
+                (e) => e.message,
+                'message',
+                equals(
+                  'Falha de comunicação com o servidor de autenticação. Tente novamente.',
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
         'getUser() AuthException with session_not_found signs out locally',
         () async {
-          when(() => mockAuth.getUser()).thenThrow(
+          when(() => mockAuth.getUser(any())).thenThrow(
             const supabase.AuthException(
               'Session not found',
               code: 'session_not_found',
@@ -943,7 +967,7 @@ void main() {
         final result = await repo.getUserBySessionId(jwt);
 
         expect(result, isNull);
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
 
       test('cache hit rejects when session expiresAt passes '
@@ -972,7 +996,7 @@ void main() {
         // getUser() validates server-side, so this returns valid user
         // (the old session's expiresAt is irrelevant — server says user is valid)
         expect(result, isA<AuthUser>());
-        verify(() => mockAuth.getUser()).called(1);
+        verify(() => mockAuth.getUser(any())).called(1);
       });
     });
 

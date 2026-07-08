@@ -27,6 +27,16 @@ INSERT INTO public.tenant_roles (id, organization_id, name, description, is_syst
    'Org A Manage', 'Backs live-check for roles:manage', false)
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO auth.users (id) VALUES
+  ('00000000-0000-0000-0000-0000000009a9'),
+  ('00000000-0000-0000-0000-0000000009b9')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO public.user_roles (user_id, organization_id, role) VALUES
+  ('00000000-0000-0000-0000-0000000009a9', '00000000-0000-0000-0000-0000000009a1', 'TENANT_ADMIN'),
+  ('00000000-0000-0000-0000-0000000009b9', '00000000-0000-0000-0000-0000000009a1', 'TENANT_ADMIN')
+ON CONFLICT DO NOTHING;
+
 -- Live grant backing the escalation caller's roles:manage claim (F4 live-check).
 INSERT INTO public.tenant_role_permissions (tenant_role_id, permission_key) VALUES
   ('00000000-0000-0000-0000-0000000009c5', 'roles:manage')

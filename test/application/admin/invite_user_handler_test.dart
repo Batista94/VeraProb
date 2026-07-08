@@ -50,6 +50,7 @@ void main() {
       () => commandService.inviteUser(
         email: any(named: 'email'),
         role: any(named: 'role'),
+        tenantRoleId: any(named: 'tenantRoleId'),
         token: any(named: 'token'),
         invitationId: any(named: 'invitationId'),
         expiresAtUtc: any(named: 'expiresAtUtc'),
@@ -82,6 +83,7 @@ void main() {
         () => commandService.inviteUser(
           email: any(named: 'email'),
           role: any(named: 'role'),
+          tenantRoleId: any(named: 'tenantRoleId'),
           token: any(named: 'token'),
           invitationId: any(named: 'invitationId'),
           expiresAtUtc: any(named: 'expiresAtUtc'),
@@ -120,6 +122,7 @@ void main() {
         () => commandService.inviteUser(
           email: 'novo@empresa.com',
           role: UserRole.operator,
+          tenantRoleId: any(named: 'tenantRoleId'),
           token: any(named: 'token'),
           invitationId: any(named: 'invitationId'),
           expiresAtUtc: any(named: 'expiresAtUtc'),
@@ -145,6 +148,7 @@ void main() {
         () => commandService.inviteUser(
           email: 'novo@empresa.com',
           role: any(named: 'role'),
+          tenantRoleId: any(named: 'tenantRoleId'),
           token: any(named: 'token'),
           invitationId: any(named: 'invitationId'),
           expiresAtUtc: any(named: 'expiresAtUtc'),

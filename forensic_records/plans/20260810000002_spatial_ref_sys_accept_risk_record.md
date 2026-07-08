@@ -42,7 +42,7 @@ Enquanto o PostGIS reside em `public`:
 | Item | Status |
 |------|--------|
 | Plano Supabase | FREE — relocação self-serve via Dashboard (sem ticket) |
-| Janela de relocação executada (data) | 2026-06-16 (local dev execution) |
+| Janela de relocação executada (data) | 2026-06-16 (local dev execution), 2026-07-07 (Staging execution) |
 | Relocação aplicada | `[x]` executada via DROP/CREATE EXTENSION |
 | Advisor limpo (pós-reloc) | `[x]` (tabela spatial_ref_sys removida de public) |
 | Controle interim removido (auto via DROP) | `[x]` (removido via CASCADE) |

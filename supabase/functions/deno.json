@@ -3,7 +3,6 @@
     "test": "deno test _shared/"
   },
   "compilerOptions": {
-    "allowJs": true,
     "lib": ["deno.window", "deno.ns"]
   },
   "imports": {

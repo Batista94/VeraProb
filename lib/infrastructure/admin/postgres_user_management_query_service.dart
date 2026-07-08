@@ -23,6 +23,7 @@ class PostgresUserManagementQueryService implements UserManagementQueryService {
         lastSignIn: row['last_sign_in'] != null
             ? DateTime.parse(row['last_sign_in'] as String).toUtc()
             : null,
+        isActive: row['is_active'] as bool? ?? true,
       );
     }).toList();
   }

@@ -103,6 +103,17 @@ ON CONFLICT (id) DO UPDATE SET
   organization_type = EXCLUDED.organization_type,
   allowed_domains = EXCLUDED.allowed_domains;
 
+-- ── 1.b Seed Default Tenant Roles ─────────────────────────────────────────────
+DO $$
+DECLARE
+  v_org_id UUID;
+BEGIN
+  FOR v_org_id IN SELECT id FROM public.organizations LOOP
+    PERFORM public._seed_default_tenant_roles(v_org_id);
+  END LOOP;
+END;
+$$;
+
 
 -- ── 2. Auth Users + User Roles ────────────────────────────────────────────────
 -- NÃO inserimos em auth.users aqui.

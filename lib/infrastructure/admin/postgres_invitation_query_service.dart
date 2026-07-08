@@ -56,6 +56,7 @@ class PostgresInvitationQueryService implements InvitationRepository {
       revokedAtUtc: row['revoked_at_utc'] != null
           ? DateTime.parse(row['revoked_at_utc'] as String).toUtc()
           : null,
+      tenantRoleId: row['tenant_role_id'] as String?,
     );
   }
 

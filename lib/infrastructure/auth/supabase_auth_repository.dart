@@ -146,7 +146,7 @@ class SupabaseAuthRepository
     // Any user ban or permission revocation in the Supabase Dashboard is
     // detected as soon as the 30s cache expires.
     try {
-      final userResponse = await _client.auth.getUser();
+      final userResponse = await _client.auth.getUser(sessionId);
       final user = userResponse.user;
       if (user == null) {
         _invalidateCache();
@@ -188,8 +188,13 @@ class SupabaseAuthRepository
 
       return authUser;
     } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException')) {
+        throw const AuthFailureException(
+          'Falha de comunicação com o servidor de autenticação. Tente novamente.',
+        );
+      }
       // Server-side auth failure (invalid JWT, revoked, etc.)
-      // or network error
       if (e is sb.AuthException && e.code == 'session_not_found') {
         try {
           await _client.auth.signOut(scope: sb.SignOutScope.local);

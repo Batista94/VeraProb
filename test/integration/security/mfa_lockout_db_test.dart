@@ -330,15 +330,18 @@ void main() {
         markTestSkipped('local supabase stack offline');
         return;
       }
-      final soon = DateTime.now().toUtc().add(const Duration(seconds: 1));
+      // To reliably survive WSL/Docker clock drift vs host without querying
+      // DB time, we place the expiration safely in the past.
+      final safelyExpired = DateTime.now().toUtc().subtract(
+        const Duration(minutes: 5),
+      );
       await seedClient.from('super_admin_mfa_lockouts').upsert({
         'user_id': userA,
         'failed_attempts': 5,
-        'locked_until': soon.toIso8601String(),
-        'last_attempt': soon.toIso8601String(),
+        'locked_until': safelyExpired.toIso8601String(),
+        'last_attempt': safelyExpired.toIso8601String(),
       });
 
-      await Future<void>.delayed(const Duration(seconds: 2));
       final result = await checkLockout(userA);
       expect(result['is_locked'], isFalse);
     });

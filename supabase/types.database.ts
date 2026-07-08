@@ -2030,6 +2030,7 @@ export type Database = {
           organization_id: string;
           revoked_at_utc: string | null;
           role: string;
+          tenant_role_id: string | null;
           token: string;
         };
         Insert: {
@@ -2042,6 +2043,7 @@ export type Database = {
           organization_id: string;
           revoked_at_utc?: string | null;
           role: string;
+          tenant_role_id?: string | null;
           token: string;
         };
         Update: {
@@ -2054,6 +2056,7 @@ export type Database = {
           organization_id?: string;
           revoked_at_utc?: string | null;
           role?: string;
+          tenant_role_id?: string | null;
           token?: string;
         };
         Relationships: [
@@ -2076,6 +2079,13 @@ export type Database = {
             columns: ["organization_id"];
             isOneToOne: false;
             referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invitations_tenant_role_id_fkey";
+            columns: ["tenant_role_id"];
+            isOneToOne: false;
+            referencedRelation: "tenant_roles";
             referencedColumns: ["id"];
           },
         ];
@@ -5687,6 +5697,10 @@ export type Database = {
         Returns: string;
       };
       _compute_easter: { Args: { p_year: number }; Returns: string };
+      _is_admin_profile: {
+        Args: { p_tenant_role_id: string };
+        Returns: boolean;
+      };
       _persist_evidence_snapshot: {
         Args: {
           p_contract: string;
@@ -5724,6 +5738,14 @@ export type Database = {
         Args: { p_grants: Json; p_role_id: string };
         Returns: undefined;
       };
+      _rbac_assert_can_grant_role: {
+        Args: { p_role_id: string };
+        Returns: undefined;
+      };
+      _rbac_assert_can_manage_target: {
+        Args: { p_target_user: string };
+        Returns: undefined;
+      };
       _rbac_assert_roles_manage: { Args: never; Returns: undefined };
       _rbac_assert_subset_grant: {
         Args: { p_grants: Json };
@@ -5734,6 +5756,7 @@ export type Database = {
         Returns: undefined;
       };
       _rbac_caller_org_id: { Args: never; Returns: string };
+      _rbac_count_approvers: { Args: { p_org_id: string }; Returns: number };
       _rbac_grant_keys: { Args: { p_grants: Json }; Returns: string[] };
       _rbac_grants_touch_sensitive: {
         Args: { p_grants: Json };
@@ -5741,6 +5764,10 @@ export type Database = {
       };
       _rbac_live_check_permission: {
         Args: { p_perm: string };
+        Returns: undefined;
+      };
+      _rbac_sync_coarse_role_admin: {
+        Args: { p_org: string; p_user: string };
         Returns: undefined;
       };
       _rbac_validate_grants: { Args: { p_grants: Json }; Returns: undefined };
@@ -5755,6 +5782,10 @@ export type Database = {
       _resolve_dual_control_ttl: {
         Args: { p_organization_id: string };
         Returns: number;
+      };
+      _seed_default_tenant_roles: {
+        Args: { p_org_id: string };
+        Returns: undefined;
       };
       _st_3dintersects: {
         Args: { geom1: unknown; geom2: unknown };
@@ -6426,6 +6457,23 @@ export type Database = {
         Args: { p_contract_id: string };
         Returns: Json;
       };
+      get_tenant_governance_log: {
+        Args: {
+          p_before?: string;
+          p_event_category?: string;
+          p_limit?: number;
+          p_search_email?: string;
+        };
+        Returns: {
+          actor_email: string;
+          actor_id: string;
+          event_type: string;
+          occurred_at: string;
+          reason: string;
+          target_email: string;
+          target_user_id: string;
+        }[];
+      };
       get_trip_compliance_status: {
         Args: { p_driver_id: string; p_org_id: string };
         Returns: Json;
@@ -6436,16 +6484,28 @@ export type Database = {
         Args: { perm: string; resource_id: string };
         Returns: boolean;
       };
-      invite_user: {
-        Args: {
-          p_email: string;
-          p_expires_at: string;
-          p_invitation_id: string;
-          p_role: string;
-          p_token: string;
-        };
-        Returns: undefined;
-      };
+      invite_user:
+        | {
+            Args: {
+              p_email: string;
+              p_expires_at: string;
+              p_invitation_id: string;
+              p_role: string;
+              p_token: string;
+            };
+            Returns: undefined;
+          }
+        | {
+            Args: {
+              p_email: string;
+              p_expires_at: string;
+              p_invitation_id: string;
+              p_role: string;
+              p_tenant_role_id: string;
+              p_token: string;
+            };
+            Returns: undefined;
+          };
       jsonb_canonical_text: { Args: { p_input: Json }; Returns: string };
       list_portal_justification_submissions: {
         Args: { p_organization_id: string; p_queue_entry_id: string };

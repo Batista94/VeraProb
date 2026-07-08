@@ -19,4 +19,9 @@ abstract class UserManagementCommandService {
     required String organizationId,
     required String targetUserId,
   });
+
+  Future<void> reactivateMember({
+    required String organizationId,
+    required String targetUserId,
+  });
 }

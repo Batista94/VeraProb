@@ -2,15 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
+import 'package:veraprob/features/admin/presentation/screens/governance_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
 import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/application/shared/app_types.dart';
+import 'package:veraprob/application/admin/access_management_service.dart';
+import 'package:veraprob/state/providers/access_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
 /// Hub consolidado para as configurações do sistema, organização e gestão de usuários.
 /// Roteado via `/admin/hub/settings`.
-/// Suporta deep link por query parameter `?tab=` (`org`, `users` ou `access`).
+/// Suporta deep link por query parameter `?tab=` (`org`, `users`, `access` ou `history`).
 class SettingsHubScreen extends ConsumerWidget {
   final String? initialTab;
 
@@ -41,57 +44,75 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
         with
         TickerProviderStateMixin {
   late TabController _tabController;
-  // `roles:manage` gates the Access & Profiles tab (Pilar 3). Seeded here and
-  // kept live: PermissionsSyncController can force a session refresh while this
-  // State stays mounted in the shell's IndexedStack, so a mid-session grant or
-  // revoke must re-shape the tabs (see the ref.listen in build).
-  late bool _canManageAccess;
+
+  late bool _canManageOrg;
+  late bool _canViewAccess;
 
   @override
   void initState() {
     super.initState();
-    _canManageAccess = ref
-        .read(permissionServiceProvider)
-        .hasPermission('roles:manage');
+    _syncPermissions();
     final initialIndex = _getInitialIndex(widget.initialTab);
     _tabController = TabController(
-      length: _canManageAccess ? 4 : 3,
+      length: _getTabCount(),
       vsync: this,
       initialIndex: initialIndex,
     );
   }
 
+  void _syncPermissions() {
+    final perms = ref.read(permissionServiceProvider);
+    _canManageOrg =
+        perms.hasPermission('org:manage') ||
+        perms.hasPermission('roles:manage');
+    _canViewAccess =
+        perms.hasPermission('roles:read') ||
+        perms.hasPermission('roles:manage');
+  }
+
+  /// Ordered keys of currently-visible tabs — single source of truth for both
+  /// the tab count and the deep-link index, so adding/removing a conditional
+  /// tab never requires re-deriving hardcoded arithmetic.
+  List<String> _visibleTabKeys() => [
+    'general',
+    if (_canManageOrg) 'org',
+    'users',
+    if (_canViewAccess) 'access',
+    if (_canViewAccess) 'history',
+  ];
+
+  int _getTabCount() => _visibleTabKeys().length;
+
   int _getInitialIndex(String? tab) {
-    if (tab == 'org') return 1;
-    if (tab == 'users') return 2;
-    if (tab == 'access' && _canManageAccess) return 3;
-    return 0; // default to general settings
+    final key = switch (tab) {
+      'org' => 'org',
+      'users' => 'users',
+      'access' => 'access',
+      'history' => 'history',
+      _ => 'general',
+    };
+    final idx = _visibleTabKeys().indexOf(key);
+    return idx >= 0 ? idx : 0; // default to general settings
   }
 
   @override
   void didUpdateWidget(_SettingsHubBody oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // The shell's IndexedStack keeps this State alive, so a later deep link
-    // (`?tab=users`) rebuilds with a new initialTab instead of remounting —
-    // without this, the query param is silently ignored after first visit.
     if (widget.initialTab != oldWidget.initialTab) {
       _tabController.animateTo(_getInitialIndex(widget.initialTab));
     }
   }
 
-  /// Re-shapes the tab set when the live `roles:manage` grant flips. Assigns the
-  /// new controller (length is immutable, so it cannot be mutated in place),
-  /// clamping the active index into the new range, THEN disposes the old one.
-  void _syncAccessTab(bool canManage) {
+  /// Re-shapes the tab set when live permissions flip.
+  void _syncTabs() {
     final oldController = _tabController;
-    final newLength = canManage ? 4 : 3;
+    final newLength = _getTabCount();
     final newController = TabController(
       length: newLength,
       vsync: this,
       initialIndex: oldController.index.clamp(0, newLength - 1),
     );
     setState(() {
-      _canManageAccess = canManage;
       _tabController = newController;
     });
     oldController.dispose();
@@ -105,14 +126,23 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
 
   @override
   Widget build(BuildContext context) {
-    // Live permission parity: a mid-session grant/revoke of `roles:manage`
-    // re-shapes the tabs (RPCs stay authoritative — this is UX parity only).
+    // Live permission parity
     ref.listen(permissionServiceProvider, (previous, next) {
-      final canManage = next.hasPermission('roles:manage');
-      if (canManage != _canManageAccess) _syncAccessTab(canManage);
+      final newCanManageOrg =
+          next.hasPermission('org:manage') ||
+          next.hasPermission('roles:manage');
+      final newCanViewAccess =
+          next.hasPermission('roles:read') ||
+          next.hasPermission('roles:manage');
+
+      if (newCanManageOrg != _canManageOrg ||
+          newCanViewAccess != _canViewAccess) {
+        _canManageOrg = newCanManageOrg;
+        _canViewAccess = newCanViewAccess;
+        _syncTabs();
+      }
     });
 
-    // De-chromed: the admin shell already provides the AppBar (P3 rule).
     return Scaffold(
       backgroundColor: VeraProbColors.background,
       body: Column(
@@ -139,9 +169,10 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
             tabAlignment: TabAlignment.start,
             tabs: [
               const Tab(text: 'Geral'),
-              const Tab(text: 'Organização'),
+              if (_canManageOrg) const Tab(text: 'Organização'),
               const Tab(text: 'Equipe'),
-              if (_canManageAccess) const Tab(text: 'Acessos'),
+              if (_canViewAccess) const Tab(text: 'Acessos'),
+              if (_canViewAccess) const Tab(text: 'Histórico'),
             ],
           ),
           const Divider(height: 1, color: VeraProbColors.border),
@@ -150,9 +181,10 @@ class _SettingsHubBodyState extends ConsumerState<_SettingsHubBody>
               controller: _tabController,
               children: [
                 const _GeneralSettingsTab(),
-                const OrgSettingsTab(),
+                if (_canManageOrg) const OrgSettingsTab(),
                 const UserManagementTab(),
-                if (_canManageAccess) const AccessManagementTab(),
+                if (_canViewAccess) const AccessManagementTab(),
+                if (_canViewAccess) const GovernanceAuditScreen(),
               ],
             ),
           ),
@@ -173,6 +205,11 @@ class _GeneralSettingsTab extends ConsumerWidget {
     final rawName = user?.userMetadata?['name'] as String?;
     final rawEmail = user?.email ?? '';
     final role = ref.watch(currentUserRoleProvider);
+    final userId = ref.watch(currentOperatorIdProvider);
+    final roles = ref.watch(tenantRolesProvider).value ?? const <TenantRole>[];
+    final assignments =
+        ref.watch(activeRoleAssignmentsProvider).value ??
+        const <RoleAssignment>[];
 
     String operatorName = 'Usuário';
     if (rawName != null && rawName.trim().isNotEmpty) {
@@ -181,15 +218,26 @@ class _GeneralSettingsTab extends ConsumerWidget {
       operatorName = rawEmail;
     }
 
-    final roleLabel = switch (role) {
+    // The parenthetical reflects the person's real profile in the tool: their
+    // highest-privilege tenant role (which alone knows "Validador"), falling
+    // back to the coarse trust-root label when no tenant role is assigned.
+    final coarseLabel = switch (role) {
       UserRole.admin => 'Administrador',
       UserRole.operator => 'Operador',
       UserRole.auditor => 'Auditor',
       UserRole.contractorViewer => 'Visualizador',
       UserRole.superAdmin => 'Super Administrador',
     };
+    final profileLabel = userId == null
+        ? coarseLabel
+        : highestPrivilegeRoleName(
+                userId: userId,
+                assignments: assignments,
+                roles: roles,
+              ) ??
+              coarseLabel;
 
-    final displayIdentity = '$operatorName ($roleLabel)';
+    final displayIdentity = '$operatorName ($profileLabel)';
     final operatorId = user?.id ?? 'Não autenticado';
 
     return SingleChildScrollView(

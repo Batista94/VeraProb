@@ -104,5 +104,30 @@ void main() {
         reason: 'Tenant Admin should NOT be able to edit Timezone',
       );
     });
+
+    testWidgets('Displays the correct PT-BR helper text for org type', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserRoleProvider.overrideWith((ref) => UserRole.superAdmin),
+            orgSettingsProvider.overrideWith((ref) => mockOrg),
+          ],
+          child: const MaterialApp(home: Scaffold(body: OrgSettingsTab())),
+        ),
+      );
+
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Rótulo visual interno da sua organização (ex: Carga, Passageiros, Logística Urbana). Esta configuração não altera as regras do sistema.',
+        ),
+        findsOneWidget,
+        reason: 'The updated helper text must be visible on the screen.',
+      );
+    });
   });
 }

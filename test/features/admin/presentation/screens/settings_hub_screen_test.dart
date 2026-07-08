@@ -14,7 +14,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthState, AuthChangeEvent;
 import 'package:veraprob/application/admin/access_management_service.dart'
-    show TenantPermission, TenantRole;
+    show RoleAssignment, RolePermissionGrant, TenantPermission, TenantRole;
+import 'package:veraprob/application/admin/governance_audit_query_service.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
@@ -22,6 +23,7 @@ import 'package:veraprob/domain/admin/organization.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
+import 'package:veraprob/features/admin/presentation/screens/governance_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';
@@ -77,8 +79,14 @@ Widget _wrap(Widget child, {Set<String> perms = const <String>{}}) {
       orgInvitationsProvider.overrideWith((ref) => []),
       // Keep the Access tab hermetic when it mounts (revoke case) — no Supabase.
       tenantRolesProvider.overrideWith((ref) async => const <TenantRole>[]),
+      activeRoleAssignmentsProvider.overrideWith(
+        (ref) async => const <RoleAssignment>[],
+      ),
       permissionDictionaryProvider.overrideWith(
         (ref) async => const <TenantPermission>[],
+      ),
+      governanceAuditLogProvider.overrideWith(
+        (ref, category) async => const <GovernanceAuditEntry>[],
       ),
     ],
     child: MaterialApp(home: child),
@@ -94,6 +102,71 @@ void main() {
     expect(find.text('CONFIGURAÇÕES DO SISTEMA'), findsOneWidget);
   });
 
+  testWidgets(
+    'Geral: sem perfil tenant atribuído, o rótulo usa o fallback coarse',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+      await tester.pumpAndSettle();
+
+      // _wrap fixa currentUserRoleProvider em UserRole.admin e não atribui
+      // nenhum tenant role a op-123 → cai no coarseLabel 'Administrador'.
+      expect(find.textContaining('(Administrador)'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'Geral: usuário com perfil Validador mostra "(Validador)" em vez do coarse',
+    (tester) async {
+      const validador = TenantRole(
+        id: 'role-validador',
+        name: 'Validador',
+        description: null,
+        isSystem: false,
+        grants: [RolePermissionGrant(permissionKey: 'contracts:read')],
+      );
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
+            permissionServiceProvider.overrideWith(
+              (ref) => const PermissionService(
+                permissions: <String>{},
+                scopes: <String, Set<String>>{},
+              ),
+            ),
+            authStateProvider.overrideWith(
+              (ref) =>
+                  Stream.value(const AuthState(AuthChangeEvent.signedIn, null)),
+            ),
+            currentOperatorNameProvider.overrideWith((ref) => 'Operador Teste'),
+            currentOperatorIdProvider.overrideWith((ref) => 'op-123'),
+            orgSettingsProvider.overrideWith((ref) => null),
+            orgMembersProvider.overrideWith((ref) => const <OrgMember>[]),
+            orgInvitationsProvider.overrideWith((ref) => const []),
+            tenantRolesProvider.overrideWith((ref) async => const [validador]),
+            activeRoleAssignmentsProvider.overrideWith(
+              (ref) async => const [
+                RoleAssignment(
+                  userId: 'op-123',
+                  roleId: 'role-validador',
+                  validUntilUtc: null,
+                ),
+              ],
+            ),
+            permissionDictionaryProvider.overrideWith(
+              (ref) async => const <TenantPermission>[],
+            ),
+          ],
+          child: const MaterialApp(home: SettingsHubScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('(Validador)'), findsOneWidget);
+      expect(find.textContaining('(Administrador)'), findsNothing);
+    },
+  );
+
   testWidgets('initialTab users abre na aba Equipe', (tester) async {
     await tester.pumpWidget(
       _wrap(const SettingsHubScreen(initialTab: 'users')),
@@ -105,7 +178,9 @@ void main() {
   });
 
   testWidgets('initialTab org abre na aba Organização', (tester) async {
-    await tester.pumpWidget(_wrap(const SettingsHubScreen(initialTab: 'org')));
+    await tester.pumpWidget(
+      _wrap(const SettingsHubScreen(initialTab: 'org'), perms: {'org:manage'}),
+    );
     await tester.pumpAndSettle();
 
     expect(find.byType(OrgSettingsTab), findsOneWidget);
@@ -129,7 +204,9 @@ void main() {
   });
 
   testWidgets('tap na aba Equipe monta a gestão de usuários', (tester) async {
-    await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+    await tester.pumpWidget(
+      _wrap(const SettingsHubScreen(), perms: {'users:manage'}),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Equipe'));
@@ -150,7 +227,7 @@ void main() {
     final container = ProviderScope.containerOf(
       tester.element(find.byType(SettingsHubScreen)),
     );
-    container.read(_testPerms.notifier).state = {'roles:manage'};
+    container.read(_testPerms.notifier).state = {'roles:read'};
     await tester.pumpAndSettle();
 
     expect(find.text('Acessos'), findsOneWidget);
@@ -182,6 +259,36 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('grant vivo de roles:read revela também a aba Histórico', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const SettingsHubScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('Histórico'), findsNothing);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsHubScreen)),
+    );
+    container.read(_testPerms.notifier).state = {'roles:read'};
+    await tester.pumpAndSettle();
+
+    expect(find.text('Acessos'), findsOneWidget);
+    expect(find.text('Histórico'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('initialTab history abre na aba Histórico', (tester) async {
+    await tester.pumpWidget(
+      _wrap(
+        const SettingsHubScreen(initialTab: 'history'),
+        perms: const {'roles:read'},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GovernanceAuditScreen), findsOneWidget);
+  });
 
   testWidgets(
     'deep link ?tab=access sem roles:manage cai silenciosamente na aba Geral',
