@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -70,14 +69,11 @@ void main() {
   }
 
   group('happy path', () {
-    testWidgets('renders title, version chip, body, and changelog', (
-      tester,
-    ) async {
+    testWidgets('renders title, body, and changelog', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Termos de Uso'), findsWidgets);
-      expect(find.textContaining('Versão 1.0'), findsOneWidget);
       expect(find.textContaining('Corpo dos termos LGPD'), findsOneWidget);
       expect(find.text('O que mudou nesta versão'), findsOneWidget);
       expect(
@@ -162,7 +158,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Recusar'));
+      await tester.tap(find.widgetWithText(TextButton, 'Recusar'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Cancelar'));
       await tester.pumpAndSettle();
@@ -178,7 +174,7 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Recusar'));
+      await tester.tap(find.widgetWithText(TextButton, 'Recusar'));
       await tester.pumpAndSettle();
       expect(find.text('Recusar e sair'), findsOneWidget);
       await tester.tap(find.text('Recusar e sair'));
@@ -197,44 +193,14 @@ void main() {
       expect(find.textContaining('13.709'), findsOneWidget);
     });
 
-    testWidgets('SHA chip tooltip exposes full 64-char hash (F-08)', (
+    testWidgets('header omits SHA chip to reduce cognitive load', (
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      final tooltip = tester.widget<Tooltip>(
-        find.ancestor(
-          of: find.textContaining('SHA '),
-          matching: find.byType(Tooltip),
-        ),
-      );
-      expect(tooltip.message, 'b' * 64);
-      expect(tooltip.message!.length, 64);
-    });
-
-    testWidgets('Baixar / copiar shows domain SnackBar (F-08)', (tester) async {
-      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-        SystemChannels.platform,
-        (message) async {
-          if (message.method == 'Clipboard.setData') return null;
-          return null;
-        },
-      );
-      addTearDown(() {
-        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
-          SystemChannels.platform,
-          null,
-        );
-      });
-
-      await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Baixar / copiar'));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Texto dos termos copiado'), findsOneWidget);
+      expect(find.textContaining('SHA '), findsNothing);
+      expect(find.byType(Tooltip), findsNothing);
     });
 
     testWidgets('first-time pending hides changelog callout', (tester) async {

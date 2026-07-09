@@ -45,11 +45,13 @@ SELECT is(
       AND status = 'published' AND active_to_utc IS NULL),
   1, 'SEED2: telegram_bot_terms 1.0 published and active');
 
-SELECT ok(
-  (SELECT content_sha256 ~ '^[a-f0-9]{64}$'
+SELECT is(
+  (SELECT content_sha256 FROM public.legal_documents
+    WHERE doc_type = 'terms_of_use' AND version = '1.0'),
+  (SELECT encode(extensions.digest(body_markdown, 'sha256'), 'hex')
      FROM public.legal_documents
     WHERE doc_type = 'terms_of_use' AND version = '1.0'),
-  'SEED3: terms content_sha256 is 64-hex (Art. 8 proof material)');
+  'SEED3: terms content_sha256 matches body digest (Art. 8 proof material)');
 
 -- ── Security: draft leak / grants / append-only ──────────────────────────────
 INSERT INTO public.legal_documents (

@@ -766,26 +766,23 @@ BEGIN
   v_terms_body := $md$
 # Termos de Uso e Contrato de Custódia de Dados (LGPD)
 
-## 1. Objeto
-Ao utilizar o VeraProb, você aceita estes Termos de Uso e o contrato de custódia de dados pessoais e operacionais tratados pela plataforma, nos termos da Lei nº 13.709/2018 (LGPD).
+## 1. Papéis e Objeto
+Ao utilizar o VeraProb, você aceita estes Termos e o tratamento de seus dados. A sua Organização atua como **Controladora** dos dados, e a VeraProb atua como **Operadora** (provedora da tecnologia), nos termos da Lei nº 13.709/2018 (LGPD).
 
-## 2. Base legal
-O tratamento de dados de operadores autenticados ocorre como condição de execução do contrato de prestação de serviço de governança forense e proteção SLA/financeira (LGPD Art. 7, II).
+## 2. Base Legal e Finalidade
+O tratamento ocorre para a **Execução de Contrato** (Art. 7, II) de prestação de serviços de governança forense. A finalidade é garantir rastreabilidade, auditoria de SLA e segurança das operações de sua Organização. É vedado o uso de seus dados para finalidades secundárias (como marketing) por parte da VeraProb.
 
-## 3. Dados tratados
-Identificadores de conta, organização, telemetria operacional, evidências forenses, registros de auditoria e metadados técnicos necessários à emissão de vereditos imutáveis.
+## 3. Dados Tratados e Compartilhamento
+Tratamos seus identificadores de acesso (nome, e-mail, perfil) e logs de auditoria de suas ações no sistema. Para garantir a disponibilidade, os dados são armazenados em infraestruturas de nuvem parceiras (Suboperadores), que cumprem rígidos padrões de segurança e criptografia.
 
-## 4. Finalidade
-Proteção SLA/financeira, governança forense, auditoria contratual e defesa de contestação. Sem uso secundário sem nova versão destes termos.
+## 4. Segurança e Retenção
+Seus dados de auditoria são selados criptograficamente (imutáveis). Eles serão retidos pelo período mínimo de 5 (cinco) anos para fins de defesa legal e compliance, ou conforme estipulado pelo contrato de sua Organização.
 
-## 5. Segurança e retenção
-Evidências são seladas (hash) e isoladas por organização. Retenção segue política de ciclo de vida forense aplicável.
+## 5. Seus Direitos
+Você pode solicitar acesso, correção ou anonimização de seus dados contatando o Encarregado de Dados (DPO) da sua Organização ou através do suporte da VeraProb. A recusa deste termo impede o acesso técnico à plataforma.
 
-## 6. Direitos
-Você pode solicitar informações sobre o tratamento e exercer direitos previstos na LGPD junto ao controlador. A recusa destes termos impede o uso do sistema.
-
-## 7. Aceite
-O aceite é registrado de forma append-only com versão e hash do texto vigente (prova de ciência — LGPD Art. 8).
+## 6. Documentação Integral
+Este aviso é um resumo para sua facilidade de leitura. Os limites de responsabilidade, propriedade intelectual e detalhamentos técnicos completos estão regidos pelos nossos [Termos de Serviço Completos e Política de Privacidade Integrais](https://veraprob.dev/legal), aos quais você também declara ciência ao aceitar este termo.
 $md$;
 
   v_bot_body := $md$

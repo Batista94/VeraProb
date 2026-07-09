@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/domain/legal/legal_consent_status.dart'; // pr_scanner: ignore
@@ -132,11 +131,6 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
   }
 
   Widget _buildGate(LegalConsentStatus status, LegalDocument doc) {
-    final dateFmt = DateFormat('dd/MM/yyyy');
-    final published = dateFmt.format(doc.publishedAtUtc.toLocal());
-    final hashShort = doc.contentSha256.length >= 12
-        ? doc.contentSha256.substring(0, 12)
-        : doc.contentSha256;
     final showChangelog =
         status.priorVersion != null &&
         (doc.changelog != null && doc.changelog!.trim().isNotEmpty);
@@ -149,7 +143,7 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               children: [
-                _buildHeader(doc, published, hashShort),
+                _buildHeader(doc),
                 if (showChangelog) ...[
                   const SizedBox(height: 12),
                   _buildChangelogCallout(doc.changelog!),
@@ -166,7 +160,7 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
     );
   }
 
-  Widget _buildHeader(LegalDocument doc, String published, String hashShort) {
+  Widget _buildHeader(LegalDocument doc) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -177,48 +171,6 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             fontWeight: FontWeight.w600,
             color: VeraProbColors.textPrimary,
           ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          children: [
-            Chip(
-              label: Text(
-                'Versão ${doc.version} — publicada em $published',
-                style: const TextStyle(fontSize: 12),
-              ),
-              backgroundColor: VeraProbColors.surfaceElevated,
-              side: BorderSide.none,
-            ),
-            Tooltip(
-              message: doc.contentSha256,
-              child: Chip(
-                label: Text(
-                  'SHA $hashShort…',
-                  style: VeraProbTypography.mono(size: 11),
-                ),
-                backgroundColor: VeraProbColors.surfaceElevated,
-                side: BorderSide.none,
-              ),
-            ),
-            TextButton.icon(
-              onPressed: () async {
-                await Clipboard.setData(ClipboardData(text: doc.bodyMarkdown));
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Texto dos termos copiado para a área de transferência.',
-                    ),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.download_outlined, size: 16),
-              label: const Text('Baixar / copiar'),
-            ),
-          ],
         ),
       ],
     );
@@ -270,12 +222,27 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
       child: Scrollbar(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
-          child: SelectableText(
-            doc.bodyMarkdown,
-            style: const TextStyle(
-              color: VeraProbColors.textPrimary,
-              fontSize: 14,
-              height: 1.5,
+          child: MarkdownBody(
+            data: doc.bodyMarkdown,
+            selectable: true,
+            styleSheet: MarkdownStyleSheet(
+              p: const TextStyle(
+                color: VeraProbColors.textPrimary,
+                fontSize: 14,
+                height: 1.5,
+              ),
+              h1: VeraProbTypography.heading.copyWith(
+                color: VeraProbColors.textPrimary,
+                fontSize: 20,
+              ),
+              h2: VeraProbTypography.heading.copyWith(
+                color: VeraProbColors.textPrimary,
+                fontSize: 18,
+              ),
+              strong: const TextStyle(
+                color: VeraProbColors.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ),
@@ -301,32 +268,30 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             style: TextStyle(color: VeraProbColors.textPrimary, fontSize: 13),
           ),
         ),
-        Row(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: _isSaving ? null : _onDecline,
-                child: const Text('Recusar'),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: VeraProbColors.primary,
+                foregroundColor: VeraProbColors.background,
+                padding: const EdgeInsets.symmetric(vertical: 16),
               ),
+              onPressed: (!_acceptedCheckbox || _isSaving)
+                  ? null
+                  : () => _onAccept(doc),
+              child: _isSaving
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Aceitar'),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: VeraProbColors.primary,
-                  foregroundColor: VeraProbColors.background,
-                ),
-                onPressed: (!_acceptedCheckbox || _isSaving)
-                    ? null
-                    : () => _onAccept(doc),
-                child: _isSaving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Aceitar'),
-              ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _isSaving ? null : _onDecline,
+              child: const Text('Recusar'),
             ),
           ],
         ),
