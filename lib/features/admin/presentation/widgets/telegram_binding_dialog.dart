@@ -321,15 +321,20 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
         ),
         _Step(
           number: '3',
-          text: 'O motorista envia o código de 8 caracteres no chat',
+          text:
+              'O motorista aceita os Termos LGPD no bot (/start) antes de vincular',
         ),
         _Step(
           number: '4',
+          text: 'O motorista envia o código de 8 caracteres no chat',
+        ),
+        _Step(
+          number: '5',
           text: 'Vinculação confirmada — evidências podem ser enviadas',
         ),
         SizedBox(height: 4),
         Text(
-          'O código expira em 15 minutos.',
+          'O código expira em 15 minutos. Sem aceite LGPD no bot, a vinculação é recusada.',
           style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
         ),
       ],

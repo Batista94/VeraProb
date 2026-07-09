@@ -138,13 +138,25 @@ function authHeaders(secret: string): HeadersInit {
 
 // ── Setup helpers ─────────────────────────────────────────────────────────────
 
+/** Seeds CURRENT published telegram_bot_terms consent (version-aware SSOT). */
 async function seedConsent(chatId: bigint): Promise<void> {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
-  const { error } = await admin.from("telegram_user_consents").upsert(
-    { chat_id: Number(chatId), consent_version: "v1_test" },
-    { onConflict: "chat_id,consent_version" },
-  );
+  const { error } = await admin.rpc("accept_telegram_bot_terms", {
+    p_chat_id: Number(chatId),
+  });
   if (error) throw new Error(`seedConsent failed: ${error.message}`);
+}
+
+/** Inserts a stale consent_version that must NOT satisfy has_current_telegram_consent. */
+async function seedStaleConsent(chatId: bigint): Promise<void> {
+  const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+  const { error } = await admin.from("telegram_user_consents").insert({
+    chat_id: Number(chatId),
+    consent_version: "v0_stale_test",
+    action: "accepted",
+    accepted_via: "telegram_callback",
+  });
+  if (error) throw new Error(`seedStaleConsent failed: ${error.message}`);
 }
 
 async function evidenceCountFor(chatId: bigint): Promise<number> {
@@ -397,6 +409,83 @@ Deno.test({
       afterCount,
       beforeCount,
       "LGPD gate must block evidence insertion — row count must not increase",
+    );
+  },
+});
+
+Deno.test({
+  name: "[I01b] LGPD: stale consent_version does NOT unlock evidence (version-aware)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    if (!WEBHOOK_SECRET || !SERVICE_KEY) {
+      console.log("  ⚠ WEBHOOK_SECRET or SERVICE_KEY not set — skipping");
+      return;
+    }
+
+    const chatId = -9999990011n;
+    await seedStaleConsent(chatId);
+    const beforeCount = await evidenceCountFor(chatId);
+
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: authHeaders(WEBHOOK_SECRET),
+      body: JSON.stringify(photoPayload(chatId, Math.floor(Date.now() / 1000))),
+    });
+    assertEquals(res.status, 200);
+    await res.body?.cancel();
+
+    const afterCount = await evidenceCountFor(chatId);
+    assertEquals(
+      afterCount,
+      beforeCount,
+      "stale consent_version must not unlock evidence uploads",
+    );
+  },
+});
+
+Deno.test({
+  name: "[I01c] LGPD: binding code without current consent → no chat_bindings row",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    if (!WEBHOOK_SECRET || !SERVICE_KEY) {
+      console.log("  ⚠ WEBHOOK_SECRET or SERVICE_KEY not set — skipping");
+      return;
+    }
+
+    const chatId = -9999990012n;
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { count: before } = await admin
+      .from("telegram_chat_bindings")
+      .select("id", { count: "exact", head: true })
+      .eq("chat_id", Number(chatId));
+
+    // 8-char Crockford code — RPC/webhook must reject before creating binding.
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: authHeaders(WEBHOOK_SECRET),
+      body: JSON.stringify({
+        update_id: 910012,
+        message: {
+          message_id: 1,
+          date: Math.floor(Date.now() / 1000),
+          chat: { id: Number(chatId), type: "private" },
+          text: "ABCD2345",
+        },
+      }),
+    });
+    assertEquals(res.status, 200);
+    await res.body?.cancel();
+
+    const { count: after } = await admin
+      .from("telegram_chat_bindings")
+      .select("id", { count: "exact", head: true })
+      .eq("chat_id", Number(chatId));
+    assertEquals(
+      after ?? 0,
+      before ?? 0,
+      "consent-before-binding: no binding row without current LGPD consent",
     );
   },
 });

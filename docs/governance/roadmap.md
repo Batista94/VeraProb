@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · [NEXT: trilha de notificação Resend na resolução]
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · [NEXT: Legal Gate & Terms of Use (LGPD)]
 
 ---
 
@@ -32,7 +32,7 @@
 
 ### Phase 10.7 — Enterprise Integration & Event Dispatch (Pendente)
 
-- [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
+- [x] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) para disparo de breach e Edge fn `dispatch-carrier-notifications` integrada ao Resend para notificações automáticas na resolução do veredicto (via `carrier_notification_outbox` e portal da disputa) entregues e testadas.
 - [ ] **[BIZ] Data Extract & Reporting API:** Criação de endpoints de exportação de dados agregados (CSV/JSON) e chaves de API Read-Only para que o C-Level do cliente possa conectar seus painéis do PowerBI diretamente às Views de ROI (`v_roi_summary`) e `contractual_financial_snapshot`.
 
 ### Phase 10.8 — Shadow Processing & ROI Proving

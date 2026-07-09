@@ -13,7 +13,13 @@
  */
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { checkConsent } from "../shared/consent_middleware.ts";
+import {
+  acceptTelegramTerms,
+  checkConsent,
+  formatTermsForTelegram,
+  getActiveTelegramTerms,
+  withdrawTelegramConsent,
+} from "../shared/consent_middleware.ts";
 import { extractExifMetadata } from "../shared/exif_extractor.ts";
 import { validateImageQuality, type QualityWarning } from "../shared/image_quality_validator.ts";
 import { formatStatusMessage, formatFinishWarning, type ComplianceRpcResult } from "../shared/compliance_formatter.ts";
@@ -221,20 +227,6 @@ async function insertAuditLedger(
   }
 }
 
-const LGPD_TERMS = `
-⚖️ <b>Termos de Uso e Privacidade (LGPD)</b>
-
-Ao utilizar o VeraProb Evidence Bot, você concorda que:
-
-1. <b>Coleta de Dados:</b> Coletamos seu ID de chat do Telegram, fotos, vídeos e documentos enviados, além de metadados técnicos (como data/hora do dispositivo e localização GPS se presente no arquivo).
-2. <b>Finalidade:</b> Estes dados são utilizados exclusivamente para a geração de <b>evidências forenses</b> em operações logísticas, servindo como prova de execução e conformidade.
-3. <b>Segurança:</b> Suas evidências são seladas com hash SHA-256 e armazenadas em ambiente seguro com isolamento por organização.
-4. <b>Compartilhamento:</b> Seus dados serão visíveis apenas para os supervisores e administradores da sua organização no painel VeraProb.
-5. <b>Retenção:</b> As evidências são mantidas pelo período necessário para auditoria contratual e conformidade legal.
-
-Você pode revogar este consentimento a qualquer momento entrando em contato com seu supervisor, porém isso impedirá o envio de novas evidências pelo bot.
-`.trim();
-
 // ── Self-Link Constants ─────────────────────────────────────────────────────────
 
 const SHORT_ID_CHARSET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // Crockford base32
@@ -292,26 +284,47 @@ Deno.serve(async (req: Request): Promise<Response> => {
     try {
       if (cb.data === "view_terms") {
         await answerCallbackQuery(botToken, cb.id);
-        await sendMessageWithKeyboard(botToken, cbChatId, LGPD_TERMS, [
-          [{ text: "✅ Aceitar e Continuar", callback_data: "accept_consent_v1" }]
-        ]);
-      } 
-      else if (cb.data === "accept_consent_v1") {
-        await supabase.from("telegram_user_consents").upsert(
-          { chat_id: cbChatId, consent_version: "v1" },
-          { onConflict: "chat_id,consent_version" },
-        );
-        
-        const binding = await getActiveBinding(supabase, cbChatId);
-        await answerCallbackQuery(botToken, cb.id, "✅ Termos aceitos!");
-        
-        const text = binding
-          ? "✅ <b>Termos aceitos!</b>\n\nSua conta já está vinculada. Você já pode enviar fotos ou documentos como evidência forense."
-          : "✅ <b>Termos aceitos!</b>\n\nAgora só falta o <b>passo 2</b>: Envie o código de 8 caracteres gerado no aplicativo para vincular sua conta.";
-        
-        await sendMessageWithKeyboard(botToken, cbChatId, text, [[{ text: "❓ Ajuda", callback_data: "help" }]]);
-      } 
-      else if (cb.data === "help") {
+        const terms = await getActiveTelegramTerms(supabase);
+        if (!terms) {
+          await sendMessageWithKeyboard(
+            botToken,
+            cbChatId,
+            "Termos indisponíveis no momento. Tente novamente em instantes.",
+          );
+        } else {
+          // Accept only after terms were displayed (Art. 8 §1 — informed).
+          await sendMessageWithKeyboard(
+            botToken,
+            cbChatId,
+            formatTermsForTelegram(terms),
+            [[{
+              text: "✅ Aceitar e Continuar",
+              callback_data: `accept_consent:${terms.id}`,
+            }]],
+          );
+        }
+      } else if (cb.data?.startsWith("accept_consent:")) {
+        const documentId = cb.data.slice("accept_consent:".length);
+        const ok = await acceptTelegramTerms(supabase, cbChatId, documentId);
+        if (!ok) {
+          await answerCallbackQuery(botToken, cb.id, "Não foi possível registrar o aceite.");
+          await sendMessageWithKeyboard(
+            botToken,
+            cbChatId,
+            "Não foi possível registrar seu aceite. Envie /start e leia os termos novamente.",
+            [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
+          );
+        } else {
+          const binding = await getActiveBinding(supabase, cbChatId);
+          await answerCallbackQuery(botToken, cb.id, "✅ Termos aceitos!");
+          const text = binding
+            ? "✅ <b>Termos aceitos!</b>\n\nSua conta já está vinculada. Você já pode enviar fotos ou documentos como evidência forense."
+            : "✅ <b>Termos aceitos!</b>\n\nAgora só falta o <b>passo 2</b>: Envie o código de 8 caracteres gerado no aplicativo para vincular sua conta.";
+          await sendMessageWithKeyboard(botToken, cbChatId, text, [
+            [{ text: "❓ Ajuda", callback_data: "help" }],
+          ]);
+        }
+      } else if (cb.data === "help") {
         await answerCallbackQuery(botToken, cb.id);
         await sendHelpMessage(botToken, cbChatId);
       }
@@ -702,6 +715,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return new Response("OK", { status: 200 });
   }
 
+  // ── 4a. /revoke — LGPD Art. 8 §5 withdrawal ───────────────────────────────
+  if (message.text?.startsWith("/revoke")) {
+    const revoked = await withdrawTelegramConsent(supabase, chatId);
+    if (revoked) {
+      await sendMessageWithKeyboard(
+        botToken,
+        chatId,
+        "✅ Consentimento revogado.\n\n" +
+          "Seu chat foi desvinculado e o envio de novas evidências está bloqueado.\n" +
+          "Para voltar a operar, envie /start e aceite os termos novamente.",
+        [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
+      );
+    } else {
+      await sendMessageWithKeyboard(
+        botToken,
+        chatId,
+        "Não há consentimento ativo para revogar, ou a operação falhou. Envie /start.",
+      );
+    }
+    return new Response("OK", { status: 200 });
+  }
+
   // ── 4b. /audio command — voice evidence compliance guide ──────────────────
   if (message.text?.startsWith("/audio")) {
     await sendMessageWithKeyboard(
@@ -753,6 +788,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     if (/^[ABCDEFGHJKMNPQRSTUVWXYZ23456789]{8}$/.test(code)) {
       try {
+        // LGPD: consent-before-binding (defense in depth; RPC also enforces)
+        const hasConsent = await checkConsent(supabase, chatId);
+        if (!hasConsent) {
+          await sendMessageWithKeyboard(
+            botToken,
+            chatId,
+            "⚠️ <b>LGPD:</b> Aceite os Termos de Uso antes de vincular sua conta.\n\n" +
+              "Clique abaixo para ler e aceitar:",
+            [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
+          );
+          return new Response("OK", { status: 200 });
+        }
+
         const { data, error } = await supabase.rpc(
           "consume_telegram_binding_token",
           { p_code: code, p_chat_id: chatId },
@@ -760,7 +808,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
         if (error) {
           const msg = error.message ?? "";
-          if (msg.includes("expired")) {
+          if (msg.includes("LGPD consent") || msg.includes("consent required")) {
+            await sendMessageWithKeyboard(
+              botToken,
+              chatId,
+              "⚠️ Aceite os Termos de Uso antes de vincular.",
+              [[{ text: "📋 Ler Termos de Uso (LGPD)", callback_data: "view_terms" }]],
+            );
+          } else if (msg.includes("expired")) {
             await sendMessageWithKeyboard(botToken, chatId,
               "Código expirado. Solicite um novo código no aplicativo VeraProb.",
               [[{ text: "❓ Ajuda", callback_data: "help" }]]);
@@ -777,20 +832,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
             await sendMessageWithKeyboard(botToken, chatId, "Erro ao processar o código. Tente novamente.");
           }
         } else if (data && (data as unknown[]).length > 0) {
-          const hasConsent = await checkConsent(supabase, chatId);
-          if (hasConsent) {
-            await sendMessageWithKeyboard(
-              botToken, chatId,
-              "✅ Vinculação realizada com sucesso!\nAgora você pode enviar fotos ou documentos como evidência forense.",
-              [[{ text: "❓ Ajuda", callback_data: "help" }]],
-            );
-          } else {
-            await sendMessageWithKeyboard(
-              botToken, chatId,
-              "✅ Vinculação realizada com sucesso!\n\n⚠️ <b>Atenção:</b> Para começar a enviar evidências, você ainda precisa aceitar os Termos de Uso.\n\nEnvie /start para visualizar e aceitar os termos.",
-              [[{ text: "📋 Ver Termos", callback_data: "accept_consent_v1" }]],
-            );
-          }
+          await sendMessageWithKeyboard(
+            botToken,
+            chatId,
+            "✅ Vinculação realizada com sucesso!\nAgora você pode enviar fotos ou documentos como evidência forense.",
+            [[{ text: "❓ Ajuda", callback_data: "help" }]],
+          );
         }
       } catch (e) {
         console.error(`[telegram-webhook] bind error correlationId=${correlationId}:`, e);
@@ -1260,6 +1307,7 @@ async function sendHelpMessage(botToken: string, chatId: number): Promise<void> 
     "• Após cumprir ambos, anexe fotos, documentos ou áudios para registro.\n" +
     "• Cada envio gera um recibo forense com <b>assinatura digital única</b>.\n" +
     "• Envie /audio para instruções sobre depoimentos de voz.\n" +
+    "• Envie /revoke para revogar o consentimento LGPD (desvincula o chat).\n" +
     "• Dúvidas? Contate seu supervisor operacional.",
   );
 }

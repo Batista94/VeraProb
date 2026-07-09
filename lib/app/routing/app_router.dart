@@ -11,6 +11,7 @@ import 'package:supabase_flutter/supabase_flutter.dart'
     show AuthResponse, AuthState, SupabaseClient;
 
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/legal_gate_redirect.dart';
 import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/app/routing/routing_utils.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
@@ -20,8 +21,12 @@ import 'package:veraprob/features/admin/presentation/screens/accept_invite_scree
 import 'package:veraprob/features/admin/presentation/screens/driver_justification_page.dart';
 import 'package:veraprob/features/admin/presentation/screens/review_contract_screen.dart';
 import 'package:veraprob/features/dispute_portal/presentation/dispute_portal_page.dart';
+import 'package:veraprob/features/shared/presentation/legal_consent_screen.dart';
 import 'package:veraprob/features/shared/widgets/error_boundary.dart';
+import 'package:veraprob/core/utils/jwt_utils.dart';
+import 'package:veraprob/infrastructure/config/environment.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
+import 'package:veraprob/state/providers/legal_consent_providers.dart';
 
 // ── Admin branch screens (order MUST match AdminNav) ──────────
 import 'package:veraprob/features/admin/presentation/dashboard_screen.dart';
@@ -45,7 +50,6 @@ import 'package:veraprob/features/admin/presentation/screens/evidence_reconcilia
 import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/ingestion_health_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/webhook_management_screen.dart';
-import 'package:veraprob/core/utils/jwt_utils.dart';
 
 // ── Super-admin shell + branch screens ──
 import 'package:veraprob/features/super_admin/presentation/super_admin_shell.dart';
@@ -93,8 +97,16 @@ StatefulShellBranch _adminBranch(AdminNav nav, Widget screen) {
 /// only bounces unauthenticated access on protected routes.
 final appRouterProvider = Provider<GoRouter>((ref) {
   final client = ref.watch(supabaseClientProvider);
-  final refresh = AuthRefreshNotifier(client.auth.onAuthStateChange);
-  ref.onDispose(refresh.dispose);
+  final authRefresh = AuthRefreshNotifier(client.auth.onAuthStateChange);
+  final consentRefresh = ref.watch(consentRefreshNotifierProvider);
+  final refresh = Listenable.merge([authRefresh, consentRefresh]);
+  ref.onDispose(authRefresh.dispose);
+
+  // When consent status resolves (or changes), re-run redirect so pending
+  // users are ejected without waiting for another navigation.
+  ref.listen(legalConsentStatusProvider, (_, _) {
+    consentRefresh.refresh();
+  });
 
   // Frente 4: If the session is expired but has a refresh token, proactively
   // trigger a background refresh. Supabase will emit SIGNED_OUT via
@@ -179,6 +191,24 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       // destination is owned by AdminLockScreen._routeAfterAuth (async MFA
       // gating for super-admins).
       if (!hasSession && !isPublic) return AppRoutes.login;
+
+      // LGPD Legal Gate (defense-in-depth). Primary async gate lives in
+      // AdminLockScreen._routeAfterAuth. Decision SSOT: [legalGateRedirect].
+      if (hasSession) {
+        final claims = decodeJwtPayload(session.accessToken);
+        final meta = claims['app_metadata'] as Map<String, dynamic>?;
+        final rawSa = meta?['super_admin'];
+        final isSuperAdmin = rawSa == true || rawSa?.toString() == 'true';
+        final consent = ref.read(legalConsentStatusProvider).asData?.value;
+        final legalRedirect = legalGateRedirect(
+          hasSession: true,
+          isSuperAdmin: isSuperAdmin,
+          skipLgpd: EnvironmentConfig.skipLgpdConsentDev,
+          path: path,
+          consent: consent,
+        );
+        if (legalRedirect != null) return legalRedirect;
+      }
 
       // The super-admin portal is a branched shell; `/super-admin` itself is not
       // a branch. Forward the legacy entry point (and any bookmark) onto the
@@ -316,6 +346,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           _adminBranch(AdminNav.evidence, const EvidenceReconciliationScreen()),
           _adminBranch(AdminNav.webhooks, const WebhookManagementScreen()),
         ],
+      ),
+
+      // ── LGPD Legal Gate (standalone — outside admin/super-admin shells) ──
+      GoRoute(
+        path: AppRoutes.legalConsent,
+        builder: (context, state) =>
+            const ErrorBoundary(child: LegalConsentScreen()),
       ),
 
       // ── Super-admin MFA gates (standalone — outside the guarded shell) ──

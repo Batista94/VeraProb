@@ -2246,6 +2246,48 @@ export type Database = {
           },
         ];
       };
+      legal_documents: {
+        Row: {
+          active_to_utc: string | null;
+          body_markdown: string;
+          changelog: string | null;
+          content_sha256: string;
+          created_at_utc: string;
+          doc_type: string;
+          id: string;
+          published_at_utc: string | null;
+          status: string;
+          title: string;
+          version: string;
+        };
+        Insert: {
+          active_to_utc?: string | null;
+          body_markdown: string;
+          changelog?: string | null;
+          content_sha256: string;
+          created_at_utc?: string;
+          doc_type: string;
+          id?: string;
+          published_at_utc?: string | null;
+          status?: string;
+          title: string;
+          version: string;
+        };
+        Update: {
+          active_to_utc?: string | null;
+          body_markdown?: string;
+          changelog?: string | null;
+          content_sha256?: string;
+          created_at_utc?: string;
+          doc_type?: string;
+          id?: string;
+          published_at_utc?: string | null;
+          status?: string;
+          title?: string;
+          version?: string;
+        };
+        Relationships: [];
+      };
       operational_alerts: {
         Row: {
           acknowledged_at_utc: string | null;
@@ -4648,29 +4690,76 @@ export type Database = {
       telegram_user_consents: {
         Row: {
           accepted_at_utc: string;
+          accepted_via: string | null;
+          action: string;
           chat_id: number;
           consent_version: string;
           created_at_utc: string;
+          document_content_sha256: string | null;
+          document_id: string | null;
+          driver_id: string | null;
           id: string;
           ip_hash: string | null;
+          organization_id: string | null;
         };
         Insert: {
           accepted_at_utc?: string;
+          accepted_via?: string | null;
+          action?: string;
           chat_id: number;
           consent_version?: string;
           created_at_utc?: string;
+          document_content_sha256?: string | null;
+          document_id?: string | null;
+          driver_id?: string | null;
           id?: string;
           ip_hash?: string | null;
+          organization_id?: string | null;
         };
         Update: {
           accepted_at_utc?: string;
+          accepted_via?: string | null;
+          action?: string;
           chat_id?: number;
           consent_version?: string;
           created_at_utc?: string;
+          document_content_sha256?: string | null;
+          document_id?: string | null;
+          driver_id?: string | null;
           id?: string;
           ip_hash?: string | null;
+          organization_id?: string | null;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "telegram_user_consents_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "telegram_user_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "telegram_user_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "telegram_user_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       tenant_billing_events: {
         Row: {
@@ -4959,6 +5048,74 @@ export type Database = {
             columns: ["route_id"];
             isOneToOne: false;
             referencedRelation: "routes";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user_legal_consents: {
+        Row: {
+          action: string;
+          consented_at_utc: string;
+          document_content_sha256: string;
+          document_id: string;
+          document_version: string;
+          id: string;
+          ip_address: unknown;
+          organization_id: string | null;
+          user_agent: string | null;
+          user_id: string;
+        };
+        Insert: {
+          action: string;
+          consented_at_utc?: string;
+          document_content_sha256: string;
+          document_id: string;
+          document_version: string;
+          id?: string;
+          ip_address?: unknown;
+          organization_id?: string | null;
+          user_agent?: string | null;
+          user_id: string;
+        };
+        Update: {
+          action?: string;
+          consented_at_utc?: string;
+          document_content_sha256?: string;
+          document_id?: string;
+          document_version?: string;
+          id?: string;
+          ip_address?: unknown;
+          organization_id?: string | null;
+          user_agent?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_legal_consents_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "legal_documents";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_legal_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "organizations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_legal_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_health_view";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "user_legal_consents_organization_id_fkey";
+            columns: ["organization_id"];
+            isOneToOne: false;
+            referencedRelation: "super_admin_tenant_technical_health_view";
             referencedColumns: ["id"];
           },
         ];
@@ -5872,6 +6029,16 @@ export type Database = {
         Args: { p_token: string; p_user_id: string };
         Returns: undefined;
       };
+      accept_legal_terms: { Args: { p_document_id: string }; Returns: string };
+      accept_telegram_bot_terms: {
+        Args: {
+          p_chat_id: number;
+          p_document_id?: string;
+          p_driver_id?: string;
+          p_organization_id?: string;
+        };
+        Returns: string;
+      };
       acknowledge_sanction_internal: {
         Args: {
           p_acknowledged_by: string;
@@ -6349,6 +6516,7 @@ export type Database = {
         Returns: boolean;
       };
       geomfromewkt: { Args: { "": string }; Returns: unknown };
+      get_active_telegram_bot_terms: { Args: never; Returns: Json };
       get_auth_role: { Args: never; Returns: string };
       get_batch_compliance_status: {
         Args: { p_org_id: string; p_set_ids: string[] };
@@ -6429,6 +6597,7 @@ export type Database = {
           window_start_utc: string;
         }[];
       };
+      get_legal_consent_status: { Args: never; Returns: Json };
       get_missed_facts: {
         Args: { p_after_utc: string; p_limit?: number; p_org_id: string };
         Returns: {
@@ -6479,6 +6648,14 @@ export type Database = {
         Returns: Json;
       };
       gettransactionid: { Args: never; Returns: unknown };
+      has_current_legal_consent: {
+        Args: { p_user_id?: string };
+        Returns: boolean;
+      };
+      has_current_telegram_consent: {
+        Args: { p_chat_id: number };
+        Returns: boolean;
+      };
       has_permission: { Args: { perm: string }; Returns: boolean };
       has_permission_on: {
         Args: { perm: string; resource_id: string };
@@ -6598,6 +6775,16 @@ export type Database = {
           p_org_id: string;
         };
         Returns: Json;
+      };
+      publish_legal_document: {
+        Args: {
+          p_body_markdown: string;
+          p_changelog?: string;
+          p_doc_type: string;
+          p_title: string;
+          p_version: string;
+        };
+        Returns: string;
       };
       reactivate_member: {
         Args: { p_target_user_id: string };
@@ -7622,6 +7809,11 @@ export type Database = {
         Returns: undefined;
       };
       webhook_manual_replay: { Args: { p_log_id: string }; Returns: undefined };
+      withdraw_legal_consent: { Args: never; Returns: string };
+      withdraw_telegram_bot_consent: {
+        Args: { p_chat_id: number };
+        Returns: string;
+      };
     };
     Enums: {
       sla_rule_type:

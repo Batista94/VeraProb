@@ -120,6 +120,7 @@ test-db: ## [INV-28] Executa testes forenses de integridade no PostgreSQL (pgTap
 test-e2e: .local_deps_synced ## [E2E] Executa testes E2E SuperAdmin (auto-aplica dart-defines; ver .claude/rules/ci-blocks.md #8)
 	flutter test test/integration/e2e/ -j 1 \
 		--dart-define=SKIP_MFA_DEV=true \
+		--dart-define=SKIP_LGPD_CONSENT_DEV=true \
 		--dart-define=ENV=dev \
 		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
 		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
@@ -130,6 +131,7 @@ ifndef FILE
 endif
 	flutter test $(FILE) \
 		--dart-define=SKIP_MFA_DEV=true \
+		--dart-define=SKIP_LGPD_CONSENT_DEV=true \
 		--dart-define=ENV=dev \
 		--dart-define=SUPABASE_URL=$(SUPABASE_URL) \
 		--dart-define=SUPABASE_KEY=$(SUPABASE_SERVICE_ROLE_KEY)
