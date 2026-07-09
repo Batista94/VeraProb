@@ -510,6 +510,36 @@ class PostgresTestConfig {
     }
   }
 
+  // ── Contract seed helpers ─────────────────────────────────────────────────
+
+  /// Seeds a minimal [contracts] row, bypassing RLS via service_role.
+  ///
+  /// Returns the contract UUID. [monthly_penalty_cap_cents] is intentionally
+  /// left NULL so the financial guard's early-return fires (no cap logic),
+  /// matching the original concurrency-test intent.
+  static Future<String> seedContract({
+    required String orgId,
+    String? id,
+  }) async {
+    const uuid = Uuid();
+    final contractId = id ?? uuid.v4();
+    final seedClient = SupabaseClient(supabaseUrl, serviceRoleKey);
+    final now = DateTime.now().toUtc();
+    try {
+      await seedClient.from('contracts').insert({
+        'id': contractId,
+        'organization_id': orgId,
+        'name': 'Test Contract',
+        'contractor_name': 'Test Contractor',
+        'valid_from_utc': now.toIso8601String(),
+        'valid_until_utc': now.add(const Duration(days: 365)).toIso8601String(),
+      });
+    } finally {
+      await seedClient.dispose();
+    }
+    return contractId;
+  }
+
   // ── Shared utilities ──────────────────────────────────────────────────────
 
   /// Generates a deterministic 64-char hex SHA-256-like string for testing.

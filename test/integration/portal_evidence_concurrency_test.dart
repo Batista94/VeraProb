@@ -29,6 +29,7 @@ Future<({String queueId, String setId, String contractId})> _disputedQueue(
 ) async {
   final setId = _uuid.v4();
   final contractId = _uuid.v4();
+  await PostgresTestConfig.seedContract(orgId: _orgId, id: contractId);
   final evidence = {
     'clause_ref': 'rule-portal-conc',
     'rule_id': 'rule-portal-conc',
