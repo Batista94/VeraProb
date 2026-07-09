@@ -21,28 +21,21 @@ class LegalConsentScreen extends ConsumerStatefulWidget {
 class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
   bool _acceptedCheckbox = false;
   bool _isSaving = false;
-  String? _error;
 
   Future<void> _onAccept(LegalDocument doc) async {
     if (_isSaving || !_acceptedCheckbox) return;
-    setState(() {
-      _isSaving = true;
-      _error = null;
-    });
+    setState(() => _isSaving = true);
 
     // WASM-CONTEXT-LEAK: capture messenger before await.
     final messenger = ScaffoldMessenger.of(context);
 
     try {
       await ref.read(legalConsentRepositoryProvider).acceptTerms(doc.id);
+      // Invalidation rebuilds status → app_router listen → ConsentRefreshNotifier.
       ref.invalidate(legalConsentStatusProvider);
-      ref.read(consentRefreshNotifierProvider).refresh();
     } catch (_) {
       if (!mounted) return;
-      setState(() {
-        _error = 'Não foi possível registrar seu aceite. Tente novamente.';
-        _isSaving = false;
-      });
+      setState(() => _isSaving = false);
       messenger.showSnackBar(
         const SnackBar(
           content: Text(
@@ -308,13 +301,6 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             style: TextStyle(color: VeraProbColors.textPrimary, fontSize: 13),
           ),
         ),
-        if (_error != null) ...[
-          Text(
-            _error!,
-            style: const TextStyle(color: VeraProbColors.error, fontSize: 13),
-          ),
-          const SizedBox(height: 8),
-        ],
         Row(
           children: [
             Expanded(

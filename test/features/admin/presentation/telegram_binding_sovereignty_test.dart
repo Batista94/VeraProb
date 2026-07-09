@@ -21,6 +21,14 @@ class _ErrorTelegramNotifier extends TelegramBindingNotifier {
       const AsyncError('network-fail', StackTrace.empty);
 }
 
+/// Idle state (no token yet) so LGPD instructions are visible (A-01).
+class _IdleTelegramNotifier extends TelegramBindingNotifier {
+  _IdleTelegramNotifier() : super('fake');
+
+  @override
+  AsyncValue<TelegramBindingToken?> build() => const AsyncData(null);
+}
+
 void main() {
   group('TelegramBindingDialog.assertOrgIdMatch (INV-1)', () {
     test('passes when widget org_id matches JWT org_id', () {
@@ -132,6 +140,40 @@ void main() {
       );
       // Raw exception never surfaced.
       expect(find.textContaining('network-fail'), findsNothing);
+    });
+  });
+
+  group('TelegramBindingDialog LGPD disclosure (A-01)', () {
+    testWidgets('instructions require LGPD accept via /start before bind', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            telegramBindingNotifierProvider(
+              'driver-1',
+            ).overrideWith(_IdleTelegramNotifier.new),
+            driverHasActiveTelegramBindingProvider.overrideWith(
+              (ref, _) async => false,
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: TelegramBindingDialog(
+                driverId: 'driver-1',
+                driverName: 'Motorista Teste',
+                organizationId: 'org-1',
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Termos LGPD'), findsWidgets);
+      expect(find.textContaining('/start'), findsOneWidget);
+      expect(find.textContaining('15 minutos'), findsOneWidget);
+      expect(find.textContaining('vinculação é recusada'), findsOneWidget);
     });
   });
 }

@@ -12,14 +12,14 @@ Prove happy path, adverse, and information-security behaviour for dual LGPD
 capture surfaces (Flutter `auth.users` + Telegram `chat_id`). No pass-only
 workarounds: every assertion maps to a real failure mode (INV-2/3/22/26, Art. 8).
 
-## Test Scenarios (45 assertions)
+## Test Scenarios (48 assertions)
 
 | Group | Coverage |
 |-------|----------|
 | Structure / Seed | tables exist; v1.0 published; sha256 format |
-| Security | draft invisible; UPDATE/DELETE blocked; grants; direct INSERT 42501 |
+| Security | draft invisible; UPDATE/DELETE/TRUNCATE blocked; grants; direct INSERT 42501 |
 | Happy (Flutter) | pending→accept→current; hash stored; idempotent double-accept; withdraw; re-accept |
-| Adverse | missing/draft/closed version rejected (anti-oracle P0002); version bump forces re-consent |
+| Adverse | missing/draft/closed version rejected (anti-oracle P0002); version bump forces re-consent + prior_version |
 | Isolation | user B cannot SELECT A; accept binds to auth.uid() only |
 | Telegram | stale version fails; accept current; binding without consent throws; binding after consent; withdraw unbinds |
 

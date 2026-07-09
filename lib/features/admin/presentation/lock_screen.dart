@@ -77,11 +77,13 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
       // LGPD Legal Gate — tenant operators must accept current terms before
       // entering the admin shell. SuperAdmins (VeraProb staff) bypass.
       if (!isSuperAdmin && !EnvironmentConfig.skipLgpdConsentDev) {
-        final consent = await ref
-            .read(legalConsentStatusProvider.future)
-            .catchError(
-              (_) => const LegalConsentStatus(state: LegalConsentState.pending),
-            );
+        // Fail-closed: any status RPC failure is treated as pending (F-09).
+        LegalConsentStatus consent;
+        try {
+          consent = await ref.read(legalConsentStatusProvider.future);
+        } catch (_) {
+          consent = const LegalConsentStatus(state: LegalConsentState.pending);
+        }
         if (!mounted) return;
         if (consent.isPending) {
           context.go(AppRoutes.legalConsent);

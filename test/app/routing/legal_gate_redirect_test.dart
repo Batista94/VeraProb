@@ -90,6 +90,36 @@ void main() {
         isNull,
       );
     });
+    test('pending consent ejects from admin hub root', () {
+      expect(
+        legalGateRedirect(
+          hasSession: true,
+          isSuperAdmin: false,
+          skipLgpd: false,
+          path: AppRoutes.adminHub,
+          consent: _pending,
+        ),
+        AppRoutes.legalConsent,
+      );
+    });
+
+    test('version-bump pending (priorVersion set) still ejects', () {
+      final reGate = LegalConsentStatus(
+        state: LegalConsentState.pending,
+        document: _doc,
+        priorVersion: '1.0',
+      );
+      expect(
+        legalGateRedirect(
+          hasSession: true,
+          isSuperAdmin: false,
+          skipLgpd: false,
+          path: AppRoutes.adminDashboard,
+          consent: reGate,
+        ),
+        AppRoutes.legalConsent,
+      );
+    });
   });
 
   group('legalGateRedirect — adverse / security', () {

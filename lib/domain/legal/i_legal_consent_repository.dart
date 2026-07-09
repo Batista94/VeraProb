@@ -11,6 +11,5 @@ abstract class ILegalConsentRepository {
   /// Records acceptance of [documentId] (must be the active terms_of_use).
   Future<void> acceptTerms(String documentId);
 
-  /// Appends a withdrawal row for the active terms (Art. 8 §5).
-  Future<void> withdrawConsent();
+  // ponytail: withdrawConsent deferred until settings UI (UAT §9); SQL RPC remains.
 }

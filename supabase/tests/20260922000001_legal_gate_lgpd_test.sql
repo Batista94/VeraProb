@@ -1,7 +1,7 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(45);
+SELECT plan(48);
 
 -- =============================================================================
 -- pgTAP: Legal Gate LGPD (20260922000001) — hardened
@@ -97,6 +97,10 @@ SELECT throws_ok(
   $$ DELETE FROM public.user_legal_consents
       WHERE id = '00000000-0000-0000-0000-00000000c099' $$,
   '23001', NULL, 'SEC4: DELETE blocked on user_legal_consents (INV-3)');
+
+SELECT throws_ok(
+  $$ TRUNCATE public.user_legal_consents $$,
+  '23001', NULL, 'SEC4b: TRUNCATE blocked on user_legal_consents (INV-3)');
 
 SELECT ok(
   has_table_privilege('authenticated', 'public.legal_documents', 'SELECT'),
@@ -234,6 +238,16 @@ SET LOCAL request.jwt.claims =
 SELECT ok(
   NOT public.has_current_legal_consent('00000000-0000-0000-0000-00000000a001'),
   'ADV3: version bump forces re-consent (stale 1.0 no longer current)');
+
+SELECT is(
+  (SELECT public.get_legal_consent_status() ->> 'status'),
+  'pending',
+  'ADV3b: get_legal_consent_status pending after version bump (F-07)');
+
+SELECT is(
+  (SELECT public.get_legal_consent_status() ->> 'prior_version'),
+  '1.0',
+  'ADV3c: prior_version exposed for changelog UI (F-07)');
 
 SELECT throws_ok(
   $$ SELECT public.accept_legal_terms(

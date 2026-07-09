@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -194,6 +195,60 @@ void main() {
 
       expect(find.textContaining('LGPD'), findsWidgets);
       expect(find.textContaining('13.709'), findsOneWidget);
+    });
+
+    testWidgets('SHA chip tooltip exposes full 64-char hash (F-08)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.textContaining('SHA '),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, 'b' * 64);
+      expect(tooltip.message!.length, 64);
+    });
+
+    testWidgets('Baixar / copiar shows domain SnackBar (F-08)', (tester) async {
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (message) async {
+          if (message.method == 'Clipboard.setData') return null;
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        );
+      });
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Baixar / copiar'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Texto dos termos copiado'), findsOneWidget);
+    });
+
+    testWidgets('first-time pending hides changelog callout', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          statusOverride: LegalConsentStatus(
+            state: LegalConsentState.pending,
+            document: _doc,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('O que mudou nesta versão'), findsNothing);
     });
   });
 }

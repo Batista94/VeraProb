@@ -52,15 +52,6 @@ class SupabaseLegalConsentRepository
     }
   }
 
-  @override
-  Future<void> withdrawConsent() async {
-    try {
-      await _client.rpc('withdraw_legal_consent');
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'legal_consent');
-    }
-  }
-
   LegalDocument _documentFromMap(Map<String, dynamic> m) {
     final published = m['published_at_utc'];
     final publishedAt = published is String

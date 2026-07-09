@@ -53,6 +53,25 @@ const USERS = [
     tenantRoleName: 'Administrador',
   },
   {
+    id: '11111111-1111-1111-1111-111111111111',
+    email: 'admin-b-no-terms@veraprob.dev',
+    password: '123456',
+    label: 'Admin B — Never Accepted Terms (U1)',
+    org_id: '00000000-0000-0000-0000-000000000002',
+    baseRole: 'TENANT_ADMIN',
+    tenantRoleName: 'Administrador',
+  },
+  {
+    id: '22222222-2222-2222-2222-222222222222',
+    email: 'admin-b-accepted@veraprob.dev',
+    password: '123456',
+    label: 'Admin B — Already Accepted Terms (U2)',
+    org_id: '00000000-0000-0000-0000-000000000002',
+    baseRole: 'TENANT_ADMIN',
+    tenantRoleName: 'Administrador',
+    autoAcceptTerms: true,
+  },
+  {
     id: '33333333-3333-3333-3333-333333333333',
     email: 'validador@veraprob.dev',
     password: '123456',
@@ -276,6 +295,39 @@ async function ensureTenantAdmin(url, serviceKey, user) {
   throw new Error(`HTTP ${res.status}: ${JSON.stringify(res.data)}`);
 }
 
+async function acceptTermsForUser(url, serviceKey, user) {
+  const resDoc = await fetch(
+    `${url}/rest/v1/legal_documents?doc_type=eq.terms_of_use&status=eq.published&active_to_utc=is.null&select=id,version,content_sha256`,
+    { headers: authHeaders(serviceKey) }
+  );
+  if (!resDoc.ok) {
+    throw new Error(`Failed to fetch legal documents: HTTP ${resDoc.status}`);
+  }
+  const docs = await resDoc.json();
+  if (!docs || docs.length === 0) {
+    throw new Error("No active published terms_of_use found");
+  }
+  const doc = docs[0];
+
+  const resConsent = await post(
+    `${url}/rest/v1/user_legal_consents`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      user_id: user.id,
+      organization_id: user.org_id,
+      document_id: doc.id,
+      document_version: doc.version,
+      document_content_sha256: doc.content_sha256,
+      action: 'accepted',
+      consented_at_utc: new Date().toISOString()
+    }
+  );
+
+  if (![200, 201, 204, 409].includes(resConsent.status)) {
+    throw new Error(`Failed to insert user_legal_consents: HTTP ${resConsent.status} - ${JSON.stringify(resConsent.data)}`);
+  }
+}
+
 // ── Enriquecer Organizações do Seed com dados completos ───────────────────────
 
 async function enrichSeedOrganizations(url, serviceKey) {
@@ -491,6 +543,9 @@ async function ensureTestData(url, serviceKey) {
   await ensureAntiFloodScenario(url, serviceKey, orgId);
   await ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverId);
 
+  // 6. Dados de teste para Org B (Beta)
+  await ensureTestDataOrgB(url, serviceKey);
+
   console.log('');
 }
 
@@ -555,7 +610,112 @@ async function ensureBackdatingScenarios(url, serviceKey, orgId, planId, driverI
   console.log('ok');
 }
 
+async function ensureTestDataOrgB(url, serviceKey) {
+  // UAT T1/T2 only — no full Org Alpha mirror (ponytail).
+  process.stdout.write('  ── Provisionando UAT Telegram Org B (T1/T2)\n');
 
+  const driverFreshId = '00000000-0000-0000-0000-d00000000002';
+  const driverBoundId = '00000000-0000-0000-0000-d00000000003';
+  const orgId = '00000000-0000-0000-0000-000000000002';
+  const staffUserId = '00000000-0000-0000-0000-ffffffffffff';
+  const chatBound = 908453791;
+
+  process.stdout.write('      [1/3] Motoristas T1/T2... ');
+  for (const d of [
+    {
+      id: driverFreshId,
+      full_name: 'Motorista Beta — Fresh Telegram',
+      license_number: 'CNH987654321',
+    },
+    {
+      id: driverBoundId,
+      full_name: 'Motorista Beta — Telegram Vinculado',
+      license_number: 'CNH987654322',
+    },
+  ]) {
+    const res = await post(
+      `${url}/rest/v1/drivers`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      {
+        id: d.id,
+        organization_id: orgId,
+        full_name: d.full_name,
+        status: 'active',
+        license_number: d.license_number,
+      },
+    );
+    if (!res.ok && res.status !== 409) {
+      throw new Error(`Erro ao criar motorista ${d.id}: ${res.status}`);
+    }
+  }
+  console.log('ok');
+
+  process.stdout.write('      [2/3] Tokens VERAPRB2 / VERAPRB3... ');
+  const expires = new Date(Date.now() + 14 * 60 * 1000).toISOString();
+  let tokenBoundId;
+  for (const t of [
+    { code: 'VERAPRB2', driver_id: driverFreshId },
+    { code: 'VERAPRB3', driver_id: driverBoundId },
+  ]) {
+    const res = await post(
+      `${url}/rest/v1/telegram_binding_tokens`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=representation' },
+      {
+        organization_id: orgId,
+        driver_id: t.driver_id,
+        created_by_user_id: staffUserId,
+        code: t.code,
+        expires_at_utc: expires,
+      },
+    );
+    if (!res.ok && res.status !== 409) {
+      throw new Error(`Erro ao criar token ${t.code}: ${res.status}`);
+    }
+    if (t.code === 'VERAPRB3') {
+      tokenBoundId = res.data?.[0]?.id;
+      if (!tokenBoundId) {
+        const got = await fetch(
+          `${url}/rest/v1/telegram_binding_tokens?code=eq.VERAPRB3&select=id`,
+          { headers: authHeaders(serviceKey) },
+        );
+        const rows = await got.json();
+        tokenBoundId = rows[0]?.id;
+      }
+    }
+  }
+  console.log('ok');
+
+  process.stdout.write(`      [3/3] T2 consent + bind chat ${chatBound}... `);
+  const resConsent = await post(
+    `${url}/rest/v1/rpc/accept_telegram_bot_terms`,
+    { ...authHeaders(serviceKey) },
+    {
+      p_chat_id: chatBound,
+      p_organization_id: orgId,
+      p_driver_id: driverBoundId,
+    },
+  );
+  if (!resConsent.ok && resConsent.status !== 409) {
+    throw new Error(
+      `Erro ao aceitar termos T2: ${resConsent.status} - ${JSON.stringify(resConsent.data)}`,
+    );
+  }
+
+  const resBind = await post(
+    `${url}/rest/v1/telegram_chat_bindings`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      organization_id: orgId,
+      driver_id: driverBoundId,
+      chat_id: chatBound,
+      binding_token_id: tokenBoundId,
+    },
+  );
+  if (!resBind.ok && resBind.status !== 409) {
+    throw new Error(`Erro ao pré-vincular T2: ${resBind.status}`);
+  }
+  console.log('ok\n');
+}
 
 // ── Sign-in helper ────────────────────────────────────────────────────────────
 
@@ -644,6 +804,18 @@ async function main() {
       process.exit(1);
     }
 
+    if (user.autoAcceptTerms) {
+      process.stdout.write('      [2.5/3] Aceitar termos (auto)... ');
+      try {
+        await acceptTermsForUser(url, serviceKey, user);
+        console.log('ok');
+      } catch (e) {
+        console.log('FALHOU');
+        console.error(`\n  ERRO: ${e.message}\n`);
+        process.exit(1);
+      }
+    }
+
     process.stdout.write('      [3/3] Verificar login... ');
     try {
       await signIn(url, anonKey, user.email, user.password);
@@ -678,6 +850,22 @@ async function main() {
 
   console.log('  ATENÇÃO (SI): Credenciais acima são exclusivas para');
   console.log('  ambiente local de desenvolvimento. Nunca use em produção.');
+  console.log('');
+  console.log('╔══════════════════════════════════════════════════════════╗');
+  console.log('║               TELEGRAM TOKENS & CHAT IDS                 ║');
+  console.log('╚══════════════════════════════════════════════════════════╝\n');
+  console.log('  Org Alpha:');
+  console.log('    Motorista: Motorista de Teste Telegram (d00000000001)');
+  console.log('    Token:     VERAPR22');
+  console.log('    Chat ID:   908453789 (Pré-vinculado)');
+  console.log('');
+  console.log('  Org Beta:');
+  console.log('    Motorista: Motorista Beta — Fresh Telegram (d00000000002) — UAT T1');
+  console.log('    Token:     VERAPRB2 (Livre para consentir + vincular)');
+  console.log('');
+  console.log('    Motorista: Motorista Beta — Telegram Vinculado (d00000000003)');
+  console.log('    Token:     VERAPRB3');
+  console.log('    Chat ID:   908453791 (Consentimento e Vínculo Pré-criados)');
   console.log('');
   console.log('  Inicie o app:');
   console.log('    flutter run --dart-define=SKIP_MFA_DEV=true');
