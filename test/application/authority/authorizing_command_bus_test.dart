@@ -7,7 +7,7 @@ import 'package:veraprob/domain/authority/commands/trips/create_trip_event_comma
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
-import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
 import 'package:veraprob/application/authority/operational_command_bus.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
@@ -16,6 +16,24 @@ import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';
 
 class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
+
+class FakeForensicRepository implements ForensicDecisionRepository {
+  final List<AuthorizationDecision> ledger = [];
+
+  int get ledgerCount => ledger.length;
+  List<AuthorizationDecision> get testLedgerArray => ledger;
+
+  @override
+  Future<void> saveDecision(AuthorizationDecision decision) async {
+    ledger.add(decision);
+  }
+
+  Future<List<AuthorizationDecision>> getDecisionsForTarget(
+    TargetRef targetRef,
+  ) async {
+    return ledger.where((d) => d.targetRef == targetRef).toList();
+  }
+}
 
 /// Unmapped dummy command to test error bounding
 class RogueCommand extends OperationalCommand {
@@ -32,7 +50,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Architecture Guardians: AuthorizingCommandBus', () {
-    late InMemoryForensicRepository ledger;
+    late FakeForensicRepository ledger;
     late MockMutatorService mutator;
     late MockDateTimeProvider mockDateTime;
 
@@ -45,7 +63,7 @@ void main() {
     );
 
     setUp(() {
-      ledger = InMemoryForensicRepository();
+      ledger = FakeForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
       when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
@@ -227,14 +245,14 @@ void main() {
   // AUTHORIZATION REJECTION SCENARIOS (Foco: Linhas 95-99 — execution block)
   // ============================================================================
   group('Authorization Rejection Scenarios', () {
-    late InMemoryForensicRepository ledger;
+    late FakeForensicRepository ledger;
     late MockMutatorService mutator;
     late MockDateTimeProvider mockDateTime;
 
     final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
 
     setUp(() {
-      ledger = InMemoryForensicRepository();
+      ledger = FakeForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
       when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
@@ -425,14 +443,14 @@ void main() {
   // TENANT CROSS-CHECK [INV-1]
   // ============================================================================
   group('Tenant Isolation [INV-1]', () {
-    late InMemoryForensicRepository ledger;
+    late FakeForensicRepository ledger;
     late MockMutatorService mutator;
     late MockDateTimeProvider mockDateTime;
 
     final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
 
     setUp(() {
-      ledger = InMemoryForensicRepository();
+      ledger = FakeForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
       when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
@@ -606,14 +624,14 @@ void main() {
   // SUPERADMIN LOCK [INV-6]
   // ============================================================================
   group('SuperAdmin Lock [INV-6]', () {
-    late InMemoryForensicRepository ledger;
+    late FakeForensicRepository ledger;
     late MockMutatorService mutator;
     late MockDateTimeProvider mockDateTime;
 
     final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
 
     setUp(() {
-      ledger = InMemoryForensicRepository();
+      ledger = FakeForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
       when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());
@@ -722,14 +740,14 @@ void main() {
   // FORENSIC AUDIT TRAIL
   // ============================================================================
   group('Forensic Audit Trail', () {
-    late InMemoryForensicRepository ledger;
+    late FakeForensicRepository ledger;
     late MockMutatorService mutator;
     late MockDateTimeProvider mockDateTime;
 
     final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);
 
     setUp(() {
-      ledger = InMemoryForensicRepository();
+      ledger = FakeForensicRepository();
       mutator = MockMutatorService();
       mockDateTime = MockDateTimeProvider();
       when(() => mockDateTime.nowUtc()).thenReturn(testFixTime.toUtc());

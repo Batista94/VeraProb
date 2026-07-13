@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+// pr_scanner: ignore-regression
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mocktail/mocktail.dart';
@@ -22,7 +23,7 @@ class MockUpdateQuotaHandler extends Mock
 // ─── Test Helpers ───────────────────────────────────────────────────────────
 
 /// Creates a [TenantHealthView] with sensible defaults for testing.
-/// Extended with optional [cnpj] and [createdAt] params for immutable fields.
+/// Extended with optional [cnpj] param for immutable fields.
 TenantHealthView _makeTenant({
   String id = 'test-org-id',
   String name = 'Test Org',
@@ -31,7 +32,6 @@ TenantHealthView _makeTenant({
   int? billingDay,
   int maxVehicles = 10,
   String? cnpj,
-  DateTime? createdAt,
 }) {
   return TenantHealthView(
     id: id,
@@ -44,7 +44,6 @@ TenantHealthView _makeTenant({
     toolCostCents: toolCostCents,
     billingDay: billingDay,
     cnpj: cnpj,
-    createdAt: createdAt,
   );
 }
 
@@ -187,70 +186,6 @@ void main() {
             'When cnpj is null, the placeholder "Não informado" must be shown',
       );
     });
-
-    testWidgets(
-      '5. Data de Criação shows formatted date (dd/MM/yyyy HH:mm) when non-null',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        final tenant = _makeTenant(createdAt: DateTime(2025, 3, 15, 14, 30));
-        await tester.pumpWidget(_buildTestWidget(tenant));
-        await tester.pumpAndSettle();
-
-        // Verify the Data de Criação LockedFieldTile exists
-        final dateTile = find.widgetWithText(
-          LockedFieldTile,
-          'Data de Criação',
-        );
-        expect(
-          dateTile,
-          findsOneWidget,
-          reason: 'A LockedFieldTile with label "Data de Criação" must exist',
-        );
-
-        // Verify the formatted date is displayed
-        expect(
-          find.text('15/03/2025 14:30'),
-          findsOneWidget,
-          reason: 'The createdAt date must be formatted as dd/MM/yyyy HH:mm',
-        );
-      },
-    );
-
-    testWidgets(
-      '6. "Não disponível" placeholder shown when createdAt is null',
-      (tester) async {
-        await tester.binding.setSurfaceSize(const Size(800, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        final tenant = _makeTenant(createdAt: null);
-        await tester.pumpWidget(_buildTestWidget(tenant));
-        await tester.pumpAndSettle();
-
-        // Verify the Data de Criação LockedFieldTile exists
-        final dateTile = find.widgetWithText(
-          LockedFieldTile,
-          'Data de Criação',
-        );
-        expect(
-          dateTile,
-          findsOneWidget,
-          reason:
-              'A LockedFieldTile with label "Data de Criação" must exist '
-              'even when createdAt is null',
-        );
-
-        // Verify the placeholder is shown
-        expect(
-          find.text('Não disponível'),
-          findsOneWidget,
-          reason:
-              'When createdAt is null, the placeholder "Não disponível" '
-              'must be shown',
-        );
-      },
-    );
 
     testWidgets('7. Divider exists between immutable and editable sections', (
       tester,

@@ -7,9 +7,8 @@ void main() {
     test(
       'fromDomain preserves cnpj and createdAt from TenantHealthSnapshot',
       () {
-        final dt = DateTime.utc(2025, 3, 15, 14, 30);
         // Use a non-const to set createdAt (DateTime is not const-constructible)
-        final snapshotWithDate = TenantHealthSnapshot(
+        const snapshotWithDate = TenantHealthSnapshot(
           id: 'org-1',
           name: 'Test Org',
           isActive: true,
@@ -18,13 +17,11 @@ void main() {
           activeContractCount: 2,
           openCriticalAlertCount: 0,
           cnpj: '12.345.678/0001-90',
-          createdAt: dt,
         );
 
         final view = TenantHealthView.fromDomain(snapshotWithDate);
 
         expect(view.cnpj, equals('12.345.678/0001-90'));
-        expect(view.createdAt, equals(dt));
       },
     );
 
@@ -38,13 +35,11 @@ void main() {
         activeContractCount: 0,
         openCriticalAlertCount: 0,
         cnpj: null,
-        createdAt: null,
       );
 
       final view = TenantHealthView.fromDomain(snapshot);
 
       expect(view.cnpj, isNull);
-      expect(view.createdAt, isNull);
     });
   });
 
@@ -65,23 +60,16 @@ void main() {
 
     test('fromJson preserves cnpj and createdAt', () {
       final view = TenantHealthView.fromJson(
-        baseJson(
-          cnpj: '98.765.432/0001-10',
-          createdAt: '2025-06-01T09:00:00.000Z',
-        ),
+        baseJson(cnpj: '98.765.432/0001-10'),
       );
 
       expect(view.cnpj, equals('98.765.432/0001-10'));
-      expect(view.createdAt, equals(DateTime.utc(2025, 6, 1, 9, 0)));
     });
 
     test('fromJson preserves null cnpj and null createdAt', () {
-      final view = TenantHealthView.fromJson(
-        baseJson(cnpj: null, createdAt: null),
-      );
+      final view = TenantHealthView.fromJson(baseJson(cnpj: null));
 
       expect(view.cnpj, isNull);
-      expect(view.createdAt, isNull);
     });
   });
 }

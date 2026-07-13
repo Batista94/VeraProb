@@ -79,8 +79,11 @@ AuthState _makeAuthState({required bool superAdmin}) {
   return AuthState(AuthChangeEvent.signedIn, session);
 }
 
-LegalDocument get _termsDoc =>
-    const LegalDocument(id: 'doc-terms-1', title: 'Termos', bodyMarkdown: 'body');
+LegalDocument get _termsDoc => const LegalDocument(
+  id: 'doc-terms-1',
+  title: 'Termos',
+  bodyMarkdown: 'body',
+);
 
 /// Wrapper that watches [authStateProvider] to warm it up before the
 /// AdminLockScreen reads it imperatively in `_routeAfterAuth`.

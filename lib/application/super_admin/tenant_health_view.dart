@@ -40,14 +40,8 @@ class TenantHealthView {
   final String? externalId;
   final String? organizationType;
 
-  /// Timestamp of last update — used for OCC on quota edits (CT15).
-  final DateTime? updatedAt;
-
   /// CNPJ da organização — campo de identidade core imutável.
   final String? cnpj;
-
-  /// Data de criação da organização — campo de identidade core imutável.
-  final DateTime? createdAt;
 
   /// Domínios permitidos para autenticação (lista de baixo nivel de email).
   final List<String> allowedDomains;
@@ -84,9 +78,7 @@ class TenantHealthView {
     this.contactEmail,
     this.externalId,
     this.organizationType,
-    this.updatedAt,
     this.cnpj,
-    this.createdAt,
     this.allowedDomains = const [],
     // CT10 — Motor Forense, Compliance, Infraestrutura
     this.clockDriftToleranceS = 300,
@@ -129,9 +121,7 @@ class TenantHealthView {
       contactEmail: snapshot.contactEmail,
       externalId: snapshot.externalId,
       organizationType: snapshot.organizationType,
-      updatedAt: snapshot.updatedAt,
       cnpj: snapshot.cnpj,
-      createdAt: snapshot.createdAt,
       allowedDomains: snapshot.allowedDomains,
       // CT10 — Motor Forense, Compliance, Infraestrutura
       clockDriftToleranceS: snapshot.clockDriftToleranceS,
@@ -192,9 +182,7 @@ class TenantHealthView {
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
       organizationType: json['organization_type'] as String?,
-      updatedAt: _parseDateTime(json['updated_at']),
       cnpj: json['cnpj'] as String?,
-      createdAt: _parseDateTime(json['created_at']),
       allowedDomains: _parseAllowedDomains(json['allowed_domains']),
       // CT10 — Motor Forense, Compliance, Infraestrutura
       clockDriftToleranceS: _parseInt(json['clock_drift_tolerance_s'], 300),

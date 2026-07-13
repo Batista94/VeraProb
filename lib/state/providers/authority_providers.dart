@@ -6,12 +6,8 @@ import 'package:veraprob/application/operational_control/operational_control_fac
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
-import 'package:veraprob/domain/authority/policies/in_memory_policy_evaluator.dart';
 import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
-import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
 import 'package:veraprob/infrastructure/authority/postgres_forensic_repository.dart';
-import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
-import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';
 import 'package:veraprob/state/providers/shared_providers.dart';
@@ -46,14 +42,8 @@ final mockAuthorizationContextProvider =
 
 final forensicDecisionRepositoryProvider = Provider<ForensicDecisionRepository>(
   (ref) {
-    final mode = ref.watch(persistenceModeProvider);
-    switch (mode) {
-      case PersistenceMode.inMemory:
-        return InMemoryForensicRepository();
-      case PersistenceMode.postgres:
-        final client = ref.watch(supabaseClientProvider);
-        return PostgresForensicRepository(client);
-    }
+    final client = ref.watch(supabaseClientProvider);
+    return PostgresForensicRepository(client);
   },
 );
 
@@ -61,7 +51,7 @@ final forensicDecisionRepositoryProvider = Provider<ForensicDecisionRepository>(
 final authorityPolicyEvaluatorProvider = Provider<AuthorityPolicyEvaluator>((
   ref,
 ) {
-  return InMemoryPolicyEvaluator();
+  return AuthorityPolicyEvaluator();
 });
 
 /// The Command Bus Interceptor Hub

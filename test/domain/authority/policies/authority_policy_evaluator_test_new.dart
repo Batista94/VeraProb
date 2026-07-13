@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
-import 'package:veraprob/domain/authority/policies/rbac_policy_evaluator.dart';
+import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
 
 void main() {
-  late RbacPolicyEvaluator evaluator;
+  late AuthorityPolicyEvaluator evaluator;
 
   // Test helpers
   AuthorizationContext makeContext({
@@ -35,10 +35,10 @@ void main() {
   }
 
   setUp(() {
-    evaluator = RbacPolicyEvaluator();
+    evaluator = AuthorityPolicyEvaluator();
   });
 
-  group('RbacPolicyEvaluator - RBAC Integrity', () {
+  group('AuthorityPolicyEvaluator - RBAC Integrity', () {
     test('operator cannot perform admin_only action', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.adminOnly,
@@ -106,7 +106,7 @@ void main() {
     });
   });
 
-  group('RbacPolicyEvaluator - Contextual Decisions (Trip Approval)', () {
+  group('AuthorityPolicyEvaluator - Contextual Decisions (Trip Approval)', () {
     test('operator can approve trip within own organization', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.approveTrip,
@@ -203,7 +203,7 @@ void main() {
     });
   });
 
-  group('RbacPolicyEvaluator - SuperAdmin Bypass', () {
+  group('AuthorityPolicyEvaluator - SuperAdmin Bypass', () {
     test('superAdmin bypasses organization block for approveTrip', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.approveTrip,
@@ -269,7 +269,7 @@ void main() {
     });
   });
 
-  group('RbacPolicyEvaluator - Edge Cases', () {
+  group('AuthorityPolicyEvaluator - Edge Cases', () {
     test('empty roleId defaults to denied', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.resolveAlert,
@@ -349,7 +349,7 @@ void main() {
     });
   });
 
-  group('RbacPolicyEvaluator - Decision Integrity', () {
+  group('AuthorityPolicyEvaluator - Decision Integrity', () {
     test('decisionId is non-empty', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.resolveAlert,
@@ -500,7 +500,7 @@ void main() {
     });
   });
 
-  group('RbacPolicyEvaluator - Standard Actions', () {
+  group('AuthorityPolicyEvaluator - Standard Actions', () {
     test('operator can resolveAlert', () async {
       final decision = await evaluator.evaluate(
         actionType: OperationalActionType.resolveAlert,

@@ -5,11 +5,24 @@ import 'package:veraprob/application/authority/authorizing_command_bus.dart';
 import 'package:veraprob/domain/authority/commands/trips/resolve_alert_command.dart';
 import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
-import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
+import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
 
 import 'mocks/mock_mutator_service.dart';
 import 'mocks/strict_mock_policy_evaluator.dart';
+
+class FakeForensicRepository implements ForensicDecisionRepository {
+  final List<AuthorizationDecision> ledger = [];
+  int get ledgerCount => ledger.length;
+  List<AuthorizationDecision> get testLedgerArray => ledger;
+  @override
+  Future<void> saveDecision(AuthorizationDecision decision) async =>
+      ledger.add(decision);
+
+  Future<List<AuthorizationDecision>> getDecisionsForTarget(
+    TargetRef targetRef,
+  ) async => ledger.where((d) => d.targetRef == targetRef).toList();
+}
 
 class MockDateTimeProvider extends Mock implements IDateTimeProvider {}
 
@@ -25,7 +38,7 @@ void main() {
           OperationalActionType.resolveAlert: DecisionResult.approved,
         });
 
-        final ledger = InMemoryForensicRepository();
+        final ledger = FakeForensicRepository();
         final mutator = MockMutatorService();
 
         final testFixTime = DateTime.utc(2026, 4, 8, 12, 0, 0);

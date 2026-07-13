@@ -695,9 +695,8 @@ extension on TenantHealthView {
       openCriticalAlertCount: openCriticalAlertCount,
       capabilities: {},
       dwellTimeSeconds: dwellTimeSeconds,
-      updatedAt: updatedAt,
+
       cnpj: cnpj,
-      createdAt: createdAt,
     );
   }
 }

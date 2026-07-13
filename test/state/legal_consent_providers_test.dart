@@ -23,8 +23,10 @@ void main() {
   group('happy path', () {
     test('returns pending from repository for authenticated user', () async {
       when(() => repo.getConsentStatus()).thenAnswer(
-        (_) async =>
-            const LegalConsentStatus(state: LegalConsentState.pending, document: doc),
+        (_) async => const LegalConsentStatus(
+          state: LegalConsentState.pending,
+          document: doc,
+        ),
       );
 
       final container = ProviderContainer(
@@ -43,8 +45,10 @@ void main() {
 
     test('returns current when repository reports accepted', () async {
       when(() => repo.getConsentStatus()).thenAnswer(
-        (_) async =>
-            const LegalConsentStatus(state: LegalConsentState.current, document: doc),
+        (_) async => const LegalConsentStatus(
+          state: LegalConsentState.current,
+          document: doc,
+        ),
       );
 
       final container = ProviderContainer(

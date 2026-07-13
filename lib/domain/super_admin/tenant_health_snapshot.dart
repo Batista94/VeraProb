@@ -25,9 +25,7 @@ class TenantHealthSnapshot extends Equatable {
   final String? contactEmail;
   final String? externalId;
   final String? organizationType;
-  final DateTime? updatedAt;
   final String? cnpj;
-  final DateTime? createdAt;
   final List<String> allowedDomains;
 
   // CT10 — Motor Forense, Compliance, Infraestrutura
@@ -63,9 +61,7 @@ class TenantHealthSnapshot extends Equatable {
     this.contactEmail,
     this.externalId,
     this.organizationType,
-    this.updatedAt,
     this.cnpj,
-    this.createdAt,
     this.allowedDomains = const [],
     // CT10 — Motor Forense, Compliance, Infraestrutura
     this.clockDriftToleranceS = 300,
@@ -104,13 +100,7 @@ class TenantHealthSnapshot extends Equatable {
       contactEmail: json['contact_email'] as String?,
       externalId: json['external_id'] as String?,
       organizationType: json['organization_type'] as String?,
-      updatedAt: json['updated_at'] != null
-          ? DateTime.parse(json['updated_at'] as String)
-          : null,
       cnpj: json['cnpj'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
       allowedDomains: (json['allowed_domains'] as List?)?.cast<String>() ?? [],
       // CT10 — Motor Forense, Compliance, Infraestrutura
       clockDriftToleranceS:
@@ -144,9 +134,7 @@ class TenantHealthSnapshot extends Equatable {
     contactEmail,
     externalId,
     organizationType,
-    updatedAt,
     cnpj,
-    createdAt,
     allowedDomains,
     clockDriftToleranceS,
     dataRetentionDays,

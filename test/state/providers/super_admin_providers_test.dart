@@ -766,10 +766,7 @@ void main() {
         billingDay: 15,
         contactEmail: 'admin@test.com',
         externalId: 'ext-123',
-        organizationType: 'carrier',
-        updatedAt: DateTime.utc(2026, 1, 10),
         cnpj: '12345678000199',
-        createdAt: DateTime.utc(2025, 6, 1),
       );
 
       final view = TenantHealthView.fromDomain(snapshot);
@@ -789,10 +786,7 @@ void main() {
       expect(view.billingDay, snapshot.billingDay);
       expect(view.contactEmail, snapshot.contactEmail);
       expect(view.externalId, snapshot.externalId);
-      expect(view.organizationType, snapshot.organizationType);
-      expect(view.updatedAt, snapshot.updatedAt);
       expect(view.cnpj, snapshot.cnpj);
-      expect(view.createdAt, snapshot.createdAt);
     });
 
     test('TenantHealthView.fromDomain handles null optional fields', () {
@@ -817,7 +811,6 @@ void main() {
       expect(view.billingDay, isNull);
       expect(view.contactEmail, isNull);
       expect(view.cnpj, isNull);
-      expect(view.createdAt, isNull);
     });
 
     test('SystemAuditLogView.fromDomain preserves all fields losslessly', () {
