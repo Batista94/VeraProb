@@ -33,7 +33,6 @@ class SupabaseLegalConsentRepository
             ? LegalConsentState.pending
             : LegalConsentState.current,
         document: doc,
-        priorVersion: map['prior_version'] as String?,
       );
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'legal_document');
@@ -53,19 +52,11 @@ class SupabaseLegalConsentRepository
   }
 
   LegalDocument _documentFromMap(Map<String, dynamic> m) {
-    final published = m['published_at_utc'];
-    final publishedAt = published is String
-        ? DateTime.parse(published).toUtc()
-        : DateTime.now().toUtc();
     return LegalDocument(
       id: m['id'] as String,
-      docType: m['doc_type'] as String? ?? 'terms_of_use',
-      version: m['version'] as String? ?? '',
       title: m['title'] as String? ?? '',
       bodyMarkdown: m['body_markdown'] as String? ?? '',
-      contentSha256: m['content_sha256'] as String? ?? '',
       changelog: m['changelog'] as String?,
-      publishedAtUtc: publishedAt,
     );
   }
 

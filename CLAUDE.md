@@ -78,6 +78,8 @@ Mandatory for all IDEs (Antigravity/Claude/Kiro). Failure to execute = VETO.
 - **UI Clean Code (IIFE-UI-SMELL):** Do NOT use Immediately Invoked Function Expressions (IIFEs) like `() { ... }()`. Extract complex widget logic into smaller helper methods (`_buildSomething`). Avoid nested ternaries.
 - **UX Excellence (UX-RAW-EXCEPTION):** Never expose `$e`, `e.toString()`, or state-wrapper errors (`${actionState.error}`, `${asyncValue.error}`, `${snapshot.error}`) in UI feedback (SnackBars/Dialogs). Translate exceptions to user-friendly Portuguese. Avoid hardcoded styles; use `VeraProbColors` and `VeraProbTypography`.
 - **Accent-fill Contrast (ACCENT-FILL-CONTRAST):** Foreground on accent fills (`primary`/`secondary`/`error`) is always `VeraProbColors.background`, never `Colors.white` (fails WCAG AA on Indigo Zinc). Recipe: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #18.
+- **Over-engineering (OVER-ENGINEERING):** Keep Domain VOs minimal (no database audit metadata like hashes/versions/timestamps). Avoid redundant widget helpers or nested layouts (inline simple elements). Do not write trivial unit tests that only assert constructor mapping. Recipe: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md) #22.
+
 
 ## PATH-SCOPED RULES (auto-loaded by file pattern)
 

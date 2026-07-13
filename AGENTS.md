@@ -75,7 +75,14 @@ Critical subset:
 - **Accent-fill contrast (ACCENT-FILL-CONTRAST):** Foreground on `primary`/`secondary`/`error` fills is always `VeraProbColors.background` (dark), never `Colors.white` — white fails WCAG AA 4.5:1 on all Indigo Zinc accents. Encoded in theme; don't override at widget level.
 - **Wasm Context Leaks (WASM-CONTEXT-LEAK):** Capture `ScaffoldMessenger.of(context)` BEFORE any `await`. Never use `if (mounted)` with `context` after an `await`.
 - **UI Clean Code:** Avoid nested ternary operators. Keep `build()` methods declarative; push business logic into Riverpod providers. Use `VeraProbColors` and `VeraProbTypography` instead of hardcoded styling.
-- **Ponytail (Lazy Senior Dev Philosophy):** Avoid over-engineering. Question speculative or unrequested abstractions (no interfaces with single implementations, no factories for one product). Prioritize native platform features, standard libraries, and existing dependencies before writing custom code. Shortest working diff wins, but do NOT simplify away safety, UTC rules, bigints, database security/RLS, or tenant isolation.
+- **Ponytail (Lazy Senior Dev Philosophy):** Avoid over-engineering. Question speculative or unrequested abstractions (no interfaces with single implementations, no factories for one product). Keep Domain VOs minimal (no database audit metadata like hashes/versions/timestamps unless used in the UI). Avoid redundant widget helpers or nested layouts (inlining simple elements). Prioritize native platform features, standard libraries, and existing dependencies before writing custom code. Shortest working diff wins, but do NOT simplify away safety, UTC rules, bigints, database security/RLS, or tenant isolation.
+- **Enterprise Simplicity (YAGNI & Senior Heuristics):**
+  1. *Model Reusability:* Query the codebase before creating new domain models or enums; extend existing models instead of writing duplicates.
+  2. *Pragmatic Mapping:* Do not introduce separate DTO/entity mapping layers if the database payload and domain entity are structural identical and simple.
+  3. *Local vs. Global State:* Keep local UI states (tabs, search queries, panel states) in widget-local state (`StatefulWidget`/`flutter_hooks`); restrict Riverpod to shared, async, or database-backed state.
+  4. *Behavioral Testing:* Test business rules, domain exceptions, and state transitions. Avoid writing trivial tests that only assert constructor parameters or mocks.
+  5. *Rule of Three:* Extract widgets/helpers to `shared/` only if they are used in 3+ places. Otherwise, keep them inline or feature-scoped.
+
 
 ## Protocols (Mandatory)
 
@@ -111,6 +118,7 @@ Full fix recipes SSOT: [`.claude/rules/ci-blocks.md`](.claude/rules/ci-blocks.md
 | 19 | GOLDEN-UNWIRED | `goldenTest` in file absent from `generate_goldens.sh` TEST_FILES — baseline never generated |
 | 20 | NUM-CLAMP-DOWNCAST | `num.clamp` result passed to `double` parameter — implicit downcast blocked by Strict Mode |
 | 21 | ALWAYS-TRUE-RLS-POLICY | PERMISSIVE `USING(true)` for client roles — use Global Catalog RLS Pattern or org predicate |
+| 22 | OVER-ENGINEERING | Speculative properties and UI nesting |
 
 ## Lessons Learned — Index
 
@@ -132,6 +140,7 @@ Full Why/How SSOT: [`.kiro/steering/lessons.md`](.kiro/steering/lessons.md) (Kir
 | 12 | Accent-Fill Foreground Contrast — dark `background` foreground on accent fills, never `Colors.white`; validate token pairs both directions |
 | 13 | Golden Test Wiring — goldens live in ONE `*_golden_test.dart` registered in `generate_goldens.sh` TEST_FILES, else baseline never generated |
 | 14 | Security-Flow SSOT — reveal-once/destructive dialog flows have one owner (screen); extracted widgets get callbacks, never copies |
+| 15 | Over-engineering & Speculative Fields — Keep Domain VOs minimal, avoid redundant UI nesting, delete trivial constructor tests |
 
 
 ## Database Governance

@@ -9,15 +9,8 @@ import 'package:veraprob/domain/legal/legal_document.dart';
 /// Tests the **production** [legalGateRedirect] SSOT (not a copy).
 /// Happy path, adverse, and security (bypass / anti-loop) scenarios.
 
-LegalDocument get _doc => LegalDocument(
-  id: 'doc-1',
-  docType: 'terms_of_use',
-  version: '1.0',
-  title: 'Termos',
-  bodyMarkdown: 'body',
-  contentSha256: 'a' * 64,
-  publishedAtUtc: DateTime.utc(2026, 1, 1),
-);
+LegalDocument get _doc =>
+    const LegalDocument(id: 'doc-1', title: 'Termos', bodyMarkdown: 'body');
 
 LegalConsentStatus get _pending =>
     LegalConsentStatus(state: LegalConsentState.pending, document: _doc);
@@ -103,11 +96,15 @@ void main() {
       );
     });
 
-    test('version-bump pending (priorVersion set) still ejects', () {
-      final reGate = LegalConsentStatus(
+    test('version-bump pending (changelog on doc) still ejects', () {
+      const reGate = LegalConsentStatus(
         state: LegalConsentState.pending,
-        document: _doc,
-        priorVersion: '1.0',
+        document: LegalDocument(
+          id: 'doc-2',
+          title: 'Termos',
+          bodyMarkdown: 'body',
+          changelog: 'Nova versão dos termos',
+        ),
       );
       expect(
         legalGateRedirect(

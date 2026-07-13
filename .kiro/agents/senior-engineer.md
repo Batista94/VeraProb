@@ -45,3 +45,5 @@ See SSOT: [`../../.kiro/steering/lessons.md`](../../.kiro/steering/lessons.md) f
 - Lesson 7 — Regression Ack Discipline (`lib/domain/**` + `supabase/migrations/**` mutations require Council-reviewed `// pr_scanner: ignore-regression` OR revert).
 - Lesson 8 — Wasm Context Leaks: ALWAYS capture `ScaffoldMessenger` and `Navigator` before `await`.
 - Lesson 10 — UI Clean Code: Extract helper methods instead of using IIFEs (`() { ... }()`) in `build()` or `switch`.
+- Lesson 15 — Over-engineering & Speculative Fields: Keep Domain VOs minimal, avoid redundant UI nesting, delete trivial constructor tests.
+

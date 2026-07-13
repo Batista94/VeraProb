@@ -502,3 +502,47 @@ CREATE POLICY my_catalog_select ON public.my_catalog FOR SELECT TO authenticated
 ```
 
 **Prohibited:** `pr_scanner: allow-permissive-true-policy` for editable catalogs (Council bypass is only for irremediable platform tables like `spatial_ref_sys`).
+
+---
+
+## 22. OVER-ENGINEERING: Speculative properties and UI nesting
+
+**Problem:** Bloated models/VOs, redundant mapping layers, misplaced global state, trivial tests, and overly complex layout structures.
+
+**Fix by category:**
+
+* **Model/VO Bloating & Metadata Leak:** Remove backend-only fields (e.g. SHA-256 hashes, raw version numbers, audit timestamps) from Flutter VOs. Keep database-specific tracking in the database.
+* **Model/Enum Duplication:** Query the codebase (using grep/search) before writing new domain entities, enums, or models. Re-use or extend existing ones instead of writing duplicates.
+* **Pragmatic Mapping Layers:** Do not implement separate DTO-to-Entity mapping layers if the database payload structure and the domain entity are structurally identical and simple.
+* **Misplaced Global State (Riverpod):** Keep UI-local states (active tabs, search query input text, drawer toggle states) in widget-local state (`StatefulWidget` or `flutter_hooks`). Restrict Riverpod to shared, async, or database-backed state.
+* **Obvious & Trivial Testing:** Avoid writing tests that only assert constructor assignments or stubs. Focus tests on business logic, edge cases, domain exceptions, and state transitions. Use Golden Tests for rendering.
+* **Rule of Three (Extracting helpers):** Keep widgets and helper methods inline or feature-scoped unless they are utilized in at least 3 distinct screens/features. Do not pollute `shared/` with premature abstractions.
+* **Redundant UI Nesting:** Inline nested layout widgets (e.g. Column-in-Column) and remove single-use helper methods that only wrap a single widget.
+
+```dart
+// Wrong — Redundant Column with a single-widget helper
+Widget build(BuildContext context) {
+  return Column(
+    children: [
+      _buildHeader(doc),
+      Column(
+        children: [
+          FilledButton(...),
+        ]
+      )
+    ],
+  );
+}
+
+// Right — Inlined title and simplified layout
+Widget build(BuildContext context) {
+  return Column(
+    children: [
+      Text(doc.title),
+      FilledButton(...),
+    ],
+  );
+}
+```
+
+

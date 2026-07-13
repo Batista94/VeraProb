@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/legal/legal_consent_status.dart'; // pr_scanner: ignore
 import 'package:veraprob/domain/legal/legal_document.dart'; // pr_scanner: ignore
 
 import 'package:veraprob/state/providers/auth_providers.dart';
@@ -99,7 +98,7 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
           if (doc == null) {
             return _buildErrorBody();
           }
-          return _buildGate(status, doc);
+          return _buildGate(doc);
         },
       ),
     );
@@ -130,10 +129,9 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
     );
   }
 
-  Widget _buildGate(LegalConsentStatus status, LegalDocument doc) {
-    final showChangelog =
-        status.priorVersion != null &&
-        (doc.changelog != null && doc.changelog!.trim().isNotEmpty);
+  Widget _buildGate(LegalDocument doc) {
+    final changelog = doc.changelog?.trim();
+    final showChangelog = changelog != null && changelog.isNotEmpty;
 
     return SafeArea(
       child: Center(
@@ -143,10 +141,17 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Column(
               children: [
-                _buildHeader(doc),
+                Text(
+                  doc.title,
+                  style: VeraProbTypography.heading.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: VeraProbColors.textPrimary,
+                  ),
+                ),
                 if (showChangelog) ...[
                   const SizedBox(height: 12),
-                  _buildChangelogCallout(doc.changelog!),
+                  _buildChangelogCallout(changelog),
                 ],
                 const SizedBox(height: 12),
                 Expanded(child: _buildReader(doc)),
@@ -157,22 +162,6 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader(LegalDocument doc) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          doc.title,
-          style: VeraProbTypography.heading.copyWith(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: VeraProbColors.textPrimary,
-          ),
-        ),
-      ],
     );
   }
 
@@ -268,32 +257,27 @@ class _LegalConsentScreenState extends ConsumerState<LegalConsentScreen> {
             style: TextStyle(color: VeraProbColors.textPrimary, fontSize: 13),
           ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: VeraProbColors.primary,
-                foregroundColor: VeraProbColors.background,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: (!_acceptedCheckbox || _isSaving)
-                  ? null
-                  : () => _onAccept(doc),
-              child: _isSaving
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Aceitar'),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: _isSaving ? null : _onDecline,
-              child: const Text('Recusar'),
-            ),
-          ],
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: VeraProbColors.primary,
+            foregroundColor: VeraProbColors.background,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          onPressed: (!_acceptedCheckbox || _isSaving)
+              ? null
+              : () => _onAccept(doc),
+          child: _isSaving
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Aceitar'),
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: _isSaving ? null : _onDecline,
+          child: const Text('Recusar'),
         ),
       ],
     );

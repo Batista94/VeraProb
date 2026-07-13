@@ -95,7 +95,7 @@ You must verify compliance with the 28 Forensic Invariants (`.kiro/steering/fore
 
 ---
 
-## CI BLOCK PATTERN AWARENESS (ALL 17)
+## CI BLOCK PATTERN AWARENESS (ALL 22)
 
 You must actively scan for these patterns. If ANY is found, the verdict is `[NO-GO]` or `[REVISE]`:
 
@@ -118,10 +118,11 @@ You must actively scan for these patterns. If ANY is found, the verdict is `[NO-
 | 15 | WASM-CONTEXT-LEAK | `await` followed by `ScaffoldMessenger.of(context)` or `Navigator.of(context)` |
 | 16 | IIFE-UI-SMELL | `() { ... }()` in `build` or `switch` statements, or nested ternaries |
 | 17 | UX-RAW-EXCEPTION | `$e` or `e.toString()` inside `Text` or `SnackBar` |
+| 22 | OVER-ENGINEERING | Speculative domain VO fields, nested UI layouts, or trivial constructor tests |
 
 ---
 
-## LESSONS LEARNED AUDIT (ALL 11)
+## LESSONS LEARNED AUDIT (ALL 15)
 
 Actively check for recurrence of these proven failure modes:
 
@@ -137,6 +138,7 @@ Actively check for recurrence of these proven failure modes:
 | L8 | `Navigator.of(context)` or `ScaffoldMessenger.of(context)` AFTER `await` in dialog → CT02 Wasm crash | Grep `await` then `Navigator.of(context)` or `ScaffoldMessenger.of(context)` in async methods |
 | L10 | `() { ... }()` inside Widget Trees → UI bloat and bad code design | Grep `() {` inside `switch` or `build()` |
 | L11 | Raw `$e` or `e.toString()` in user-facing UI → UX degradation | Grep `$e`, `e.toString()`, or hardcoded styling |
+| L15 | Over-engineering & Speculative Fields — Keep Domain VOs minimal, avoid redundant UI nesting | Grep backend-only fields in VOs, nested columns/rows, trivial tests |
 
 ---
 

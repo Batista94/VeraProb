@@ -16,15 +16,11 @@ class _FakeLegalRepo extends Mock implements ILegalConsentRepository {}
 
 class _FakeAuthRepo extends Mock implements IAuthRepository {}
 
-LegalDocument get _doc => LegalDocument(
+LegalDocument get _doc => const LegalDocument(
   id: 'doc-1',
-  docType: 'terms_of_use',
-  version: '1.0',
   title: 'Termos de Uso e Contrato de Custódia de Dados',
   bodyMarkdown: 'Corpo dos termos LGPD — custódia de dados.',
-  contentSha256: 'b' * 64,
   changelog: 'Atualização de transparência Telegram.',
-  publishedAtUtc: DateTime.utc(2026, 3, 12),
 );
 
 void main() {
@@ -39,11 +35,8 @@ void main() {
     legalRepo = _FakeLegalRepo();
     authRepo = _FakeAuthRepo();
     when(() => legalRepo.getConsentStatus()).thenAnswer(
-      (_) async => LegalConsentStatus(
-        state: LegalConsentState.pending,
-        document: _doc,
-        priorVersion: '0.9',
-      ),
+      (_) async =>
+          LegalConsentStatus(state: LegalConsentState.pending, document: _doc),
     );
     when(() => legalRepo.acceptTerms(any())).thenAnswer((_) async {});
     when(() => authRepo.signOut()).thenAnswer((_) async {});
@@ -59,7 +52,6 @@ void main() {
               LegalConsentStatus(
                 state: LegalConsentState.pending,
                 document: _doc,
-                priorVersion: '0.9',
               ),
         ),
         authRepositoryProvider.overrideWithValue(authRepo),
@@ -206,9 +198,13 @@ void main() {
     testWidgets('first-time pending hides changelog callout', (tester) async {
       await tester.pumpWidget(
         buildSubject(
-          statusOverride: LegalConsentStatus(
+          statusOverride: const LegalConsentStatus(
             state: LegalConsentState.pending,
-            document: _doc,
+            document: LegalDocument(
+              id: 'doc-1',
+              title: 'Termos de Uso e Contrato de Custódia de Dados',
+              bodyMarkdown: 'Corpo dos termos LGPD — custódia de dados.',
+            ),
           ),
         ),
       );

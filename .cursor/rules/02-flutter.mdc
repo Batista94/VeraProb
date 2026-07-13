@@ -1,16 +1,17 @@
 ---
-description: Regras para desenvolvimento Frontend em Dart e Flutter (Arquitetura, UI, UX).
+description: Rules for Frontend development in Dart and Flutter (Architecture, UI, UX).
 globs: ["lib/**/*.dart", "test/**/*.dart"]
 ---
 
-# VeraProb — Regras Frontend (Dart/Flutter)
+# VeraProb — Frontend Rules (Dart/Flutter)
 
-Você está editando arquivos do Frontend. Mantenha os padrões definidos em `AGENTS.md` e `.kiro/steering/ux-standards.md`.
+You are editing Frontend files. Adhere to the standards defined in `AGENTS.md` and `.kiro/steering/ux-standards.md`.
 
-- **Clean Architecture:** `lib/features/` nunca deve importar classes concretas de `lib/infrastructure/` (apenas `observability/` ou `config/`).
-- **UI Limpa e Sem Tratamentos Crus:**
-  - **Não exiba exceções diretas na UI (UX-RAW-EXCEPTION):** Nunca use `$e`, `e.toString()`, ou interpoladores de estado (`${actionState.error}`) diretamente em Text ou SnackBars. Mapeie os erros para o vocabulário de domínio.
-  - **Evite IIFE na UI (IIFE-UI-SMELL):** Nunca use expressões executadas imediatamente `() { ... }()` dentro do método `build` ou de `switch`. Extraia a lógica para métodos auxiliares (`_buildX`).
-  - **Contraste de Acentos (ACCENT-FILL-CONTRAST):** A cor de primeiro plano em superfícies de destaque (primary/secondary/error) deve sempre ser `VeraProbColors.background` e nunca `Colors.white` (que falha no WCAG).
-  - **Vazamento Wasm (WASM-CONTEXT-LEAK):** Capture `ScaffoldMessenger.of(context)` ou `Navigator.of(context)` antes de qualquer `await`.
-- **Formatação:** Use apenas UTF-8 com fim de linha LF (`\n`). Resolva avisos de formatação via `dart fix --apply`.
+- **Clean Architecture:** `lib/features/` must never import concrete classes from `lib/infrastructure/` (except `observability/` or `config/`).
+- **Clean UI & Opaque Error Handling:**
+  - **No Raw Exceptions in UI (UX-RAW-EXCEPTION):** Never display `$e`, `e.toString()`, or state wrappers (`${actionState.error}`, `${asyncValue.error}`) in SnackBars/Text. Map errors to domain vocabulary.
+  - **No IIFE in UI (IIFE-UI-SMELL):** Never use Immediately Invoked Function Expressions `() { ... }()` inside `build` methods or `switch` statements. Extract complex logic to helper methods (`_buildX`).
+  - **Accent-fill Contrast (ACCENT-FILL-CONTRAST):** Foreground on primary/secondary/error accent fills is always `VeraProbColors.background` (dark), never `Colors.white` (fails WCAG AA 4.5:1).
+  - **Wasm Context Leaks (WASM-CONTEXT-LEAK):** Capture `ScaffoldMessenger.of(context)` or `Navigator.of(context)` BEFORE any `await`.
+  - **UI Nesting & Local State:** Avoid redundant Column/Row nesting and single-use widget wrappers. Keep local UI states (active tabs, search query input, panel toggles) in widget-local state (StatefulWidget/hooks); do not pollute Riverpod global graph with UI-local state. Extract widgets to `shared/` only if used in 3+ distinct screens (Rule of Three).
+- **Formatting:** Use UTF-8 with LF (`\n`) line endings exclusively. Resolve static warnings and unused code via `dart fix --apply`.

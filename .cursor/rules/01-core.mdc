@@ -1,13 +1,14 @@
 ---
-description: Regra base (Core) e filosofia de código (Ponytail). Sempre aplicável.
+description: Core rules and code philosophy (Ponytail). Always applicable.
 globs: ["*"]
 alwaysApply: true
 ---
 
-# VeraProb — Regra Base (Cursor)
+# VeraProb — Core Rules (Cursor)
 
-Esta é a regra fundamental de atuação no projeto. Para detalhes completos, o Single Source of Truth (SSOT) é `AGENTS.md`.
+This is the fundamental rule for this project. For complete details, the Single Source of Truth (SSOT) is `AGENTS.md`.
 
-- **Missão:** Proteção SLA/Finance + Governança Forense. Motor Forense Agnóstico. Nunca tome atalhos MVP; este é um projeto B2B enterprise.
-- **Filosofia Ponytail:** Use a solução mais preguiçosa que funcione *com segurança*. Evite abstrações especulativas (como interfaces com uma única implementação). A prioridade é a alteração mais curta e nativa possível.
-- **Fluxo do Cursor:** Não tente escrever "Step 0" no chat e não force fluxos de TDD estritos antes da edição de código. Concentre-se em gerar a solução correta no código. A validação (TDD e integridade) será validada no painel de terminal posteriormente via `make check`.
+- **Mission:** SLA/Finance Protection + Forensic Governance. Agnostic Forensic Engine. Never take MVP shortcuts; this is an enterprise B2B project.
+- **Ponytail Philosophy:** Use the simplest solution that works *safely*. Avoid speculative abstractions (like interfaces with a single implementation, factories for one product). The priority is the shortest and most native change possible.
+- **YAGNI & Enterprise Simplicity:** Keep Domain VOs minimal (no database audit metadata). Do not implement separate DTO layers for identical structures. Do not write trivial tests that only assert constructor assignments.
+- **Cursor Flow:** Do not write "Step 0" in the chat and do not force strict TDD flows before editing code. Focus on generating the correct solution in the code. Integrity validation and TDD tests will be verified later in the terminal pane via `make check`.

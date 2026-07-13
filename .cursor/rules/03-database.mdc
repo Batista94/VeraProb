@@ -1,19 +1,19 @@
 ---
-description: Regras para Supabase, Banco de Dados, Edge Functions e Políticas RLS.
+description: Rules for Supabase, Database, Edge Functions, and RLS Policies.
 globs: ["supabase/**/*.sql", "supabase/**/*.ts"]
 ---
 
-# VeraProb — Regras de Banco de Dados e Backend
+# VeraProb — Database & Backend Rules
 
-Você está editando migrações SQL ou Edge Functions do Supabase. O SSOT dessas regras é `.kiro/steering/forensic-standards.md` e `AGENTS.md`. 
+You are editing SQL migrations or Supabase Edge Functions. The SSOT of these rules resides in `.kiro/steering/forensic-standards.md` and `AGENTS.md`. 
 
-- **Idempotência e Append-Only (INV-3):** Nunca altere um arquivo `.sql` já comitado/mergeado. Crie uma nova migração. O ledger é append-only (sem DROP, DELETE, ou TRUNCATE destrutivo) sem prévia validação. Use exclusões lógicas (soft-delete).
-- **Tratamento de Entidades, Tempo e Valores:**
-  - Valores monetários em centavos como `BIGINT` (INV-4).
-  - Todas as datas devem ser `TIMESTAMPTZ` (UTC) (INV-6).
-- **Governança do Banco e RLS (INV-2, INV-22):**
-  - Isolamento rigoroso: Nunca use `auth.uid()`. O RLS opera sempre usando `auth.jwt() ->> 'organization_id'`.
-  - Views públicas (esquema `public`) DEVEM conter `WITH (security_invoker = true)`.
-  - Ao usar partições (`CREATE TABLE ... PARTITION OF`), habilite explicitamente o RLS na partição.
-  - Novas tabelas requerem Grants de API explícitos para funcionar (roles `authenticated`, `anon`, etc).
-- **Tipagem Automática:** Não esqueça de gerar o arquivo `supabase/types.database.ts` após criar novas migrações e de sincronizar com os testes.
+- **Idempotency & Append-Only (INV-3):** Never modify an already committed/merged `.sql` file. Create a new migration. The ledger is append-only (no destructive DROP, DELETE, or TRUNCATE) without prior Council validation. Use logical deletion (soft-delete).
+- **Entities, Time, and Money Representation:**
+  - Monetary values must use `BIGINT` cents in the database (INV-4).
+  - All datetime columns must use `TIMESTAMPTZ` (UTC mandatory) (INV-6).
+- **Database Governance & RLS (INV-2, INV-22):**
+  - Tenant Isolation: Never use `auth.uid()`. RLS policies must strictly use `auth.jwt() ->> 'organization_id'`.
+  - Public Views: All views in the `public` schema MUST be created `WITH (security_invoker = true)`.
+  - Partition Isolation: Enabling RLS on parent does not cascade. Every `CREATE TABLE ... PARTITION OF` must explicitly enable RLS and duplicate policies.
+  - Explicit Grants: New tables in the `public` schema have no default privileges. Grant access explicitly to API roles (`authenticated`, `anon`, `service_role`).
+- **Automatic Type Syncing:** Regenerate `supabase/types.database.ts` after creating migrations and commit the updated types with the changes.

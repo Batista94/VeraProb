@@ -79,18 +79,13 @@ void main() {
         final status = await repo.getConsentStatus();
 
         expect(status.state, LegalConsentState.pending);
-        expect(status.priorVersion, '0.9');
         expect(status.document, isNotNull);
 
         final doc = status.document!;
         expect(doc.id, 'doc-123');
-        expect(doc.docType, 'privacy_policy');
-        expect(doc.version, '1.0');
         expect(doc.title, 'Privacy Policy');
         expect(doc.bodyMarkdown, 'Privacy Body');
-        expect(doc.contentSha256, 'sha256_hash');
         expect(doc.changelog, 'Initial release');
-        expect(doc.publishedAtUtc, DateTime.utc(2026, 7, 9, 10, 0, 0));
       },
     );
 
@@ -109,14 +104,9 @@ void main() {
       final doc = status.document!;
 
       expect(doc.id, 'doc-999');
-      expect(doc.docType, 'terms_of_use', reason: 'Default fallback');
-      expect(doc.version, '', reason: 'Default fallback');
       expect(doc.title, '', reason: 'Default fallback');
       expect(doc.bodyMarkdown, '', reason: 'Default fallback');
-      expect(doc.contentSha256, '', reason: 'Default fallback');
       expect(doc.changelog, isNull);
-      // published_at_utc falls back to DateTime.now().toUtc(), just ensure it's not null and is UTC
-      expect(doc.publishedAtUtc.isUtc, isTrue);
     });
 
     test('throws mapped error on PostgrestException', () async {

@@ -14,15 +14,7 @@ class _FakeLegalRepo extends Mock implements ILegalConsentRepository {}
 void main() {
   late _FakeLegalRepo repo;
 
-  final doc = LegalDocument(
-    id: 'doc-1',
-    docType: 'terms_of_use',
-    version: '1.0',
-    title: 'Termos',
-    bodyMarkdown: 'body',
-    contentSha256: 'c' * 64,
-    publishedAtUtc: DateTime.utc(2026, 1, 1),
-  );
+  const doc = LegalDocument(id: 'doc-1', title: 'Termos', bodyMarkdown: 'body');
 
   setUp(() {
     repo = _FakeLegalRepo();
@@ -32,7 +24,7 @@ void main() {
     test('returns pending from repository for authenticated user', () async {
       when(() => repo.getConsentStatus()).thenAnswer(
         (_) async =>
-            LegalConsentStatus(state: LegalConsentState.pending, document: doc),
+            const LegalConsentStatus(state: LegalConsentState.pending, document: doc),
       );
 
       final container = ProviderContainer(
@@ -46,14 +38,13 @@ void main() {
       final status = await container.read(legalConsentStatusProvider.future);
       expect(status.isPending, isTrue);
       expect(status.document?.id, 'doc-1');
-      expect(status.document?.contentSha256.length, 64);
       verify(() => repo.getConsentStatus()).called(1);
     });
 
     test('returns current when repository reports accepted', () async {
       when(() => repo.getConsentStatus()).thenAnswer(
         (_) async =>
-            LegalConsentStatus(state: LegalConsentState.current, document: doc),
+            const LegalConsentStatus(state: LegalConsentState.current, document: doc),
       );
 
       final container = ProviderContainer(

@@ -14,13 +14,8 @@ enum LegalConsentState {
 class LegalConsentStatus {
   final LegalConsentState state;
   final LegalDocument? document;
-  final String? priorVersion;
 
-  const LegalConsentStatus({
-    required this.state,
-    this.document,
-    this.priorVersion,
-  });
+  const LegalConsentStatus({required this.state, this.document});
 
   bool get isPending => state == LegalConsentState.pending;
   bool get isCurrent => state == LegalConsentState.current;
