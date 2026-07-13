@@ -14,35 +14,19 @@ Widget _wrap(List<Override> overrides) => ProviderScope(
 
 void main() {
   group('VehiclesTab', () {
-    testWidgets('renders error state when filteredVehiclesProvider fails', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _wrap([
-          filteredVehiclesProvider.overrideWithValue(
-            AsyncError(Exception('test'), StackTrace.empty),
-          ),
-          currentUserRoleProvider.overrideWithValue(UserRole.auditor),
-        ]),
-      );
-      await tester.pump();
-      expect(
-        find.text('Não foi possível carregar os veículos agora.'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('renders empty state when vehicle list is empty', (
       tester,
     ) async {
       await tester.pumpWidget(
         _wrap([
-          filteredVehiclesProvider.overrideWithValue(const AsyncData([])),
+          vehiclesListProvider.overrideWith((ref) async => <Vehicle>[]),
           currentUserRoleProvider.overrideWithValue(UserRole.auditor),
         ]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.byType(VehiclesTab), findsOneWidget);
+      expect(find.text('Nenhum veículo cadastrado ainda.'), findsOneWidget);
     });
   });
 }

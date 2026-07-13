@@ -6,28 +6,6 @@ import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/fleet_health_providers.dart';
 
 void main() {
-  group('selectedHealthVehicleIdProvider', () {
-    test('starts unselected (null)', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
-    });
-
-    test('set stores and clears the selected id', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      final notifier = container.read(selectedHealthVehicleIdProvider.notifier);
-
-      notifier.set('veh-1');
-      expect(container.read(selectedHealthVehicleIdProvider), 'veh-1');
-
-      notifier.set(null);
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
-    });
-  });
-
   group('fleetHealthPollingProvider', () {
     test('emits an empty fleet view when no organization is set', () async {
       final container = ProviderContainer(

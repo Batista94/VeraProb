@@ -109,11 +109,6 @@ const _orgScopedProviders = <OrgScopedProviderSpec>[
     accessPattern: OrgIdAccessPattern.watch,
   ),
   OrgScopedProviderSpec(
-    filePath: 'lib/state/providers/executive_dashboard_providers.dart',
-    displayName: 'executive_dashboard_providers',
-    accessPattern: OrgIdAccessPattern.watch,
-  ),
-  OrgScopedProviderSpec(
     filePath: 'lib/state/providers/fleet_providers.dart',
     displayName: 'fleet_providers',
     accessPattern: OrgIdAccessPattern.read,
@@ -391,17 +386,17 @@ void main() {
     );
 
     // ── Sub-property: Provider count completeness ────────────────────────
-    // Verifies that we are testing all 18 known org-scoped providers.
+    // Verifies that we are testing all 17 known org-scoped providers.
     Glados(any.intInRange(0, _orgScopedProviders.length - 1)).test(
-      'org-scoped provider list is complete (18 providers)',
+      'org-scoped provider list is complete (17 providers)',
       (index) {
         // This property verifies the test itself is complete — we have
-        // exactly 18 org-scoped providers defined.
+        // exactly 17 org-scoped providers defined.
         expect(
           _orgScopedProviders.length,
-          equals(18),
+          equals(17),
           reason:
-              'Must verify all 18 org-scoped providers for INV-1 compliance. '
+              'Must verify all 17 org-scoped providers for INV-1 compliance. '
               'If a new org-scoped provider is added, update this test.',
         );
 

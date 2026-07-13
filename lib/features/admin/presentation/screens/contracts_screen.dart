@@ -42,6 +42,7 @@ class _ContractListView extends ConsumerStatefulWidget {
 
 class _ContractListViewState extends ConsumerState<_ContractListView> {
   String _searchQuery = '';
+  ContractStatusView? _statusFilter;
 
   Widget _buildContractList(List<ContractSummaryView> value) {
     final contracts = _filterContracts(value);
@@ -56,9 +57,13 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
   }
 
   List<ContractSummaryView> _filterContracts(List<ContractSummaryView> list) {
-    if (_searchQuery.isEmpty) return list;
+    var result = list;
+    if (_statusFilter != null) {
+      result = result.where((c) => c.status == _statusFilter).toList();
+    }
+    if (_searchQuery.isEmpty) return result;
     final q = _searchQuery.toLowerCase();
-    return list
+    return result
         .where(
           (c) =>
               c.name.toLowerCase().contains(q) ||
@@ -70,7 +75,7 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
   @override
   Widget build(BuildContext context) {
     final contractsAsync = ref.watch(contractListProvider);
-    final activeFilter = ref.watch(contractStatusFilterProvider);
+    final activeFilter = _statusFilter;
 
     return Padding(
       padding: const EdgeInsets.all(VeraProbSpacing.xl),
@@ -163,16 +168,14 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
               _FilterChip(
                 label: 'Todos',
                 selected: activeFilter == null,
-                onSelected: (_) =>
-                    ref.read(contractStatusFilterProvider.notifier).set(null),
+                onSelected: (_) => setState(() => _statusFilter = null),
               ),
               _FilterChip(
                 label: 'Rascunhos',
                 color: VeraProbColors.neutral,
                 selected: activeFilter == ContractStatusView.draft,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .set(ContractStatusView.draft),
+                onSelected: (_) =>
+                    setState(() => _statusFilter = ContractStatusView.draft),
               ),
               _FilterChip(
                 label: 'Aguardando Aceite',
@@ -180,25 +183,24 @@ class _ContractListViewState extends ConsumerState<_ContractListView> {
                 selected:
                     activeFilter ==
                     ContractStatusView.awaitingContractorAcceptance,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .set(ContractStatusView.awaitingContractorAcceptance),
+                onSelected: (_) => setState(
+                  () => _statusFilter =
+                      ContractStatusView.awaitingContractorAcceptance,
+                ),
               ),
               _FilterChip(
                 label: 'Ativos',
                 color: VeraProbColors.success,
                 selected: activeFilter == ContractStatusView.active,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .set(ContractStatusView.active),
+                onSelected: (_) =>
+                    setState(() => _statusFilter = ContractStatusView.active),
               ),
               _FilterChip(
                 label: 'Encerrados',
                 color: VeraProbColors.error,
                 selected: activeFilter == ContractStatusView.closed,
-                onSelected: (_) => ref
-                    .read(contractStatusFilterProvider.notifier)
-                    .set(ContractStatusView.closed),
+                onSelected: (_) =>
+                    setState(() => _statusFilter = ContractStatusView.closed),
               ),
             ],
           ),

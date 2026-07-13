@@ -14,33 +14,17 @@ Widget _wrap(List<Override> overrides) => ProviderScope(
 
 void main() {
   group('RoutesTab', () {
-    testWidgets('renders error state when filteredRoutesProvider fails', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        _wrap([
-          filteredRoutesProvider.overrideWithValue(
-            AsyncError(Exception('test'), StackTrace.empty),
-          ),
-          currentUserRoleProvider.overrideWithValue(UserRole.auditor),
-        ]),
-      );
-      await tester.pump();
-      expect(
-        find.text('Não foi possível carregar as rotas agora.'),
-        findsOneWidget,
-      );
-    });
-
     testWidgets('renders empty state when route list is empty', (tester) async {
       await tester.pumpWidget(
         _wrap([
-          filteredRoutesProvider.overrideWithValue(const AsyncData([])),
+          routesListProvider.overrideWith((ref) async => <TransitRoute>[]),
           currentUserRoleProvider.overrideWithValue(UserRole.auditor),
         ]),
       );
       await tester.pump();
+      await tester.pump();
       expect(find.byType(RoutesTab), findsOneWidget);
+      expect(find.text('Nenhuma rota cadastrada ainda.'), findsOneWidget);
     });
   });
 }

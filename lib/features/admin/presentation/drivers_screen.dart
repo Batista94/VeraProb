@@ -21,7 +21,17 @@ class DriversScreen extends ConsumerStatefulWidget {
 class _DriversScreenState extends ConsumerState<DriversScreen> {
   bool _isDrawerOpen = false;
   String? _highlightedDriverId;
+  bool _showArchived = false;
   final _searchController = TextEditingController();
+
+  List<Driver> _filterDrivers(List<Driver> drivers) {
+    final q = _searchController.text.toLowerCase();
+    return drivers.where((d) {
+      if (!_showArchived && d.isArchived) return false;
+      if (q.isEmpty) return true;
+      return d.name.toLowerCase().contains(q) || d.licenseNumber.contains(q);
+    }).toList();
+  }
 
   void _openDrawer() {
     setState(() => _isDrawerOpen = true);
@@ -46,7 +56,15 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredAsync = ref.watch(filteredDriversProvider);
+    final driversAsync = ref.watch(driversListProvider);
+    final filteredAsync = switch (driversAsync) {
+      AsyncData(:final value) => AsyncData(_filterDrivers(value)),
+      AsyncError(:final error, :final stackTrace) => AsyncError<List<Driver>>(
+        error,
+        stackTrace,
+      ),
+      _ => const AsyncLoading<List<Driver>>(),
+    };
     final userRole = ref.watch(currentUserRoleProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -114,7 +132,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
     ColorScheme colorScheme,
     UserRole userRole,
   ) {
-    final showArchived = ref.watch(showArchivedDriversProvider);
+    final showArchived = _showArchived;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -152,7 +170,7 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
         // Toggle: show archived drivers (supervisors can audit history — INV-3)
         TextButton.icon(
           onPressed: () {
-            ref.read(showArchivedDriversProvider.notifier).set(!showArchived);
+            setState(() => _showArchived = !_showArchived);
           },
           icon: Icon(
             showArchived ? Icons.visibility_off_outlined : Icons.history,
@@ -213,16 +231,13 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                   icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
-                    ref.read(driversSearchQueryProvider.notifier).set('');
+                    setState(() {});
                   },
                 )
               : null,
           isDense: true,
         ),
-        onChanged: (value) {
-          ref.read(driversSearchQueryProvider.notifier).set(value);
-          setState(() {}); // Refresh clear button
-        },
+        onChanged: (_) => setState(() {}),
       ),
     );
   }

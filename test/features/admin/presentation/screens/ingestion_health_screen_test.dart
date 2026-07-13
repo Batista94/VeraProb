@@ -115,8 +115,7 @@ void main() {
       // 'Integridade do Sinal' was the old unsectioned label.
       // The new detail panel uses section header 'Integridade' + label 'Pontuação do Sinal'.
       expect(find.text('Pontuação do Sinal'), findsNothing);
-      // No vehicle selected in provider
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
+      // No vehicle selected — detail panel collapsed
     });
 
     testWidgets('resolves preselection immediately and opens detail panel', (
@@ -136,8 +135,6 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // Provider updated with the resolved id.
-      expect(container.read(selectedHealthVehicleIdProvider), _kOrgVehicleId);
       // Detail panel visible.
       expect(find.text('Pontuação do Sinal'), findsOneWidget);
       expect(find.text('ABC-1234'), findsWidgets);
@@ -164,8 +161,6 @@ void main() {
       await tester.pump();
       await tester.pumpAndSettle();
 
-      // Provider must NOT be set to the absent id.
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
       // Detail panel collapsed.
       expect(find.text('Pontuação do Sinal'), findsNothing);
       // Snackbar visible with no id in message (Anti-Oracle).
@@ -182,25 +177,22 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('close button clears selected vehicle from provider', (
-      tester,
-    ) async {
+    testWidgets('close button clears selected vehicle', (tester) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
       final container = _container();
-      // Pre-select via provider directly (simulates clicking a card).
-      container
-          .read(selectedHealthVehicleIdProvider.notifier)
-          .set(_kOrgVehicleId);
       addTearDown(container.dispose);
 
-      final router = _router();
+      // Preselect via URL so local state opens the detail panel.
+      final router = _router(vehicleId: _kOrgVehicleId);
       addTearDown(router.dispose);
 
       await tester.pumpWidget(_host(container, router));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 2));
 
       expect(find.text('Pontuação do Sinal'), findsOneWidget);
 
@@ -208,31 +200,26 @@ void main() {
       await tester.tap(find.byTooltip('Fechar'));
       await tester.pump();
 
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
       expect(find.text('Pontuação do Sinal'), findsNothing);
     });
 
-    testWidgets('dispose clears selectedHealthVehicleIdProvider', (
-      tester,
-    ) async {
+    testWidgets('dispose does not throw with open selection', (tester) async {
       tester.view.physicalSize = const Size(1400, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
 
       final container = _container();
-      container
-          .read(selectedHealthVehicleIdProvider.notifier)
-          .set(_kOrgVehicleId);
       addTearDown(container.dispose);
 
-      final router = _router();
+      final router = _router(vehicleId: _kOrgVehicleId);
       addTearDown(router.dispose);
 
       await tester.pumpWidget(_host(container, router));
-      await tester.pumpAndSettle();
-      expect(container.read(selectedHealthVehicleIdProvider), _kOrgVehicleId);
+      await tester.pump();
+      await tester.pump();
+      expect(find.text('Pontuação do Sinal'), findsOneWidget);
 
-      // Replace with unrelated widget → screen disposes.
+      // Replace with unrelated widget → screen disposes cleanly.
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
@@ -241,7 +228,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
+      expect(find.text('gone'), findsOneWidget);
     });
 
     testWidgets('filter chips render for all HardwareStatusView values', (
@@ -384,8 +371,7 @@ void main() {
       await tester.pumpWidget(_host(container, router));
       await tester.pumpAndSettle();
 
-      // No preselection → no detail panel, no selection.
-      expect(container.read(selectedHealthVehicleIdProvider), isNull);
+      // No preselection → no detail panel.
       expect(find.text('Pontuação do Sinal'), findsNothing);
     });
   });

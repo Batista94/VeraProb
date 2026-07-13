@@ -30,6 +30,15 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
   String? _highlightedId;
   final _searchController = TextEditingController();
 
+  List<Vehicle> _filterVehicles(List<Vehicle> vehicles) {
+    final query = _searchController.text.toLowerCase();
+    if (query.isEmpty) return vehicles;
+    return vehicles.where((v) {
+      return v.plate.toLowerCase().contains(query) ||
+          (v.model?.toLowerCase().contains(query) ?? false);
+    }).toList();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -45,7 +54,15 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredAsync = ref.watch(filteredVehiclesProvider);
+    final vehiclesAsync = ref.watch(vehiclesListProvider);
+    final filteredAsync = switch (vehiclesAsync) {
+      AsyncData(:final value) => AsyncData(_filterVehicles(value)),
+      AsyncError(:final error, :final stackTrace) => AsyncError<List<Vehicle>>(
+        error,
+        stackTrace,
+      ),
+      _ => const AsyncLoading<List<Vehicle>>(),
+    };
     final userRole = ref.watch(currentUserRoleProvider);
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -165,16 +182,13 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                   icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
-                    ref.read(vehiclesSearchQueryProvider.notifier).set('');
+                    setState(() {});
                   },
                 )
               : null,
           isDense: true,
         ),
-        onChanged: (value) {
-          ref.read(vehiclesSearchQueryProvider.notifier).set(value);
-          setState(() {});
-        },
+        onChanged: (_) => setState(() {}),
       ),
     );
   }

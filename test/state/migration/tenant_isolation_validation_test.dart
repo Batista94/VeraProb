@@ -35,8 +35,6 @@ const _orgScopedProviders = <String, _OrgIdSource>{
   'lib/state/providers/contractor_providers.dart': _OrgIdSource.watchProvider,
   'lib/state/providers/dashboard_risk_feed_provider.dart':
       _OrgIdSource.watchProvider,
-  'lib/state/providers/executive_dashboard_providers.dart':
-      _OrgIdSource.watchProvider,
   'lib/state/providers/fleet_providers.dart': _OrgIdSource.readProvider,
   'lib/state/providers/forensic_ledger_providers.dart':
       _OrgIdSource.watchProvider,

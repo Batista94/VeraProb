@@ -6,7 +6,6 @@ import 'package:veraprob/application/sla_audit/projections/fleet_health_query_se
 import 'package:veraprob/application/sla_audit/projections/fleet_health_view.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/infrastructure/sla_audit/supabase_fleet_health_query_service.dart';
-import 'package:veraprob/state/provider_timeout.dart';
 import 'auth_providers.dart';
 
 // ── Infrastructure Binding ───────────────────────────────────────────────────
@@ -18,21 +17,6 @@ final fleetHealthQueryServiceProvider = Provider<FleetHealthQueryService>((
   ref,
 ) {
   return SupabaseFleetHealthQueryService(ref.watch(supabaseClientProvider));
-});
-
-// ── One-Shot Fetch ───────────────────────────────────────────────────────────
-
-/// Returns the fleet health snapshot for [organizationId] (INV-1).
-///
-/// One-shot fetch — use [fleetHealthPollingProvider] for continuous monitoring.
-final fleetHealthProvider = FutureProvider.family<FleetHealthView, String>((
-  ref,
-  organizationId,
-) async {
-  final service = ref.watch(fleetHealthQueryServiceProvider);
-  return service
-      .getFleetHealth(organizationId: organizationId)
-      .withProviderTimeout();
 });
 
 // ── Polling Stream (60s) ─────────────────────────────────────────────────────
@@ -94,22 +78,7 @@ final fleetHealthPollingProvider = StreamProvider.autoDispose<FleetHealthView>((
 });
 
 // ── Drill-Down Selection ─────────────────────────────────────────────────────
-
-class SelectedHealthVehicleIdNotifier extends Notifier<String?> {
-  @override
-  String? build() => null;
-
-  void set(String? value) => state = value;
-}
-
-/// Selected vehicle ID for the detail panel drill-down.
-///
-/// Set by the alert tap handler or by clicking a vehicle in the grid.
-/// `null` means no vehicle is selected (detail panel collapsed).
-final selectedHealthVehicleIdProvider =
-    NotifierProvider<SelectedHealthVehicleIdNotifier, String?>(
-      SelectedHealthVehicleIdNotifier.new,
-    );
+// Selection lives in IngestionHealthScreen local state (Phase 2 ponytail).
 
 // ── Preselection Validation ──────────────────────────────────────────────────
 

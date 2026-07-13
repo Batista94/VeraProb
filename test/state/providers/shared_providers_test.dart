@@ -10,72 +10,24 @@ void main() {
       expect(container, isNotNull);
     });
 
-    test('provider initial state test structure', () {
+    test('tripRepositoryProvider exists after read path', () {
       final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(gtfsServiceProvider),
-        isFalse,
-      ); // Initially false before being read
+      expect(container.exists(tripRepositoryProvider), isFalse);
     });
 
-    test('provider initial state test structure', () {
+    test('sharedPreferencesProvider exists after read path', () {
       final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(vehicleRepositoryProvider),
-        isFalse,
-      ); // Initially false before being read
+      expect(container.exists(sharedPreferencesProvider), isFalse);
     });
 
-    test('provider initial state test structure', () {
+    test('dateTimeProviderProvider resolves', () {
       final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(tripRepositoryProvider),
-        isFalse,
-      ); // Initially false before being read
+      expect(container.read(dateTimeProviderProvider), isNotNull);
     });
 
-    test('provider initial state test structure', () {
+    test('evidenceUrlServiceProvider resolves', () {
       final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(sharedPreferencesProvider),
-        isFalse,
-      ); // Initially false before being read
-    });
-
-    test('provider initial state test structure', () {
-      final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(currentDriverProvider),
-        isFalse,
-      ); // Initially false before being read
-    });
-
-    test('provider initial state test structure', () {
-      final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(searchControllerProvider),
-        isFalse,
-      ); // Initially false before being read
-    });
-
-    test('provider data loading state', () {
-      final container = ProviderContainer.test();
-
-      final state = container.read(searchQueryStreamProvider);
-
-      expect(state, isA<AsyncLoading<Object?>>());
+      expect(container.read(evidenceUrlServiceProvider), isNotNull);
     });
   });
 }

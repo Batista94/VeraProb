@@ -51,21 +51,8 @@ final auditLogProjectionProvider = FutureProvider<AuditLogProjection>((
   final filters = ref.watch(auditFilterProvider);
 
   var filteredLogs = rawLogs.where((log) {
-    if (filters.startDate != null &&
-        log.timestamp.isBefore(filters.startDate!)) {
-      return false;
-    }
-    if (filters.endDate != null && log.timestamp.isAfter(filters.endDate!)) {
-      return false;
-    }
     final cat = _determineCategory(log.actionType);
     if (filters.category != null && cat != filters.category) {
-      return false;
-    }
-    if (filters.entityId != null && log.entityId != filters.entityId) {
-      return false;
-    }
-    if (filters.eventType != null && log.actionType != filters.eventType) {
       return false;
     }
     return true;

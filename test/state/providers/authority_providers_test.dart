@@ -15,7 +15,7 @@ void main() {
 
       // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
       expect(
-        container.exists(mockAuthorizationContextProvider),
+        container.exists(authorizationContextProvider),
         isFalse,
       ); // Initially false before being read
     });
