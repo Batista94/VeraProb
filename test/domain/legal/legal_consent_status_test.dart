@@ -5,14 +5,14 @@ import 'package:veraprob/domain/legal/legal_document.dart';
 void main() {
   group('LegalConsentStatus', () {
     test('isPending and isCurrent getters work correctly', () {
-      final pendingStatus = LegalConsentStatus(
+      const pendingStatus = LegalConsentStatus(
         state: LegalConsentState.pending,
       );
 
       expect(pendingStatus.isPending, isTrue);
       expect(pendingStatus.isCurrent, isFalse);
 
-      final currentStatus = LegalConsentStatus(
+      const currentStatus = LegalConsentStatus(
         state: LegalConsentState.current,
       );
 

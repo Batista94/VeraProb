@@ -41,9 +41,9 @@ SELECT is(
 
 SELECT is(
   (SELECT count(*)::int FROM public.legal_documents
-    WHERE doc_type = 'telegram_bot_terms' AND version = '1.0'
+    WHERE doc_type = 'telegram_bot_terms' AND version = '1.1'
       AND status = 'published' AND active_to_utc IS NULL),
-  1, 'SEED2: telegram_bot_terms 1.0 published and active');
+  1, 'SEED2: telegram_bot_terms 1.1 published and active');
 
 SELECT is(
   (SELECT content_sha256 FROM public.legal_documents

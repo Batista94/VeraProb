@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · [NEXT: Legal Gate & Terms of Use (LGPD)]
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · **Legal Gate & Terms of Use (LGPD) em UAT Final**.
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1459+ passing · 151 files · `make test-db` ✅ |
-| Migrations | 351 committed ✅ |
+| DB Tests (pgTAP) | 1500+ passing · 165 files · `make test-db` ✅ |
+| Migrations | 365 committed ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -23,7 +23,7 @@
 
 - [x] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
 - [x] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
-- [ ] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
+- [/] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados. (Em UAT Final)
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 
 ---

@@ -788,15 +788,15 @@ $md$;
   v_bot_body := $md$
 # Termos do VeraProb Evidence Bot (LGPD)
 
-Ao utilizar o VeraProb Evidence Bot no Telegram, você concorda que:
+Para usar o nosso sistema pelo Telegram, você precisa concordar com as seguintes regras de privacidade:
 
-1. **Coleta de Dados:** Coletamos seu ID de chat do Telegram, fotos, vídeos, áudios e documentos enviados, além de metadados técnicos (data/hora do dispositivo e localização GPS se presente no arquivo EXIF).
-2. **Intermediário:** O **Telegram** atua como intermediário/processador da mensagem; a VeraProb trata os dados recebidos via webhook para fins forenses.
-3. **Finalidade:** Geração de evidências forenses em operações logísticas (prova de execução e conformidade).
-4. **Segurança:** Evidências são seladas com hash SHA-256 e isoladas por organização.
-5. **Compartilhamento:** Visíveis apenas a supervisores/administradores da sua organização no painel VeraProb.
-6. **Retenção:** Mantidas pelo período necessário à auditoria contratual e conformidade legal.
-7. **Revogação:** Envie /revoke no bot ou solicite ao supervisor. A revogação impede novos envios e desvincula o chat.
+1. 📱 **Seus Dados:** Coletaremos as fotos, áudios e mensagens que você enviar aqui, além do seu código de usuário do Telegram, a hora do envio e a localização (GPS) da foto.
+2. 🏢 **Quem é o dono dos dados?** A sua Empresa (Transportadora) é a **Controladora** (dona) dos dados. A VeraProb é apenas o sistema (**Operador**) que guarda essas informações com segurança para sua empresa.
+3. 🎯 **Para que serve?** Para comprovar que você realizou seu trabalho e entregas corretamente, gerando evidências seguras contra fraudes e contestações.
+4. 🔒 **Segurança Máxima:** Suas provas recebem um selo matemático imutável. Ninguém (nem a VeraProb, nem a sua empresa) pode alterar as fotos ou o horário após o envio.
+5. 👁️ **Quem pode ver?** Apenas os supervisores autorizados da sua Empresa, no painel de controle.
+6. ⏳ **Tempo de Guarda:** Suas evidências são guardadas por até 5 anos para cumprimento de leis trabalhistas, de transporte e auditoria de contratos.
+7. ❌ **Como cancelar?** Envie o comando `/revoke` aqui no bot a qualquer momento. Isso impede novos envios e desvincula seu Telegram da plataforma.
 
 O aceite é registrado com a versão e o hash do texto vigente.
 $md$;
@@ -820,15 +820,15 @@ $md$;
 
   IF NOT EXISTS (
     SELECT 1 FROM public.legal_documents
-    WHERE doc_type = 'telegram_bot_terms' AND version = '1.0'
+    WHERE doc_type = 'telegram_bot_terms' AND version = '1.1'
   ) THEN
     INSERT INTO public.legal_documents (
       doc_type, version, title, body_markdown, content_sha256,
       changelog, status, published_at_utc, active_to_utc
     ) VALUES (
-      'telegram_bot_terms', '1.0',
+      'telegram_bot_terms', '1.1',
       'Termos do VeraProb Evidence Bot (LGPD)',
-      v_bot_body, v_bot_hash, NULL, 'published', NOW(), NULL
+      v_bot_body, v_bot_hash, 'Linguagem simplificada e correção de gaps LGPD.', 'published', NOW(), NULL
     );
   END IF;
 END;
