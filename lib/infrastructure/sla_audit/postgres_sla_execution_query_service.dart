@@ -6,6 +6,7 @@ import 'package:veraprob/application/sla_audit/projections/sla_execution_item_vi
 import 'package:veraprob/application/sla_audit/projections/sla_execution_query_service.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
 
 /// Postgres implementation for [SlaExecutionQueryService].
 /// Extracts flat DTOs directly from the `execution_states` table.
@@ -206,10 +207,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
   /// By appending `'Z'` before parsing, we treat all naive strings as UTC,
   /// matching the Postgres behaviour on a UTC-configured server.
   static DateTime _parseUtc(String s) {
-    if (!s.endsWith('Z') && !RegExp(r'[+-]\d{2}:\d{2}$').hasMatch(s)) {
-      return DateTime.parse('${s}Z');
-    }
-    return DateTime.parse(s).toUtc();
+    return BasePostgresRepository.parsePostgresUtc(s, 'timestamp');
   }
 
   /// Maps a raw Postgres row to an [SlaExecutionItemView].

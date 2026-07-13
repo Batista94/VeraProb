@@ -5,7 +5,7 @@ import 'package:veraprob/domain/shared/money.dart';
 import 'package:veraprob/domain/sla_audit/domain_event.dart';
 import 'package:veraprob/domain/sla_audit/execution_events.dart';
 import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
-import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 
 // Stub unknown event for fallback coverage
 class _UnknownEvent extends DomainEvent {
@@ -220,10 +220,10 @@ void main() {
     );
 
     test(
-      'SlaLedgerEntryDto.toDomain normalizes timestamp to UTC regardless of source format',
+      'PostgresSlaAuditLedgerRepository.fromRow normalizes timestamp to UTC regardless of source format',
       () {
         // Simulate DB row — some Postgres drivers omit the Z suffix
-        final dto = SlaLedgerEntryDto.fromJson({
+        final entry = PostgresSlaAuditLedgerRepository.fromRow({
           'organization_id': 'org-1',
           'type': 'EXECUTION_BOUND',
           'operator_id': 'SYSTEM',
@@ -231,12 +231,10 @@ void main() {
           'plan_version': 1,
           'occurred_at_utc': '2026-04-10T14:00:00.000Z',
           'payload': <String, dynamic>{},
-        });
-
-        final domain = dto.toDomain('event-uuid-abc');
+        }, 'evt-1');
 
         expect(
-          domain.occurredAtUtc.isUtc,
+          entry.occurredAtUtc.isUtc,
           isTrue,
           reason: 'INV-9: toDomain must force UTC',
         );
@@ -259,8 +257,11 @@ void main() {
         final entry = SlaLedgerMapper.mapToEntry(event);
         expect(entry.occurredAtUtc.isUtc, isTrue);
 
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final roundTripped = dto.toDomain('event-uuid-xyz');
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        final roundTripped = PostgresSlaAuditLedgerRepository.fromRow(
+          json,
+          'evt-rt',
+        );
         expect(roundTripped.occurredAtUtc.isUtc, isTrue);
       },
     );
@@ -269,16 +270,16 @@ void main() {
   // ── Integrity Gap — Row Corruption ─────────────────────────────────────────
 
   group(
-    'SlaLedgerEntryDto — Integrity Gap (INV-18: corrupt row throws IntegrityException)',
+    'Ledger mapping — Integrity Gap (INV-18: corrupt row throws IntegrityException)',
     () {
       test(
         'fromJson throws IntegrityException when organization_id is absent',
         () {
           expect(
-            () => SlaLedgerEntryDto.fromJson({
+            () => PostgresSlaAuditLedgerRepository.fromRow({
               'type': 'EXECUTION_BOUND',
               'occurred_at_utc': '2026-04-10T14:00:00Z',
-            }),
+            }, 'evt-1'),
             throwsA(
               isA<IntegrityException>().having(
                 (e) => e.field,
@@ -294,11 +295,11 @@ void main() {
         'fromJson throws IntegrityException when organization_id is null',
         () {
           expect(
-            () => SlaLedgerEntryDto.fromJson({
+            () => PostgresSlaAuditLedgerRepository.fromRow({
               'organization_id': null,
               'type': 'EXECUTION_BOUND',
               'occurred_at_utc': '2026-04-10T14:00:00Z',
-            }),
+            }, 'evt-1'),
             throwsA(isA<IntegrityException>()),
           );
         },
@@ -308,10 +309,10 @@ void main() {
         'fromJson throws IntegrityException when occurred_at_utc is missing',
         () {
           expect(
-            () => SlaLedgerEntryDto.fromJson({
+            () => PostgresSlaAuditLedgerRepository.fromRow({
               'organization_id': 'org-1',
               'type': 'EXECUTION_BOUND',
-            }),
+            }, 'evt-1'),
             throwsA(
               isA<IntegrityException>().having(
                 (e) => e.field,
@@ -328,12 +329,12 @@ void main() {
         () {
           // INV-19: financial fields must be int — double indicates upstream corruption
           expect(
-            () => SlaLedgerEntryDto.fromJson({
+            () => PostgresSlaAuditLedgerRepository.fromRow({
               'organization_id': 'org-1',
               'type': 'VERDICT_SEALED',
               'occurred_at_utc': '2026-04-10T14:00:00Z',
               'payload': {'penalty_cents': 15000.50}, // double drift
-            }),
+            }, 'evt-1'),
             throwsA(
               isA<IntegrityException>().having(
                 (e) => e.field,
@@ -357,7 +358,7 @@ void main() {
           );
 
           expect(
-            () => SlaLedgerEntryDto.fromDomain(entry),
+            () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
             throwsA(
               isA<IntegrityException>().having(
                 (e) => e.field,
@@ -408,8 +409,7 @@ void main() {
         occurredAtUtc: DateTime.utc(2026, 4, 10),
       );
 
-      final dto = SlaLedgerEntryDto.fromDomain(entry);
-      final json = dto.toJson();
+      final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
 
       expect(json['organization_id'], orgId);
       expect(
@@ -431,8 +431,11 @@ void main() {
           occurredAtUtc: DateTime.utc(2026, 4, 10),
         );
 
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final reconstituted = dto.toDomain('event-id-ro');
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        final reconstituted = PostgresSlaAuditLedgerRepository.fromRow(
+          json,
+          'ro-1',
+        );
 
         expect(reconstituted.organizationId, entry.organizationId);
         expect(reconstituted.planVersion, entry.planVersion);

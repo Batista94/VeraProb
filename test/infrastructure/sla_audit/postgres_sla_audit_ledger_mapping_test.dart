@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
-import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sla_audit_ledger_repository.dart';
 
 void main() {
-  group('SlaLedgerEntryDto', () {
+  group('PostgresSlaAuditLedgerRepository mapping', () {
     group('fromDomain', () {
       SlaLedgerEntry makeEntry({
         String organizationId = 'org-1',
@@ -30,8 +30,7 @@ void main() {
 
       test('valid entry produces correct JSON mapping', () {
         final entry = makeEntry();
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final json = dto.toJson();
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
 
         expect(json['organization_id'], 'org-1');
         expect(json['type'], 'PLAN_DECLARED');
@@ -44,8 +43,7 @@ void main() {
 
       test('null setId is preserved for plan-level events', () {
         final entry = makeEntry(setId: null);
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final json = dto.toJson();
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
 
         expect(json['set_id'], isNull);
       });
@@ -54,8 +52,7 @@ void main() {
         final entry = makeEntry(
           payload: {'sanction_value_cents': 5000, 'reason': 'No-show'},
         );
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final json = dto.toJson();
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
         final mappedPayload = json['payload'] as Map<String, dynamic>;
 
         expect(mappedPayload['sanction_value_cents'], 5000);
@@ -65,7 +62,7 @@ void main() {
       test('empty organizationId throws IntegrityException', () {
         final entry = makeEntry(organizationId: '');
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -80,7 +77,7 @@ void main() {
         final longType = 'A' * 256;
         final entry = makeEntry(type: longType);
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -94,15 +91,15 @@ void main() {
       test('type at exactly 255 characters is valid', () {
         final exactType = 'A' * 255;
         final entry = makeEntry(type: exactType);
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        expect(dto.toJson()['type'], exactType);
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        expect(json['type'], exactType);
       });
 
       test('operatorId exceeding 255 characters throws IntegrityException', () {
         final longOperatorId = 'A' * 256;
         final entry = makeEntry(operatorId: longOperatorId);
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -116,7 +113,7 @@ void main() {
       test('negative planVersion throws IntegrityException', () {
         final entry = makeEntry(planVersion: -1);
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -129,14 +126,14 @@ void main() {
 
       test('zero planVersion is valid', () {
         final entry = makeEntry(planVersion: 0);
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        expect(dto.toJson()['plan_version'], 0);
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        expect(json['plan_version'], 0);
       });
 
       test('payload with double cents throws IntegrityException', () {
         final entry = makeEntry(payload: {'sanction_value_cents': 5000.50});
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -154,7 +151,7 @@ void main() {
           },
         );
         expect(
-          () => SlaLedgerEntryDto.fromDomain(entry),
+          () => PostgresSlaAuditLedgerRepository.toInsertMap(entry),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -172,16 +169,16 @@ void main() {
             'financial': {'centavos': 12345},
           },
         );
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        expect(dto.toJson()['payload']['sanction_value_cents'], 5000);
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        expect(json['payload']['sanction_value_cents'], 5000);
       });
 
       test('payload without cents fields with double values passes', () {
         final entry = makeEntry(
           payload: {'multiplier': 1.5, 'percentage': 0.75},
         );
-        final dto = SlaLedgerEntryDto.fromDomain(entry);
-        final payload = dto.toJson()['payload'] as Map<String, dynamic>;
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(entry);
+        final payload = json['payload'] as Map<String, dynamic>;
         expect(payload['multiplier'], 1.5);
         expect(payload['percentage'], 0.75);
       });
@@ -200,8 +197,10 @@ void main() {
           'payload': {'key': 'value'},
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        expect(dto.toJson(), json);
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1');
+        expect(entry.organizationId, 'org-1');
+        expect(entry.type, 'PLAN_DECLARED');
+        expect(entry.payload['key'], 'value');
       });
 
       test('missing organization_id throws IntegrityException', () {
@@ -213,7 +212,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -234,7 +233,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -254,7 +253,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -275,7 +274,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -295,7 +294,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -316,7 +315,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -337,8 +336,7 @@ void main() {
           'payload': null,
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        final entry = dto.toDomain('db-id');
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1');
         expect(entry.payload, isEmpty);
       });
 
@@ -351,8 +349,7 @@ void main() {
           'occurred_at_utc': '2026-04-07T21:00:00.000Z',
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        final entry = dto.toDomain('test-id');
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1');
         expect(entry.payload, isEmpty);
       });
 
@@ -367,7 +364,7 @@ void main() {
         };
 
         expect(
-          () => SlaLedgerEntryDto.fromJson(json),
+          () => PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1'),
           throwsA(
             isA<IntegrityException>().having(
               (e) => e.message,
@@ -392,8 +389,10 @@ void main() {
           'payload': {'status': 'bound'},
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        final entry = dto.toDomain('uuid-abc-123');
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(
+          json,
+          'uuid-abc-123',
+        );
 
         expect(entry.eventId, 'uuid-abc-123');
         expect(entry.organizationId, 'org-42');
@@ -418,8 +417,7 @@ void main() {
           'payload': <String, dynamic>{},
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        final entry = dto.toDomain('db-id-1');
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1');
 
         expect(entry.operatorId, 'SYSTEM');
       });
@@ -435,8 +433,7 @@ void main() {
           'payload': <String, dynamic>{},
         };
 
-        final dto = SlaLedgerEntryDto.fromJson(json);
-        final entry = dto.toDomain('db-id-2');
+        final entry = PostgresSlaAuditLedgerRepository.fromRow(json, 'evt-1');
 
         expect(entry.setId, isNull);
       });
@@ -453,12 +450,12 @@ void main() {
           payload: {'penalty_cents': 15000, 'reason': 'SLA breach'},
         );
 
-        final dto = SlaLedgerEntryDto.fromDomain(original);
-        final json = dto.toJson();
+        final json = PostgresSlaAuditLedgerRepository.toInsertMap(original);
 
-        final reconstituted = SlaLedgerEntryDto.fromJson(
+        final reconstituted = PostgresSlaAuditLedgerRepository.fromRow(
           json,
-        ).toDomain('generated-uuid');
+          'generated-uuid',
+        );
 
         expect(reconstituted.organizationId, original.organizationId);
         expect(reconstituted.type, original.type);

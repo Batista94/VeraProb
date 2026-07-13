@@ -1,4 +1,3 @@
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/entities/transit_route.dart';
 import 'package:veraprob/domain/assets/i_transit_route_repository.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
@@ -11,16 +10,9 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
     implements ITransitRouteRepository {
   PostgresTransitRouteRepository(super.client);
 
-  String get _orgId {
-    final orgId =
-        client.auth.currentSession?.user.appMetadata['org_id'] as String?;
-    if (orgId == null) throw StateError('No organization in session JWT');
-    return orgId;
-  }
-
   @override
-  Future<List<TransitRoute>> getRoutes() async {
-    try {
+  Future<List<TransitRoute>> getRoutes() {
+    return withErrorHandler('transit_route', null, () async {
       final response = await client
           .from('routes')
           .select()
@@ -28,9 +20,7 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
       return (response as List)
           .map((row) => TransitRoute.fromJson(row as Map<String, dynamic>))
           .toList();
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'transit_route');
-    }
+    });
   }
 
   @override
@@ -39,12 +29,12 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
     required String longName,
     String? color,
     String? gtfsRouteId,
-  }) async {
-    try {
+  }) {
+    return withErrorHandler('transit_route', null, () async {
       final response = await client
           .from('routes')
           .insert({
-            'organization_id': _orgId,
+            'organization_id': sessionOrgId,
             'short_name': shortName.trim(),
             'long_name': longName.trim(),
             'color': color?.trim(),
@@ -53,15 +43,15 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
           .select()
           .single();
       return TransitRoute.fromJson(response);
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'transit_route');
-    }
+    });
   }
 
   @override
-  Future<void> updateRoute(TransitRoute route) async {
-    try {
-      await client
+  Future<void> updateRoute(TransitRoute route) {
+    return withErrorHandler(
+      'transit_route',
+      route.id,
+      () => client
           .from('routes')
           .update({
             'short_name': route.shortName.trim(),
@@ -69,18 +59,16 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
             'color': route.color?.trim(),
             'gtfs_route_id': route.gtfsRouteId?.trim(),
           })
-          .eq('id', route.id);
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'transit_route');
-    }
+          .eq('id', route.id),
+    );
   }
 
   @override
-  Future<void> deleteRoute(String routeId) async {
-    try {
-      await client.from('routes').delete().eq('id', routeId);
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'transit_route');
-    }
+  Future<void> deleteRoute(String routeId) {
+    return withErrorHandler(
+      'transit_route',
+      routeId,
+      () => client.from('routes').delete().eq('id', routeId),
+    );
   }
 }

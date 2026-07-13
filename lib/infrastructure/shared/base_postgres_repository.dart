@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/shared/canonical_json.dart';
 import 'package:veraprob/infrastructure/shared/postgres_error_interceptor.dart';
 
@@ -43,6 +44,36 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
   final SupabaseClient client;
 
   BasePostgresRepository(this.client);
+
+  /// INV-1: organization_id from JWT app_metadata (Fail-Fast if missing).
+  String get sessionOrgId {
+    final orgId =
+        client.auth.currentSession?.user.appMetadata['org_id'] as String?;
+    if (orgId == null) {
+      throw StateError('No organization in session JWT');
+    }
+    return orgId;
+  }
+
+  /// INV-9: normalize naive Postgres timestamps (no Z / offset) to UTC.
+  static DateTime parsePostgresUtc(dynamic raw, String fieldName) {
+    if (raw == null) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" is null',
+        field: fieldName,
+      );
+    }
+    if (raw is! String) {
+      throw IntegrityException(
+        'Timestamp "$fieldName" has unexpected type ${raw.runtimeType}, expected String',
+        field: fieldName,
+      );
+    }
+    final normalized = (raw.endsWith('Z') || raw.contains('+'))
+        ? raw
+        : '${raw}Z';
+    return DateTime.parse(normalized).toUtc();
+  }
 
   /// Executes a Supabase operation with automatic PostgREST error handling.
   ///

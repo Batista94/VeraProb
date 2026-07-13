@@ -79,7 +79,7 @@ class PostgresShadowVerdictRepository extends BasePostgresRepository
           .limit(limit);
 
       return (rows as List)
-          .map((r) => _fromRow(r as Map<String, dynamic>))
+          .map((r) => ShadowVerdict.fromJson(r as Map<String, dynamic>))
           .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
@@ -104,7 +104,7 @@ class PostgresShadowVerdictRepository extends BasePostgresRepository
           .limit(500);
 
       return (rows as List)
-          .map((r) => _fromRow(r as Map<String, dynamic>))
+          .map((r) => ShadowVerdict.fromJson(r as Map<String, dynamic>))
           .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'shadow_verdict');
@@ -130,7 +130,7 @@ class PostgresShadowVerdictRepository extends BasePostgresRepository
 
     if (pendingRows is! List) return 0;
     final pending = pendingRows
-        .map((r) => _fromRow(r as Map<String, dynamic>))
+        .map((r) => ShadowVerdict.fromJson(r as Map<String, dynamic>))
         .toList();
 
     if (pending.isEmpty) return 0;
@@ -201,25 +201,6 @@ class PostgresShadowVerdictRepository extends BasePostgresRepository
   }
 
   // ── Mapping helpers ────────────────────────────────────────────────────────
-
-  static ShadowVerdict _fromRow(Map<String, dynamic> row) {
-    return ShadowVerdict.fromJson({
-      'id': row['id'],
-      'organization_id': row['organization_id'],
-      'set_id': row['set_id'],
-      'contract_id': row['contract_id'],
-      'engine_verdict': row['engine_verdict'],
-      'engine_verdict_at_utc': row['engine_verdict_at_utc'],
-      'engine_version': row['engine_version'],
-      'verdict_evidence': row['verdict_evidence'],
-      'traceability_hash': row['traceability_hash'],
-      'divergence_type': row['divergence_type'],
-      'manual_verdict': row['manual_verdict'],
-      'manual_verdict_at_utc': row['manual_verdict_at_utc'],
-      'manual_reviewed_by': row['manual_reviewed_by'],
-      'created_at': row['created_at'],
-    });
-  }
 
   static String _divergenceToString(ShadowDivergenceType type) =>
       switch (type) {
