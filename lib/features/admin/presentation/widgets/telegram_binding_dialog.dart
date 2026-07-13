@@ -254,7 +254,20 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                AsyncError() => _buildErrorState(),
+                AsyncError() => Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.error.withValues(alpha: 0.1),
+                    borderRadius: VeraProbRadii.lgAll,
+                    border: Border.all(
+                      color: VeraProbColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Text(
+                    'Falha ao processar vínculo Telegram. Tente novamente.',
+                    style: TextStyle(fontSize: 12, color: VeraProbColors.error),
+                  ),
+                ),
               },
 
               const SizedBox(height: 20),
@@ -446,21 +459,6 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
             style: TextStyle(fontSize: 13, color: VeraProbColors.error),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VeraProbColors.error.withValues(alpha: 0.1),
-        borderRadius: VeraProbRadii.lgAll,
-        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
-      ),
-      child: const Text(
-        'Falha ao processar vínculo Telegram. Tente novamente.',
-        style: TextStyle(fontSize: 12, color: VeraProbColors.error),
       ),
     );
   }

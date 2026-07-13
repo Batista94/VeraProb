@@ -81,7 +81,12 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
                 child: switch (filteredAsync) {
                   AsyncData(:final value) =>
                     value.isEmpty
-                        ? _buildEmptyState()
+                        ? const EmptyState(
+                            icon: Icons.directions_bus_outlined,
+                            title: 'Nenhum veículo cadastrado ainda.',
+                            description:
+                                'Clique em "Cadastrar veículo" para começar.',
+                          )
                         : _buildTable(context, value, colorScheme, userRole),
                   AsyncLoading() => const SkeletonListLoader(),
                   AsyncError(:final error) => _buildAsyncError(error),
@@ -190,14 +195,6 @@ class _VehiclesTabState extends ConsumerState<VehiclesTab> {
         ),
         onChanged: (_) => setState(() {}),
       ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return const EmptyState(
-      icon: Icons.directions_bus_outlined,
-      title: 'Nenhum veículo cadastrado ainda.',
-      description: 'Clique em "Cadastrar veículo" para começar.',
     );
   }
 

@@ -89,7 +89,13 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
                             description:
                                 'Clique em "Cadastrar rota" para começar.',
                           )
-                        : _buildTable(value, userRole),
+                        : RouteTable(
+                            routes: value,
+                            highlightedId: _highlightedId,
+                            userRole: userRole,
+                            onDeleteRequested: (route) =>
+                                _confirmDelete(context, route),
+                          ),
                   AsyncLoading() => const SkeletonListLoader(),
                   AsyncError(:final error) => _buildAsyncError(error),
                 },
@@ -117,15 +123,6 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
           ),
         ],
       ],
-    );
-  }
-
-  Widget _buildTable(List<TransitRoute> routes, UserRole userRole) {
-    return RouteTable(
-      routes: routes,
-      highlightedId: _highlightedId,
-      userRole: userRole,
-      onDeleteRequested: (route) => _confirmDelete(context, route),
     );
   }
 

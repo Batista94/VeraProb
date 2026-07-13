@@ -391,7 +391,7 @@ class AdminLayout extends ConsumerWidget {
                       constraints: const BoxConstraints(
                         maxWidth: VeraProbBreakpoints.maxContent,
                       ),
-                      child: Container(
+                      child: ColoredBox(
                         color: VeraProbColors.background,
                         child: Column(
                           children: [

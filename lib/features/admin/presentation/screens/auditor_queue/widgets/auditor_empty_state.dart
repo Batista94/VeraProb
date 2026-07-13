@@ -1,23 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/presentation/shared/ui/ui.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/auditor_queue_providers.dart';
-
-class AuditorEmptyState extends StatelessWidget {
-  const AuditorEmptyState({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const EmptyState(
-      icon: Icons.gavel_outlined,
-      title: 'Nenhum veredito pendente',
-      description: 'Todos os vereditos foram selados ou recusados.',
-      action: SimulateButton(),
-    );
-  }
-}
 
 class SimulateButton extends ConsumerStatefulWidget {
   final bool isNarrow;

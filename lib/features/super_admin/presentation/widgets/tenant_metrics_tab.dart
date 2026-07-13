@@ -141,7 +141,7 @@ class _EvidenceVolumePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(VeraProbSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -182,7 +182,7 @@ class _EvidenceVolumeErrorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Container(
+      child: Padding(
         padding: const EdgeInsets.all(VeraProbSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

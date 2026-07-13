@@ -116,7 +116,10 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
     );
 
     return switch (healthAsync) {
-      AsyncLoading() => _buildLoading(),
+      AsyncLoading() => const Padding(
+        padding: EdgeInsets.all(VeraProbSpacing.xl),
+        child: Center(child: CircularProgressIndicator()),
+      ),
       AsyncError(:final error) => _buildError(error),
       AsyncData(:final value) => _buildData(value),
     };
@@ -196,15 +199,6 @@ class _TenantHealthTabState extends ConsumerState<TenantHealthTab>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLoading() {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(VeraProbSpacing.xl),
-        child: CircularProgressIndicator(),
-      ),
     );
   }
 

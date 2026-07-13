@@ -38,7 +38,23 @@ class _SlaTemplateLibraryScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
+            Row(
+              children: [
+                const Icon(
+                  Icons.library_books_outlined,
+                  size: 28,
+                  color: VeraProbColors.primary,
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    'Biblioteca de Modelos SLA',
+                    style: VeraProbTypography.sectionTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: VeraProbSpacing.sm),
             Text(
               'Gerencie modelos SLA reutilizáveis para configuração rápida de contratos.',
@@ -104,26 +120,6 @@ class _SlaTemplateLibraryScreenState
         backgroundColor: VeraProbColors.primary,
         foregroundColor: VeraProbColors.background,
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      children: [
-        const Icon(
-          Icons.library_books_outlined,
-          size: 28,
-          color: VeraProbColors.primary,
-        ),
-        const SizedBox(width: 12),
-        Flexible(
-          child: Text(
-            'Biblioteca de Modelos SLA',
-            style: VeraProbTypography.sectionTitle,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
     );
   }
 

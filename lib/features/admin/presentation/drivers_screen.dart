@@ -87,7 +87,12 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
                 child: switch (filteredAsync) {
                   AsyncData(:final value) =>
                     value.isEmpty
-                        ? _buildEmptyState(context)
+                        ? const EmptyState(
+                            icon: Icons.people_outline,
+                            title: 'Nenhum motorista cadastrado ainda.',
+                            description:
+                                'Clique em "Cadastrar motorista" para começar.',
+                          )
                         : _buildDriversTable(
                             context,
                             value,
@@ -239,14 +244,6 @@ class _DriversScreenState extends ConsumerState<DriversScreen> {
         ),
         onChanged: (_) => setState(() {}),
       ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return const EmptyState(
-      icon: Icons.people_outline,
-      title: 'Nenhum motorista cadastrado ainda.',
-      description: 'Clique em "Cadastrar motorista" para começar.',
     );
   }
 
