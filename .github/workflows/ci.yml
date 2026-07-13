@@ -258,6 +258,9 @@ jobs:
           SUPABASE_ANON_KEY: ${{ env.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
 
+      - name: pgTAP Forensic DB Tests
+        run: make test-db
+
       - name: Install lcov
         run: sudo apt-get install -y lcov
 

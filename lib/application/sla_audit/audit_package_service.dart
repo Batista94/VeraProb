@@ -112,9 +112,7 @@ class AuditPackageService {
       organizationId: organizationId,
     );
     if (current == null) {
-      throw DomainException(
-        'AuditPackage "$currentPackageId" not found for organization "$organizationId".',
-      );
+      throw const DomainException('AuditPackage not found.');
     }
     if (current.status != AuditPackageStatus.sealed) {
       throw DomainException(

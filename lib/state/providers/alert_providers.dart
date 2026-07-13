@@ -76,8 +76,12 @@ final entityAlertsProvider =
       ref,
       entityId,
     ) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return [];
       final repo = ref.watch(operationalAlertRepositoryProvider);
-      return repo.findByEntityId(entityId).withProviderTimeout();
+      return repo
+          .findByEntityId(entityId, organizationId: organizationId)
+          .withProviderTimeout();
     });
 
 /// Provides the AlertService for lifecycle transitions.

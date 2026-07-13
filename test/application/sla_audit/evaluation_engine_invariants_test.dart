@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -241,7 +241,10 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final r = await repo.findBySetId(state.setId);
+        final r = await repo.findBySetId(
+          state.setId,
+          organizationId: state.organizationId,
+        );
         expect(
           r!.status,
           ExecutionStatus.completed,
@@ -265,7 +268,10 @@ void main() {
           organizationId: 'org-1',
         );
 
-        var r = await repo.findBySetId(state.setId);
+        var r = await repo.findBySetId(
+          state.setId,
+          organizationId: state.organizationId,
+        );
         expect(r!.status, ExecutionStatus.failed);
 
         // Passo 2: Telemetria dentro da janela do passado chega com 49 horas de atraso na recepção
@@ -282,7 +288,10 @@ void main() {
         );
 
         // Status tem que permanecer NO SHOW (Determinismo de Janela Fechada)
-        r = await repo.findBySetId(state.setId);
+        r = await repo.findBySetId(
+          state.setId,
+          organizationId: state.organizationId,
+        );
         expect(
           r!.status,
           ExecutionStatus.failed,

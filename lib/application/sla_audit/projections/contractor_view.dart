@@ -40,7 +40,7 @@ class ContractorView {
       taxId: row['tax_id'] as String?,
       primaryEmail: row['primary_email'] as String,
       contactName: row['contact_name'] as String,
-      createdAtUtc: DateTime.parse(row['created_at'] as String),
+      createdAtUtc: DateTime.parse(row['created_at'] as String).toUtc(),
     );
   }
 }

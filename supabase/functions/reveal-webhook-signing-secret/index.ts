@@ -28,6 +28,7 @@ import {
   type SecurityContext,
 } from "../shared/handle_with_security.ts";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
+import { deriveOrgKeyHex } from "../shared/hmac_signer.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -243,70 +244,15 @@ async function _fetchActiveKey(
   return (data as ActiveKey | null) ?? null;
 }
 
-// ── Crypto: derive secret hex ─────────────────────────────────────────────────
-
 /**
- * Recomputa o hex do segredo derivado da org.
- *
- * INV-31: o master nunca sai do env. K_org_vN = HMAC-SHA256(master, orgId|N).
- * O `secret_hex` retornado são os bytes do ArrayBuffer intermediário
- * (ANTES do importKey final — `CryptoKey` não é exportável).
- *
- * Espelha a lógica de deriveOrgKey em hmac_signer.ts sem reimportar o módulo
- * (evitaria importar HMAC_SECRET_KEY_V* neste contexto de reveal).
+ * Recomputa o hex do segredo derivado da org (INV-31).
+ * Delegates to hmac_signer.deriveOrgKeyHex — single SSOT for K_org_vN.
  */
 export async function deriveSecretHex(
   orgId: string,
   version: number,
 ): Promise<string> {
-  const masterRaw = _getMasterKeyRaw();
-
-  const masterKey = await crypto.subtle.importKey(
-    "raw",
-    masterRaw,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-
-  // Deriva: HMAC-SHA256(master, "orgId|version")
-  const derived = await crypto.subtle.sign(
-    "HMAC",
-    masterKey,
-    new TextEncoder().encode(`${orgId}|${version}`),
-  );
-
-  // secret_hex = hex dos bytes derivados (o que o ERP usa como chave HMAC).
-  return Array.from(new Uint8Array(derived))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-/**
- * Lê o master key raw do env.
- *
- * PARIDADE OBRIGATÓRIA com hmac_signer.ts loadAllKeys(): o master raw são os
- * bytes UTF-8 do valor do env (TextEncoder), NUNCA hex-decode. Divergir aqui
- * faz o secret revelado não verificar as assinaturas do drain (bug Integridade).
- * Âncora idêntica a deriveOrgKey: version 1 se existir, senão a menor versão.
- *
- * INV-31: master nunca persiste em DB. Apenas disponível no env da edge fn.
- * Throw explícito se ausente — fail-fast antes de qualquer operação.
- */
-function _getMasterKeyRaw(): Uint8Array {
-  const found: { version: number; raw: Uint8Array }[] = [];
-  let version = 1;
-  while (true) {
-    const keyStr = Deno.env.get(`HMAC_SECRET_KEY_V${version}`);
-    if (!keyStr || keyStr.length === 0) break;
-    found.push({ version, raw: new TextEncoder().encode(keyStr) });
-    version++;
-  }
-  if (found.length === 0) {
-    throw new Error("INV-31: HMAC_SECRET_KEY_V1 not configured in edge fn env");
-  }
-  const master = found.find((k) => k.version === 1) ?? found[0];
-  return master.raw;
+  return await deriveOrgKeyHex(orgId, version);
 }
 
 // ── Audit log ─────────────────────────────────────────────────────────────────

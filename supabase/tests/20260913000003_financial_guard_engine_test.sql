@@ -471,7 +471,11 @@ SELECT ok(
 
 -- ── 55: #13 v7 CHECK carries all 55 v6 types + 2 new, canonical name ─────────
 SELECT is(
-  (SELECT count(*)::int FROM unnest(ARRAY[
+  (SELECT count(*)::int FROM pg_enum e
+     JOIN pg_type ty ON ty.oid = e.enumtypid
+     JOIN pg_namespace n ON n.oid = ty.typnamespace
+    WHERE n.nspname = 'public' AND ty.typname = 'ledger_event_type'
+      AND e.enumlabel = ANY (ARRAY[
     'EXECUTION_BOUND','NO_SHOW_DECLARED','EVIDENCE_GAP_DECLARED','PLAN_DECLARED',
     'OCCURRENCE_REGISTERED','TRIP_INTERRUPTED','TRIP_CANCELLED','CONTRACT_CREATED',
     'CONTRACT_ACTIVATED','CONTRACT_CLOSED','CONTRACT_SUBMITTED_FOR_APPROVAL',
@@ -491,13 +495,8 @@ SELECT is(
     'PORTAL_EVIDENCE_AUDITOR_ACCEPTED','PORTAL_EVIDENCE_AUDITOR_REJECTED',
     'SANCTION_ACKNOWLEDGED','PORTAL_JUSTIFICATION_SUBMITTED',
     'FINANCIAL_CAP_REACHED','FINANCIAL_CAP_WARNING'
-  ]) AS t(v)
-   WHERE (SELECT pg_get_constraintdef(oid) FROM pg_constraint
-          WHERE conname = 'chk_ledger_type'
-            AND conrelid = 'public.sla_audit_ledger_v2'::regclass
-            AND convalidated)
-         LIKE '%''' || v || '''%'),
-  57, '#13 canonical chk_ledger_type is validated and carries all 57 types');
+  ])),
+  57, '#13 ledger_event_type carries all 57 legacy taxonomy labels');
 
 -- ── 56: #7b claim mismatch → 42501 BEFORE any lock (LAST: claims persist) ────
 SET LOCAL request.jwt.claims = '{"role":"authenticated","sub":"f3b00000-0000-0000-0000-0000000000bb","app_metadata":{"org_id":"f3b00000-0000-0000-0000-00000000000b","role":"TENANT_ADMIN"}}';

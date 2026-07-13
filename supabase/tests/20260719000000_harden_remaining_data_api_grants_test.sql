@@ -12,7 +12,7 @@ SELECT table_privs_are('public', 'pdf_dossier_logs', 'service_role', ARRAY['SELE
 
 -- 2. shadow_mode_simulations
 SELECT table_privs_are('public', 'shadow_mode_simulations', 'anon', ARRAY[]::text[], 'anon has no privileges on shadow_mode_simulations');
-SELECT table_privs_are('public', 'shadow_mode_simulations', 'authenticated', ARRAY['SELECT', 'INSERT'], 'authenticated has SELECT and INSERT on shadow_mode_simulations');
+SELECT table_privs_are('public', 'shadow_mode_simulations', 'authenticated', ARRAY[]::text[], 'authenticated has no privileges on quarantined shadow_mode_simulations');
 SELECT table_privs_are('public', 'shadow_mode_simulations', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role has ALL on shadow_mode_simulations');
 
 -- 3. telegram_status_queries

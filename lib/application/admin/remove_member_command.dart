@@ -6,6 +6,7 @@ import 'package:veraprob/application/shared/app_types.dart';
 class RemoveMemberCommand {
   final String organizationId;
   final UserRole callerRole;
+  final String callerUserId;
   final String targetUserId;
 
   /// Session ID for tenant validation.
@@ -14,6 +15,7 @@ class RemoveMemberCommand {
   const RemoveMemberCommand({
     required this.organizationId,
     required this.callerRole,
+    required this.callerUserId,
     required this.targetUserId,
     required this.sessionId,
   });

@@ -42,12 +42,13 @@ function getReq(token: string | null, attachmentId = ATT): Request {
   );
 }
 
-function ctxFor(org = ORG): SecurityContext {
+function ctxFor(org = ORG, role?: string): SecurityContext {
   return {
     correlationId: "test",
     edgeFunction: "auditor-dispute-evidence",
     requestIp: "127.0.0.1",
     orgId: org,
+    role,
   };
 }
 
@@ -100,13 +101,18 @@ function freshRow(over: Record<string, unknown> = {}): Record<string, unknown> {
 
 Deno.test("OPERATOR role → 404 (RBAC, dispute evidence is auditor-grade)", async () => {
   const { client } = mockSupabase({ row: freshRow() });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("OPERATOR")));
+  const res = await handler(
+    ctxFor(ORG, "OPERATOR"),
+    client,
+    getReq(jwtFor("OPERATOR")),
+  );
   assertEquals(res.status, 404);
   await res.body?.cancel();
 });
 
 Deno.test("missing Authorization → 404", async () => {
   const { client } = mockSupabase({ row: freshRow() });
+  // Unit-test path: handler reads ctx.role (JWT already validated by handleWithSecurity).
   const res = await handler(ctxFor(), client, getReq(null));
   assertEquals(res.status, 404);
   await res.body?.cancel();
@@ -114,7 +120,11 @@ Deno.test("missing Authorization → 404", async () => {
 
 Deno.test("non-UUID attachment_id → 404", async () => {
   const { client } = mockSupabase({ row: freshRow() });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("AUDITOR"), "nope"));
+  const res = await handler(
+    ctxFor(ORG, "AUDITOR"),
+    client,
+    getReq(jwtFor("AUDITOR"), "nope"),
+  );
   assertEquals(res.status, 404);
   await res.body?.cancel();
 });
@@ -123,7 +133,11 @@ Deno.test("non-UUID attachment_id → 404", async () => {
 
 Deno.test("lookup is scoped to ctx.orgId (INV-1/22)", async () => {
   const { client, filters } = mockSupabase({ row: freshRow() });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("AUDITOR")));
+  const res = await handler(
+    ctxFor(ORG, "AUDITOR"),
+    client,
+    getReq(jwtFor("AUDITOR")),
+  );
   assertEquals(filters["organization_id"], ORG);
   assertEquals(filters["id"], ATT);
   assertEquals(filters["deleted_at"], null);
@@ -136,8 +150,16 @@ Deno.test("wrong-role and not-found are byte-identical 404s (anti-oracle)", asyn
   const wrongRole = mockSupabase({ row: freshRow() });
   const notFound = mockSupabase({ row: null });
 
-  const r1 = await handler(ctxFor(), wrongRole.client, getReq(jwtFor("OPERATOR")));
-  const r2 = await handler(ctxFor(), notFound.client, getReq(jwtFor("AUDITOR")));
+  const r1 = await handler(
+    ctxFor(ORG, "OPERATOR"),
+    wrongRole.client,
+    getReq(jwtFor("OPERATOR")),
+  );
+  const r2 = await handler(
+    ctxFor(ORG, "AUDITOR"),
+    notFound.client,
+    getReq(jwtFor("AUDITOR")),
+  );
 
   assertEquals(r1.status, r2.status);
   assertEquals(await r1.text(), await r2.text());
@@ -147,7 +169,11 @@ Deno.test("wrong-role and not-found are byte-identical 404s (anti-oracle)", asyn
 
 Deno.test("AUDITOR + valid attachment → 200 with seal + no-store cache", async () => {
   const { client } = mockSupabase({ row: freshRow(), blob: new Uint8Array([1, 2, 3, 4]) });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("AUDITOR")));
+  const res = await handler(
+    ctxFor(ORG, "AUDITOR"),
+    client,
+    getReq(jwtFor("AUDITOR")),
+  );
   assertEquals(res.status, 200);
   assertEquals(res.headers.get("X-Content-SHA256"), "a".repeat(64));
   assertEquals(res.headers.get("Cache-Control"), "no-store, no-cache, must-revalidate");
@@ -157,14 +183,22 @@ Deno.test("AUDITOR + valid attachment → 200 with seal + no-store cache", async
 
 Deno.test("TENANT_ADMIN is also authorized → 200", async () => {
   const { client } = mockSupabase({ row: freshRow(), blob: new Uint8Array([9, 9]) });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("TENANT_ADMIN")));
+  const res = await handler(
+    ctxFor(ORG, "TENANT_ADMIN"),
+    client,
+    getReq(jwtFor("TENANT_ADMIN")),
+  );
   assertEquals(res.status, 200);
   await res.body?.cancel();
 });
 
 Deno.test("storage download failure → 404", async () => {
   const { client } = mockSupabase({ row: freshRow(), blob: null });
-  const res = await handler(ctxFor(), client, getReq(jwtFor("AUDITOR")));
+  const res = await handler(
+    ctxFor(ORG, "AUDITOR"),
+    client,
+    getReq(jwtFor("AUDITOR")),
+  );
   assertEquals(res.status, 404);
   await res.body?.cancel();
 });

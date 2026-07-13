@@ -41,6 +41,7 @@ void main() {
     return RemoveMemberCommand(
       organizationId: 'org-1',
       callerRole: role,
+      callerUserId: 'user-admin',
       targetUserId: targetId,
       sessionId: 'session-1',
     );

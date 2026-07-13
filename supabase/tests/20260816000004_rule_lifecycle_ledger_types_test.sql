@@ -10,11 +10,11 @@ SELECT plan(7);
 -- 1. Nome canonico preservado apos widening H1 (ADD _v4 -> RENAME chk_ledger_type)
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'chk_ledger_type'
-      AND conrelid = 'public.sla_audit_ledger_v2'::regclass
+    SELECT 1 FROM pg_type ty
+    JOIN pg_namespace n ON n.oid = ty.typnamespace
+    WHERE n.nspname = 'public' AND ty.typname = 'ledger_event_type'
   ),
-  'constraint mantem nome canonico chk_ledger_type'
+  'ledger_event_type enum presente (substitui chk_ledger_type)'
 );
 
 -- 2. Constraint intermediaria _v4 nao sobrou
@@ -71,7 +71,7 @@ SELECT throws_ok(
        (organization_id, type, operator_id, set_id, plan_version, payload, occurred_at_utc)
      VALUES ('cccc0000-0000-4000-8000-00000000000c', 'TOTALLY_BOGUS_TYPE',
              'TEST', 'rule-lifecycle-test', 0, '{}', now()) $$,
-  '23514', NULL,
+  '22P02', NULL,
   'tipo fora da taxonomia -> CHECK rejeita'
 );
 

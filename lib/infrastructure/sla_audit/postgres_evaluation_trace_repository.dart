@@ -30,11 +30,15 @@ class PostgresEvaluationTraceRepository
   }
 
   @override
-  Future<EvaluationTrace?> findById(String id) async {
+  Future<EvaluationTrace?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     try {
       final response = await _client
           .from('contractual_evaluation_traces')
           .select()
+          .eq('organization_id', organizationId)
           .eq('id', id)
           .maybeSingle();
 
@@ -46,11 +50,15 @@ class PostgresEvaluationTraceRepository
   }
 
   @override
-  Future<List<EvaluationTrace>> findByEntityId(String entityId) async {
+  Future<List<EvaluationTrace>> findByEntityId(
+    String entityId, {
+    required String organizationId,
+  }) async {
     try {
       final response = await _client
           .from('contractual_evaluation_traces')
           .select()
+          .eq('organization_id', organizationId)
           .eq('entity_id', entityId)
           .order('evaluated_at_utc', ascending: false);
 

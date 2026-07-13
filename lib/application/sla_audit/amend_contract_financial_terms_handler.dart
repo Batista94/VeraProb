@@ -68,6 +68,7 @@ class AmendContractFinancialTermsHandler {
     }
 
     await _repository.amendContractFinancialTerms(
+      organizationId: command.organizationId,
       contractId: command.contractId,
       financialCeilingCents: command.financialCeilingCents,
       penaltyMultiplierBps: command.penaltyMultiplierBps,

@@ -11,8 +11,12 @@ import 'sla_providers.dart';
 /// Returns an empty list if no traces exist (pre-Phase 3 records).
 final evaluationTracesProvider =
     FutureProvider.family<List<EvaluationTrace>, String>((ref, entityId) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return [];
       final traceRepo = ref.watch(evaluationTraceRepositoryProvider);
-      return traceRepo.findByEntityId(entityId).withProviderTimeout();
+      return traceRepo
+          .findByEntityId(entityId, organizationId: organizationId)
+          .withProviderTimeout();
     });
 
 /// Retrieves all ledger entries for a given SET ID.
@@ -36,6 +40,10 @@ final executionStateProvider =
       ref,
       setId,
     ) async {
+      final organizationId = ref.watch(currentOrganizationIdProvider);
+      if (organizationId == null) return null;
       final repo = ref.watch(contractualExecutionStateRepositoryProvider);
-      return repo.findBySetId(setId).withProviderTimeout();
+      return repo
+          .findBySetId(setId, organizationId: organizationId)
+          .withProviderTimeout();
     });

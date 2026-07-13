@@ -85,13 +85,17 @@ VALUES
 -- WIDENING + PROVENANCE
 -- =============================================================================
 SELECT ok(
-  (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='chk_ledger_type'
-     LIMIT 1) LIKE '%SANCTION_ACKNOWLEDGED%',
-  'W1: chk_ledger_type admits SANCTION_ACKNOWLEDGED (canonical name)');
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='SANCTION_ACKNOWLEDGED'),
+  'W1: ledger_event_type admits SANCTION_ACKNOWLEDGED');
 SELECT ok(
-  (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='chk_ledger_type'
-     LIMIT 1) LIKE '%PORTAL_EVIDENCE_FINALIZED%',
-  'W2: chk_ledger_type admits PORTAL_EVIDENCE_FINALIZED');
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='PORTAL_EVIDENCE_FINALIZED'),
+  'W2: ledger_event_type admits PORTAL_EVIDENCE_FINALIZED');
 SELECT has_column('public','dispute_evidence_attachments','submission_id',
   'D1: dea has submission_id provenance column');
 SELECT ok(

@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '_engine_test_helpers.dart';
 
@@ -45,7 +45,10 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final s = await repo.findBySetId(state.setId);
+        final s = await repo.findBySetId(
+          state.setId,
+          organizationId: state.organizationId,
+        );
         expect(
           s!.status,
           ExecutionStatus.planned,
@@ -85,7 +88,10 @@ void main() {
             organizationId: 'org-1',
           );
 
-          final s = await repo.findBySetId(state.setId);
+          final s = await repo.findBySetId(
+            state.setId,
+            organizationId: state.organizationId,
+          );
           expect(
             s!.status,
             ExecutionStatus.completed,
@@ -124,7 +130,10 @@ void main() {
             organizationId: 'org-1',
           );
 
-          final s = await repo.findBySetId(state.setId);
+          final s = await repo.findBySetId(
+            state.setId,
+            organizationId: state.organizationId,
+          );
           expect(
             s!.status,
             ExecutionStatus.completed,
@@ -165,7 +174,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(
           result!.status,
           ExecutionStatus.completed,
@@ -250,7 +259,10 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final committedTraces = await traceRepo.findByEntityId('set-1');
+        final committedTraces = await traceRepo.findByEntityId(
+          'set-1',
+          organizationId: 'org-1',
+        );
         expect(committedTraces, isNotEmpty);
         final decisions = committedTraces.first.decisions;
 

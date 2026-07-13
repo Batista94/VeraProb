@@ -19,10 +19,11 @@ SELECT ok(
 -- 3. Constraint exists
 SELECT ok(
   EXISTS(
-    SELECT 1 FROM pg_constraint
-    WHERE conname = 'chk_ledger_type' AND conrelid = 'public.sla_audit_ledger_v2'::regclass
+    SELECT 1 FROM pg_type ty
+    JOIN pg_namespace n ON n.oid = ty.typnamespace
+    WHERE n.nspname = 'public' AND ty.typname = 'ledger_event_type'
   ),
-  'chk_ledger_type constraint exists'
+  'ledger_event_type enum exists (replaces chk_ledger_type)'
 );
 
 -- Setup: organization required for inserts
@@ -34,9 +35,9 @@ ON CONFLICT (id) DO NOTHING;
 SELECT throws_ok(
   $$INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, contract_id, plan_version, occurred_at_utc, payload) 
     VALUES ('c1000000-0000-0000-0000-00000000000c', 'INVALID_LEDGER_TYPE_XYZ', 'a0000000-0000-0000-0000-0000000000a1', 1, NOW(), '{"verdict_evidence": {}}'::jsonb)$$,
-  '23514',
+  '22P02',
   NULL,
-  'CHECK constraint rejects invalid ledger type with 23514 (check_violation)'
+  'ENUM rejects invalid ledger type with 22P02 (invalid_text_representation)'
 );
 
 -- 5-36. lives_ok for all 32 valid types

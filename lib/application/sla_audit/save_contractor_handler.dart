@@ -49,7 +49,7 @@ class SaveContractorHandler {
         command.id!,
       );
       if (existing == null) {
-        throw DomainException('Contractor not found: ${command.id}');
+        throw const DomainException('Contractor not found.');
       }
       contractor = existing.copyWith(
         name: command.name,

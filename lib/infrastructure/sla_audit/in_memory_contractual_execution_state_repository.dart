@@ -15,8 +15,13 @@ class InMemoryContractualExecutionStateRepository
   }
 
   @override
-  Future<ContractualExecutionState?> findBySetId(String setId) async {
-    return _store[setId];
+  Future<ContractualExecutionState?> findBySetId(
+    String setId, {
+    required String organizationId,
+  }) async {
+    return _store[setId]?.organizationId == organizationId
+        ? _store[setId]
+        : null;
   }
 
   @override

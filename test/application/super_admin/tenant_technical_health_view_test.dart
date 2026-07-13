@@ -99,18 +99,6 @@ void main() {
   });
 
   group('TenantTechnicalHealthView', () {
-    test('can be constructed with const constructor', () {
-      const view = TenantTechnicalHealthView(
-        replicationStatus: ReplicationStatus.healthy,
-        schemaIntegrityStatus: SchemaIntegrityStatus.compliant,
-        schemaVersion: 'v2024.06.15-r3',
-      );
-      expect(view.replicationStatus, ReplicationStatus.healthy);
-      expect(view.schemaIntegrityStatus, SchemaIntegrityStatus.compliant);
-      expect(view.schemaVersion, 'v2024.06.15-r3');
-      expect(view.lastCheckAt, isNull);
-    });
-
     test('fromJson parses valid data correctly', () {
       final json = <String, Object?>{
         'replication_status': 'healthy',

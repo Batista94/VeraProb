@@ -66,7 +66,10 @@ void main() async {
         await repository.save(plan);
 
         // 2. Find by Id
-        final loaded = await repository.findById(plan.id);
+        final loaded = await repository.findById(
+          plan.id,
+          organizationId: organizationId,
+        );
         expect(loaded, isNotNull);
         expect(loaded!.id, plan.id);
         expect(loaded.contractId, contractId);
@@ -244,7 +247,10 @@ void main() async {
           projectedSet,
         ], organizationId: organizationId);
 
-        final savedPlan = await repository.findById(plan.id);
+        final savedPlan = await repository.findById(
+          plan.id,
+          organizationId: organizationId,
+        );
         expect(savedPlan!.services.length, 1);
         expect(savedPlan.services[0].setId, projectedSet.setId);
         expect(savedPlan.services[0].operationalDate, equals(projectedDate));
@@ -254,7 +260,10 @@ void main() async {
           projectedSet,
         ], organizationId: organizationId);
 
-        final savedPlan2 = await repository.findById(plan.id);
+        final savedPlan2 = await repository.findById(
+          plan.id,
+          organizationId: organizationId,
+        );
         expect(savedPlan2!.services.length, 1); // Still 1
       });
 

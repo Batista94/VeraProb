@@ -56,8 +56,8 @@ SELECT table_privs_are('public', 'contractual_financial_snapshot', 'service_role
 SELECT table_privs_are('public', 'sla_audit_ledger_v2', 'authenticated', ARRAY['SELECT', 'INSERT'], 'authenticated should have append-only (SELECT, INSERT) on sla_audit_ledger_v2 (INV-3)');
 SELECT table_privs_are('public', 'sla_audit_ledger_v2', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on sla_audit_ledger_v2');
 
--- 13. service_manifests
-SELECT table_privs_are('public', 'service_manifests', 'authenticated', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE'], 'authenticated should have CRUD on service_manifests');
+-- 13. service_manifests (quarantined 20260923000001 — no client Data API)
+SELECT table_privs_are('public', 'service_manifests', 'authenticated', ARRAY[]::text[], 'authenticated has no privileges on quarantined service_manifests');
 SELECT table_privs_are('public', 'service_manifests', 'service_role', ARRAY['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER'], 'service_role should have ALL on service_manifests');
 
 -- 14. contract_rule_sets

@@ -50,7 +50,10 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
     final orgId =
         client.auth.currentSession?.user.appMetadata['org_id'] as String?;
     if (orgId == null) {
-      throw StateError('No organization in session JWT');
+      throw const IntegrityException(
+        'No organization in session JWT',
+        field: 'organization_id',
+      );
     }
     return orgId;
   }

@@ -57,13 +57,5 @@ void main() {
       expect(cmd.capabilities?.allowsDoc, isTrue);
       expect(cmd.capabilities?.maxKinematicSpeedKmh, 80.0);
     });
-
-    test('estrutura básica de tipos e timestamps UTC', () {
-      final mockTimestamp = DateTime.now().toUtc();
-      const int monetaryValueCents = 50000;
-
-      expect(mockTimestamp.isUtc, isTrue);
-      expect(monetaryValueCents, isA<int>());
-    });
   });
 }

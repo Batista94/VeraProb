@@ -24,6 +24,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 import { verifyPayload } from "../shared/hmac_signer.ts";
 import { calculateClockDrift, FRAUD_DRIFT_THRESHOLD_S } from "../shared/clock_drift_helper.ts";
+import { mimeFromExt } from "../shared/mime.ts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -49,20 +50,6 @@ function decodeBase64Url(str: string): string {
   const base64 = str.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
   return atob(padded);
-}
-
-// Helper MIME type mappings
-function mimeFromExt(ext: string): string {
-  const map: Record<string, string> = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    pdf: "application/pdf",
-    mp4: "video/mp4",
-    webp: "image/webp",
-    heic: "image/heic",
-  };
-  return map[ext] ?? "application/octet-stream";
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────

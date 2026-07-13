@@ -13,8 +13,9 @@
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import * as Sentry from "npm:@sentry/deno@^8";
-import { classifyIntegrity } from "../_shared/classify_integrity.ts";
+import { classifyIntegrity } from "../shared/classify_integrity.ts";
 import { signPayload } from "../shared/hmac_signer.ts";
+import { sha256Hex } from "../shared/sha256_hex.ts";
 
 // ── Sentry init (no-op if SENTRY_DSN is not set) ───────────────────────────
 Sentry.init({
@@ -50,16 +51,6 @@ interface IngestResult {
 const SOURCE_ADAPTER = "OMNITRACS_V2";
 const DEFAULT_MAX_SPEED_KMH = 200; // physics floor — overridden by org capabilities
 const MAX_HDOP = 5.0;
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-async function sha256Hex(input: string): Promise<string> {
-  const encoded = new TextEncoder().encode(input);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", encoded);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
 
 // ── Main Handler ───────────────────────────────────────────────────────────
 

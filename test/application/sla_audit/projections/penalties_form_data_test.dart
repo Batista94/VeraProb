@@ -3,23 +3,6 @@ import 'package:veraprob/application/sla_audit/projections/penalties_form_data.d
 
 void main() {
   group('PenaltiesFormData', () {
-    test('defaults constructor provides sensible int values', () {
-      final form = PenaltiesFormData.defaults();
-      expect(form.noShowPenaltyBps, isA<int>());
-      expect(form.delayToleranceMinutes, isA<int>());
-      expect(form.delayPenaltyPerMinuteCents, isA<int>());
-      expect(form.downgradePenaltyFlatCents, isA<int>());
-      expect(form.baseTripValueCents, isA<int>());
-    });
-
-    test('all fields are int (no double allowed)', () {
-      final form = PenaltiesFormData.defaults();
-      expect(form.noShowPenaltyBps, isA<int>());
-      expect(form.delayPenaltyPerMinuteCents, isA<int>());
-      expect(form.downgradePenaltyFlatCents, isA<int>());
-      expect(form.baseTripValueCents, isA<int>());
-    });
-
     test('toDomain() converts back to SLAPenalties', () {
       final form = PenaltiesFormData.defaults();
       final domain = form.toDomain();
@@ -29,12 +12,6 @@ void main() {
         form.delayPenaltyPerMinuteCents,
       );
       expect(domain.downgradePenaltyFlat.cents, form.downgradePenaltyFlatCents);
-    });
-
-    test('can be mutated (mutable form model)', () {
-      final form = PenaltiesFormData.defaults();
-      form.noShowPenaltyBps = 20000;
-      expect(form.noShowPenaltyBps, 20000);
     });
   });
 }

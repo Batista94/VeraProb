@@ -5,6 +5,7 @@ import 'package:veraprob/application/admin/change_user_role_handler.dart';
 import 'package:veraprob/application/admin/user_management_command_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 
 class MockUserManagementCommandService extends Mock
     implements UserManagementCommandService {}
@@ -86,6 +87,34 @@ void main() {
           newRole: UserRole.operator,
         ),
       ).called(1);
+    });
+
+    test('tenant mismatch → SovereigntyViolationException e nao chama RPC '
+        '(INV-1 / privilege-escalation gate)', () async {
+      when(
+        () => tenantValidator.assertTenantMatches(
+          payloadOrgId: any(named: 'payloadOrgId'),
+          sessionId: any(named: 'sessionId'),
+        ),
+      ).thenThrow(
+        const SovereigntyViolationException(
+          payloadOrgId: 'org-1',
+          jwtOrgId: 'org-attacker',
+        ),
+      );
+
+      await expectLater(
+        () => handler.handle(makeCommand(role: UserRole.admin)),
+        throwsA(isA<SovereigntyViolationException>()),
+      );
+
+      verifyNever(
+        () => commandService.changeRole(
+          organizationId: any(named: 'organizationId'),
+          targetUserId: any(named: 'targetUserId'),
+          newRole: any(named: 'newRole'),
+        ),
+      );
     });
   });
 }

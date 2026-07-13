@@ -93,9 +93,11 @@ SELECT ok(
       AND relnamespace='public'::regnamespace),
   'S6: portal_justification_submissions has RLS enabled (INV-2)');
 SELECT ok(
-  (SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='chk_ledger_type'
-     LIMIT 1) LIKE '%PORTAL_JUSTIFICATION_SUBMITTED%',
-  'S7: chk_ledger_type admits PORTAL_JUSTIFICATION_SUBMITTED (canonical name)');
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='PORTAL_JUSTIFICATION_SUBMITTED'),
+  'S7: ledger_event_type admits PORTAL_JUSTIFICATION_SUBMITTED');
 
 -- =============================================================================
 -- create_portal_submission — justification validation (T1–T5, T7–T10, T14)

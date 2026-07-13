@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/sla_ledger_mapper.dart';
 import 'package:veraprob/domain/sla_audit/contractual_execution_state.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
@@ -120,7 +120,10 @@ void main() {
       await reconstructedExecRepo.save(rebuiltState);
 
       // 5. Verification
-      final finalState = await reconstructedExecRepo.findBySetId('set-1');
+      final finalState = await reconstructedExecRepo.findBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
 
       expect(finalState, isNotNull);
       expect(finalState!.setId, 'set-1');
@@ -213,6 +216,7 @@ void main() {
         // 5. Verification
         final finalState = await reconstructedExecRepo.findBySetId(
           'set-noshow',
+          organizationId: 'org-1',
         );
 
         expect(finalState, isNotNull);

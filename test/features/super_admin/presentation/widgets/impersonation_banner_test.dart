@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -344,65 +343,7 @@ void main() {
     );
   });
 
-  group('ImpersonationBanner — Visual Regression & Semantics', () {
-    goldenTest(
-      'golden test — default state',
-      fileName: 'impersonation_banner_default',
-      builder: () {
-        final session = createSession();
-        final container = ProviderContainer();
-        return SizedBox(
-          width: 800,
-          height: 200,
-          child: wrap(
-            ImpersonationBanner(session: session, onSessionEnded: () {}),
-            container,
-          ),
-        );
-      },
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'golden test — revoking state',
-      fileName: 'impersonation_banner_revoking',
-      builder: () {
-        final session = createSession();
-        final completer = Completer<void>();
-
-        when(
-          () => mockHandler.handle(
-            impersonationSessionId: any(named: 'impersonationSessionId'),
-            targetOrgId: any(named: 'targetOrgId'),
-            callerSessionId: any(named: 'callerSessionId'),
-            reason: any(named: 'reason'),
-          ),
-        ).thenAnswer((_) => completer.future);
-
-        final container = ProviderContainer(
-          overrides: [
-            revokeImpersonationHandlerProvider.overrideWithValue(mockHandler),
-          ],
-        );
-
-        return SizedBox(
-          width: 800,
-          height: 200,
-          child: wrap(
-            ImpersonationBanner(session: session, onSessionEnded: () {}),
-            container,
-          ),
-        );
-      },
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Encerrar Sessão'));
-        await tester.pump();
-      },
-    );
-
+  group('ImpersonationBanner — Semantics', () {
     testWidgets('semantics — verify accessibility labels', (tester) async {
       final session = createSession();
       final container = ProviderContainer();

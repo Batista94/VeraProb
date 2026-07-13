@@ -215,13 +215,7 @@ class _CreateOrganizationWizardState
       exists = false;
     }
 
-    final lookup = await () async {
-      try {
-        return await lookupService.lookup(digits);
-      } catch (_) {
-        return null;
-      }
-    }();
+    final lookup = await lookupService.lookup(digits).catchError((_) => null);
 
     if (!mounted) return;
 

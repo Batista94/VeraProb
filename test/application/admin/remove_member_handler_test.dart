@@ -6,6 +6,7 @@ import 'package:veraprob/application/admin/user_management_command_service.dart'
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/infrastructure/admin/postgres_user_management_query_service.dart';
 
 class MockUserManagementCommandService extends Mock
@@ -49,6 +50,7 @@ void main() {
     return RemoveMemberCommand(
       organizationId: 'org-1',
       callerRole: role,
+      callerUserId: 'user-admin',
       targetUserId: targetId,
       sessionId: 'session-1',
     );
@@ -148,5 +150,36 @@ void main() {
         throwsException,
       );
     });
+
+    test(
+      'tenant mismatch → SovereigntyViolationException e nao consulta membros '
+      '(INV-1 / anti privilege-escalation)',
+      () async {
+        when(
+          () => tenantValidator.assertTenantMatches(
+            payloadOrgId: any(named: 'payloadOrgId'),
+            sessionId: any(named: 'sessionId'),
+          ),
+        ).thenThrow(
+          const SovereigntyViolationException(
+            payloadOrgId: 'org-1',
+            jwtOrgId: 'org-attacker',
+          ),
+        );
+
+        await expectLater(
+          () => handler.handle(makeCommand()),
+          throwsA(isA<SovereigntyViolationException>()),
+        );
+
+        verifyNever(() => queryService.getMembers());
+        verifyNever(
+          () => commandService.removeMember(
+            organizationId: any(named: 'organizationId'),
+            targetUserId: any(named: 'targetUserId'),
+          ),
+        );
+      },
+    );
   });
 }

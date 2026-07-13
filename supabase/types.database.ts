@@ -3791,7 +3791,7 @@ export type Database = {
           plan_version: number | null;
           reason: string | null;
           set_id: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Insert: {
           contract_id?: string | null;
@@ -3805,7 +3805,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Update: {
           contract_id?: string | null;
@@ -3819,7 +3819,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type?: string;
+          type?: Database["public"]["Enums"]["ledger_event_type"];
         };
         Relationships: [];
       };
@@ -3836,7 +3836,7 @@ export type Database = {
           plan_version: number | null;
           reason: string | null;
           set_id: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Insert: {
           contract_id?: string | null;
@@ -3850,7 +3850,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Update: {
           contract_id?: string | null;
@@ -3864,7 +3864,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type?: string;
+          type?: Database["public"]["Enums"]["ledger_event_type"];
         };
         Relationships: [];
       };
@@ -3881,7 +3881,7 @@ export type Database = {
           plan_version: number | null;
           reason: string | null;
           set_id: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Insert: {
           contract_id?: string | null;
@@ -3895,7 +3895,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Update: {
           contract_id?: string | null;
@@ -3909,7 +3909,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type?: string;
+          type?: Database["public"]["Enums"]["ledger_event_type"];
         };
         Relationships: [];
       };
@@ -3926,7 +3926,7 @@ export type Database = {
           plan_version: number | null;
           reason: string | null;
           set_id: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Insert: {
           contract_id?: string | null;
@@ -3940,7 +3940,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Update: {
           contract_id?: string | null;
@@ -3954,7 +3954,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type?: string;
+          type?: Database["public"]["Enums"]["ledger_event_type"];
         };
         Relationships: [];
       };
@@ -3971,7 +3971,7 @@ export type Database = {
           plan_version: number | null;
           reason: string | null;
           set_id: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Insert: {
           contract_id?: string | null;
@@ -3985,7 +3985,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type: string;
+          type: Database["public"]["Enums"]["ledger_event_type"];
         };
         Update: {
           contract_id?: string | null;
@@ -3999,7 +3999,7 @@ export type Database = {
           plan_version?: number | null;
           reason?: string | null;
           set_id?: string | null;
-          type?: string;
+          type?: Database["public"]["Enums"]["ledger_event_type"];
         };
         Relationships: [
           {
@@ -5703,6 +5703,34 @@ export type Database = {
         };
         Relationships: [];
       };
+      notification_outbox: {
+        Row: {
+          attempt_count: number | null;
+          channel: string | null;
+          created_at: string | null;
+          event_type: string | null;
+          id: string | null;
+          last_error: string | null;
+          ledger_entry_id: string | null;
+          next_attempt_at: string | null;
+          organization_id: string | null;
+          status: string | null;
+        };
+        Relationships: [];
+      };
+      portal_submissions_unified: {
+        Row: {
+          deleted_at: string | null;
+          id: string | null;
+          organization_id: string | null;
+          queue_entry_id: string | null;
+          status: string | null;
+          submission_kind: string | null;
+          submitted_at_utc: string | null;
+          token_id: string | null;
+        };
+        Relationships: [];
+      };
       super_admin_tenant_health_view: {
         Row: {
           active_contract_count: number | null;
@@ -6121,6 +6149,7 @@ export type Database = {
         };
         Returns: Json;
       };
+      assert_org_claim: { Args: { p_org_id: string }; Returns: undefined };
       assign_tenant_role: {
         Args: {
           p_role_id: string;
@@ -7816,6 +7845,66 @@ export type Database = {
       };
     };
     Enums: {
+      ledger_event_type:
+        | "EXECUTION_BOUND"
+        | "NO_SHOW_DECLARED"
+        | "EVIDENCE_GAP_DECLARED"
+        | "PLAN_DECLARED"
+        | "OCCURRENCE_REGISTERED"
+        | "TRIP_INTERRUPTED"
+        | "TRIP_CANCELLED"
+        | "CONTRACT_CREATED"
+        | "CONTRACT_ACTIVATED"
+        | "CONTRACT_CLOSED"
+        | "CONTRACT_SUBMITTED_FOR_APPROVAL"
+        | "CONTRACT_ACCEPTED_BY_CONTRACTOR"
+        | "SANCTION_RECOMMENDED"
+        | "VERDICT_SEALED"
+        | "VERDICT_REFUSED"
+        | "SANCTION_DISPUTED"
+        | "DISPUTE_ACCEPTED"
+        | "DISPUTE_OVERTURNED"
+        | "DISPUTE_RETRACTED"
+        | "JUSTIFICATION_SUBMITTED"
+        | "JUSTIFICATION_APPROVED"
+        | "JUSTIFICATION_REJECTED"
+        | "SLA_JUSTIFICATION_SUBMITTED"
+        | "SLA_JUSTIFICATION_EXPIRED"
+        | "TRANSIT_STARTED"
+        | "COMPLETED_WITH_GAPS"
+        | "EXECUTION_INHIBITED"
+        | "UNKNOWN_EVENT"
+        | "MAX_TOLERANCE_DELAY"
+        | "MAX_EVIDENCE_GAP"
+        | "MIN_GEOFENCE_COVERAGE"
+        | "NO_SHOW_PENALTY"
+        | "PEER_REVIEW_REQUESTED"
+        | "PEER_REVIEW_DECLINED"
+        | "PEER_REVIEW_EXPIRED"
+        | "DUAL_CONTROL_THRESHOLD_CHANGED"
+        | "DISPUTE_EVIDENCE_ATTACHED"
+        | "DISPUTE_SLA_BREACHED"
+        | "EVIDENCE_HASH_MISMATCH"
+        | "DISPUTE_PORTAL_TOKEN_GENERATED"
+        | "DISPUTE_PORTAL_TOKEN_ACCESSED"
+        | "DISPUTE_PORTAL_TOKEN_REVOKED"
+        | "RULE_SCHEDULED"
+        | "RULE_ACTIVATED"
+        | "RULE_RETIRED"
+        | "CONTRACT_FINANCIAL_TERMS_AMENDED"
+        | "PORTAL_EVIDENCE_SUBMITTED"
+        | "PORTAL_EVIDENCE_FINALIZED"
+        | "PORTAL_EVIDENCE_HASH_MISMATCH"
+        | "PORTAL_EVIDENCE_MIME_MISMATCH"
+        | "PORTAL_EVIDENCE_REJECTED"
+        | "PORTAL_EVIDENCE_AUDITOR_ACCEPTED"
+        | "PORTAL_EVIDENCE_AUDITOR_REJECTED"
+        | "SANCTION_ACKNOWLEDGED"
+        | "PORTAL_JUSTIFICATION_SUBMITTED"
+        | "FINANCIAL_CAP_REACHED"
+        | "FINANCIAL_CAP_WARNING"
+        | "SYSTEM_AUTO_CLOSE"
+        | "SYSTEM_AUTO_START";
       sla_rule_type:
         | "MAX_TOLERANCE_DELAY"
         | "MAX_EVIDENCE_GAP"
@@ -8508,6 +8597,67 @@ export const Constants = {
   },
   public: {
     Enums: {
+      ledger_event_type: [
+        "EXECUTION_BOUND",
+        "NO_SHOW_DECLARED",
+        "EVIDENCE_GAP_DECLARED",
+        "PLAN_DECLARED",
+        "OCCURRENCE_REGISTERED",
+        "TRIP_INTERRUPTED",
+        "TRIP_CANCELLED",
+        "CONTRACT_CREATED",
+        "CONTRACT_ACTIVATED",
+        "CONTRACT_CLOSED",
+        "CONTRACT_SUBMITTED_FOR_APPROVAL",
+        "CONTRACT_ACCEPTED_BY_CONTRACTOR",
+        "SANCTION_RECOMMENDED",
+        "VERDICT_SEALED",
+        "VERDICT_REFUSED",
+        "SANCTION_DISPUTED",
+        "DISPUTE_ACCEPTED",
+        "DISPUTE_OVERTURNED",
+        "DISPUTE_RETRACTED",
+        "JUSTIFICATION_SUBMITTED",
+        "JUSTIFICATION_APPROVED",
+        "JUSTIFICATION_REJECTED",
+        "SLA_JUSTIFICATION_SUBMITTED",
+        "SLA_JUSTIFICATION_EXPIRED",
+        "TRANSIT_STARTED",
+        "COMPLETED_WITH_GAPS",
+        "EXECUTION_INHIBITED",
+        "UNKNOWN_EVENT",
+        "MAX_TOLERANCE_DELAY",
+        "MAX_EVIDENCE_GAP",
+        "MIN_GEOFENCE_COVERAGE",
+        "NO_SHOW_PENALTY",
+        "PEER_REVIEW_REQUESTED",
+        "PEER_REVIEW_DECLINED",
+        "PEER_REVIEW_EXPIRED",
+        "DUAL_CONTROL_THRESHOLD_CHANGED",
+        "DISPUTE_EVIDENCE_ATTACHED",
+        "DISPUTE_SLA_BREACHED",
+        "EVIDENCE_HASH_MISMATCH",
+        "DISPUTE_PORTAL_TOKEN_GENERATED",
+        "DISPUTE_PORTAL_TOKEN_ACCESSED",
+        "DISPUTE_PORTAL_TOKEN_REVOKED",
+        "RULE_SCHEDULED",
+        "RULE_ACTIVATED",
+        "RULE_RETIRED",
+        "CONTRACT_FINANCIAL_TERMS_AMENDED",
+        "PORTAL_EVIDENCE_SUBMITTED",
+        "PORTAL_EVIDENCE_FINALIZED",
+        "PORTAL_EVIDENCE_HASH_MISMATCH",
+        "PORTAL_EVIDENCE_MIME_MISMATCH",
+        "PORTAL_EVIDENCE_REJECTED",
+        "PORTAL_EVIDENCE_AUDITOR_ACCEPTED",
+        "PORTAL_EVIDENCE_AUDITOR_REJECTED",
+        "SANCTION_ACKNOWLEDGED",
+        "PORTAL_JUSTIFICATION_SUBMITTED",
+        "FINANCIAL_CAP_REACHED",
+        "FINANCIAL_CAP_WARNING",
+        "SYSTEM_AUTO_CLOSE",
+        "SYSTEM_AUTO_START",
+      ],
       sla_rule_type: [
         "MAX_TOLERANCE_DELAY",
         "MAX_EVIDENCE_GAP",

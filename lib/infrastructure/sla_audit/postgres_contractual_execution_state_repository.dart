@@ -112,11 +112,15 @@ class PostgresContractualExecutionStateRepository
   }
 
   @override
-  Future<ContractualExecutionState?> findBySetId(String setId) async {
+  Future<ContractualExecutionState?> findBySetId(
+    String setId, {
+    required String organizationId,
+  }) async {
     try {
       final data = await _client
           .from('execution_states')
           .select()
+          .eq('organization_id', organizationId)
           .eq('set_id', setId)
           .maybeSingle();
 

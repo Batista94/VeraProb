@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/features/shared/providers.dart';
@@ -97,25 +98,29 @@ class _VehicleFormDrawerState extends ConsumerState<VehicleFormDrawer>
         ),
       );
       widget.onVehicleAdded(vehicle.id);
+    } on DomainException catch (e) {
+      String? msg;
+      if (e.message.contains('uq_vehicles_org_plate') ||
+          e.message.toLowerCase().contains('placa')) {
+        msg = 'Esta placa já está cadastrada na frota.';
+      } else if (e.message.isNotEmpty) {
+        msg = e.message;
+      } else {
+        msg = 'Não foi possível salvar o veículo agora. Tente novamente.';
+      }
+      setState(() {
+        _errorMessage = msg;
+        _isSaving = false;
+      });
     } catch (e, stack) {
       LoggerService().error(
         'Falha ao cadastrar veículo',
         error: e,
         stackTrace: stack,
       );
-      String? msg;
-      final errStr = e.toString();
-      if (errStr.contains('P0001')) {
-        // PostgrestException with code P0001 carries a business-logic message
-        msg = errStr.replaceFirst(RegExp(r'^.*?: '), '').trim();
-        if (msg.isEmpty) msg = null;
-      } else if (errStr.contains('uq_vehicles_org_plate')) {
-        msg = 'Esta placa já está cadastrada na frota.';
-      } else {
-        msg = 'Não foi possível salvar o veículo agora. Tente novamente.';
-      }
       setState(() {
-        _errorMessage = msg;
+        _errorMessage =
+            'Não foi possível salvar o veículo agora. Tente novamente.';
         _isSaving = false;
       });
     }

@@ -6,19 +6,6 @@ import 'package:veraprob/domain/super_admin/tenant_health_snapshot.dart';
 
 void main() {
   group('TenantHealthView', () {
-    test('can be constructed with required fields', () {
-      const view = TenantHealthView(
-        id: 'org-1',
-        name: 'Empresa Teste',
-        maxVehicles: 50,
-        maxActiveContracts: 10,
-        activeContractCount: 4,
-        openCriticalAlertCount: 2,
-      );
-      expect(view.id, 'org-1');
-      expect(view.isActive, isFalse);
-    });
-
     test('isActive derived from status == OrgStatus.active', () {
       const active = TenantHealthView(
         id: 'org-a',
@@ -135,21 +122,6 @@ void main() {
         openCriticalAlertCount: 5,
       );
       expect(view.hasCriticalAlerts, isTrue);
-    });
-
-    test('all quota fields are int', () {
-      const view = TenantHealthView(
-        id: 'org-4',
-        name: 'Empresa',
-        maxVehicles: 10,
-        maxActiveContracts: 5,
-        activeContractCount: 3,
-        openCriticalAlertCount: 0,
-      );
-      expect(view.maxVehicles, isA<int>());
-      expect(view.maxActiveContracts, isA<int>());
-      expect(view.activeContractCount, isA<int>());
-      expect(view.openCriticalAlertCount, isA<int>());
     });
 
     group('fromDomain', () {

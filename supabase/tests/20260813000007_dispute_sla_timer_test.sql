@@ -59,10 +59,12 @@ SELECT is(
 -- ── H1: ledger type CHECK widened without a no-constraint window ──────────────
 -- Canonical name is preserved across the widening (swap-then-rename-back).
 SELECT ok(
-  (SELECT count(*)::int FROM pg_constraint
-     WHERE conname = 'chk_ledger_type'
-       AND conrelid = 'public.sla_audit_ledger_v2'::regclass) = 1,
-  'canonical chk_ledger_type survives the H1 widening (stable identity)');
+  EXISTS (
+    SELECT 1 FROM pg_type ty
+    JOIN pg_namespace n ON n.oid = ty.typnamespace
+    WHERE n.nspname = 'public' AND ty.typname = 'ledger_event_type'
+  ),
+  'ledger_event_type enum present (replaces chk_ledger_type)');
 
 SELECT ok(
   (SELECT count(*)::int FROM pg_constraint
@@ -85,8 +87,8 @@ SELECT lives_ok(
 SELECT throws_ok(
   $$ INSERT INTO public.sla_audit_ledger_v2 (organization_id, type, occurred_at_utc)
      VALUES ('00000000-0000-0000-0000-0000000d2c20', 'TOTALLY_FAKE_TYPE', now()) $$,
-  '23514', NULL,
-  'ledger rejects an unknown type (check violation)');
+  '22P02', NULL,
+  'ledger rejects an unknown type (enum invalid_text_representation)');
 
 -- ── Indexes ──────────────────────────────────────────────────────────────────
 SELECT has_index('public', 'sanction_review_queue', 'idx_srq_dispute_sla',

@@ -78,10 +78,7 @@ class SubmitContractForApprovalHandler {
       organizationId: command.organizationId,
     );
     if (existing == null) {
-      throw DomainException(
-        'Contract "${command.contractId}" not found for organization '
-        '"${command.organizationId}".',
-      );
+      throw const DomainException('Contract not found.');
     }
 
     // 3. Generate token in Dart (INV-7)

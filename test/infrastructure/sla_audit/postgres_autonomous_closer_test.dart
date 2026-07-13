@@ -370,16 +370,17 @@ void main() async {
             .single();
         expect(esRow2['status'], equals('completed'));
 
-        // DOD-3: audit actor columns (INV-3 append-only, C3 system rows).
+        // DOD-3: audit actor in payload (v2 SSOT — no actor_* columns).
         final ledger = await sc
-            .from('sla_audit_ledger')
-            .select('type, actor_type, actor_id')
+            .from('sla_audit_ledger_v2')
+            .select('type, payload')
             .eq('set_id', fx.setId)
             .eq('type', 'SYSTEM_AUTO_CLOSE');
 
         expect(ledger.length, equals(1));
-        expect(ledger.first['actor_type'], equals('system'));
-        expect(ledger.first['actor_id'], isNull);
+        final payload = ledger.first['payload'] as Map;
+        expect(payload['actor_type'], equals('system'));
+        expect(payload['actor_id'], isNull);
       });
 
       test(
@@ -464,16 +465,17 @@ void main() async {
               .single();
           expect(esRow['status'], equals('inTransit'));
 
-          // INV-3: SYSTEM_AUTO_START appended with system actor (C3).
+          // INV-3: SYSTEM_AUTO_START on ledger SSOT (v2) after 20260924000001.
           final audit = await sc
-              .from('sla_audit_ledger')
-              .select('actor_type, actor_id')
+              .from('sla_audit_ledger_v2')
+              .select('payload')
               .eq('set_id', fx.setId)
               .eq('type', 'SYSTEM_AUTO_START');
 
           expect(audit.length, equals(1));
-          expect(audit.first['actor_type'], equals('system'));
-          expect(audit.first['actor_id'], isNull);
+          final payload = audit.first['payload'] as Map<String, dynamic>;
+          expect(payload['actor_type'], equals('system'));
+          expect(payload['actor_id'], isNull);
         },
       );
     },
@@ -731,7 +733,7 @@ void main() async {
 
             // INV-15: exactly one SYSTEM_AUTO_CLOSE row despite race.
             final auditRows = await sc
-                .from('sla_audit_ledger')
+                .from('sla_audit_ledger_v2')
                 .select()
                 .eq('set_id', fx.setId)
                 .eq('type', 'SYSTEM_AUTO_CLOSE');
@@ -847,7 +849,7 @@ void main() async {
 
           final auditBefore =
               (await sc
-                      .from('sla_audit_ledger')
+                      .from('sla_audit_ledger_v2')
                       .select()
                       .eq('set_id', fx.setId)
                       .eq('type', 'SYSTEM_AUTO_CLOSE'))
@@ -868,7 +870,7 @@ void main() async {
 
           final auditAfter =
               (await sc
-                      .from('sla_audit_ledger')
+                      .from('sla_audit_ledger_v2')
                       .select()
                       .eq('set_id', fx.setId)
                       .eq('type', 'SYSTEM_AUTO_CLOSE'))

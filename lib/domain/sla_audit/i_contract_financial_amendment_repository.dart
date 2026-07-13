@@ -5,6 +5,7 @@ import 'contract_financial_amendment.dart';
 
 abstract class IContractFinancialAmendmentRepository {
   Future<void> amendContractFinancialTerms({
+    required String organizationId,
     required String contractId,
     int? financialCeilingCents,
     required int penaltyMultiplierBps,
@@ -13,6 +14,7 @@ abstract class IContractFinancialAmendmentRepository {
   });
 
   Future<List<ContractFinancialAmendment>> getAmendmentsForContract(
-    String contractId,
-  );
+    String contractId, {
+    required String organizationId,
+  });
 }

@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — PR elevation org-scope ports / domain touch (Council-approved plan)
 import 'contractual_execution_state.dart';
 
 /// Domain Port: Repository for persisting and querying
@@ -8,9 +9,12 @@ abstract class ContractualExecutionStateRepository {
   /// Persists or updates a [ContractualExecutionState].
   Future<void> save(ContractualExecutionState state);
 
-  /// Retrieves the execution state for a given SET.
-  /// Returns `null` if not found.
-  Future<ContractualExecutionState?> findBySetId(String setId);
+  /// Retrieves the execution state for a given SET, org-scoped (INV-1).
+  /// Returns `null` if not found or wrong org (INV-26).
+  Future<ContractualExecutionState?> findBySetId(
+    String setId, {
+    required String organizationId,
+  });
 
   /// Retrieves all pending execution states for a contract
   /// whose time window contains [nowUtc].

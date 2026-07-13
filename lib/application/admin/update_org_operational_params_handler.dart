@@ -82,7 +82,7 @@ class UpdateOrgOperationalParamsHandler {
     // ── Step 5: Fetch current org
     final org = await _repository.findById(cmd.organizationId);
     if (org == null) {
-      throw DomainException('Organization not found: ${cmd.organizationId}');
+      throw const DomainException('Organização não encontrada.');
     }
 
     // ── Step 6: Build old snapshot

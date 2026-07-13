@@ -390,6 +390,19 @@ function hexToBytes(hex: string): Uint8Array {
 // correct today; revisit only if independent master rotation becomes a requirement.
 
 export async function deriveOrgKey(orgId: string, version: number): Promise<CryptoKey> {
+  const derived = await deriveOrgKeyRaw(orgId, version);
+  return await crypto.subtle.importKey(
+    "raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+}
+
+/** Hex of org-derived key material (reveal-once / ERP HMAC). Same bytes as deriveOrgKey. */
+export async function deriveOrgKeyHex(orgId: string, version: number): Promise<string> {
+  const derived = await deriveOrgKeyRaw(orgId, version);
+  return Array.from(derived).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function deriveOrgKeyRaw(orgId: string, version: number): Promise<Uint8Array> {
   const keys = getKeys(); // throws the INV-31 error if no master is configured
   const master = keys.find((k) => k.version === 1) ?? keys[0];
   const masterKey = await crypto.subtle.importKey(
@@ -398,9 +411,7 @@ export async function deriveOrgKey(orgId: string, version: number): Promise<Cryp
   const derived = await crypto.subtle.sign(
     "HMAC", masterKey, new TextEncoder().encode(`${orgId}|${version}`),
   );
-  return await crypto.subtle.importKey(
-    "raw", new Uint8Array(derived), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
-  );
+  return new Uint8Array(derived);
 }
 
 export async function signWithDerivedKey(key: CryptoKey, message: string): Promise<string> {
@@ -408,23 +419,3 @@ export async function signWithDerivedKey(key: CryptoKey, message: string): Promi
   return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-// ── Key Info (for debugging/audit purposes) ──────────────────────────────────
-
-/**
- * Returns metadata about the currently configured HMAC keys.
- * Does NOT expose key material — only version numbers and key lengths.
- *
- * Used by health-check endpoints and audit logging.
- *
- * @returns Array of `{ version, keyLength }` objects
- */
-export function getKeyMetadata(): Array<{ version: number; keyLength: number }> {
-  const keys = getKeys();
-  const activeKey = getActiveKey(keys);
-
-  return keys.map((k) => ({
-    version: k.version,
-    keyLength: k.raw.length,
-    isActive: k.version === activeKey.version,
-  }));
-}

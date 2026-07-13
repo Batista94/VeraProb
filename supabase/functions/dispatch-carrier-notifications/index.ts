@@ -9,17 +9,7 @@
 // deno-lint-ignore no-import-prefix
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
-
-function isServiceRoleAuth(authHeader: string, secret: string | undefined): boolean {
-  if (!secret) return false;
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (token.length !== secret.length) return false;
-  let diff = 0;
-  for (let i = 0; i < token.length; i++) {
-    diff |= token.charCodeAt(i) ^ secret.charCodeAt(i);
-  }
-  return diff === 0;
-}
+import { isServiceRoleAuth } from "../shared/service_role_auth.ts";
 
 function formatFine(cents: string | number): string {
   const value = typeof cents === "string" ? parseInt(cents, 10) : cents;

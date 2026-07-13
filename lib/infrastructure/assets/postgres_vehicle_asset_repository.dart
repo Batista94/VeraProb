@@ -90,10 +90,15 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
 
   @override
   Future<void> deleteVehicle(String vehicleId) {
+    // Soft-retire (no deleted_at column) — INV-3 hygiene + org-scoped.
     return withErrorHandler(
       'vehicle_asset',
       vehicleId,
-      () => client.from('vehicles').delete().eq('id', vehicleId),
+      () => client
+          .from('vehicles')
+          .update({'status': 'retired'})
+          .eq('organization_id', sessionOrgId)
+          .eq('id', vehicleId),
     );
   }
 

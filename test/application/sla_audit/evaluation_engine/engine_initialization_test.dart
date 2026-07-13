@@ -20,7 +20,7 @@ void main() {
     engine = deps.engine;
   });
 
-  group('ContractualEvaluationEngine — Initialization & Binding', () {
+  group('ContractualEvaluationEngine â€” Initialization & Binding', () {
     test('binding occurs after 30s continuous dwell inside geofence', () async {
       await seedPlan(planRepo, 'c-1', 1);
       final state = makeExecState();
@@ -30,25 +30,31 @@ void main() {
       final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
       final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
 
-      // First ping — enters geofence, timer starts
+      // First ping â€” enters geofence, timer starts
       await engine.processVehicleState(
         vehicle,
         nowUtc: t0,
         organizationId: 'org-1',
       );
-      final afterFirst = await repo.findBySetId('set-1');
+      final afterFirst = await repo.findBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(
         afterFirst!.status,
         ExecutionStatus.inTransit,
-      ); // FSM: planned→inTransit on first geofence entry
+      ); // FSM: plannedâ†’inTransit on first geofence entry
 
-      // Second ping — 31s later, still inside → binding
+      // Second ping â€” 31s later, still inside â†’ binding
       await engine.processVehicleState(
         vehicle,
         nowUtc: t31,
         organizationId: 'org-1',
       );
-      final afterBinding = await repo.findBySetId('set-1');
+      final afterBinding = await repo.findBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(afterBinding!.status, ExecutionStatus.completed);
       expect(afterBinding.boundVehicleId, 'v-1');
       expect(ledger.entries, hasLength(2));
@@ -60,7 +66,7 @@ void main() {
       await repo.save(state);
 
       final insideVehicle = makeVehicleState();
-      // ~500m away — well outside 100m radius
+      // ~500m away â€” well outside 100m radius
       final outsideVehicle = makeVehicleState(latitude: geoLat + 0.005);
 
       final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
@@ -79,14 +85,14 @@ void main() {
         nowUtc: t15,
         organizationId: 'org-1',
       );
-      // Re-enter at 45s — timer should have reset
+      // Re-enter at 45s â€” timer should have reset
       await engine.processVehicleState(
         insideVehicle,
         nowUtc: t45,
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(
         result!.status,
         ExecutionStatus.inTransit,
@@ -94,7 +100,7 @@ void main() {
       expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
 
-    test('plannedVehicleId is respected — wrong vehicle ignored', () async {
+    test('plannedVehicleId is respected â€” wrong vehicle ignored', () async {
       await seedPlan(planRepo, 'c-1', 1);
       final state = makeExecState(plannedVehicleId: 'v-assigned');
       await repo.save(state);
@@ -115,7 +121,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.planned);
 
       // Correct vehicle binds normally
@@ -131,7 +137,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final bound = await repo.findBySetId('set-1');
+      final bound = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(bound!.status, ExecutionStatus.completed);
       expect(bound.boundVehicleId, 'v-assigned');
     });
@@ -147,7 +153,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.failed);
       expect(ledger.entries, hasLength(1));
     });
@@ -174,7 +180,7 @@ void main() {
 
       expect(ledger.entries, hasLength(2));
 
-      // Process again — should NOT create another binding
+      // Process again â€” should NOT create another binding
       final t60 = DateTime.utc(2026, 3, 1, 6, 31, 0);
       final t91 = DateTime.utc(2026, 3, 1, 6, 31, 31);
       await engine.processVehicleState(
@@ -199,7 +205,7 @@ void main() {
       final state1 = makeExecState(setId: 'set-1');
       final state2 = makeExecState(
         setId: 'set-2',
-        // Geofence far away — vehicle won't match
+        // Geofence far away â€” vehicle won't match
         contractId: 'c-2',
       );
       await repo.save(state1);
@@ -221,11 +227,11 @@ void main() {
       );
 
       // state1 bound (vehicle is at geofence center)
-      final r1 = await repo.findBySetId('set-1');
+      final r1 = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(r1!.status, ExecutionStatus.completed);
 
       // state2 also bound (same geofence defaults)
-      final r2 = await repo.findBySetId('set-2');
+      final r2 = await repo.findBySetId('set-2', organizationId: 'org-1');
       expect(r2!.status, ExecutionStatus.completed);
 
       // Sweep should not affect finalized states
@@ -270,7 +276,7 @@ void main() {
           organizationId: 'org-1',
         ); // Duplicate
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
         expect(ledger.entries, hasLength(2));
       },
@@ -315,7 +321,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
         expect(ledger.entries, hasLength(2));
       },
@@ -340,7 +346,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.failed);
         // Should still be 1 event in ledger, not 2
         expect(ledger.entries, hasLength(1));
@@ -377,7 +383,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.failed);
 
         // Still only 1 ledger entry (the no-show)

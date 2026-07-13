@@ -9,7 +9,7 @@
  *    caller — this guard does NOT touch business 42501s.
  *  - INFRASTRUCTURE failure (storage signing down, DB unreachable) → this guard
  *    classifies it internally (Sentry tag error_class:"INFRA") and rethrows a
- *    typed InfrastructureUnavailableError. The caller maps it to an opaque 503
+ *    typed failure. The caller maps it to an opaque 503
  *    via infraErrorResponse().
  *
  * Why 503 (not 404) for infra on the carrier surface: storage signing runs only
@@ -28,25 +28,12 @@
  * Council: Architect ✅ · Senior ✅ · QA-Security ✅ · Lead ✅
  */
 
-/** Typed marker for a genuine infrastructure failure (vs a business rejection). */
-export class InfrastructureUnavailableError extends Error {
-  readonly tag: string;
-  readonly cause?: unknown;
-
-  constructor(tag: string, cause?: unknown) {
-    super(`Infrastructure unavailable: ${tag}`);
-    this.name = "InfrastructureUnavailableError";
-    this.tag = tag;
-    this.cause = cause;
-  }
-}
-
 export const INFRA_STATUS = 503;
 export const INFRA_BODY = JSON.stringify({ error: "Service temporarily unavailable" });
 
 /**
  * Opaque 503 for the carrier surface. Carries NO resource/path/bucket detail —
- * the real cause is logged to Sentry inside infraErrorGuard.
+ * the real cause is logged to Sentry via logInfraError.
  */
 export function infraErrorResponse(): Response {
   return new Response(INFRA_BODY, {
@@ -113,26 +100,6 @@ export function logInfraError(
   console.error(
     `[infra] ${tag} (correlation=${correlationId}) message=${fields.message} code=${fields.code} details=${fields.details}`,
   );
-}
-
-/**
- * Runs `fn`; on throw, logs the cause via logInfraError and rethrows a typed
- * InfrastructureUnavailableError. For code paths that THROW on infra failure
- * (e.g. an unexpected exception around transport). For the supabase-js
- * `{data, error}` return shape, classify the returned error and use
- * logInfraError directly instead.
- */
-export async function infraErrorGuard<T>(
-  fn: () => Promise<T>,
-  tag: string,
-  correlationId: string,
-): Promise<T> {
-  try {
-    return await fn();
-  } catch (error) {
-    logInfraError(tag, correlationId, error);
-    throw new InfrastructureUnavailableError(tag, error);
-  }
 }
 
 /**

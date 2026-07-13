@@ -46,18 +46,19 @@ class QuickReconciliationService {
     required String userId,
     List<String>? evidenceIds,
   }) async {
-    final alert = await _alertRepo.findById(alertId);
+    final alert = await _alertRepo.findById(
+      alertId,
+      organizationId: organizationId,
+    );
     if (alert == null) {
-      throw IntegrityException('Alert not found: $alertId', field: 'alertId');
+      throw const IntegrityException('Alert not found', field: 'alertId');
     }
 
     // Prefer the caller-supplied list; fall back to legacy deep_link extraction
+    final singleFallback = _extractEvidenceId(alert);
     final allEvidenceIds = (evidenceIds != null && evidenceIds.isNotEmpty)
         ? evidenceIds
-        : () {
-            final single = _extractEvidenceId(alert);
-            return single != null ? [single] : <String>[];
-          }();
+        : (singleFallback != null ? [singleFallback] : <String>[]);
 
     if (allEvidenceIds.isEmpty) {
       throw const IntegrityException(
@@ -112,10 +113,15 @@ class QuickReconciliationService {
     final now = _clock.nowUtc();
     await _alertService.acknowledge(
       alertId: alertId,
+      organizationId: organizationId,
       userId: userId,
       atUtc: now,
     );
-    await _alertService.resolve(alertId: alertId, atUtc: now);
+    await _alertService.resolve(
+      alertId: alertId,
+      organizationId: organizationId,
+      atUtc: now,
+    );
   }
 
   /// Extracts evidence upload ID from the deep_link in alert context.

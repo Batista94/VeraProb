@@ -89,10 +89,14 @@ class PostgresPlanDeclarationRepository extends BasePostgresRepository
   }
 
   @override
-  Future<PlanDeclaration?> findById(String id) async {
+  Future<PlanDeclaration?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
     final planData = await client
         .from('plan_declarations')
         .select('*, contractual_service_executions(*)')
+        .eq('organization_id', organizationId)
         .eq('id', id)
         .maybeSingle();
 

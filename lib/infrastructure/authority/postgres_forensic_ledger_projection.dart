@@ -1,56 +1,47 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:veraprob/application/projections/forensic_ledger_view.dart';
-import 'package:veraprob/domain/authority/core/authority_types.dart';
-import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 
-/// Postgres implementation for the Forensic Ledger Projection.
-/// Parses immutable events from the [sla_audit_ledger] directly via Supabase.
+/// Maps a raw `sla_audit_ledger_v2` row to [ForensicLedgerEntry].
+/// Exposed for hermetic unit smoke (no DB) — CIA integrity / Wasm mapping.
+ForensicLedgerEntry mapForensicLedgerRow(Map<String, dynamic> row) {
+  final type = row['type'] as String? ?? 'UNKNOWN_EVENT';
+  final operatorId = row['operator_id'] as String? ?? 'system';
+  final payload = row['payload'];
+  String? reason;
+  if (payload is Map) {
+    final r = payload['reason'];
+    if (r is String) reason = r;
+  }
+  final occurredRaw = row['occurred_at_utc'] as String?;
+  final occurredAt = occurredRaw != null
+      ? DateTime.parse(occurredRaw).toUtc()
+      : DateTime.now().toUtc();
+
+  return ForensicLedgerEntry(
+    decisionId: row['id'] as String? ?? '',
+    actionType: type,
+    actionLabel: type.replaceAll('_', ' '),
+    actorId: operatorId,
+    result: 'APPROVED',
+    reason: reason,
+    narrative: '$operatorId ${type.replaceAll('_', ' ').toLowerCase()}',
+    timestamp: occurredAt,
+  );
+}
+
+/// Postgres projection over [sla_audit_ledger_v2] (ledger SSOT — ponytail PR4).
 class PostgresForensicLedgerProjection {
   final SupabaseClient _client;
 
   PostgresForensicLedgerProjection(this._client);
 
-  /// Streams the latest forensic ledger entries directly from the audit ledger.
-  /// Uses server-side sorting and limiting to avoid reading the full ledger to memory.
+  /// Streams latest forensic ledger entries (org-scoped via RLS).
   Stream<List<ForensicLedgerEntry>> watchLedger({int limit = 50}) {
     return _client
-        .from('sla_audit_ledger')
-        .stream(primaryKey: ['id'])
-        .order('timestamp', ascending: false)
+        .from('sla_audit_ledger_v2')
+        .stream(primaryKey: ['organization_id', 'id'])
+        .order('occurred_at_utc', ascending: false)
         .limit(limit)
-        .map((rows) {
-          return rows.map((row) {
-            // Reconstructing minimal domain-like object to use the existing `toNarrative` formatter
-            final decision = AuthorizationDecision(
-              decisionId: row['id'] as String,
-              actorId: ActorId(row['operator_id'] as String),
-              roleId: const RoleId(
-                'unknown_role',
-              ), // Metadata not strictly required for ledger view
-              actionType: OperationalActionType(row['action_type'] as String),
-              targetRef: TargetRef('system', row['entity_id'] as String),
-              policyVersion: '1.0',
-              result: DecisionResult
-                  .approved, // Audit ledger currently infers approved actions
-              reason: row['reason'] as String?,
-              occurredAt: DateTime.parse(row['timestamp'] as String).toUtc(),
-              contextSnapshot: const {},
-            );
-
-            return ForensicLedgerEntry(
-              decisionId: decision.decisionId,
-              actionType: decision.actionType.key,
-              actionLabel: decision.actionType.key.replaceAll(
-                '_',
-                ' ',
-              ), // Simplified label strategy for audited items
-              actorId: decision.actorId.value,
-              result: decision.result.name.toUpperCase(),
-              reason: decision.reason,
-              narrative: toNarrative(decision),
-              timestamp: decision.occurredAt,
-            );
-          }).toList();
-        });
+        .map((rows) => rows.map(mapForensicLedgerRow).toList());
   }
 }

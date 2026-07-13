@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -136,7 +136,7 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Verify engine ran — state transitions to inTransit on first geofence entry
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       await subscriber.stop();
@@ -165,8 +165,8 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Both should have been processed (inTransit after first geofence entry)
-      final r1 = await repo.findBySetId('set-1');
-      final r2 = await repo.findBySetId('set-2');
+      final r1 = await repo.findBySetId('set-1', organizationId: 'org-1');
+      final r2 = await repo.findBySetId('set-2', organizationId: 'org-1');
       expect(r1!.status, ExecutionStatus.inTransit);
       expect(r2!.status, ExecutionStatus.inTransit);
 
@@ -203,7 +203,10 @@ void main() {
       // Wait for at least one sweep tick
       await Future<void>.delayed(const Duration(milliseconds: 250));
 
-      final result = await repo.findBySetId('set-expired');
+      final result = await repo.findBySetId(
+        'set-expired',
+        organizationId: 'org-1',
+      );
       expect(result!.status, ExecutionStatus.failed);
 
       await subscriber.stop();
@@ -248,7 +251,7 @@ void main() {
       streamController.add([vehicle]);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       await subscriber.stop();
@@ -304,7 +307,7 @@ void main() {
 
       // Assert it only processes once if identical (business logic dependent,
       // but subscriber shouldn't crash or duplicate state improperly).
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       await subscriber.stop();

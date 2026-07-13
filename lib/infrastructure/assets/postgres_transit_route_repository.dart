@@ -68,7 +68,11 @@ class PostgresTransitRouteRepository extends BasePostgresRepository
     return withErrorHandler(
       'transit_route',
       routeId,
-      () => client.from('routes').delete().eq('id', routeId),
+      () => client
+          .from('routes')
+          .delete()
+          .eq('organization_id', sessionOrgId)
+          .eq('id', routeId),
     );
   }
 }

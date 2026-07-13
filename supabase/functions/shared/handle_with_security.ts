@@ -76,6 +76,9 @@ export interface SecurityContext {
   /** Organization ID from JWT app_metadata */
   orgId?: string;
 
+  /** Tenant role from JWT app_metadata.role (TENANT_ADMIN / AUDITOR / …) */
+  role?: string;
+
   /** Session ID from JWT */
   sessionId?: string;
 }
@@ -207,6 +210,12 @@ export async function handleWithSecurity(
     ctx.userId = authResult.userId;
     ctx.orgId = authResult.orgId;
     ctx.sessionId = authResult.sessionId;
+    const appMeta = authResult.jwtPayload.app_metadata as
+      | Record<string, unknown>
+      | undefined;
+    if (typeof appMeta?.role === "string") {
+      ctx.role = appMeta.role;
+    }
 
     // Step 5.1: SuperAdmin Enforcement (INV-6)
     if (requireSuperAdmin) {
