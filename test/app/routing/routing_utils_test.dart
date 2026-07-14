@@ -49,4 +49,50 @@ void main() {
       );
     });
   });
+
+  group('parseContractIdParam', () {
+    test('returns valid UUID unchanged', () {
+      expect(
+        parseContractIdParam('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'),
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      );
+    });
+
+    test('returns null for malformed / empty / null', () {
+      expect(parseContractIdParam(null), isNull);
+      expect(parseContractIdParam(''), isNull);
+      expect(parseContractIdParam('null'), isNull);
+      expect(parseContractIdParam('not-a-uuid'), isNull);
+    });
+  });
+
+  group('parseSandboxContractIdFromPath', () {
+    test('returns UUID for valid sandbox deep link', () {
+      expect(
+        parseSandboxContractIdFromPath(
+          '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/sandbox',
+        ),
+        'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      );
+    });
+
+    test('returns null for missing segment or malformed UUID', () {
+      expect(
+        parseSandboxContractIdFromPath('/admin/hub/contracts/sandbox'),
+        isNull,
+      );
+      expect(
+        parseSandboxContractIdFromPath(
+          '/admin/hub/contracts/not-a-uuid/sandbox',
+        ),
+        isNull,
+      );
+      expect(
+        parseSandboxContractIdFromPath(
+          '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/rules',
+        ),
+        isNull,
+      );
+    });
+  });
 }

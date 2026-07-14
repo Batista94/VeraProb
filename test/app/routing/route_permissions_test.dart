@@ -25,6 +25,25 @@ void main() {
     test('ungated route returns null', () {
       expect(requiredPermissionFor('/admin/dashboard'), isNull);
     });
+
+    test('sandbox UUID path requires sandbox:simulate', () {
+      expect(
+        requiredPermissionFor(
+          '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/sandbox',
+        ),
+        'sandbox:simulate',
+      );
+    });
+
+    test('contracts list and rules paths stay ungated', () {
+      expect(requiredPermissionFor('/admin/hub/contracts'), isNull);
+      expect(
+        requiredPermissionFor(
+          '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/rules',
+        ),
+        isNull,
+      );
+    });
   });
 
   group('rbacRouteRedirect', () {
@@ -70,6 +89,36 @@ void main() {
       final redirect = rbacRouteRedirect('/admin/hub/billing-reports', const [
         '*',
       ], onDenied: (_, _) => fired = true);
+      expect(redirect, isNull);
+      expect(fired, isFalse);
+    });
+
+    test(
+      'operator without sandbox:simulate is ejected from sandbox deep link',
+      () {
+        String? route;
+        String? perm;
+        final redirect = rbacRouteRedirect(
+          '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/sandbox',
+          const ['telemetry:read'],
+          onDenied: (r, p) {
+            route = r;
+            perm = p;
+          },
+        );
+        expect(redirect, AppRoutes.adminHub);
+        expect(perm, 'sandbox:simulate');
+        expect(route, contains('/sandbox'));
+      },
+    );
+
+    test('sandbox:simulate claim proceeds on sandbox deep link', () {
+      var fired = false;
+      final redirect = rbacRouteRedirect(
+        '/admin/hub/contracts/aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa/sandbox',
+        const ['sandbox:simulate'],
+        onDenied: (_, _) => fired = true,
+      );
       expect(redirect, isNull);
       expect(fired, isFalse);
     });

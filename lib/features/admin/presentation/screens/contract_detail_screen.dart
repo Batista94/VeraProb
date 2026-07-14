@@ -14,6 +14,7 @@ import 'package:veraprob/application/sla_audit/projections/contract_status_view.
 import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
+import 'package:veraprob/state/providers/sandbox_providers.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_header.dart';
 import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
@@ -236,6 +237,15 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                 label: const Text('Regras SLA'),
                 onPressed: () => context.go(AppRoutes.contractRules(s.id)),
               ),
+              if (ref.watch(canSimulateSandboxProvider)) ...[
+                const SizedBox(width: VeraProbSpacing.sm),
+                OutlinedButton.icon(
+                  key: const Key('contract-simulate-roi-button'),
+                  icon: const Icon(Icons.science_outlined, size: 16),
+                  label: const Text('Simular ROI'),
+                  onPressed: () => context.go(AppRoutes.contractSandbox(s.id)),
+                ),
+              ],
               const SizedBox(width: VeraProbSpacing.sm),
               if (canSubmitForApproval)
                 OutlinedButton.icon(

@@ -34,6 +34,9 @@ abstract final class VeraProbEvent {
 
   // OCC
   static const String occDashboardOpened = 'occ_dashboard_opened';
+
+  // SLA Sandbox
+  static const String sandboxRouteEntered = 'sandbox_route_entered';
 }
 
 /// Interface for product analytics — call [AnalyticsService.track] anywhere.

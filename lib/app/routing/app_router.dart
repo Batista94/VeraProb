@@ -14,6 +14,7 @@ import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/app/routing/legal_gate_redirect.dart';
 import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/app/routing/routing_utils.dart';
+import 'package:veraprob/app/routing/sandbox_route_redirect.dart';
 import 'package:veraprob/features/admin/presentation/widgets/admin_layout.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
@@ -38,6 +39,7 @@ import 'package:veraprob/features/admin/presentation/screens/fleet_risk_analytic
 import 'package:veraprob/features/admin/presentation/screens/rule_studio_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_audit_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_financial_impact_screen.dart';
+import 'package:veraprob/features/admin/presentation/screens/sla_sandbox_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/operational_zones_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/billing_cycle_reports_screen.dart';
 
@@ -158,6 +160,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           }
         }
       }
+
+      // SLA Sandbox: UUID integrity (RBAC via [rbacRouteRedirect] below).
+      final sandboxRedirect = sandboxRouteRedirect(path);
+      if (sandboxRedirect != null) return sandboxRedirect;
 
       // Fine-grained route guard (Pilar 3): a protected route requires a
       // specific permission claim. Missing → silent eject to the admin hub
@@ -317,6 +323,21 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => RuleStudioScreen(
                       contractId: state.pathParameters['contractId']!,
                     ),
+                  ),
+                  // `/admin/hub/contracts/:contractId/sandbox` — SLA Sandbox
+                  // (ROI Simulator). contractId is mandatory; redirect guard
+                  // enforces UUID + sandbox:simulate / TENANT_ADMIN.
+                  GoRoute(
+                    path: ':contractId/sandbox',
+                    builder: (context, state) {
+                      final contractId = parseContractIdParam(
+                        state.pathParameters['contractId'],
+                      );
+                      if (contractId == null) {
+                        return const ContractsScreen();
+                      }
+                      return SlaSandboxScreen(contractId: contractId);
+                    },
                   ),
                 ],
               ),

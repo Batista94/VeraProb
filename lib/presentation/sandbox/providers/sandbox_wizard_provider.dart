@@ -82,6 +82,20 @@ class SandboxWizardNotifier extends Notifier<SandboxWizardState> {
   }
 }
 
+/// Clears wizard form + simulation controller via [ProviderContainer].
+///
+/// Safe for [State.dispose] where [WidgetRef] is unavailable.
+void resetSandboxSimulationStateOn(ProviderContainer container) {
+  container.read(sandboxWizardProvider.notifier).reset();
+  container.read(sandboxSimulationControllerProvider.notifier).reset();
+}
+
+/// Clears wizard form + simulation controller to prevent A/B Delta leakage
+/// across sandbox sessions (Integrity — contextual isolation).
+void resetSandboxSimulationState(WidgetRef ref) {
+  resetSandboxSimulationStateOn(ProviderScope.containerOf(ref.context));
+}
+
 final sandboxWizardProvider =
     NotifierProvider.autoDispose<SandboxWizardNotifier, SandboxWizardState>(
       SandboxWizardNotifier.new,

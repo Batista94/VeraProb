@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/presentation/sandbox/providers/sandbox_wizard_provider.dart';
 import 'package:veraprob/presentation/sandbox/validators/sandbox_wizard_validator.dart';
 import 'package:veraprob/presentation/shared/formatters/brl_currency_input_formatter.dart';
@@ -19,13 +20,18 @@ class SandboxContractOption {
 ///
 /// "Executar Simulação" stays disabled until [SandboxWizardState.isValid].
 /// On success, [onSimulationStarted] receives the new session UUID.
+///
+/// When [lockedContractId] is set, the contract dropdown is hidden and the
+/// form asserts the provider state matches before submission (URL-tamper guard).
 class SandboxWizardForm extends ConsumerStatefulWidget {
   final List<SandboxContractOption> contracts;
+  final String? lockedContractId;
   final ValueChanged<String>? onSimulationStarted;
 
   const SandboxWizardForm({
     super.key,
     required this.contracts,
+    this.lockedContractId,
     this.onSimulationStarted,
   });
 
@@ -39,12 +45,23 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
   late final TextEditingController _baseFineController;
   bool _submitting = false;
 
+  bool get _isLocked => widget.lockedContractId != null;
+
   @override
   void initState() {
     super.initState();
     _sessionController = TextEditingController();
     _capController = TextEditingController();
     _baseFineController = TextEditingController();
+
+    if (_isLocked) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(sandboxWizardProvider.notifier)
+            .setContractId(widget.lockedContractId);
+      });
+    }
   }
 
   @override
@@ -75,18 +92,30 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
               ref.read(sandboxWizardProvider.notifier).setSessionLabel(v),
         ),
         const SizedBox(height: VeraProbSpacing.sm),
-        DropdownButtonFormField<String>(
-          // ignore: deprecated_member_use — value is the stable API in this Flutter pin
-          value: state.contractId,
-          decoration: const InputDecoration(labelText: 'Contrato'),
-          items: widget.contracts
-              .map((c) => DropdownMenuItem(value: c.id, child: Text(c.label)))
-              .toList(),
-          onChanged: busy
-              ? null
-              : (id) =>
-                    ref.read(sandboxWizardProvider.notifier).setContractId(id),
-        ),
+        if (_isLocked)
+          InputDecorator(
+            decoration: const InputDecoration(labelText: 'Contrato'),
+            child: Text(
+              widget.contracts.isNotEmpty
+                  ? widget.contracts.first.label
+                  : widget.lockedContractId!,
+              style: VeraProbTypography.bodyMedium,
+            ),
+          )
+        else
+          DropdownButtonFormField<String>(
+            // ignore: deprecated_member_use — value is the stable API in this Flutter pin
+            value: state.contractId,
+            decoration: const InputDecoration(labelText: 'Contrato'),
+            items: widget.contracts
+                .map((c) => DropdownMenuItem(value: c.id, child: Text(c.label)))
+                .toList(),
+            onChanged: busy
+                ? null
+                : (id) => ref
+                      .read(sandboxWizardProvider.notifier)
+                      .setContractId(id),
+          ),
         const SizedBox(height: VeraProbSpacing.lg),
         const _SectionTitle(title: 'Período', color: SandboxTokens.accentColor),
         Text(
@@ -199,8 +228,15 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
   }
 
   Future<void> _onExecute() async {
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _submitting = true);
     try {
+      final state = ref.read(sandboxWizardProvider);
+      final locked = widget.lockedContractId;
+      if (locked != null && state.contractId != locked) {
+        throw const IntegrityException('URL Tampering detected');
+      }
+
       final sessionId = await ref
           .read(sandboxWizardProvider.notifier)
           .executeSimulation();
@@ -208,6 +244,16 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
       if (sessionId != null) {
         widget.onSimulationStarted?.call(sessionId);
       }
+    } on IntegrityException {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Contrato inválido para esta simulação. Recarregue a página.',
+          ),
+          backgroundColor: VeraProbColors.error,
+        ),
+      );
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
