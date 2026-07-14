@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · **Legal Gate & Terms of Use (LGPD) em UAT Final**.
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC, Financial Guard (Stop-Loss) & Legal Gate (LGPD) concluídos** (com cobertura total de testes pgTAP, integração, widgets e fluxos de consentimento) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído**.
 
 ---
 
@@ -17,13 +17,13 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 2 itens de Readiness pendentes.
+**Status:** EM ANDAMENTO — 1 item de Readiness pendente.
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
 - [x] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
 - [x] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
-- [/] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados. (Em UAT Final)
+- [x] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 
 ---

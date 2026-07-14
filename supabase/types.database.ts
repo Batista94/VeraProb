@@ -3432,6 +3432,122 @@ export type Database = {
           },
         ];
       };
+      sandbox_simulation_results: {
+        Row: {
+          baseline_cap_truncated: boolean;
+          baseline_fine_cents: number;
+          baseline_rule_snapshot: Json;
+          created_at_utc: string;
+          id: string;
+          occurred_at_utc: string;
+          organization_id: string;
+          session_id: string;
+          simulated_cap_truncated: boolean;
+          simulated_fine_cents: number;
+          simulated_rule_applied: Json;
+          source_event_type: string;
+          source_ledger_entry_id: string;
+          was_override_applied: boolean;
+        };
+        Insert: {
+          baseline_cap_truncated?: boolean;
+          baseline_fine_cents: number;
+          baseline_rule_snapshot: Json;
+          created_at_utc?: string;
+          id?: string;
+          occurred_at_utc: string;
+          organization_id: string;
+          session_id: string;
+          simulated_cap_truncated?: boolean;
+          simulated_fine_cents: number;
+          simulated_rule_applied: Json;
+          source_event_type: string;
+          source_ledger_entry_id: string;
+          was_override_applied: boolean;
+        };
+        Update: {
+          baseline_cap_truncated?: boolean;
+          baseline_fine_cents?: number;
+          baseline_rule_snapshot?: Json;
+          created_at_utc?: string;
+          id?: string;
+          occurred_at_utc?: string;
+          organization_id?: string;
+          session_id?: string;
+          simulated_cap_truncated?: boolean;
+          simulated_fine_cents?: number;
+          simulated_rule_applied?: Json;
+          source_event_type?: string;
+          source_ledger_entry_id?: string;
+          was_override_applied?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sandbox_simulation_results_session_id_fkey";
+            columns: ["session_id"];
+            isOneToOne: false;
+            referencedRelation: "sandbox_simulation_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sandbox_simulation_sessions: {
+        Row: {
+          baseline_event_count: number;
+          baseline_total_fines_cents: number;
+          contract_id: string;
+          created_at_utc: string;
+          created_by_user_id: string;
+          delta_bps: number | null;
+          delta_cents: number;
+          expires_at_utc: string;
+          id: string;
+          organization_id: string;
+          overrides_snapshot: Json;
+          period_end_utc: string;
+          period_start_utc: string;
+          session_label: string;
+          simulated_capped_event_count: number;
+          simulated_total_fines_cents: number;
+        };
+        Insert: {
+          baseline_event_count?: number;
+          baseline_total_fines_cents?: number;
+          contract_id: string;
+          created_at_utc?: string;
+          created_by_user_id: string;
+          delta_bps?: number | null;
+          delta_cents?: number;
+          expires_at_utc: string;
+          id?: string;
+          organization_id: string;
+          overrides_snapshot: Json;
+          period_end_utc: string;
+          period_start_utc: string;
+          session_label: string;
+          simulated_capped_event_count?: number;
+          simulated_total_fines_cents?: number;
+        };
+        Update: {
+          baseline_event_count?: number;
+          baseline_total_fines_cents?: number;
+          contract_id?: string;
+          created_at_utc?: string;
+          created_by_user_id?: string;
+          delta_bps?: number | null;
+          delta_cents?: number;
+          expires_at_utc?: string;
+          id?: string;
+          organization_id?: string;
+          overrides_snapshot?: Json;
+          period_end_utc?: string;
+          period_start_utc?: string;
+          session_label?: string;
+          simulated_capped_event_count?: number;
+          simulated_total_fines_cents?: number;
+        };
+        Relationships: [];
+      };
       service_manifests: {
         Row: {
           contract_id: string;
@@ -6417,6 +6533,10 @@ export type Database = {
         }[];
       };
       flag_sla_breached_disputes: { Args: never; Returns: number };
+      gc_sandbox_simulations: {
+        Args: { p_batch_size?: number };
+        Returns: number;
+      };
       generate_dispute_portal_token: {
         Args: {
           p_created_by: string;
@@ -6940,6 +7060,17 @@ export type Database = {
       seed_brazilian_national_holidays: {
         Args: { p_organization_id: string; p_year: number };
         Returns: number;
+      };
+      simulate_sla_sandbox: {
+        Args: {
+          p_contract_id: string;
+          p_org_id: string;
+          p_overrides: Json;
+          p_period_end: string;
+          p_period_start: string;
+          p_session_label?: string;
+        };
+        Returns: string;
       };
       st_3dclosestpoint: {
         Args: { geom1: unknown; geom2: unknown };
