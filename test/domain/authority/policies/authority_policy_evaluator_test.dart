@@ -741,4 +741,450 @@ void main() {
       expect(decision.targetRef, equals(_standardSanctionRef));
     });
   });
+
+  // -------------------------------------------------------------------------
+  // GROUP 6: REAL RBAC POLICY EVALUATION
+  // -------------------------------------------------------------------------
+  group('AuthorityPolicyEvaluator — 6. Real RBAC Policy Evaluation', () {
+    late AuthorityPolicyEvaluator realEvaluator;
+
+    setUp(() {
+      realEvaluator = AuthorityPolicyEvaluator();
+    });
+
+    group('6.1 Happy Path', () {
+      test(
+        'SuperAdmin aprova tudo e ignora restrições organizacionais',
+        () async {
+          final context = _makeContext(
+            actorId: 'super-admin-001',
+            roleId: 'super_admin',
+            organizationId: 'org-A', // Even if mapped to org-A
+          );
+
+          // Can perform admin_only
+          final decisionAdminOnly = await realEvaluator.evaluate(
+            actionType: OperationalActionType.adminOnly,
+            context: context,
+            targetRef: const TargetRef(
+              'trip',
+              'trip-001:org-B',
+            ), // Different org
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionAdminOnly.result, DecisionResult.approved);
+
+          // Can approve trip in different org
+          final decisionApproveTrip = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-B'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApproveTrip.result, DecisionResult.approved);
+
+          // Can reject trip in different org
+          final decisionRejectTrip = await realEvaluator.evaluate(
+            actionType: OperationalActionType.rejectTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-B'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionRejectTrip.result, DecisionResult.approved);
+        },
+      );
+
+      test(
+        'Admin realiza ações de admin, padrão e aprova/rejeita trips da própria org',
+        () async {
+          final context = _makeContext(
+            actorId: 'admin-001',
+            roleId: 'admin',
+            organizationId: 'org-A',
+          );
+
+          // admin_only in own org
+          final decisionAdminOnly = await realEvaluator.evaluate(
+            actionType: OperationalActionType.adminOnly,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionAdminOnly.result, DecisionResult.approved);
+
+          // standard action in own org
+          final decisionStandard = await realEvaluator.evaluate(
+            actionType: OperationalActionType.resolveAlert,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionStandard.result, DecisionResult.approved);
+
+          // approveTrip in own org
+          final decisionApprove = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApprove.result, DecisionResult.approved);
+
+          // rejectTrip in own org
+          final decisionReject = await realEvaluator.evaluate(
+            actionType: OperationalActionType.rejectTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionReject.result, DecisionResult.approved);
+        },
+      );
+
+      test(
+        'Operator realiza ações padrão e aprova/rejeita trips da própria org',
+        () async {
+          final context = _makeContext(
+            actorId: 'operator-001',
+            roleId: 'operator',
+            organizationId: 'org-A',
+          );
+
+          // standard action
+          final decisionStandard = await realEvaluator.evaluate(
+            actionType: OperationalActionType.resolveAlert,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionStandard.result, DecisionResult.approved);
+
+          // approveTrip
+          final decisionApprove = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApprove.result, DecisionResult.approved);
+        },
+      );
+
+      test('Auditor realiza ações padrão', () async {
+        final context = _makeContext(
+          actorId: 'auditor-001',
+          roleId: 'auditor',
+          organizationId: 'org-A',
+        );
+
+        // standard action
+        final decisionStandard = await realEvaluator.evaluate(
+          actionType: OperationalActionType.resolveAlert,
+          context: context,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(decisionStandard.result, DecisionResult.approved);
+      });
+    });
+
+    group('6.2 Regression Prevention', () {
+      test('Operator e Auditor são negados para admin_only', () async {
+        final operatorContext = _makeContext(
+          actorId: 'operator-001',
+          roleId: 'operator',
+          organizationId: 'org-A',
+        );
+        final auditorContext = _makeContext(
+          actorId: 'auditor-001',
+          roleId: 'auditor',
+          organizationId: 'org-A',
+        );
+
+        final operatorDecision = await realEvaluator.evaluate(
+          actionType: OperationalActionType.adminOnly,
+          context: operatorContext,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(operatorDecision.result, DecisionResult.denied);
+        expect(
+          operatorDecision.reason,
+          contains('não possui permissão para ações administrativas'),
+        );
+
+        final auditorDecision = await realEvaluator.evaluate(
+          actionType: OperationalActionType.adminOnly,
+          context: auditorContext,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(auditorDecision.result, DecisionResult.denied);
+        expect(
+          auditorDecision.reason,
+          contains('não possui permissão para ações administrativas'),
+        );
+      });
+
+      test('ContractorViewer é negado para admin_only e trips', () async {
+        final context = _makeContext(
+          actorId: 'viewer-001',
+          roleId: 'contractor_viewer',
+          organizationId: 'org-A',
+        );
+
+        // admin_only
+        final decisionAdmin = await realEvaluator.evaluate(
+          actionType: OperationalActionType.adminOnly,
+          context: context,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(decisionAdmin.result, DecisionResult.denied);
+
+        // approveTrip
+        final decisionApprove = await realEvaluator.evaluate(
+          actionType: OperationalActionType.approveTrip,
+          context: context,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(decisionApprove.result, DecisionResult.denied);
+      });
+
+      test(
+        'Auditor não pode aprovar/rejeitar trips mesmo na própria org',
+        () async {
+          final context = _makeContext(
+            actorId: 'auditor-001',
+            roleId: 'auditor',
+            organizationId: 'org-A',
+          );
+
+          final decisionApprove = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApprove.result, DecisionResult.denied);
+          expect(
+            decisionApprove.reason,
+            contains('não possui permissão para approve_trip'),
+          );
+        },
+      );
+
+      test(
+        'Papel desconhecido resolve para contractorViewer (mais restritivo)',
+        () async {
+          final context = _makeContext(
+            actorId: 'intruder-001',
+            roleId: 'unrecognized_super_role',
+            organizationId: 'org-A',
+          );
+
+          // Should be denied for adminOnly
+          final decisionAdmin = await realEvaluator.evaluate(
+            actionType: OperationalActionType.adminOnly,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionAdmin.result, DecisionResult.denied);
+
+          // Should be denied for approveTrip
+          final decisionApprove = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApprove.result, DecisionResult.denied);
+        },
+      );
+    });
+
+    group('6.3 Tenant Isolation (INV-1, INV-22)', () {
+      test(
+        'Operator/Admin não podem aprovar/rejeitar trips de outra organização (Malicious Intent)',
+        () async {
+          final context = _makeContext(
+            actorId: 'admin-001',
+            roleId: 'admin',
+            organizationId: 'org-A',
+          );
+
+          final decisionApprove = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-B'), // Mismatch
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionApprove.result, DecisionResult.denied);
+          expect(
+            decisionApprove.reason,
+            contains(
+              'Acesso negado: usuário da organização org-A não pode approve_trip trip da organização org-B',
+            ),
+          );
+        },
+      );
+
+      test(
+        'Organização nula ou vazia no contexto nega acesso sumariamente para não-SuperAdmins',
+        () async {
+          // Null org
+          final contextNullOrg = AuthorizationContext(
+            actorId: const ActorId('admin-001'),
+            roleId: const RoleId('admin'),
+            organizationId: null,
+            capturedAt: _testNowUtc,
+          );
+
+          final decisionNull = await realEvaluator.evaluate(
+            actionType: OperationalActionType.resolveAlert,
+            context: contextNullOrg,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionNull.result, DecisionResult.denied);
+          expect(
+            decisionNull.reason,
+            contains('OrganizationId vazio ou ausente'),
+          );
+
+          // Empty org
+          final contextEmptyOrg = AuthorizationContext(
+            actorId: const ActorId('admin-001'),
+            roleId: const RoleId('admin'),
+            organizationId: '',
+            capturedAt: _testNowUtc,
+          );
+
+          final decisionEmpty = await realEvaluator.evaluate(
+            actionType: OperationalActionType.resolveAlert,
+            context: contextEmptyOrg,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionEmpty.result, DecisionResult.denied);
+        },
+      );
+
+      test(
+        'Alvo sem informações de tenant na TargetRef falha fechado (Bypass)',
+        () async {
+          final context = _makeContext(
+            actorId: 'admin-001',
+            roleId: 'admin',
+            organizationId: 'org-A',
+          );
+
+          // No org segment (no colon)
+          final decisionNoOrg = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionNoOrg.result, DecisionResult.denied);
+          expect(
+            decisionNoOrg.reason,
+            contains('não foi possível determinar a organização do alvo'),
+          );
+
+          // Empty org segment after colon
+          final decisionEmptyOrgSegment = await realEvaluator.evaluate(
+            actionType: OperationalActionType.approveTrip,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decisionEmptyOrgSegment.result, DecisionResult.denied);
+        },
+      );
+
+      test('Resistência contra injeção de strings no orgId (Bypass)', () async {
+        final context = _makeContext(
+          actorId: 'admin-001',
+          roleId: 'admin',
+          organizationId: 'org-A',
+        );
+
+        const maliciousTarget = TargetRef('trip', "trip-001:org-A' OR '1'='1");
+        final decision = await realEvaluator.evaluate(
+          actionType: OperationalActionType.approveTrip,
+          context: context,
+          targetRef: maliciousTarget,
+          nowUtc: _testNowUtc,
+        );
+        expect(decision.result, DecisionResult.denied);
+      });
+    });
+
+    group('6.4 Adverse Scenarios & Robustness', () {
+      test('RoleId com valor vazio falha fechado', () async {
+        final context = _makeContext(
+          actorId: 'admin-001',
+          roleId: '',
+          organizationId: 'org-A',
+        );
+
+        final decision = await realEvaluator.evaluate(
+          actionType: OperationalActionType.resolveAlert,
+          context: context,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+        expect(decision.result, DecisionResult.denied);
+        expect(decision.reason, contains('RoleId vazio ou ausente'));
+      });
+
+      test(
+        'Avaliação com escopos vazios funciona normalmente se RBAC permitir',
+        () async {
+          final context = _makeContext(
+            actorId: 'admin-001',
+            roleId: 'admin',
+            organizationId: 'org-A',
+            scopes: [], // Empty scopes
+          );
+
+          final decision = await realEvaluator.evaluate(
+            actionType: OperationalActionType.resolveAlert,
+            context: context,
+            targetRef: const TargetRef('trip', 'trip-001:org-A'),
+            nowUtc: _testNowUtc,
+          );
+          expect(decision.result, DecisionResult.approved);
+        },
+      );
+
+      test('Estrutura estrita de snapshot context no JSON retornado', () async {
+        final context = _makeContext(
+          actorId: 'admin-001',
+          roleId: 'admin',
+          organizationId: 'org-A',
+          scopes: ['scope-1', 'scope-2'],
+        );
+
+        final decision = await realEvaluator.evaluate(
+          actionType: OperationalActionType.resolveAlert,
+          context: context,
+          targetRef: const TargetRef('trip', 'trip-001:org-A'),
+          nowUtc: _testNowUtc,
+        );
+
+        expect(decision.contextSnapshot['actor_id'], 'admin-001');
+        expect(decision.contextSnapshot['role_id'], 'admin');
+        expect(decision.contextSnapshot['organization_id'], 'org-A');
+        expect(
+          decision.contextSnapshot['scopes'],
+          containsAll(['scope-1', 'scope-2']),
+        );
+        expect(decision.contextSnapshot['captured_at'], isNotNull);
+      });
+    });
+  });
 }
