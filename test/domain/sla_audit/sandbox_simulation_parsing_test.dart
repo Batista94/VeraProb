@@ -129,7 +129,6 @@ void main() {
 
     test('parses aggregate fines and delta as int cents (INV-4)', () {
       final session = SandboxSimulationSession.fromRow(sessionRow);
-      final delta = SandboxSimulationDelta.fromSession(session);
 
       expect(session.baselineTotalFines.cents, isA<int>());
       expect(session.baselineTotalFines.cents, 8420000);
@@ -140,11 +139,8 @@ void main() {
       expect(session.deltaBps, isA<int?>());
       expect(session.deltaBps, -1500);
 
-      expect(delta.deltaCents, isA<int>());
-      expect(delta.deltaCents, 1263000);
-      expect(delta.baselineTotalFines.cents, 8420000);
-      expect(delta.direction, SandboxDeltaDirection.savings);
-      expect(delta.deltaAmount.cents, 1263000);
+      expect(session.direction, SandboxDeltaDirection.savings);
+      expect(session.deltaAmount.cents, 1263000);
     });
 
     test('financial_overrides base_fine_cents / cap parse as int (INV-4)', () {
@@ -184,11 +180,9 @@ void main() {
         ..['simulated_total_fines_cents'] = 9000000
         ..['delta_cents'] = -580000;
 
-      final delta = SandboxSimulationDelta.fromSession(
-        SandboxSimulationSession.fromRow(worse),
-      );
-      expect(delta.direction, SandboxDeltaDirection.increase);
-      expect(delta.deltaAmount.cents, 580000);
+      final session = SandboxSimulationSession.fromRow(worse);
+      expect(session.direction, SandboxDeltaDirection.increase);
+      expect(session.deltaAmount.cents, 580000);
     });
   });
 

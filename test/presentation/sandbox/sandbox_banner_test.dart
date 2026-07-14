@@ -2,14 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/presentation/sandbox/widgets/sandbox_banner.dart';
-import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 
 void main() {
   Widget wrap(Widget child) {
     return MaterialApp(
-      theme: ThemeData.dark().copyWith(
-        extensions: [SandboxThemeExtension.defaults()],
-      ),
+      theme: ThemeData.dark(),
       home: Scaffold(body: child),
     );
   }

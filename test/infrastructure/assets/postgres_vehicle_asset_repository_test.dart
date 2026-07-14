@@ -747,7 +747,7 @@ void main() {
         expect(
           () => repo.addVehicle(plate: 'ABC-1234', capacity: 40),
           throwsA(
-            isA<StateError>().having(
+            isA<IntegrityException>().having(
               (e) => e.message,
               'message',
               contains('No organization in session JWT'),
@@ -767,7 +767,7 @@ void main() {
 
       expect(
         () => repo.addVehicle(plate: 'ABC-1234', capacity: 40),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
         reason:
             'org_id absent from JWT metadata must trigger fail-fast StateError',
       );

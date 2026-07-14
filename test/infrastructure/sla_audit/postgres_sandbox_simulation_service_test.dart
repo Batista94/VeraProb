@@ -260,23 +260,19 @@ void main() {
       ).called(1);
     });
 
-    test(
-      'happy path session row maps to SandboxSimulationDelta with int cents',
-      () {
-        final session = SandboxSimulationSession.fromRow(_sessionRow);
-        final delta = SandboxSimulationDelta.fromSession(session);
+    test('happy path session row maps delta direction with int cents', () {
+      final session = SandboxSimulationSession.fromRow(_sessionRow);
 
-        expect(delta.baselineTotalFines.cents, isA<int>());
-        expect(delta.baselineTotalFines.cents, 8420000);
-        expect(delta.simulatedTotalFines.cents, 7157000);
-        expect(delta.deltaCents, 1263000);
-        expect(delta.direction, SandboxDeltaDirection.savings);
-        expect(
-          session.overridesSnapshot.financialOverrides!.baseFineCents,
-          15000,
-        );
-      },
-    );
+      expect(session.baselineTotalFines.cents, isA<int>());
+      expect(session.baselineTotalFines.cents, 8420000);
+      expect(session.simulatedTotalFines.cents, 7157000);
+      expect(session.deltaCents, 1263000);
+      expect(session.direction, SandboxDeltaDirection.savings);
+      expect(
+        session.overridesSnapshot.financialOverrides!.baseFineCents,
+        15000,
+      );
+    });
 
     test(
       'RPC timeout PostgrestException → SandboxSimulationException(timeout)',

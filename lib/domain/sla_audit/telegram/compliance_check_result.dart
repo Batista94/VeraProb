@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Label map matching the webhook's CATEGORY_MAP.
 const _categoryLabels = {
@@ -61,7 +62,7 @@ sealed class ComplianceCheckResult extends Equatable {
         setId: json['set_id'] as String,
         evidenceCount: json['evidence_count'] as int,
       ),
-      _ => throw ArgumentError('Unknown compliance status: $status'),
+      _ => throw IntegrityException('Unknown compliance status: $status'),
     };
   }
 }

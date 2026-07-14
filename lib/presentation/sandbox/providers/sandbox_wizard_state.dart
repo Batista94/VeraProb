@@ -74,7 +74,6 @@ class SandboxWizardState extends Equatable {
     int? delayToleranceMinutes,
     int? monthlyPenaltyCapCents,
     int? baseFineCents,
-    bool clearDelayTolerance = false,
     bool clearMonthlyCap = false,
     bool clearBaseFine = false,
   }) {
@@ -83,9 +82,8 @@ class SandboxWizardState extends Equatable {
       contractId: contractId ?? this.contractId,
       periodStartUtc: periodStartUtc ?? this.periodStartUtc,
       periodEndUtc: periodEndUtc ?? this.periodEndUtc,
-      delayToleranceMinutes: clearDelayTolerance
-          ? null
-          : (delayToleranceMinutes ?? this.delayToleranceMinutes),
+      delayToleranceMinutes:
+          delayToleranceMinutes ?? this.delayToleranceMinutes,
       monthlyPenaltyCapCents: clearMonthlyCap
           ? null
           : (monthlyPenaltyCapCents ?? this.monthlyPenaltyCapCents),

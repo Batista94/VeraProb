@@ -8,7 +8,6 @@ import 'package:veraprob/domain/sla_audit/sandbox_simulation_result.dart';
 import 'package:veraprob/domain/sla_audit/sandbox_simulation_session.dart';
 import 'package:veraprob/presentation/sandbox/widgets/dashboard/sandbox_delta_bps.dart';
 import 'package:veraprob/presentation/sandbox/widgets/dashboard/sandbox_results_dashboard.dart';
-import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 
 SandboxSimulationSession _session({
   int baseline = 8420000,
@@ -84,9 +83,7 @@ List<SandboxSimulationResult> _results() {
 void main() {
   Widget wrap(Widget child) {
     return MaterialApp(
-      theme: ThemeData.dark().copyWith(
-        extensions: [SandboxThemeExtension.defaults()],
-      ),
+      theme: ThemeData.dark(),
       home: Scaffold(body: SingleChildScrollView(child: child)),
     );
   }
@@ -188,8 +185,7 @@ void main() {
         ),
       );
 
-      final delta = SandboxSimulationDelta.fromSession(_session());
-      expect(delta.direction, SandboxDeltaDirection.savings);
+      expect(_session().direction, SandboxDeltaDirection.savings);
 
       final impact = find.byKey(const Key('sandbox-delta-impact'));
       expect(impact, findsOneWidget);
@@ -219,10 +215,7 @@ void main() {
         ),
       );
 
-      expect(
-        SandboxSimulationDelta.fromSession(worse).direction,
-        SandboxDeltaDirection.increase,
-      );
+      expect(worse.direction, SandboxDeltaDirection.increase);
 
       final impact = find.byKey(const Key('sandbox-delta-impact'));
       final container = tester.widget<DecoratedBox>(
@@ -253,7 +246,7 @@ void main() {
       expect(button.onPressed, isNull);
     });
 
-    testWidgets('Exportar PDF enabled when not loading', (tester) async {
+    testWidgets('Exportar PDF disabled when callback is null', (tester) async {
       await tester.pumpWidget(
         wrap(
           SandboxResultsDashboard(
@@ -261,6 +254,27 @@ void main() {
             results: _results(),
             isLoading: false,
             onExit: () {},
+          ),
+        ),
+      );
+
+      final button = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Exportar PDF'),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('Exportar PDF enabled when callback set and not loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          SandboxResultsDashboard(
+            session: _session(),
+            results: _results(),
+            isLoading: false,
+            onExit: () {},
+            onExportPdf: () {},
           ),
         ),
       );

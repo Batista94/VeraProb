@@ -10,7 +10,7 @@ import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 /// A/B Delta results dashboard for a completed SLA Sandbox session.
 ///
 /// Consumes a hydrated [session] + per-event [results] (from Step-1 query
-/// providers). Simulated money always uses the `~` prefix + [simulatedValueColor].
+/// providers). Simulated money always uses the `~` prefix + [SandboxTokens].
 class SandboxResultsDashboard extends StatelessWidget {
   final SandboxSimulationSession session;
   final List<SandboxSimulationResult> results;
@@ -29,10 +29,6 @@ class SandboxResultsDashboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        Theme.of(context).extension<SandboxThemeExtension>() ??
-        SandboxThemeExtension.defaults();
-    final delta = SandboxSimulationDelta.fromSession(session);
     final bps =
         session.deltaBps ??
         SandboxDeltaBps.compute(
@@ -40,6 +36,7 @@ class SandboxResultsDashboard extends StatelessWidget {
           simulatedCents: session.simulatedTotalFines.cents,
         );
     final rows = SandboxRuleBreakdownRow.fromResults(results);
+    final exportEnabled = !isLoading && onExportPdf != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -47,7 +44,7 @@ class SandboxResultsDashboard extends StatelessWidget {
         Text(
           'ROI SIMULATOR — Sessão "${session.sessionLabel}"',
           style: VeraProbTypography.sectionTitle.copyWith(
-            color: tokens.accentColor,
+            color: SandboxTokens.accentColor,
           ),
         ),
         const SizedBox(height: VeraProbSpacing.sm),
@@ -57,18 +54,18 @@ class SandboxResultsDashboard extends StatelessWidget {
           style: VeraProbTypography.caption,
         ),
         const SizedBox(height: VeraProbSpacing.lg),
-        _AbCards(session: session, tokens: tokens),
+        _AbCards(session: session),
         const SizedBox(height: VeraProbSpacing.lg),
-        _DeltaImpact(delta: delta, bps: bps, tokens: tokens),
+        _DeltaImpact(session: session, bps: bps),
         const SizedBox(height: VeraProbSpacing.lg),
-        _RuleBreakdownTable(rows: rows, tokens: tokens),
+        _RuleBreakdownTable(rows: rows),
         const SizedBox(height: VeraProbSpacing.xl),
         Row(
           children: [
             FilledButton(
-              onPressed: isLoading ? null : (onExportPdf ?? () {}),
+              onPressed: exportEnabled ? onExportPdf : null,
               style: FilledButton.styleFrom(
-                backgroundColor: tokens.accentColor,
+                backgroundColor: SandboxTokens.accentColor,
                 foregroundColor: VeraProbColors.background,
               ),
               child: const Text('Exportar PDF'),
@@ -76,7 +73,9 @@ class SandboxResultsDashboard extends StatelessWidget {
             const SizedBox(width: VeraProbSpacing.sm),
             TextButton(
               onPressed: onExit,
-              style: TextButton.styleFrom(foregroundColor: tokens.accentColor),
+              style: TextButton.styleFrom(
+                foregroundColor: SandboxTokens.accentColor,
+              ),
               child: const Text('Sair do Modo Simulação'),
             ),
           ],
@@ -88,9 +87,8 @@ class SandboxResultsDashboard extends StatelessWidget {
 
 class _AbCards extends StatelessWidget {
   final SandboxSimulationSession session;
-  final SandboxThemeExtension tokens;
 
-  const _AbCards({required this.session, required this.tokens});
+  const _AbCards({required this.session});
 
   @override
   Widget build(BuildContext context) {
@@ -109,7 +107,7 @@ class _AbCards extends StatelessWidget {
           ),
         ),
         const SizedBox(width: VeraProbSpacing.md),
-        Icon(Icons.arrow_forward, color: tokens.accentColor),
+        const Icon(Icons.arrow_forward, color: SandboxTokens.accentColor),
         const SizedBox(width: VeraProbSpacing.md),
         Expanded(
           child: _MoneyCard(
@@ -118,8 +116,8 @@ class _AbCards extends StatelessWidget {
             amountLabel: SandboxCurrencyFormat.formatCents(
               session.simulatedTotalFines.cents,
             ),
-            amountColor: tokens.simulatedValueColor,
-            borderColor: tokens.tableBorderColor,
+            amountColor: SandboxTokens.simulatedValueColor,
+            borderColor: SandboxTokens.tableBorderColor,
           ),
         ),
       ],
@@ -169,20 +167,15 @@ class _MoneyCard extends StatelessWidget {
 }
 
 class _DeltaImpact extends StatelessWidget {
-  final SandboxSimulationDelta delta;
+  final SandboxSimulationSession session;
   final int? bps;
-  final SandboxThemeExtension tokens;
 
-  const _DeltaImpact({
-    required this.delta,
-    required this.bps,
-    required this.tokens,
-  });
+  const _DeltaImpact({required this.session, required this.bps});
 
   @override
   Widget build(BuildContext context) {
-    final isSavings = delta.direction == SandboxDeltaDirection.savings;
-    final isIncrease = delta.direction == SandboxDeltaDirection.increase;
+    final isSavings = session.direction == SandboxDeltaDirection.savings;
+    final isIncrease = session.direction == SandboxDeltaDirection.increase;
     final accent = isSavings
         ? VeraProbColors.success
         : (isIncrease ? VeraProbColors.warning : VeraProbColors.neutral);
@@ -194,9 +187,9 @@ class _DeltaImpact extends StatelessWidget {
         ? 'ECONOMIA PROJETADA'
         : (isIncrease ? 'AUMENTO PROJETADO' : 'SEM VARIAÇÃO');
 
-    final ratio = delta.baselineTotalFines.cents <= 0
+    final ratio = session.baselineTotalFines.cents <= 0
         ? 0.0
-        : (delta.deltaCents.abs() / delta.baselineTotalFines.cents).clamp(
+        : (session.deltaCents.abs() / session.baselineTotalFines.cents).clamp(
             0.0,
             1.0,
           );
@@ -224,8 +217,12 @@ class _DeltaImpact extends StatelessWidget {
                   Icon(arrow, color: accent, size: 20),
                   const SizedBox(width: VeraProbSpacing.xs),
                   Text(
-                    SandboxCurrencyFormat.formatCents(delta.deltaAmount.cents),
-                    style: tokens.simulatedValueStyle.copyWith(color: accent),
+                    SandboxCurrencyFormat.formatCents(
+                      session.deltaAmount.cents,
+                    ),
+                    style: SandboxTokens.simulatedValueStyle.copyWith(
+                      color: accent,
+                    ),
                   ),
                   if (bps != null) ...[
                     const SizedBox(width: VeraProbSpacing.sm),
@@ -258,18 +255,17 @@ class _DeltaImpact extends StatelessWidget {
 
 class _RuleBreakdownTable extends StatelessWidget {
   final List<SandboxRuleBreakdownRow> rows;
-  final SandboxThemeExtension tokens;
 
-  const _RuleBreakdownTable({required this.rows, required this.tokens});
+  const _RuleBreakdownTable({required this.rows});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: VeraProbColors.surface,
         borderRadius: VeraProbRadii.mdAll,
         border: Border(
-          left: BorderSide(color: tokens.tableBorderColor, width: 3),
+          left: BorderSide(color: SandboxTokens.tableBorderColor, width: 3),
         ),
       ),
       padding: VeraProbSpacing.cardPadding,
@@ -278,13 +274,15 @@ class _RuleBreakdownTable extends StatelessWidget {
         children: [
           Text(
             'DETALHAMENTO POR TIPO DE REGRA',
-            style: VeraProbTypography.badge.copyWith(color: tokens.accentColor),
+            style: VeraProbTypography.badge.copyWith(
+              color: SandboxTokens.accentColor,
+            ),
           ),
           const SizedBox(height: VeraProbSpacing.sm),
           if (rows.isEmpty)
             Text('Sem eventos no período.', style: VeraProbTypography.caption)
           else
-            ...rows.map((row) => _RuleRow(row: row, tokens: tokens)),
+            ...rows.map((row) => _RuleRow(row: row)),
         ],
       ),
     );
@@ -293,9 +291,8 @@ class _RuleBreakdownTable extends StatelessWidget {
 
 class _RuleRow extends StatelessWidget {
   final SandboxRuleBreakdownRow row;
-  final SandboxThemeExtension tokens;
 
-  const _RuleRow({required this.row, required this.tokens});
+  const _RuleRow({required this.row});
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +318,7 @@ class _RuleRow extends StatelessWidget {
             child: Text(
               SandboxCurrencyFormat.formatCents(row.simulatedCents),
               style: VeraProbTypography.caption.copyWith(
-                color: tokens.simulatedValueColor,
+                color: SandboxTokens.simulatedValueColor,
               ),
               textAlign: TextAlign.right,
             ),

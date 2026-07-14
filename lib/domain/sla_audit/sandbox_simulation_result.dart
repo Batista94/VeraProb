@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/shared/postgres_utc.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 /// Per-event A/B comparison row in the Shadow Ledger.
@@ -83,7 +84,7 @@ class SandboxSimulationResult extends Equatable {
       organizationId: row['organization_id'] as String,
       sourceLedgerEntryId: row['source_ledger_entry_id'] as String,
       sourceEventType: row['source_event_type'] as String,
-      occurredAtUtc: _parsePostgresUtc(row['occurred_at_utc']),
+      occurredAtUtc: parsePostgresUtc(row['occurred_at_utc']),
       baselineFine: Money((row['baseline_fine_cents'] as num).toInt()),
       baselineRuleSnapshot: Map<String, dynamic>.from(
         row['baseline_rule_snapshot'] as Map? ?? const {},
@@ -95,15 +96,8 @@ class SandboxSimulationResult extends Equatable {
       wasOverrideApplied: row['was_override_applied'] as bool,
       baselineCapTruncated: row['baseline_cap_truncated'] as bool? ?? false,
       simulatedCapTruncated: row['simulated_cap_truncated'] as bool? ?? false,
-      createdAtUtc: _parsePostgresUtc(row['created_at_utc']),
+      createdAtUtc: parsePostgresUtc(row['created_at_utc']),
     );
-  }
-
-  /// INV-6: naive Postgres timestamps (no Z/offset) are UTC, not local.
-  static DateTime _parsePostgresUtc(Object? raw) {
-    final s = raw as String;
-    final normalized = (s.endsWith('Z') || s.contains('+')) ? s : '${s}Z';
-    return DateTime.parse(normalized).toUtc();
   }
 
   int get fineDeltaCents => baselineFine.cents - simulatedFine.cents;

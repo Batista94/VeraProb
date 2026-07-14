@@ -125,14 +125,16 @@ class EvidenceIntegrityVerifier {
   ///
   /// Enforces:
   /// - Malformed JSON / missing fields detection (Zero-Trust, INV-10).
-  /// - Tampering detection (any modified character/timestamp makes SHA-256 mismatch) (INV-9).
-  /// - Hash validation and cryptographic signature verification.
+  /// - Tampering detection via SHA-256 mismatch (INV-9).
   /// - Replay attack prevention (re-use of old payload hashes).
   /// - Chronological ordering.
   /// - STRICT UTC timestamp validation (INV-6).
   /// - Future timestamp rejection.
   ///
   /// Throws [IntegrityException] on any violation.
+  ///
+  /// ponytail: real cryptographic signature verify lands with a dedicated
+  /// verifier — do not reintroduce string-substring "forgery" checks.
   void verifyEvidencePayload({
     required String rawPayloadJson,
     required String declaredHash,
@@ -151,6 +153,7 @@ class EvidenceIntegrityVerifier {
       }
       payloadMap = decoded;
     } catch (e) {
+      if (e is IntegrityException) rethrow;
       throw IntegrityException('Malformed JSON payload: $e');
     }
 
@@ -184,30 +187,14 @@ class EvidenceIntegrityVerifier {
       );
     }
 
-    // 2. Cryptographic signature check (rejection of corrupted/forged signatures)
-    if (payloadMap.containsKey('signature')) {
-      final sig = payloadMap['signature'];
-      if (sig == null) {
-        throw const IntegrityException('Signature is null');
-      }
-      final sigStr = sig.toString();
-      if (sigStr.length < 32 ||
-          sigStr.contains('corrupted') ||
-          sigStr.contains('forged')) {
-        throw const IntegrityException(
-          'Invalid or forged cryptographic signature',
-        );
-      }
-    }
-
-    // 3. Replay attack check
+    // 2. Replay attack check
     if (previousHashes.contains(computedHash)) {
       throw const IntegrityException(
         'Replay attack detected: evidence hash already processed',
       );
     }
 
-    // 4. Strict UTC validation (INV-6)
+    // 3. Strict UTC validation (INV-6)
     if (!timestampStr.endsWith('Z') ||
         timestampStr.contains('+') ||
         (timestampStr.length > 10 &&
@@ -219,7 +206,7 @@ class EvidenceIntegrityVerifier {
 
     final timestamp = DateTime.parse(timestampStr).toUtc();
 
-    // 5. Future timestamp rejection
+    // 4. Future timestamp rejection
     final now = DateTime.now().toUtc();
     if (timestamp.isAfter(now.add(const Duration(seconds: 5)))) {
       throw IntegrityException(
@@ -227,7 +214,7 @@ class EvidenceIntegrityVerifier {
       );
     }
 
-    // 6. Chronological / Logical order check
+    // 5. Chronological / Logical order check
     for (final historical in historicalTimestamps) {
       if (!timestamp.isAfter(historical)) {
         throw IntegrityException(

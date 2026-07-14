@@ -513,7 +513,7 @@ void main() {
         );
 
         test(
-          'deve falhar com IntegrityException se a assinatura criptográfica estiver corrompida ou forjada',
+          'signature substring theater is not a real crypto gate (hash still binds)',
           () {
             final payload = jsonEncode({
               'id': 'evt-103',
@@ -523,6 +523,7 @@ void main() {
             });
             final declaredHash = _sha256Of(utf8.encode(payload));
 
+            // Hash match is the integrity gate; fake substring checks removed.
             expect(
               () => verifier.verifyEvidencePayload(
                 rawPayloadJson: payload,
@@ -530,7 +531,7 @@ void main() {
                 previousHashes: const [],
                 historicalTimestamps: const [],
               ),
-              throwsA(isA<IntegrityException>()),
+              returnsNormally,
             );
           },
         );

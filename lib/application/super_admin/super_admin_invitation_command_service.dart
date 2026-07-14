@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/application/admin/invitation_command_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// SuperAdmin implementation of [InvitationCommandService].
 ///
@@ -79,7 +80,9 @@ class SuperAdminInvitationCommandService implements InvitationCommandService {
           'CONTRACTOR_VIEWER invitations require dual-key setup — use tenant invitation flow',
         );
       case UserRole.superAdmin:
-        throw ArgumentError('superAdmin cannot be assigned via invitation');
+        throw const IntegrityException(
+          'superAdmin cannot be assigned via invitation',
+        );
     }
   }
 }

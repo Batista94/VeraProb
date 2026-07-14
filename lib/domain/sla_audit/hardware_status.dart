@@ -1,4 +1,6 @@
 // pr_scanner: ignore-regression
+import 'package:veraprob/domain/shared/integrity_exception.dart';
+
 /// Hardware connectivity classification for fleet ingestion health.
 ///
 /// Maps 1:1 to the `hardware_status` TEXT returned by the
@@ -22,7 +24,7 @@ enum HardwareStatus {
     'DELAYED' => HardwareStatus.delayed,
     'OFFLINE' => HardwareStatus.offline,
     'NEVER_SEEN' => HardwareStatus.neverSeen,
-    _ => throw ArgumentError('Unknown HardwareStatus: $value'),
+    _ => throw IntegrityException('Unknown HardwareStatus: $value'),
   };
 
   /// Semantic label for display (Portuguese).

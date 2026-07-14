@@ -58,16 +58,13 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(sandboxWizardProvider);
-    final tokens =
-        Theme.of(context).extension<SandboxThemeExtension>() ??
-        SandboxThemeExtension.defaults();
     final simAsync = ref.watch(sandboxSimulationControllerProvider);
     final busy = _submitting || simAsync.isLoading;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SectionTitle(title: 'Sessão', color: tokens.accentColor),
+        const _SectionTitle(title: 'Sessão', color: SandboxTokens.accentColor),
         TextField(
           controller: _sessionController,
           decoration: const InputDecoration(
@@ -91,7 +88,7 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
                     ref.read(sandboxWizardProvider.notifier).setContractId(id),
         ),
         const SizedBox(height: VeraProbSpacing.lg),
-        _SectionTitle(title: 'Período', color: tokens.accentColor),
+        const _SectionTitle(title: 'Período', color: SandboxTokens.accentColor),
         Text(
           'Máximo ${SandboxWizardValidator.maxPeriod.inDays} dias (6 meses).',
           style: VeraProbTypography.caption,
@@ -121,7 +118,7 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
           ],
         ),
         const SizedBox(height: VeraProbSpacing.lg),
-        _SectionTitle(title: 'Regras', color: tokens.accentColor),
+        const _SectionTitle(title: 'Regras', color: SandboxTokens.accentColor),
         Text(
           'Tolerância de atraso: ${state.delayToleranceMinutes ?? 15} min',
           style: VeraProbTypography.bodySmall,
@@ -132,7 +129,7 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
           max: 120,
           divisions: 119,
           label: '${state.delayToleranceMinutes ?? 15} min',
-          activeColor: tokens.accentColor,
+          activeColor: SandboxTokens.accentColor,
           onChanged: busy
               ? null
               : (v) => ref
@@ -140,7 +137,10 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
                     .setDelayToleranceMinutes(v),
         ),
         const SizedBox(height: VeraProbSpacing.lg),
-        _SectionTitle(title: 'Financeiro', color: tokens.accentColor),
+        const _SectionTitle(
+          title: 'Financeiro',
+          color: SandboxTokens.accentColor,
+        ),
         TextField(
           controller: _capController,
           decoration: const InputDecoration(
@@ -183,7 +183,7 @@ class _SandboxWizardFormState extends ConsumerState<SandboxWizardForm> {
         FilledButton(
           onPressed: (!state.isValid || busy) ? null : _onExecute,
           style: FilledButton.styleFrom(
-            backgroundColor: tokens.accentColor,
+            backgroundColor: SandboxTokens.accentColor,
             foregroundColor: VeraProbColors.background,
           ),
           child: busy

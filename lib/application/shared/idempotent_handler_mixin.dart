@@ -5,6 +5,7 @@ import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/shared/date_time_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Immutable bundle of the inputs to [IdempotentHandlerMixin.executeWithIdempotency].
 ///
@@ -299,7 +300,9 @@ mixin IdempotentHandlerMixin {
   }) async {
     final body = cached.responseBody;
     if (body == null) {
-      throw StateError('Idempotency hit completed but body is missing.');
+      throw const IntegrityException(
+        'Idempotency hit completed but body is missing.',
+      );
     }
 
     final entity = await reloadEntity(body);

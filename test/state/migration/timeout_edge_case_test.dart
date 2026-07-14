@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_async/fake_async.dart';
 
 import 'package:veraprob/state/provider_timeout.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   group('Provider Timeout (Requirement 5.6)', () {
@@ -86,7 +87,7 @@ void main() {
         completer.completeError(StateError('network failure'));
         async.flushMicrotasks();
 
-        expect(caughtError, isA<StateError>());
+        expect(caughtError, isA<IntegrityException>());
         expect((caughtError as StateError).message, 'network failure');
       });
     });

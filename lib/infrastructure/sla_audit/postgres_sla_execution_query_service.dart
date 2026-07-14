@@ -256,7 +256,7 @@ class SlaExecutionQueryServicePostgres implements SlaExecutionQueryService {
     } on FormatException catch (e) {
       throw IntegrityException(
         'Corrupt execution_states row: invalid date string in set_id=${row['set_id']} — '
-        'all timestamp columns must be ISO-8601. Details: $e',
+        'all timestamp columns must be ISO-8601. Details: $e. Row: $row',
         field: 'timestamp',
       );
     }

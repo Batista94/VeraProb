@@ -22,22 +22,18 @@ class SandboxBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens =
-        Theme.of(context).extension<SandboxThemeExtension>() ??
-        SandboxThemeExtension.defaults();
-
     final periodText =
         '${_formatUtc(periodStartUtc)} a ${_formatUtc(periodEndUtc)}';
 
     return Material(
-      color: tokens.bannerBackgroundColor,
+      color: SandboxTokens.bannerBackgroundColor,
       child: SafeArea(
         bottom: false,
         child: Container(
           width: double.infinity,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             border: Border(
-              bottom: BorderSide(color: tokens.accentColor, width: 2),
+              bottom: BorderSide(color: SandboxTokens.accentColor, width: 2),
             ),
           ),
           padding: const EdgeInsets.symmetric(
@@ -46,9 +42,9 @@ class SandboxBanner extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.warning_amber_rounded,
-                color: tokens.accentColor,
+                color: SandboxTokens.accentColor,
                 size: 20,
               ),
               const SizedBox(width: VeraProbSpacing.sm),
@@ -62,7 +58,7 @@ class SandboxBanner extends StatelessWidget {
                       TextSpan(
                         text: '⚠  MODO SIMULAÇÃO',
                         style: VeraProbTypography.sectionTitle.copyWith(
-                          color: tokens.accentColor,
+                          color: SandboxTokens.accentColor,
                           fontSize: 13,
                         ),
                       ),
@@ -81,7 +77,7 @@ class SandboxBanner extends StatelessWidget {
               TextButton(
                 onPressed: onExit,
                 style: TextButton.styleFrom(
-                  foregroundColor: tokens.accentColor,
+                  foregroundColor: SandboxTokens.accentColor,
                   padding: const EdgeInsets.symmetric(
                     horizontal: VeraProbSpacing.sm,
                     vertical: VeraProbSpacing.xs,

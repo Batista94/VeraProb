@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/shared/postgres_utc.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/sandbox_simulation_overrides.dart';
 
@@ -99,8 +100,8 @@ class SandboxSimulationSession extends Equatable {
       organizationId: row['organization_id'] as String,
       contractId: row['contract_id'] as String,
       sessionLabel: row['session_label'] as String,
-      periodStartUtc: _parsePostgresUtc(row['period_start_utc']),
-      periodEndUtc: _parsePostgresUtc(row['period_end_utc']),
+      periodStartUtc: parsePostgresUtc(row['period_start_utc']),
+      periodEndUtc: parsePostgresUtc(row['period_end_utc']),
       overridesSnapshot: overridesRaw is Map
           ? SandboxSimulationOverrides.fromJson(
               Map<String, dynamic>.from(overridesRaw),
@@ -118,16 +119,9 @@ class SandboxSimulationSession extends Equatable {
       simulatedCappedEventCount:
           (row['simulated_capped_event_count'] as num?)?.toInt() ?? 0,
       createdByUserId: row['created_by_user_id'] as String,
-      createdAtUtc: _parsePostgresUtc(row['created_at_utc']),
-      expiresAtUtc: _parsePostgresUtc(row['expires_at_utc']),
+      createdAtUtc: parsePostgresUtc(row['created_at_utc']),
+      expiresAtUtc: parsePostgresUtc(row['expires_at_utc']),
     );
-  }
-
-  /// INV-6: naive Postgres timestamps (no Z/offset) are UTC, not local.
-  static DateTime _parsePostgresUtc(Object? raw) {
-    final s = raw as String;
-    final normalized = (s.endsWith('Z') || s.contains('+')) ? s : '${s}Z';
-    return DateTime.parse(normalized).toUtc();
   }
 
   bool get isExpired => DateTime.now().toUtc().isAfter(expiresAtUtc);

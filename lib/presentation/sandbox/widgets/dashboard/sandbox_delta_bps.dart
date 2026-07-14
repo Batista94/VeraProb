@@ -1,3 +1,5 @@
+import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
+
 /// INV-5: basis-point delta with symmetric (half-up) integer rounding.
 ///
 /// Matches ledger convention: positive bps = simulated fines **lower** than
@@ -20,14 +22,5 @@ abstract final class SandboxDeltaBps {
   }
 
   /// Formats e.g. `1500` → `1.500` (BR thousands separator, integer bps).
-  static String format(int bps) {
-    final abs = bps.abs();
-    final s = abs.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return bps < 0 ? '-${buf.toString()}' : buf.toString();
-  }
+  static String format(int bps) => SandboxCurrencyFormat.formatThousands(bps);
 }

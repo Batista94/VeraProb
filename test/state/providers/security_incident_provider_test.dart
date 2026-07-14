@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 // Non-INV26-compliant logger — propagates exceptions instead of swallowing them.
 // Used as a negative reference to document WHY INV-26 exists.
@@ -211,7 +212,7 @@ void main() {
         );
         await expectLater(
           logger.log(eventType: 'X', metadata: {}, jwtClaimsSnapshot: {}),
-          throwsStateError,
+          throwsA(isA<IntegrityException>()),
           reason:
               'negative reference: non-INV26-compliant impl DOES propagate — real impl must not',
         );

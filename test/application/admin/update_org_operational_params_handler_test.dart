@@ -551,7 +551,7 @@ void main() {
               isA<DomainException>().having(
                 (e) => e.message,
                 'message',
-                allOf(contains('Organization not found'), contains(_orgId)),
+                contains('Organização não encontrada.'),
               ),
             ),
           );

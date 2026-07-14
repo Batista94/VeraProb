@@ -22,25 +22,18 @@ class SandboxWizardNotifier extends Notifier<SandboxWizardState> {
 
   void setPeriod({DateTime? startUtc, DateTime? endUtc}) {
     state = state.copyWith(
-      periodStartUtc: startUtc ?? state.periodStartUtc,
-      periodEndUtc: endUtc ?? state.periodEndUtc,
-    );
-  }
-
-  void setPeriodRange(DateTime startUtc, DateTime endUtc) {
-    state = state.copyWith(
-      periodStartUtc: startUtc.toUtc(),
-      periodEndUtc: endUtc.toUtc(),
+      periodStartUtc: startUtc != null
+          ? (startUtc.isUtc ? startUtc : startUtc.toUtc())
+          : state.periodStartUtc,
+      periodEndUtc: endUtc != null
+          ? (endUtc.isUtc ? endUtc : endUtc.toUtc())
+          : state.periodEndUtc,
     );
   }
 
   /// Slider: delay tolerance in whole minutes (MAX_TOLERANCE_DELAY).
   void setDelayToleranceMinutes(double value) {
     state = state.copyWith(delayToleranceMinutes: value.round());
-  }
-
-  void clearDelayTolerance() {
-    state = state.copyWith(clearDelayTolerance: true);
   }
 
   /// Parses masked BRL (`R$ 5.000,00`) into cents and stores as [int] (INV-4).
@@ -60,22 +53,6 @@ class SandboxWizardNotifier extends Notifier<SandboxWizardState> {
       return;
     }
     state = state.copyWith(baseFineCents: cents);
-  }
-
-  void setMonthlyPenaltyCapCents(int? cents) {
-    if (cents == null) {
-      state = state.copyWith(clearMonthlyCap: true);
-    } else {
-      state = state.copyWith(monthlyPenaltyCapCents: cents);
-    }
-  }
-
-  void setBaseFineCents(int? cents) {
-    if (cents == null) {
-      state = state.copyWith(clearBaseFine: true);
-    } else {
-      state = state.copyWith(baseFineCents: cents);
-    }
   }
 
   SandboxSimulationOverrides buildOverrides() => state.buildOverrides();

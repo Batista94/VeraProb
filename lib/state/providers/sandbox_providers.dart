@@ -169,30 +169,6 @@ class SandboxSimulationController extends Notifier<AsyncValue<String?>> {
   void reset() => state = const AsyncData(null);
 }
 
-// ── UI-facing command wrapper (INV-13) ────────────────────────────────────────
-// Returns `null` on success, else a Portuguese error message.
-
-Future<String?> runSandboxSimulation(
-  WidgetRef ref, {
-  required String contractId,
-  required DateTime periodStartUtc,
-  required DateTime periodEndUtc,
-  required SandboxSimulationOverrides overrides,
-  required String sessionLabel,
-}) async {
-  final sessionId = await ref
-      .read(sandboxSimulationControllerProvider.notifier)
-      .runSimulation(
-        contractId: contractId,
-        periodStartUtc: periodStartUtc,
-        periodEndUtc: periodEndUtc,
-        overrides: overrides,
-        sessionLabel: sessionLabel,
-      );
-  if (sessionId != null) return null;
-  return _extractErrorMessage(ref.read(sandboxSimulationControllerProvider));
-}
-
 String _toUserMessage(Object e) {
   if (e is SandboxSimulationException) return e.message;
   if (e is DomainException) return e.message;
@@ -200,12 +176,4 @@ String _toUserMessage(Object e) {
   if (e is ResourceNotFoundException) return e.message;
   if (e is String) return e;
   return 'Não foi possível executar a simulação. Tente novamente.';
-}
-
-String _extractErrorMessage(AsyncValue<String?> value) {
-  return value.when(
-    data: (_) => 'Não foi possível executar a simulação. Tente novamente.',
-    loading: () => 'Não foi possível executar a simulação. Tente novamente.',
-    error: (e, _) => _toUserMessage(e),
-  );
 }

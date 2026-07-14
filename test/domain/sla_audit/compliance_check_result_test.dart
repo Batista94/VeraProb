@@ -7,6 +7,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
 import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   // =========================================================================
@@ -235,7 +236,7 @@ void main() {
     test('unknown status → throws ArgumentError', () {
       expect(
         () => ComplianceCheckResult.fromJson({'status': 'INVALID'}),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 

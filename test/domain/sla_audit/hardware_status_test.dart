@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/hardware_status.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   group('HardwareStatus.fromRpcValue', () {
@@ -14,11 +15,17 @@ void main() {
     });
 
     test('throws ArgumentError on an unknown value (INV-7 strict)', () {
-      expect(() => HardwareStatus.fromRpcValue('GARBAGE'), throwsArgumentError);
+      expect(
+        () => HardwareStatus.fromRpcValue('GARBAGE'),
+        throwsA(isA<IntegrityException>()),
+      );
     });
 
     test('is case-sensitive — lowercase is rejected', () {
-      expect(() => HardwareStatus.fromRpcValue('healthy'), throwsArgumentError);
+      expect(
+        () => HardwareStatus.fromRpcValue('healthy'),
+        throwsA(isA<IntegrityException>()),
+      );
     });
   });
 

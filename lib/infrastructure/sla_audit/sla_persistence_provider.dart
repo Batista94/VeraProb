@@ -69,8 +69,6 @@ typedef SlaPersistenceBundle = ({
 /// Single switchboard for SLA Audit repos (in-memory vs Postgres).
 final slaPersistenceBundleProvider = Provider<SlaPersistenceBundle>((ref) {
   final mode = ref.watch(persistenceModeProvider);
-  final client = ref.watch(supabaseClientProvider);
-  final clock = ref.watch(dateTimeProviderProvider);
 
   return switch (mode) {
     PersistenceMode.inMemory => (
@@ -89,27 +87,31 @@ final slaPersistenceBundleProvider = Provider<SlaPersistenceBundle>((ref) {
           const InMemoryVehicleInfractionRecurrenceRepository(),
       idempotencyStore: InMemoryIdempotencyStore(),
     ),
-    PersistenceMode.postgres => (
-      planDeclaration: PostgresPlanDeclarationRepository(client),
-      contractualExecutionState: PostgresContractualExecutionStateRepository(
-        client,
-        clock,
-      ),
-      slaAuditLedger: PostgresSlaAuditLedgerRepository(client),
-      forensicEvidenceSnapshot: PostgresForensicEvidenceSnapshotRepository(
-        client,
-      ),
-      contractualFinancialSnapshot:
-          PostgresContractualFinancialSnapshotRepository(client),
-      contract: PostgresContractRepository(client),
-      sanctionReviewQueue: PostgresSanctionReviewQueueRepository(client),
-      disputeReasonCode: PostgresDisputeReasonCodeRepository(client),
-      disputeEvidence: PostgresDisputeEvidenceRepository(client),
-      justification: PostgresJustificationRepository(client),
-      vehicleInfractionRecurrence:
-          PostgresVehicleInfractionRecurrenceRepository(client),
-      idempotencyStore: PostgresIdempotencyStore(client),
-    ),
+    PersistenceMode.postgres => () {
+      final client = ref.watch(supabaseClientProvider);
+      final clock = ref.watch(dateTimeProviderProvider);
+      return (
+        planDeclaration: PostgresPlanDeclarationRepository(client),
+        contractualExecutionState: PostgresContractualExecutionStateRepository(
+          client,
+          clock,
+        ),
+        slaAuditLedger: PostgresSlaAuditLedgerRepository(client),
+        forensicEvidenceSnapshot: PostgresForensicEvidenceSnapshotRepository(
+          client,
+        ),
+        contractualFinancialSnapshot:
+            PostgresContractualFinancialSnapshotRepository(client),
+        contract: PostgresContractRepository(client),
+        sanctionReviewQueue: PostgresSanctionReviewQueueRepository(client),
+        disputeReasonCode: PostgresDisputeReasonCodeRepository(client),
+        disputeEvidence: PostgresDisputeEvidenceRepository(client),
+        justification: PostgresJustificationRepository(client),
+        vehicleInfractionRecurrence:
+            PostgresVehicleInfractionRecurrenceRepository(client),
+        idempotencyStore: PostgresIdempotencyStore(client),
+      );
+    }(),
   };
 });
 

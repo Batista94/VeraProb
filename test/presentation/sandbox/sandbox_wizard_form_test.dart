@@ -3,15 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/presentation/sandbox/providers/sandbox_wizard_provider.dart';
 import 'package:veraprob/presentation/sandbox/widgets/wizard/sandbox_wizard_form.dart';
-import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 
 void main() {
   Widget wrap(Widget child) {
     return ProviderScope(
       child: MaterialApp(
-        theme: ThemeData.dark().copyWith(
-          extensions: [SandboxThemeExtension.defaults()],
-        ),
+        theme: ThemeData.dark(),
         home: Scaffold(body: SingleChildScrollView(child: child)),
       ),
     );
@@ -55,9 +52,7 @@ void main() {
             builder: (context) {
               container = ProviderScope.containerOf(context);
               return MaterialApp(
-                theme: ThemeData.dark().copyWith(
-                  extensions: [SandboxThemeExtension.defaults()],
-                ),
+                theme: ThemeData.dark(),
                 home: const Scaffold(
                   body: SingleChildScrollView(
                     child: SandboxWizardForm(
@@ -77,7 +72,10 @@ void main() {
       container.read(sandboxWizardProvider.notifier)
         ..setSessionLabel('Cap')
         ..setContractId('ct-1')
-        ..setPeriodRange(DateTime.utc(2026, 1, 1), DateTime.utc(2026, 2, 1))
+        ..setPeriod(
+          startUtc: DateTime.utc(2026, 1, 1),
+          endUtc: DateTime.utc(2026, 2, 1),
+        )
         ..setMonthlyPenaltyCapFromMasked('R\$ 5.000,00');
 
       final overrides = container.read(sandboxWizardProvider).buildOverrides();
