@@ -21,11 +21,11 @@ VALUES (
 -- T1: canonical constraint name survived the rename-back (v3 -> chk_ledger_type).
 SELECT ok(
   EXISTS (
-    SELECT 1 FROM pg_constraint
-     WHERE conname = 'chk_ledger_type'
-       AND conrelid = 'public.sla_audit_ledger_v2'::regclass
+    SELECT 1 FROM pg_type ty
+    JOIN pg_namespace n ON n.oid = ty.typnamespace
+    WHERE n.nspname = 'public' AND ty.typname = 'ledger_event_type'
   ),
-  'T1: canonical constraint chk_ledger_type present after widening');
+  'T1: ledger_event_type enum present (replaces chk_ledger_type)');
 
 -- T2: DISPUTE_PORTAL_TOKEN_GENERATED accepted.
 SELECT lives_ok(
@@ -57,7 +57,7 @@ SELECT throws_ok(
        (organization_id, type, set_id, contract_id, plan_version, payload, occurred_at_utc)
      VALUES ('aaaaaaaa-0000-0000-0000-000000000001', 'NOT_A_REAL_FACT_TYPE',
        'set-lt', 'aaaaaaaa-0000-0000-0000-0000000000aa', 0, '{}'::jsonb, NOW()) $$,
-  '23514', NULL,
+  '22P02', NULL,
   'T5: CHECK rejects unknown fact type (check_violation)');
 
 -- T6: legacy fact type still valid (no regression on pre-10.6 vocabulary).

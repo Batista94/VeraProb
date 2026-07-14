@@ -39,18 +39,16 @@ class IngestionHealthScreen extends ConsumerStatefulWidget {
 
 class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
   final _scrollTrigger = ValueNotifier<String?>(null);
+  String? _selectedId;
   String? _resolvedPreselectionId;
   bool _preselectionHandled = false;
   ProviderSubscription<String?>? _preselectionSub;
   ProviderSubscription<AsyncValue<FleetHealthView>>? _fleetSub;
   Timer? _pulseClearTimer;
-  // Stored in initState so dispose() can call .set(null) without ref (Riverpod rule).
-  late final SelectedHealthVehicleIdNotifier _selectionNotifier;
 
   @override
   void initState() {
     super.initState();
-    _selectionNotifier = ref.read(selectedHealthVehicleIdProvider.notifier);
     if (widget.preselectedVehicleId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -66,11 +64,6 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
     _preselectionSub?.close();
     _fleetSub?.close();
     _scrollTrigger.dispose();
-    Future.microtask(() {
-      try {
-        _selectionNotifier.set(null);
-      } catch (_) {}
-    });
     super.dispose();
   }
 
@@ -120,9 +113,11 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
 
   void _resolvePreselection(String id) {
     _preselectionHandled = true;
-    _selectionNotifier.set(id);
     if (!mounted) return;
-    setState(() => _resolvedPreselectionId = id);
+    setState(() {
+      _selectedId = id;
+      _resolvedPreselectionId = id;
+    });
     _scrollTrigger.value = id;
     // Clear after pulse duration so subsequent poll rebuilds don't re-pulse.
     _pulseClearTimer?.cancel();
@@ -156,7 +151,6 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
   @override
   Widget build(BuildContext context) {
     final healthAsync = ref.watch(fleetHealthPollingProvider);
-    final selectedId = ref.watch(selectedHealthVehicleIdProvider);
 
     return Scaffold(
       backgroundColor: VeraProbColors.background,
@@ -206,28 +200,22 @@ class _IngestionHealthScreenState extends ConsumerState<IngestionHealthScreen> {
                             flex: 3,
                             child: VehicleListPanel(
                               view: view,
-                              selectedId: selectedId,
+                              selectedId: _selectedId,
                               preselectedId: _resolvedPreselectionId,
                               scrollTrigger: _scrollTrigger,
-                              onSelect: (id) => ref
-                                  .read(
-                                    selectedHealthVehicleIdProvider.notifier,
-                                  )
-                                  .set(id),
+                              onSelect: (id) =>
+                                  setState(() => _selectedId = id),
                             ),
                           ),
-                          if (selectedId != null) ...[
+                          if (_selectedId != null) ...[
                             const SizedBox(width: VeraProbSpacing.md),
                             Expanded(
                               flex: 2,
                               child: IngestionHealthDetailPanel(
                                 view: view,
-                                selectedId: selectedId,
-                                onClose: () => ref
-                                    .read(
-                                      selectedHealthVehicleIdProvider.notifier,
-                                    )
-                                    .set(null),
+                                selectedId: _selectedId!,
+                                onClose: () =>
+                                    setState(() => _selectedId = null),
                               ),
                             ),
                           ],

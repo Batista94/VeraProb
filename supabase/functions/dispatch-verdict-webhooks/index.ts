@@ -20,6 +20,7 @@ import { canonicalJson } from "../shared/canonical_json.ts";
 // INV-31: all HMAC signing routes through the audited shared signer. Webhooks use the
 // per-org derived key (INV-28) exported from there.
 import { deriveOrgKey, signWithDerivedKey } from "../shared/hmac_signer.ts";
+import { isServiceRoleAuth } from "../shared/service_role_auth.ts";
 
 // Utility for SSRF Protection (V2)
 function isPublicIp(ip: string): boolean {
@@ -44,19 +45,6 @@ function isPublicIp(ip: string): boolean {
     return false;
   }
   return true;
-}
-
-// Constant-time exact match of the Bearer token vs the service-role key. Replaces loose
-// `.includes()` substring semantics + closes a timing leak on the cross-tenant auth boundary.
-function isServiceRoleAuth(authHeader: string, secret: string | undefined): boolean {
-  if (!secret) return false;
-  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
-  if (token.length !== secret.length) return false;
-  let diff = 0;
-  for (let i = 0; i < token.length; i++) {
-    diff |= token.charCodeAt(i) ^ secret.charCodeAt(i);
-  }
-  return diff === 0;
 }
 
 export async function handler(ctx: SecurityContext, supabase: ReturnType<typeof createClient>, req: Request): Promise<Response> {

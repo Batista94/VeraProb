@@ -1,5 +1,6 @@
 import 'package:test/test.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_link.dart';
 import 'package:veraprob/domain/sla_audit/telegram/telegram_evidence_upload.dart';
@@ -162,12 +163,20 @@ void main() {
       // Simulate atomic RPC: ACTIVE → ACKNOWLEDGED → RESOLVED
       await alertService.acknowledge(
         alertId: alertId,
+        organizationId: 'org-1',
         userId: 'system',
         atUtc: now,
       );
-      await alertService.resolve(alertId: alertId, atUtc: now);
+      await alertService.resolve(
+        alertId: alertId,
+        organizationId: 'org-1',
+        atUtc: now,
+      );
 
-      final resolved = await alertRepo.findById(alertId);
+      final resolved = await alertRepo.findById(
+        alertId,
+        organizationId: 'org-1',
+      );
       expect(resolved!.status, equals('RESOLVED'));
       expect(resolved.resolvedAtUtc, equals(now));
     });
@@ -180,19 +189,25 @@ void main() {
       // First resolution
       await alertService.acknowledge(
         alertId: alertId,
+        organizationId: 'org-1',
         userId: 'system',
         atUtc: now,
       );
-      await alertService.resolve(alertId: alertId, atUtc: now);
+      await alertService.resolve(
+        alertId: alertId,
+        organizationId: 'org-1',
+        atUtc: now,
+      );
 
       // Second attempt — should throw (lifecycle violation)
       expect(
         () => alertService.acknowledge(
           alertId: alertId,
+          organizationId: 'org-1',
           userId: 'system',
           atUtc: now,
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -208,10 +223,15 @@ void main() {
 
         await alertService.acknowledge(
           alertId: alertId,
+          organizationId: 'org-1',
           userId: 'system',
           atUtc: now,
         );
-        await alertService.resolve(alertId: alertId, atUtc: now);
+        await alertService.resolve(
+          alertId: alertId,
+          organizationId: 'org-1',
+          atUtc: now,
+        );
 
         active = await alertRepo.findActive('org-1');
         expect(active, isEmpty);

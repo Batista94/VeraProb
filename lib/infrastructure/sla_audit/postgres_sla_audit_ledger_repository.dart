@@ -5,7 +5,6 @@ import 'package:veraprob/domain/sla_audit/sla_audit_ledger_repository.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
-import 'package:veraprob/infrastructure/sla_audit/dto/sla_ledger_entry_dto.dart';
 
 /// Postgres implementation of [SlaAuditLedgerRepository].
 ///
@@ -47,32 +46,127 @@ class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
   /// Throws [IntegrityException] if [raw] is null or not a [String].
   @visibleForTesting
   DateTime parseUtc(dynamic raw, String fieldName) {
-    if (raw == null) {
-      throw IntegrityException(
-        'Timestamp "$fieldName" is null',
-        field: fieldName,
+    return BasePostgresRepository.parsePostgresUtc(raw, fieldName);
+  }
+
+  /// Validates domain entry and builds the insert payload (INV-4 / dart2js cents).
+  @visibleForTesting
+  static Map<String, dynamic> toInsertMap(SlaLedgerEntry entry) {
+    if (entry.organizationId.isEmpty) {
+      throw const IntegrityException(
+        'organizationId cannot be empty',
+        field: 'organization_id',
       );
     }
-    if (raw is! String) {
-      throw IntegrityException(
-        'Timestamp "$fieldName" has unexpected type ${raw.runtimeType}, expected String',
-        field: fieldName,
+    if (entry.type.length > 255) {
+      throw const IntegrityException(
+        'type string limit exceeded (> 255)',
+        field: 'type',
       );
     }
-    final normalized = (raw.endsWith('Z') || raw.contains('+'))
-        ? raw
-        : '${raw}Z';
-    return DateTime.parse(normalized);
+    if (entry.operatorId.length > 255) {
+      throw const IntegrityException(
+        'operatorId string limit exceeded (> 255)',
+        field: 'operator_id',
+      );
+    }
+    if (entry.planVersion < 0) {
+      throw const IntegrityException(
+        'planVersion cannot be negative',
+        field: 'plan_version',
+      );
+    }
+
+    final payload = Map<String, dynamic>.from(entry.payload);
+    preventDoubleCents(payload);
+
+    return {
+      'organization_id': entry.organizationId,
+      'type': entry.type,
+      'operator_id': entry.operatorId,
+      'set_id': entry.setId,
+      'contract_id': entry.contractId,
+      'plan_version': entry.planVersion,
+      'payload': payload,
+      'occurred_at_utc': entry.occurredAtUtc.toIso8601String(),
+    };
+  }
+
+  /// Reconstitutes domain from a validated ledger row.
+  @visibleForTesting
+  static SlaLedgerEntry fromRow(Map<String, dynamic> json, String id) {
+    if (!json.containsKey('organization_id') ||
+        json['organization_id'] == null) {
+      throw const IntegrityException(
+        'Missing organization_id from mapped row',
+        field: 'organization_id',
+      );
+    }
+    if (!json.containsKey('type') || json['type'] == null) {
+      throw const IntegrityException(
+        'Missing type from mapped row',
+        field: 'type',
+      );
+    }
+    if (!json.containsKey('occurred_at_utc') ||
+        json['occurred_at_utc'] == null) {
+      throw const IntegrityException(
+        'Missing occurred_at_utc from mapped row',
+        field: 'occurred_at_utc',
+      );
+    }
+
+    final payloadOpt = json['payload'];
+    final payload = payloadOpt != null
+        ? Map<String, dynamic>.from(payloadOpt as Map)
+        : <String, dynamic>{};
+    preventDoubleCents(payload);
+
+    return SlaLedgerEntry(
+      eventId: id,
+      organizationId: json['organization_id'] as String,
+      type: json['type'] as String,
+      operatorId: json['operator_id'] as String? ?? 'SYSTEM',
+      setId: json['set_id'] as String?,
+      contractId: json['contract_id'] as String,
+      planVersion: json['plan_version'] as int,
+      occurredAtUtc: DateTime.parse(json['occurred_at_utc'] as String).toUtc(),
+      payload: payload,
+    );
+  }
+
+  /// dart2js: coerce whole-number doubles on cent fields; reject fractional.
+  @visibleForTesting
+  static void preventDoubleCents(Map<String, dynamic> map) {
+    final corrections = <String, int>{};
+    for (final entry in map.entries) {
+      if (entry.key.contains('cents') || entry.key == 'centavos') {
+        if (entry.value is double && entry.value is! int) {
+          final d = entry.value as double;
+          if (!d.isFinite || d != d.truncateToDouble()) {
+            throw IntegrityException(
+              'Financial field "${entry.key}" must be an int, found double: ${entry.value}',
+              field: entry.key,
+            );
+          }
+          corrections[entry.key] = d.toInt();
+        }
+      }
+      if (entry.value is Map<String, dynamic>) {
+        preventDoubleCents(entry.value as Map<String, dynamic>);
+      }
+    }
+    map.addAll(corrections);
   }
 
   @override
   Future<String> append(SlaLedgerEntry entry) async {
     try {
-      final dto = SlaLedgerEntryDto.fromDomain(entry);
+      final payload = toInsertMap(entry);
 
       final response = await client
           .from('sla_audit_ledger_v2')
-          .insert(dto.toJson())
+          .insert(payload)
           .select('id')
           .single();
 
@@ -138,8 +232,7 @@ class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
           typedRow['occurred_at_utc'],
           'occurred_at_utc',
         ).toIso8601String();
-        final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
-        return dto.toDomain(typedRow['id'] as String);
+        return fromRow(normalizedRow, typedRow['id'] as String);
       }).toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(
@@ -173,8 +266,7 @@ class PostgresSlaAuditLedgerRepository extends BasePostgresRepository
           typedRow['occurred_at_utc'],
           'occurred_at_utc',
         ).toIso8601String();
-        final dto = SlaLedgerEntryDto.fromJson(normalizedRow);
-        return dto.toDomain(typedRow['id'] as String);
+        return fromRow(normalizedRow, typedRow['id'] as String);
       }).toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(

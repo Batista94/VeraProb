@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine & UI Tenant Admin) · **Custom RBAC & Financial Guard (Stop-Loss) concluídos** (com cobertura total de testes pgTAP, integração, widgets e tela de gerenciamento de perfis/permissões) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído** · [NEXT: trilha de notificação Resend na resolução]
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC, Financial Guard (Stop-Loss) & Legal Gate (LGPD) concluídos** (com cobertura total de testes pgTAP, integração, widgets e fluxos de consentimento) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído**.
 
 ---
 
@@ -8,8 +8,8 @@
 
 | Aspect | Status |
 | :--- | :--- |
-| DB Tests (pgTAP) | 1459+ passing · 151 files · `make test-db` ✅ |
-| Migrations | 351 committed ✅ |
+| DB Tests (pgTAP) | 1500+ passing · 165 files · `make test-db` ✅ |
+| Migrations | 365 committed ✅ |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -17,13 +17,13 @@
 
 ## Milestone Gate: READY FOR FIRST TENANT
 
-**Status:** EM ANDAMENTO — 2 itens de Readiness pendentes.
+**Status:** EM ANDAMENTO — 1 item de Readiness pendente.
 
 ### Checklist "READY FOR FIRST TENANT" (Pending)
 
 - [x] **Custom RBAC (Dynamic Tenant Roles):** A arquitetura deve permitir que o **Tenant Admin** (Administrador da Organização cliente) crie "Perfis de Acesso" customizados via UI e defina quais telas/KPIs cada perfil pode ver (ex: isolar a visão do Dashboard Financeiro de operadores logísticos comuns). O SuperAdmin do VeraProb apenas gerencia os Tenants e os Tenant Admins, não os perfis internos do cliente.
 - [x] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
-- [ ] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
+- [x] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
 
 ---
@@ -32,7 +32,7 @@
 
 ### Phase 10.7 — Enterprise Integration & Event Dispatch (Pendente)
 
-- [/] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) entregue para disparo de breach. Falta o gancho de notificação ao contratante *na resolução* da disputa (Resend/PostHog) — transparência + reduz re-contestação.
+- [x] **Notificação/webhook na resolução:** Edge fn `notify-sla-breach` (Comp 5.1) para disparo de breach e Edge fn `dispatch-carrier-notifications` integrada ao Resend para notificações automáticas na resolução do veredicto (via `carrier_notification_outbox` e portal da disputa) entregues e testadas.
 - [ ] **[BIZ] Data Extract & Reporting API:** Criação de endpoints de exportação de dados agregados (CSV/JSON) e chaves de API Read-Only para que o C-Level do cliente possa conectar seus painéis do PowerBI diretamente às Views de ROI (`v_roi_summary`) e `contractual_financial_snapshot`.
 
 ### Phase 10.8 — Shadow Processing & ROI Proving

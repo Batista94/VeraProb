@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "test": "deno test _shared/"
+    "test": "deno test shared/ tests/"
   },
   "compilerOptions": {
     "lib": ["deno.window", "deno.ns"]

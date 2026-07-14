@@ -1,8 +1,8 @@
 # VeraProb — Cursor Rules
 
-> **ATENÇÃO AO AGENTE CURSOR (COMPOSER 2.5):**
-> Este repositório migrou para **regras modulares (.mdc)** na pasta `.cursor/rules/`.
+> **ATTENTION TO CURSOR AGENT (COMPOSER 2.5):**
+> This repository has migrated to **modular rules (.mdc)** in the `.cursor/rules/` directory.
 > 
-> Você não precisa ler todos os manuais no chat, e você **não deve tentar rodar fluxos de TDD estritos ou escrever blocos de "Step 0" manualmente**. Apenas confie no seu loop de agente interno. As regras específicas de tecnologia e negócios serão injetadas automaticamente no seu contexto dependendo dos arquivos que você estiver editando.
+> You do not need to read all manuals in the chat, and you **should not try to run strict TDD flows or write "Step 0" blocks manually**. Simply trust your internal agent loop. Specific technology and business rules will be automatically injected into your context depending on the files you are editing.
 
-**Para referências absolutas, SSOTs e regras universais não cobertas pelas `.mdc`, consulte o índice oficial do repositório em `AGENTS.md`.**
+**For absolute references, SSOTs, and universal rules not covered by `.mdc` files, consult the official repository index in `AGENTS.md`.**

@@ -217,13 +217,6 @@ class PostgresIdempotencyStore extends BasePostgresRepository
   }
 
   DateTime _parseUtc(dynamic raw, String fieldName) {
-    if (raw == null) throw StateError('Timestamp "$fieldName" is null');
-    if (raw is! String) {
-      throw StateError('Timestamp "$fieldName" must be string');
-    }
-    final normalized = (raw.endsWith('Z') || raw.contains('+'))
-        ? raw
-        : '${raw}Z';
-    return DateTime.parse(normalized).toUtc();
+    return BasePostgresRepository.parsePostgresUtc(raw, fieldName);
   }
 }

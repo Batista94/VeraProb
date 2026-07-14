@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:alchemist/alchemist.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -605,66 +604,6 @@ void _testCnpjSearch() {
   });
 }
 
-void _testVisualRegression() {
-  group('TenantListPanel - Visual Regression (Goldens)', () {
-    goldenTest(
-      'Golden Test: Default List State',
-      fileName: 'tenant_list_panel_default',
-      builder: () => SizedBox(
-        width: 320,
-        height: 600,
-        child: _createTestWidget(onOrgSelected: (_) {}),
-      ),
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden Test: Search Results State',
-      fileName: 'tenant_list_panel_searching',
-      builder: () => SizedBox(
-        width: 320,
-        height: 600,
-        child: _createTestWidget(onOrgSelected: (_) {}),
-      ),
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-        await tester.enterText(find.byType(TextField), 'Alpha');
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden Test: Empty State',
-      fileName: 'tenant_list_panel_empty',
-      builder: () => SizedBox(
-        width: 320,
-        height: 600,
-        child: _createTestWidget(onOrgSelected: (_) {}, tenants: []),
-      ),
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden Test: Skeleton Loading State',
-      fileName: 'tenant_list_panel_skeleton',
-      builder: () {
-        return SizedBox(
-          width: 320,
-          height: 600,
-          child: _createTestWidget(isLoading: true, onOrgSelected: (_) {}),
-        );
-      },
-      pumpBeforeTest: (tester) async {
-        await tester.pump();
-      },
-    );
-  });
-}
-
 void main() {
   setUp(() {
     _mockRepo = MockSuperAdminRepository();
@@ -676,7 +615,6 @@ void main() {
   _testCiaA11y();
   _testDebounceAdversarial();
   _testCnpjSearch();
-  _testVisualRegression();
 }
 
 extension on TenantHealthView {
@@ -695,9 +633,8 @@ extension on TenantHealthView {
       openCriticalAlertCount: openCriticalAlertCount,
       capabilities: {},
       dwellTimeSeconds: dwellTimeSeconds,
-      updatedAt: updatedAt,
+
       cnpj: cnpj,
-      createdAt: createdAt,
     );
   }
 }

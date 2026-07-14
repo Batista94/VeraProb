@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — PR elevation org-scope ports / domain touch (Council-approved plan)
 import 'contractual_service_execution.dart';
 import 'plan_declaration.dart';
 
@@ -10,9 +11,12 @@ abstract class PlanDeclarationRepository {
   /// Persists a [PlanDeclaration] aggregate.
   Future<PlanDeclaration> save(PlanDeclaration plan);
 
-  /// Retrieves a [PlanDeclaration] by its unique ID.
-  /// Returns `null` if not found.
-  Future<PlanDeclaration?> findById(String id);
+  /// Retrieves a [PlanDeclaration] by its unique ID, org-scoped (INV-1).
+  /// Returns `null` if not found or wrong org (INV-26).
+  Future<PlanDeclaration?> findById(
+    String id, {
+    required String organizationId,
+  });
 
   /// Retrieves all [PlanDeclaration]s for a given contract,
   /// scoped to [organizationId].

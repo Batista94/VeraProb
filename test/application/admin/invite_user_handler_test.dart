@@ -5,6 +5,7 @@ import 'package:veraprob/application/admin/invite_user_command.dart';
 import 'package:veraprob/application/admin/invite_user_handler.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+import 'package:veraprob/domain/shared/sovereignty_violation_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
@@ -128,6 +129,37 @@ void main() {
           expiresAtUtc: any(named: 'expiresAtUtc'),
         ),
       ).called(1);
+    });
+
+    test('tenant mismatch → SovereigntyViolationException e nao chama RPC '
+        '(INV-1 / INV-22 Confidentiality)', () async {
+      when(
+        () => tenantValidator.assertTenantMatches(
+          payloadOrgId: any(named: 'payloadOrgId'),
+          sessionId: any(named: 'sessionId'),
+        ),
+      ).thenThrow(
+        const SovereigntyViolationException(
+          payloadOrgId: 'org-1',
+          jwtOrgId: 'org-attacker',
+        ),
+      );
+
+      await expectLater(
+        () => handler.handle(makeCommand()),
+        throwsA(isA<SovereigntyViolationException>()),
+      );
+
+      verifyNever(
+        () => commandService.inviteUser(
+          email: any(named: 'email'),
+          role: any(named: 'role'),
+          tenantRoleId: any(named: 'tenantRoleId'),
+          token: any(named: 'token'),
+          invitationId: any(named: 'invitationId'),
+          expiresAtUtc: any(named: 'expiresAtUtc'),
+        ),
+      );
     });
 
     test('Tokens gerados em duas invocacoes sao distintos', () async {

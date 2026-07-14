@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/telemetry_ingestion_pipeline.dart';
 import 'package:veraprob/domain/shared/money.dart';
@@ -148,7 +148,10 @@ void main() {
         // RUN A: Single Batch
         await pipeline.process(facts, organizationId: orgId);
 
-        final stateA = await execRepo.findBySetId(setId);
+        final stateA = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(stateA?.status, equals(ExecutionStatus.completed));
 
         final ledgerA = await ledgerRepo.getEntriesBySetId(setId);
@@ -172,7 +175,10 @@ void main() {
         await pipeline.process([facts[1]], organizationId: orgId);
         await pipeline.process([facts[2]], organizationId: orgId);
 
-        final stateB = await execRepo.findBySetId(setId);
+        final stateB = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(stateB?.status, equals(ExecutionStatus.completed));
 
         final ledgerB = await ledgerRepo.getEntriesBySetId(setId);
@@ -227,7 +233,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final stateAtSweep = await execRepo.findBySetId(setId);
+        final stateAtSweep = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           stateAtSweep?.status,
           equals(ExecutionStatus.failed),
@@ -253,7 +262,10 @@ void main() {
           ),
         ], organizationId: orgId);
 
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           finalState?.status,
           equals(ExecutionStatus.completed),

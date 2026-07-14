@@ -22,6 +22,7 @@ class _FakeAmendmentRepository
 
   @override
   Future<void> amendContractFinancialTerms({
+    required String organizationId,
     required String contractId,
     int? financialCeilingCents,
     required int penaltyMultiplierBps,
@@ -37,8 +38,9 @@ class _FakeAmendmentRepository
 
   @override
   Future<List<ContractFinancialAmendment>> getAmendmentsForContract(
-    String contractId,
-  ) async => const [];
+    String contractId, {
+    required String organizationId,
+  }) async => const [];
 }
 
 class MockAuthRepository extends Mock implements IAuthRepository {}

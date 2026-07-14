@@ -182,7 +182,10 @@ void main() {
       expect(plan.services, hasLength(1));
 
       // Aggregate was persisted
-      final persisted = await repository.findById(plan.id);
+      final persisted = await repository.findById(
+        plan.id,
+        organizationId: plan.organizationId,
+      );
       expect(persisted, isNotNull);
       expect(persisted!.id, plan.id);
 
@@ -209,7 +212,10 @@ void main() {
         final plan = await handlerWithRules.handle(makeCommand());
 
         expect(plan.ruleSnapshot, equals(frozen));
-        final persisted = await repository.findById(plan.id);
+        final persisted = await repository.findById(
+          plan.id,
+          organizationId: plan.organizationId,
+        );
         expect(persisted!.ruleSnapshot, equals(frozen));
         expect(persisted.ruleSnapshot.rules.single.ruleVersion, 3);
       },
@@ -218,7 +224,10 @@ void main() {
     test('persistence — findById returns saved aggregate', () async {
       final plan = await handler.handle(makeCommand());
 
-      final found = await repository.findById(plan.id);
+      final found = await repository.findById(
+        plan.id,
+        organizationId: plan.organizationId,
+      );
       expect(found, isNotNull);
       expect(found!.contractId, plan.contractId);
       expect(found.originalFileHash, plan.originalFileHash);

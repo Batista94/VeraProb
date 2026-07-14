@@ -25,6 +25,15 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
   String? _highlightedId;
   final _searchController = TextEditingController();
 
+  List<TransitRoute> _filterRoutes(List<TransitRoute> routes) {
+    final searchTerm = _searchController.text.toLowerCase();
+    if (searchTerm.isEmpty) return routes;
+    return routes.where((r) {
+      return r.shortName.toLowerCase().contains(searchTerm) ||
+          r.longName.toLowerCase().contains(searchTerm);
+    }).toList();
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -40,7 +49,13 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredAsync = ref.watch(filteredRoutesProvider);
+    final routesAsync = ref.watch(routesListProvider);
+    final filteredAsync = switch (routesAsync) {
+      AsyncData(:final value) => AsyncData(_filterRoutes(value)),
+      AsyncError(:final error, :final stackTrace) =>
+        AsyncError<List<TransitRoute>>(error, stackTrace),
+      _ => const AsyncLoading<List<TransitRoute>>(),
+    };
     final userRole = ref.watch(currentUserRoleProvider);
 
     return Stack(
@@ -57,15 +72,9 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
               const SizedBox(height: 24),
               RouteSearchBar(
                 controller: _searchController,
-                onChanged: () {
-                  ref
-                      .read(routesSearchQueryProvider.notifier)
-                      .set(_searchController.text);
-                  setState(() {});
-                },
+                onChanged: () => setState(() {}),
                 onClear: () {
                   _searchController.clear();
-                  ref.read(routesSearchQueryProvider.notifier).set('');
                   setState(() {});
                 },
               ),
@@ -80,7 +89,13 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
                             description:
                                 'Clique em "Cadastrar rota" para começar.',
                           )
-                        : _buildTable(value, userRole),
+                        : RouteTable(
+                            routes: value,
+                            highlightedId: _highlightedId,
+                            userRole: userRole,
+                            onDeleteRequested: (route) =>
+                                _confirmDelete(context, route),
+                          ),
                   AsyncLoading() => const SkeletonListLoader(),
                   AsyncError(:final error) => _buildAsyncError(error),
                 },
@@ -108,15 +123,6 @@ class _RoutesTabState extends ConsumerState<RoutesTab> {
           ),
         ],
       ],
-    );
-  }
-
-  Widget _buildTable(List<TransitRoute> routes, UserRole userRole) {
-    return RouteTable(
-      routes: routes,
-      highlightedId: _highlightedId,
-      userRole: userRole,
-      onDeleteRequested: (route) => _confirmDelete(context, route),
     );
   }
 

@@ -429,6 +429,20 @@ class AppTheme {
           ),
         ),
       ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: VeraProbColors.primary,
+          foregroundColor: VeraProbColors.background,
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          shape: const RoundedRectangleBorder(
+            borderRadius: VeraProbRadii.mdAll,
+          ),
+          textStyle: VeraProbTypography.badge.copyWith(
+            fontSize: 13,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: VeraProbColors.textPrimary,

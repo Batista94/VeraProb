@@ -35,7 +35,6 @@ void main() {
     persistenceModeProvider.overrideWithValue(PersistenceMode.inMemory),
     currentOrganizationIdProvider.overrideWith((ref) => 'org-smoke'),
     currentUserRoleProvider.overrideWith((ref) => UserRole.admin),
-    contractStatusFilterProvider.overrideWithBuild((ref, notifier) => null),
     contractListProvider.overrideWith((ref) async => <ContractSummaryView>[]),
     if (selectedId != null)
       selectedContractIdProvider.overrideWithBuild(

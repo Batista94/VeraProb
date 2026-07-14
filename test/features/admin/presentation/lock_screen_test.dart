@@ -17,10 +17,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
+import 'package:veraprob/domain/legal/legal_consent_status.dart';
+import 'package:veraprob/domain/legal/legal_document.dart';
 import 'package:veraprob/domain/super_admin/i_mfa_repository.dart';
 import 'package:veraprob/domain/super_admin/mfa_status.dart';
 import 'package:veraprob/features/admin/presentation/lock_screen.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
+import 'package:veraprob/state/providers/legal_consent_providers.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/security_incident_provider.dart';
 import 'package:veraprob/state/providers/super_admin_auth_providers.dart'
@@ -47,7 +50,7 @@ class _FakeSecurityIncidentLogger implements SecurityIncidentLogger {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-String _buildSuperAdminJwt() {
+String _buildJwt({required bool superAdmin}) {
   final header = base64Url
       .encode(utf8.encode('{"alg":"HS256"}'))
       .replaceAll('=', '');
@@ -55,7 +58,11 @@ String _buildSuperAdminJwt() {
       .encode(
         utf8.encode(
           jsonEncode({
-            'app_metadata': {'super_admin': true, 'org_id': 'org-1'},
+            'app_metadata': {
+              'super_admin': superAdmin,
+              'org_id': 'org-1',
+              'role': superAdmin ? 'SUPER_ADMIN' : 'TENANT_ADMIN',
+            },
           }),
         ),
       )
@@ -63,14 +70,20 @@ String _buildSuperAdminJwt() {
   return '$header.$payload.fake_sig';
 }
 
-AuthState _makeSuperAdminAuthState() {
+AuthState _makeAuthState({required bool superAdmin}) {
   final session = _MockSession();
   final user = _MockUser();
-  when(() => user.id).thenReturn('user-1');
+  when(() => user.id).thenReturn(superAdmin ? 'user-sa' : 'user-tenant');
   when(() => session.user).thenReturn(user);
-  when(() => session.accessToken).thenReturn(_buildSuperAdminJwt());
+  when(() => session.accessToken).thenReturn(_buildJwt(superAdmin: superAdmin));
   return AuthState(AuthChangeEvent.signedIn, session);
 }
+
+LegalDocument get _termsDoc => const LegalDocument(
+  id: 'doc-terms-1',
+  title: 'Termos',
+  bodyMarkdown: 'body',
+);
 
 /// Wrapper that watches [authStateProvider] to warm it up before the
 /// AdminLockScreen reads it imperatively in `_routeAfterAuth`.
@@ -86,9 +99,7 @@ class _AuthWarmupWrapper extends ConsumerWidget {
 }
 
 /// Router whose `/login` renders the [AdminLockScreen]; post-auth destinations
-/// (`/super-admin`, MFA gates, `/admin/dashboard`) are sentinels so the
-/// `context.go(...)` issued by `_routeAfterAuth` resolves to a real location we
-/// can assert against — replacing the removed imperative `Navigator` push.
+/// are sentinels so `context.go(...)` from `_routeAfterAuth` is assertable.
 GoRouter _buildRouter() {
   GoRoute sentinel(String path) =>
       GoRoute(path: path, builder: (context, state) => Text('route:$path'));
@@ -101,6 +112,7 @@ GoRouter _buildRouter() {
         builder: (context, state) => const _AuthWarmupWrapper(),
       ),
       sentinel(AppRoutes.adminDashboard),
+      sentinel(AppRoutes.legalConsent),
       sentinel(AppRoutes.superAdmin),
       sentinel(AppRoutes.superAdminMfaEnrollment),
       sentinel(AppRoutes.superAdminMfaChallenge),
@@ -111,8 +123,10 @@ GoRouter _buildRouter() {
 ({Widget widget, GoRouter router}) _buildScreen({
   required _MockAuthRepository authRepo,
   required _MockMfaRepository mfaRepo,
+  bool superAdmin = true,
+  LegalConsentStatus? tenantConsent,
 }) {
-  final authState = _makeSuperAdminAuthState();
+  final authState = _makeAuthState(superAdmin: superAdmin);
   final router = _buildRouter();
 
   final widget = ProviderScope(
@@ -120,11 +134,20 @@ GoRouter _buildRouter() {
       authRepositoryProvider.overrideWithValue(authRepo),
       mfaRepositoryProvider.overrideWithValue(mfaRepo),
       authStateProvider.overrideWith((ref) => Stream.value(authState)),
-      isSuperAdminProvider.overrideWithValue(true),
-      isSuperAdminAal2Provider.overrideWithValue(true),
+      isSuperAdminProvider.overrideWithValue(superAdmin),
+      isSuperAdminAal2Provider.overrideWithValue(superAdmin),
       securityIncidentLoggerProvider.overrideWithValue(
         _FakeSecurityIncidentLogger(),
       ),
+      if (!superAdmin)
+        legalConsentStatusProvider.overrideWith(
+          (ref) async =>
+              tenantConsent ??
+              LegalConsentStatus(
+                state: LegalConsentState.pending,
+                document: _termsDoc,
+              ),
+        ),
     ],
     child: MaterialApp.router(routerConfig: router),
   );
@@ -260,5 +283,58 @@ void main() {
       // After navigation, the widget is replaced — guard was reset in finally.
       expect(callCount, 1);
     });
+  });
+
+  group('AdminLockScreen — LGPD Legal Gate (tenant operators)', () {
+    testWidgets('pending consent routes to /legal-consent (F-01)', (
+      tester,
+    ) async {
+      final harness = _buildScreen(
+        authRepo: authRepo,
+        mfaRepo: mfaRepo,
+        superAdmin: false,
+        tenantConsent: LegalConsentStatus(
+          state: LegalConsentState.pending,
+          document: _termsDoc,
+        ),
+      );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
+      await tester.pump();
+
+      authStatusCtrl.add(true);
+      await tester.pumpAndSettle();
+
+      expect(_currentPath(harness.router), AppRoutes.legalConsent);
+      verifyNever(() => mfaRepo.getMfaStatus());
+    });
+
+    testWidgets('current consent routes to /admin/dashboard (F-02/F-05)', (
+      tester,
+    ) async {
+      final harness = _buildScreen(
+        authRepo: authRepo,
+        mfaRepo: mfaRepo,
+        superAdmin: false,
+        tenantConsent: LegalConsentStatus(
+          state: LegalConsentState.current,
+          document: _termsDoc,
+        ),
+      );
+      addTearDown(harness.router.dispose);
+      await tester.pumpWidget(harness.widget);
+      await tester.pump();
+
+      authStatusCtrl.add(true);
+      await tester.pumpAndSettle();
+
+      expect(_currentPath(harness.router), AppRoutes.adminDashboard);
+      verifyNever(() => mfaRepo.getMfaStatus());
+    });
+
+    // F-09 fail-closed on RPC error: covered by try/catch in
+    // AdminLockScreen._routeAfterAuth (treat as pending) + screen/provider
+    // adverse tests. Widget harness for FutureProvider.completeError races
+    // GoRouter settle and is intentionally not duplicated here.
   });
 }

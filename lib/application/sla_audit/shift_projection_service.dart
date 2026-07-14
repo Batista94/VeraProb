@@ -167,7 +167,10 @@ class ShiftProjectionService {
 
         final setId = _computeProjectedSetId(plan.id, pattern.index, pastDate);
 
-        final existingAlerts = await _alertRepo.findByEntityId(setId);
+        final existingAlerts = await _alertRepo.findByEntityId(
+          setId,
+          organizationId: plan.organizationId,
+        );
         if (existingAlerts.isNotEmpty) continue; // already alerted
 
         final dateLabel =

@@ -44,7 +44,7 @@ Future<EvaluationTrace> processAndGetTrace({
   );
 
   final traces = await (deps.traceRepo as InMemoryEvaluationTraceRepository)
-      .findByEntityId(state.setId);
+      .findByEntityId(state.setId, organizationId: 'org-1');
   expect(traces, isNotEmpty, reason: 'Expected trace after commit');
   return traces.first;
 }
@@ -86,7 +86,7 @@ Future<EvaluationTrace> processAndGetTraceForGrace({
   );
 
   final traces = await (deps.traceRepo as InMemoryEvaluationTraceRepository)
-      .findByEntityId(state.setId);
+      .findByEntityId(state.setId, organizationId: 'org-1');
   expect(traces, isNotEmpty, reason: 'Expected trace after commit');
   return traces.first;
 }

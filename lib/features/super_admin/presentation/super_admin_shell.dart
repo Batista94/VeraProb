@@ -3,10 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
-import 'package:veraprob/application/super_admin/proxy_resilience_notifier.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'widgets/contingency_banner.dart';
 import 'widgets/super_admin_guard.dart';
 import 'widgets/super_admin_session_timeout.dart';
 
@@ -76,8 +74,6 @@ class SuperAdminShell extends ConsumerWidget {
                     ),
                     tooltip: 'Sair',
                     onPressed: () async {
-                      // INV-22: Reset resilience state before logout
-                      ref.read(proxyResilienceProvider.notifier).reset();
                       await ref.read(authRepositoryProvider).signOut();
                       if (context.mounted) {
                         context.go(AppRoutes.login);
@@ -105,14 +101,7 @@ class SuperAdminShell extends ConsumerWidget {
               ),
               const VerticalDivider(width: 1),
               // ── Main content ───────────────────────────────────────
-              Expanded(
-                child: Column(
-                  children: [
-                    const ContingencyBanner(),
-                    Expanded(child: navigationShell),
-                  ],
-                ),
-              ),
+              Expanded(child: navigationShell),
             ],
           ),
         ),

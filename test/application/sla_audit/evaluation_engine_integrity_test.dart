@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
@@ -139,7 +139,7 @@ void main() {
         organizationId: 'org-audit',
       );
 
-      final result = await repo.findBySetId('utc-1');
+      final result = await repo.findBySetId('utc-1', organizationId: 'org-1');
       expect(result!.lastEvaluatedAtUtc.isUtc, isTrue);
     });
 
@@ -166,7 +166,7 @@ void main() {
         organizationId: 'org-audit',
       );
       expect(
-        (await repo.findBySetId('grace-edge'))!.status,
+        (await repo.findBySetId('grace-edge', organizationId: 'org-1'))!.status,
         ExecutionStatus.planned,
       );
 
@@ -186,7 +186,7 @@ void main() {
       );
 
       expect(
-        (await repo.findBySetId('grace-edge'))!.status,
+        (await repo.findBySetId('grace-edge', organizationId: 'org-1'))!.status,
         ExecutionStatus.completed,
       );
     });
@@ -225,7 +225,10 @@ void main() {
         organizationId: 'org-audit',
       );
 
-      final result = await repo.findBySetId('ooo-test');
+      final result = await repo.findBySetId(
+        'ooo-test',
+        organizationId: 'org-1',
+      );
       expect(
         result!.status,
         ExecutionStatus.completed,

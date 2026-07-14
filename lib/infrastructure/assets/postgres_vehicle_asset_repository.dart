@@ -17,28 +17,21 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
   Future<int> batchUpsertFromCsv(
     String organizationId,
     List<Map<String, dynamic>> rows,
-  ) async {
-    try {
-      return await executeBatchUpsertInChunks(
+  ) {
+    return withErrorHandler(
+      'vehicle_asset',
+      null,
+      () => executeBatchUpsertInChunks(
         rpcFunction: 'batch_upsert_vehicles',
         organizationId: organizationId,
         rows: rows,
-      );
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
-    }
-  }
-
-  String get _orgId {
-    final orgId =
-        client.auth.currentSession?.user.appMetadata['org_id'] as String?;
-    if (orgId == null) throw StateError('No organization in session JWT');
-    return orgId;
+      ),
+    );
   }
 
   @override
-  Future<List<Vehicle>> getVehicles() async {
-    try {
+  Future<List<Vehicle>> getVehicles() {
+    return withErrorHandler('vehicle_asset', null, () async {
       final response = await client
           .from('vehicles')
           .select()
@@ -46,9 +39,7 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
       return (response as List)
           .map((row) => Vehicle.fromJson(row as Map<String, dynamic>))
           .toList();
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
-    }
+    });
   }
 
   @override
@@ -57,12 +48,12 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
     String? model,
     required int capacity,
     VehicleStatus status = VehicleStatus.available,
-  }) async {
-    try {
+  }) {
+    return withErrorHandler('vehicle_asset', null, () async {
       final response = await client
           .from('vehicles')
           .insert({
-            'organization_id': _orgId,
+            'organization_id': sessionOrgId,
             'plate': plate.toUpperCase().trim(),
             'model': model?.trim(),
             'capacity': capacity,
@@ -71,9 +62,7 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
           .select()
           .single();
       return Vehicle.fromJson(response);
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
-    }
+    });
   }
 
   @override
@@ -91,30 +80,32 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
         currentVersion: vehicle.version,
         resourceType: 'vehicle',
       );
-      // Vehicle has copyWith — return updated entity with new version.
       return vehicle.copyWith(version: newVersion);
     } on ConflictException {
-      rethrow; // Already typed — propagate directly (INV-10)
+      rethrow;
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
     }
   }
 
   @override
-  Future<void> deleteVehicle(String vehicleId) async {
-    try {
-      await client.from('vehicles').delete().eq('id', vehicleId);
-    } on PostgrestException catch (e) {
-      throw mapPostgrestToDomainException(e, resourceType: 'vehicle_asset');
-    }
+  Future<void> deleteVehicle(String vehicleId) {
+    // Soft-retire (no deleted_at column) — INV-3 hygiene + org-scoped.
+    return withErrorHandler(
+      'vehicle_asset',
+      vehicleId,
+      () => client
+          .from('vehicles')
+          .update({'status': 'retired'})
+          .eq('organization_id', sessionOrgId)
+          .eq('id', vehicleId),
+    );
   }
 
   /// Batch update with atomic optimistic locking via Postgres RPC.
   ///
   /// If ANY vehicle has a stale version, the ENTIRE batch is rolled back
   /// by Postgres — zero partial commits possible.
-  ///
-  /// Returns the updated vehicles list (same order as input).
   Future<List<Vehicle>> batchUpdateVehicles(
     List<BatchUpdateSpec> updates,
   ) async {
@@ -124,7 +115,6 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
         updates: updates,
       );
 
-      // Re-fetch updated vehicles to return fresh state with new versions
       final ids = updates.map((u) => u.id).toList();
       final rows = await client.from('vehicles').select().inFilter('id', ids);
       return (rows as List)
@@ -133,7 +123,6 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
     } on ConflictException {
       rethrow;
     } on PostgrestException catch (e) {
-      // P0001 from batch RPC = conflict → convert to ConflictException
       if (e.message.contains('Batch conflict') || e.message.contains('P0001')) {
         final staleIds = _extractBatchStaleIds(e.message);
         throw ConflictException.staleVersion(
@@ -147,7 +136,6 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
     }
   }
 
-  /// Extracts vehicle IDs from a batch conflict error message.
   List<String> _extractBatchStaleIds(String message) {
     final ids = <String>[];
     final matches = RegExp(

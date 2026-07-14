@@ -22,9 +22,9 @@ void main() {
     engine = deps.engine;
   });
 
-  // ── Group 1: Idempotency Tests (INV-11) ─────────────────────────────────
+  // â”€â”€ Group 1: Idempotency Tests (INV-11) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Idempotency — Duplicate processing (INV-11)', () {
+  group('Idempotency â€” Duplicate processing (INV-11)', () {
     const contractId = 'c-idem';
     const setId = 'set-idem';
 
@@ -130,9 +130,9 @@ void main() {
     );
   });
 
-  // ── Group 2: Forensic Chain Tests ───────────────────────────────────────
+  // â”€â”€ Group 2: Forensic Chain Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Forensic Chain — DecisionId propagation', () {
+  group('Forensic Chain â€” DecisionId propagation', () {
     const contractId = 'c-forensic';
     const setId = 'set-forensic';
 
@@ -182,9 +182,9 @@ void main() {
     );
   });
 
-  // ── Group 3: Monetary Precision Tests ───────────────────────────────────
+  // â”€â”€ Group 3: Monetary Precision Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Monetary Precision — 5-minute threshold tolerance', () {
+  group('Monetary Precision â€” 5-minute threshold tolerance', () {
     const contractId = 'c-threshold';
     const setId = 'set-threshold';
 
@@ -243,11 +243,14 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final traces = await traceRepo.findByEntityId(setId);
+      final traces = await traceRepo.findByEntityId(
+        setId,
+        organizationId: 'org-1',
+      );
       return traces.isEmpty ? null : traces.first;
     }
 
-    test('delay < 5 minutes → no DELAY_PENALTY_ASSESSED in trace', () async {
+    test('delay < 5 minutes â†’ no DELAY_PENALTY_ASSESSED in trace', () async {
       final trace = await processDelayAndGetTrace(delayMinutes: 4);
       final delayDecisions =
           trace?.decisions
@@ -258,7 +261,7 @@ void main() {
     });
 
     test(
-      'delay = 5 minutes → no DELAY_PENALTY_ASSESSED in trace (at threshold, still free)',
+      'delay = 5 minutes â†’ no DELAY_PENALTY_ASSESSED in trace (at threshold, still free)',
       () async {
         final trace = await processDelayAndGetTrace(delayMinutes: 5);
         final delayDecisions =
@@ -271,7 +274,7 @@ void main() {
     );
 
     test(
-      'delay = 6 minutes → DELAY_PENALTY_ASSESSED with finalPenaltyCents=200 (1 billable minute)',
+      'delay = 6 minutes â†’ DELAY_PENALTY_ASSESSED with finalPenaltyCents=200 (1 billable minute)',
       () async {
         final trace = await processDelayAndGetTrace(delayMinutes: 6);
         expect(trace, isNotNull, reason: 'Expected trace after commit');
@@ -286,7 +289,7 @@ void main() {
     );
 
     test(
-      'FORENSIC PRECISION [CX-02]: delay = 300s (5min) → no penalty',
+      'FORENSIC PRECISION [CX-02]: delay = 300s (5min) â†’ no penalty',
       () async {
         final trace = await processDelayAndGetTrace(
           delay: const Duration(seconds: 300),
@@ -305,7 +308,7 @@ void main() {
     );
 
     test(
-      'FORENSIC PRECISION [CX-02]: delay = 301s (5min 1s) → 1 min penalty (ceil logic)',
+      'FORENSIC PRECISION [CX-02]: delay = 301s (5min 1s) â†’ 1 min penalty (ceil logic)',
       () async {
         final trace = await processDelayAndGetTrace(
           delay: const Duration(seconds: 301),
@@ -318,14 +321,15 @@ void main() {
         expect(
           evidence.billableMinutes,
           1,
-          reason: '301s > 300s tolerance → 1s triggers 1 whole minute penalty',
+          reason:
+              '301s > 300s tolerance â†’ 1s triggers 1 whole minute penalty',
         );
         expect(evidence.finalPenaltyCents, 200);
       },
     );
 
     test(
-      'delay = 10 minutes → DELAY_PENALTY_ASSESSED with finalPenaltyCents=1000 (5 billable minutes)',
+      'delay = 10 minutes â†’ DELAY_PENALTY_ASSESSED with finalPenaltyCents=1000 (5 billable minutes)',
       () async {
         final trace = await processDelayAndGetTrace(delayMinutes: 10);
         expect(trace, isNotNull, reason: 'Expected trace after commit');
@@ -340,30 +344,30 @@ void main() {
     );
   });
 
-  // ── Group 4: BPS Rounding Accuracy Tests ────────────────────────────────
+  // â”€â”€ Group 4: BPS Rounding Accuracy Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Monetary Precision — BPS symmetric rounding', () {
-    test('base=10000, bps=500 → (10000*500+5000)~/10000 = 500', () {
+  group('Monetary Precision â€” BPS symmetric rounding', () {
+    test('base=10000, bps=500 â†’ (10000*500+5000)~/10000 = 500', () {
       verifySymmetricRounding(baseCents: 10000, bps: 500, expectedCents: 500);
     });
 
-    test('base=10000, bps=1200 → (10000*1200+5000)~/10000 = 1200', () {
+    test('base=10000, bps=1200 â†’ (10000*1200+5000)~/10000 = 1200', () {
       verifySymmetricRounding(baseCents: 10000, bps: 1200, expectedCents: 1200);
     });
 
-    test('base=15000, bps=100 (cap) → (15000*100+5000)~/10000 = 150', () {
+    test('base=15000, bps=100 (cap) â†’ (15000*100+5000)~/10000 = 150', () {
       verifySymmetricRounding(baseCents: 15000, bps: 100, expectedCents: 150);
     });
 
-    test('rounding: base=10001, bps=500 → (10001*500+5000)~/10000 = 500', () {
+    test('rounding: base=10001, bps=500 â†’ (10001*500+5000)~/10000 = 500', () {
       // (10001*500+5000) = 5_005_500 ~/ 10000 = 500
       verifySymmetricRounding(baseCents: 10001, bps: 500, expectedCents: 500);
     });
   });
 
-  // ── Group 5: Input Resilience Tests ─────────────────────────────────────
+  // â”€â”€ Group 5: Input Resilience Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Input Resilience — Corrupted input handling', () {
+  group('Input Resilience â€” Corrupted input handling', () {
     const contractId = 'c-resilience';
     const setId = 'set-resilience';
 

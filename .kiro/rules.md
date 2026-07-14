@@ -1,79 +1,78 @@
 # VeraProb - Global Rules & Invariants
 
-Este arquivo define as regras inegociáveis e o contexto estático global para todos os agentes e operações no VeraProb.
+This file defines the non-negotiable rules and global static context for all agents and operations in VeraProb.
 
-## 1. PROTOCOLOS DE DESENVOLVIMENTO
-- **TDD (Test-Driven Development)**: Falhar um teste (lançando `IntegrityException`) OBRIGATORIAMENTE antes de escrever o código de implementação.
+## 1. DEVELOPMENT PROTOCOLS
+- **TDD (Test-Driven Development)**: Propose a failing test (throwing `IntegrityException`) BEFORE writing any implementation code.
 - **DESIGN (Industrial Dark)**: 
-  - Estética: Dark mode premium, glassmorphism, vibrações industriais.
-  - UI: Espaçamento 8pt, fontes Inter/Outfit, micro-animações para feedback.
-- **AUTONOMY**: Proatividade total. O "Council" de agentes deve agir sem esperar comandos triviais. O Lead Reviewer deve auditar todos os PRs.
-- **SECURITY SCANNER**: Executar `bash scripts/security/pr_full_scanner.sh` antes de qualquer commit em branch protegida ou Merge para Main.
+  - Aesthetics: Premium dark mode, glassmorphism, industrial theme.
+  - UI: 8pt grid, Inter/Outfit typography, micro-animations for feedback.
+- **AUTONOMY**: Full proactivity. The agent "Council" must act without waiting for trivial instructions. The Lead Reviewer must audit all PRs.
+- **SECURITY SCANNER**: Run `bash scripts/security/pr_full_scanner.sh` before any commit to a protected branch or merging to Main.
 
-## 2. INVARIANTES FORENSES (INV-1 a INV-28)
-As Invariantes são as leis fundamentais do VeraProb. Nenhuma alteração de código pode violá-las.
-- **Fonte Única de Verdade (SSOT)**: Consulte sempre o arquivo [forensic_manifesto.md](docs/governance/forensic_manifesto.md).
-- **Verificação Automática**: O gatilho `preCommit` aciona o `forensic-scanner`, que valida deterministicamente as regras INV-1 a 28 via regex e análise estática.
-- **Principais Invariantes**:
-  - **INV-1 (Identity Sovereignty)**: Todo fluxo deve validar `organization_id`.
-  - **INV-6 (Universal UTC)**: Timestamps obrigatoriamente em UTC.
-  - **INV-19 (Penny Precision)**: Valores financeiros como `BIGINT` (cents), nunca `double`.
-  - **INV-26 (Error Parity)**: Erros idênticos (404) para evitar inferência de dados.
-  - **INV-28 (Secret Guard)**: Bloqueio de segredos/tokens no código.
-  - **INV-DB (Zero-Downtime)**: Proibição de operações SQL bloqueantes em migrações.
+## 2. FORENSIC INVARIANTS (INV-1 to INV-28)
+Invariants are the fundamental laws of VeraProb. No code change can violate them.
+- **Single Source of Truth (SSOT)**: Always consult `.kiro/steering/forensic-standards.md` or `AGENTS.md`.
+- **Automatic Verification**: The `preCommit` hook triggers the `forensic-scanner`, validating INV-1 to 28 via regex and static analysis.
+- **Key Invariants**:
+  - **INV-1 (Identity Sovereignty)**: All flows must validate and filter by `organization_id`.
+  - **INV-6 (Universal UTC)**: Timestamps must use UTC. `TIMESTAMPTZ` mandatory in database.
+  - **INV-19 (Penny Precision)**: Financial values must use `BIGINT` (cents), never `double`.
+  - **INV-26 (Error Parity)**: Identical error codes (404) for Not Found and Wrong Org to prevent data inference.
+  - **INV-28 (Secret Guard)**: Ban on committing credentials/secrets.
+  - **INV-DB (Zero-Downtime)**: Ban on blocking DDL migrations.
 
 ## 3. ORCHESTRATION (Makefile)
-Utilize os comandos padronizados para gerenciar o ambiente:
-- `make setup`: Constrói o ambiente, banco de dados e seeds.
-- `make run`: Inicia o servidor de desenvolvimento local.
-- `make check`: Executa o scanner de segurança e auditoria forense.
-- `make help`: Lista todos os comandos disponíveis.
+Use standard commands to manage the environment:
+- `make setup`: Builds the environment, database, and seeds.
+- `make run`: Starts the local development server.
+- `make check`: Runs the security scanner and forensic audit.
+- `make help`: Lists all available targets.
 
-## 4. TECNOLOGIAS CORE
+## 4. CORE TECH STACK
 - **Frontend**: Flutter.
 - **Backend/DB**: Supabase (PostgreSQL + RLS).
 - **Architecture**: Agnostic core, C4 patterns, Wasm integration.
 
 ---
-## 5. PROTOCOLOS DE DOMÍNIO
-- **SuperAdmin**: Escapes multi-tenant DEVEM usar `SuperAdminBypassTenantValidator`. MFA é obrigatório para transições de estado sensíveis (Arquivamento/Cotas).
-- **Telegram**: Vinculação via `TelegramBindingToken` (TTL curto). Links de evidência devem ser estritamente isolados por `organization_id` (INV-1).
+## 5. DOMAIN PROTOCOLS
+- **SuperAdmin**: Multi-tenant bypasses MUST use `SuperAdminBypassTenantValidator`. MFA is mandatory for sensitive state transitions (Archive/Quota/Delete).
+- **Telegram**: Binding via `TelegramBindingToken` (short TTL). Evidence links strictly bound to `organization_id` (INV-1).
 
 ## 6. MEMORY GOVERNANCE (DPs)
-STRICT MEMORY PROTOCOL para todos os agentes:
-- **Decision Points (DPs)**: Justificativa para escolhas que impactam Invariantes Forenses.
+STRICT MEMORY PROTOCOL for all agents:
+- **Decision Points (DPs)**: Document choices impacting Forensic Invariants.
 - **Format**: `DP-[ID]: [Context] -> [Decision] -> [Invariant Impact]`.
-- **Exemplo**: `DP-001: Migração para BigInt -> Impacto INV-19 -> Motivo: Precisão monetária.`
+- **Example**: `DP-001: Migration to BigInt -> Impact INV-19 -> Reason: Financial precision.`
 
 ## 7. CLEAN CODE & LINTING (Agent Mandatory)
-- **Analyzer Compliance**: Trate todos os avisos do `flutter analyze` como erros bloqueantes. Zero warnings, zero infos.
-- **Strict Mode (INV-7)**: `strict-casts`, `strict-inference` e `strict-raw-types` ATIVOS globalmente. Infraestrutura possui isenção temporária em `lib/infrastructure/analysis_options.yaml` (~80 violações `Map<dynamic,dynamic>`). Delete esse arquivo após corrigi-las.
-- **Blindagem de Camadas (INV-13)**: `lib/features/` NUNCA importa `lib/infrastructure/` diretamente, exceto `observability/` e `config/` (cross-cutting). Use serviço de aplicação ou interface IRepository. Scanner: `INFRA-LEAK-UI`.
-- **Exceções Tipadas (INV-10)**: Nunca `throw Exception(...)`, `throw StateError(...)` ou `throw FormatException(...)` em `lib/domain/` ou `lib/application/`. Use: `IntegrityException`, `SovereigntyViolationException`, `ConflictException`, `AuthorizationException`, `ResourceNotFoundException`. Scanner: `GENERIC-EXCEPTION-DOMAIN`.
-- **Dart Wildcards**: Use apenas um único underscore `_` para parâmetros não utilizados, independentemente da quantidade (evita erro `unnecessary_underscores`).
-- **Unused Code**: Remova variáveis locais e imports não utilizados antes de submeter alterações.
-- **Automated Fix**: Execute `dart fix --apply` após edições estruturais.
-- **Prefer Const**: Utilize `const` em construtores e declarações sempre que possível.
-- **Universal UTC (INV-6)**: `DateTime.now()` deve SEMPRE ser seguido por `.toUtc()` para conformidade com a invariante forense global.
+- **Analyzer Compliance**: Treat all `flutter analyze` warnings as blocking errors. Zero warnings, zero infos.
+- **Strict Mode (INV-7)**: `strict-casts`, `strict-inference`, and `strict-raw-types` active globally. Infrastructure has temporary exemption in `lib/infrastructure/analysis_options.yaml` (~80 Map violations). Delete it when resolved.
+- **Layer Shielding (INV-13)**: `lib/features/` must NEVER import `lib/infrastructure/` directly, except observability/config. Use application service or IRepository interface.
+- **Typed Exceptions (INV-10)**: Never throw `Exception`, `StateError`, or `FormatException` in `lib/domain/` or `lib/application/`. Use: `IntegrityException`, `SovereigntyViolationException`, `ConflictException`, etc.
+- **Dart Wildcards**: Use a single underscore `_` for unused parameters (prevents `unnecessary_underscores` lint).
+- **Unused Code**: Remove unused variables and imports before committing.
+- **Automated Fix**: Run `dart fix --apply` after significant changes.
+- **Prefer Const**: Use `const` on constructors and widgets wherever possible.
+- **Universal UTC (INV-6)**: `DateTime.now()` must always be followed by `.toUtc()`.
 
-> **Lições Aprendidas** (Auth Lifecycle, Async Chain Isolation, Narrow Panels, E2E Protocols, Test CNPJ Factory, Regression Ack): consulte [`.kiro/steering/lessons.md`](steering/lessons.md) — fonte oficial Kiro auto-carregada por todos os agentes.
+> **Lessons Learned** (Auth Lifecycle, Async Chain Isolation, Narrow Panels, E2E Protocols, Test CNPJ Factory, Regression Ack): consult [`.kiro/steering/lessons.md`](steering/lessons.md) — official Kiro steering file auto-loaded by all agents.
 
 ---
-## 8. DIRETRIZES DE TESTES E2E (MANDATÓRIO)
-- **Execução via Makefile**: Todos os testes em `test/integration/e2e/**` devem ser executados através de `make test-e2e` ou `make test-e2e-file FILE=...`. Nunca execute `flutter test` direto nessas pastas para evitar timeouts de `pumpAndSettle` provocados pela falta de `--dart-define=SKIP_MFA_DEV=true`.
-- **Gerenciamento de Modais**: Modais com `barrierDismissible: false` bloqueiam interações externas. Feche o modal via `cancelModal(tester)` antes de tentar qualquer navegação (como clicar no NavRail ou abas).
-- **Precisão de Seletores**: Valide no arquivo da tela o tipo exato do widget (`TextField` vs `TextFormField`) e o texto literal exato do botão/label. Prefira seletores por `ValueKey` quando disponíveis.
-- **Massa de Dados Válida**: Use geradores adequados como `SuperAdminDataFactory.generateUniqueCnpj()` para CNPJs válidos, caso contrário o formulário falhará na validação do dígito verificador.
-- **Sem Warnings**: Remova imports e variáveis não utilizadas nos arquivos de teste antes de commitar para passar no linter estrito.
+## 8. E2E TESTING GUIDELINES (MANDATORY)
+- **Execution via Makefile**: All tests in `test/integration/e2e/**` must be executed via `make test-e2e` or `make test-e2e-file FILE=...`. Never run raw `flutter test` on E2E paths to avoid `pumpAndSettle` timeout.
+- **Modal Management**: Modals with `barrierDismissible: false` block background taps. Close the modal via `cancelModal(tester)` before performing external navigation.
+- **Selector Precision**: Verify the exact widget type (`TextField` vs `TextFormField`) and the literal button label from the screen source. Use `ValueKey` where available.
+- **Valid Seed Data**: Use helper generators like `SuperAdminDataFactory.generateUniqueCnpj()` to produce valid CNPJs, otherwise validation will fail.
+- **Zero Warnings**: Remove unused imports/variables in test files before committing to pass the linter.
 
 ---
 ## 9. COMPLEXITY GATE (Hard Limits)
-Limites impostos pelo scanner forense para evitar débitos técnicos e garantir auditabilidade.
+Limits enforced by the forensic scanner to prevent technical debt.
 
-| Camada | Linhas/Método (Aviso/Block) | Complexidade (Aviso/Block) | Aninhamento (Aviso/Block) |
+| Layer | LOC (Warn/Block) | CC (Warn/Block) | Nesting (Warn/Block) |
 |---|---|---|---|
 | **Domain/App** | 60 / 100 | 10 / 20 | 4 / 6 |
 | **Infrastructure** | 100 / 200 | 15 / 25 | 5 / 7 |
 | **Presentation** | 200 / 400 | 25 / 40 | 7 / 10 |
 | **Tests** | 500 / 1000 | 50 / 100 | 10 / 15 |
-

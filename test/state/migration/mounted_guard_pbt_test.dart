@@ -33,12 +33,6 @@ const _notifierSources = <String, List<String>>{
   'lib/state/providers/auditor_queue_providers.dart': ['approve', 'reject'],
   'lib/state/providers/justification_providers.dart': ['approve', 'reject'],
   'lib/state/providers/telegram_providers.dart': ['generateToken', 'link'],
-  'lib/state/notifiers/vehicle_command_notifier.dart': [
-    'addVehicle',
-    'updateVehicle',
-    'deleteVehicle',
-    'batchUpdateVehicles',
-  ],
   'lib/state/notifiers/contract_command_notifier.dart': [
     'closeContract',
     'declareContractualPlan',

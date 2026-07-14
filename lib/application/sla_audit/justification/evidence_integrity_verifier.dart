@@ -58,7 +58,7 @@ class EvidenceIntegrityVerifier {
   /// Verifies all [evidenceUrls] against [declaredHashes].
   ///
   /// Pre-condition: `evidenceUrls.length == declaredHashes.length`.
-  /// This is already enforced by CX05-INV-23 in [SLAJustificationManager]
+  /// This is already enforced by CX05-INV-23 in [SubmitJustificationHandler]
   /// before this method is ever called.
   ///
   /// Returns a list of 0-based indices where computed hash ≠ declared hash.

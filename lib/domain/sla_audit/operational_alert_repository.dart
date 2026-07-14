@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — PR elevation org-scope ports / domain touch (Council-approved plan)
 import 'operational_alert.dart';
 
 /// Repository interface for operational alerts.
@@ -14,11 +15,17 @@ abstract class OperationalAlertRepository {
   /// Retrieves all active alerts for a given organization.
   Future<List<OperationalAlert>> findActive(String organizationId);
 
-  /// Retrieves all alerts for a given entity (SET ID).
-  Future<List<OperationalAlert>> findByEntityId(String entityId);
+  /// Retrieves all alerts for a given entity (SET ID), org-scoped (INV-1).
+  Future<List<OperationalAlert>> findByEntityId(
+    String entityId, {
+    required String organizationId,
+  });
 
-  /// Retrieves a single alert by ID.
-  Future<OperationalAlert?> findById(String alertId);
+  /// Retrieves a single alert by ID, org-scoped (INV-1/INV-26).
+  Future<OperationalAlert?> findById(
+    String alertId, {
+    required String organizationId,
+  });
 
   /// Updates the status and audit fields of an existing alert.
   /// Used exclusively by AlertService for lifecycle transitions.

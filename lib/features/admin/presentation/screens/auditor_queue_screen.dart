@@ -169,7 +169,12 @@ class _AuditorQueueScreenState extends ConsumerState<AuditorQueueScreen> {
         asyncValue: sanctionsAsync,
         loading: () => const SkeletonListLoader(),
         data: (value) => value.isEmpty
-            ? const AuditorEmptyState()
+            ? const EmptyState(
+                icon: Icons.gavel_outlined,
+                title: 'Nenhum veredito pendente',
+                description: 'Todos os vereditos foram selados ou recusados.',
+                action: SimulateButton(),
+              )
             : PanelContainer(
                 child: ListView.separated(
                   itemCount: value.length,

@@ -50,88 +50,108 @@ import 'postgres_forensic_evidence_snapshot_repository.dart';
 import 'postgres_sla_audit_ledger_repository.dart';
 import 'postgres_vehicle_infraction_recurrence_repository.dart';
 
-/// Repository factory providers for the Transport (SLA Audit) module.
-///
-/// These providers are intentionally isolated from the Core persistence layer.
-/// The Core [persistenceModeProvider] drives the implementation selection,
-/// but the module owns its own repository wiring.
+/// Wired SLA Audit persistence implementations for one [PersistenceMode].
+typedef SlaPersistenceBundle = ({
+  PlanDeclarationRepository planDeclaration,
+  ContractualExecutionStateRepository contractualExecutionState,
+  SlaAuditLedgerRepository slaAuditLedger,
+  ForensicEvidenceSnapshotRepository forensicEvidenceSnapshot,
+  ContractualFinancialSnapshotRepository contractualFinancialSnapshot,
+  ContractRepository contract,
+  SanctionReviewQueueRepository sanctionReviewQueue,
+  DisputeReasonCodeRepository disputeReasonCode,
+  DisputeEvidenceRepository disputeEvidence,
+  JustificationRepository justification,
+  VehicleInfractionRecurrenceRepository vehicleInfractionRecurrence,
+  IIdempotencyStore idempotencyStore,
+});
 
-final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
-  ref,
-) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryPlanDeclarationRepository(),
-    PersistenceMode.postgres => PostgresPlanDeclarationRepository(
-      ref.watch(supabaseClientProvider),
+/// Single switchboard for SLA Audit repos (in-memory vs Postgres).
+final slaPersistenceBundleProvider = Provider<SlaPersistenceBundle>((ref) {
+  final mode = ref.watch(persistenceModeProvider);
+  final client = ref.watch(supabaseClientProvider);
+  final clock = ref.watch(dateTimeProviderProvider);
+
+  return switch (mode) {
+    PersistenceMode.inMemory => (
+      planDeclaration: InMemoryPlanDeclarationRepository(),
+      contractualExecutionState: InMemoryContractualExecutionStateRepository(),
+      slaAuditLedger: InMemorySlaAuditLedgerRepository(),
+      forensicEvidenceSnapshot: InMemoryForensicEvidenceSnapshotRepository(),
+      contractualFinancialSnapshot:
+          InMemoryContractualFinancialSnapshotRepository(),
+      contract: InMemoryContractRepository(),
+      sanctionReviewQueue: InMemorySanctionReviewQueueRepository(),
+      disputeReasonCode: InMemoryDisputeReasonCodeRepository(),
+      disputeEvidence: InMemoryDisputeEvidenceRepository(),
+      justification: InMemoryJustificationRepository(),
+      vehicleInfractionRecurrence:
+          const InMemoryVehicleInfractionRecurrenceRepository(),
+      idempotencyStore: InMemoryIdempotencyStore(),
+    ),
+    PersistenceMode.postgres => (
+      planDeclaration: PostgresPlanDeclarationRepository(client),
+      contractualExecutionState: PostgresContractualExecutionStateRepository(
+        client,
+        clock,
+      ),
+      slaAuditLedger: PostgresSlaAuditLedgerRepository(client),
+      forensicEvidenceSnapshot: PostgresForensicEvidenceSnapshotRepository(
+        client,
+      ),
+      contractualFinancialSnapshot:
+          PostgresContractualFinancialSnapshotRepository(client),
+      contract: PostgresContractRepository(client),
+      sanctionReviewQueue: PostgresSanctionReviewQueueRepository(client),
+      disputeReasonCode: PostgresDisputeReasonCodeRepository(client),
+      disputeEvidence: PostgresDisputeEvidenceRepository(client),
+      justification: PostgresJustificationRepository(client),
+      vehicleInfractionRecurrence:
+          PostgresVehicleInfractionRecurrenceRepository(client),
+      idempotencyStore: PostgresIdempotencyStore(client),
     ),
   };
 });
 
+final planDeclarationRepositoryProvider = Provider<PlanDeclarationRepository>((
+  ref,
+) {
+  return ref.watch(slaPersistenceBundleProvider).planDeclaration;
+});
+
 final contractualExecutionStateRepositoryProvider =
     Provider<ContractualExecutionStateRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory =>
-          InMemoryContractualExecutionStateRepository(),
-        PersistenceMode.postgres => PostgresContractualExecutionStateRepository(
-          ref.watch(supabaseClientProvider),
-          ref.watch(dateTimeProviderProvider),
-        ),
-      };
+      return ref.watch(slaPersistenceBundleProvider).contractualExecutionState;
     });
 
 final slaAuditLedgerRepositoryProvider = Provider<SlaAuditLedgerRepository>((
   ref,
 ) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemorySlaAuditLedgerRepository(),
-    PersistenceMode.postgres => PostgresSlaAuditLedgerRepository(
-      ref.watch(supabaseClientProvider),
-    ),
-  };
+  return ref.watch(slaPersistenceBundleProvider).slaAuditLedger;
 });
 
 final forensicEvidenceSnapshotRepositoryProvider =
     Provider<ForensicEvidenceSnapshotRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory =>
-          InMemoryForensicEvidenceSnapshotRepository(),
-        PersistenceMode.postgres => PostgresForensicEvidenceSnapshotRepository(
-          ref.watch(supabaseClientProvider),
-        ),
-      };
+      return ref.watch(slaPersistenceBundleProvider).forensicEvidenceSnapshot;
     });
 
 final contractualFinancialSnapshotRepositoryProvider =
     Provider<ContractualFinancialSnapshotRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory =>
-          InMemoryContractualFinancialSnapshotRepository(),
-        PersistenceMode.postgres =>
-          PostgresContractualFinancialSnapshotRepository(
-            ref.watch(supabaseClientProvider),
-          ),
-      };
+      return ref
+          .watch(slaPersistenceBundleProvider)
+          .contractualFinancialSnapshot;
     });
 
 final contractRepositoryProvider = Provider<ContractRepository>((ref) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryContractRepository(),
-    PersistenceMode.postgres => PostgresContractRepository(
-      ref.watch(supabaseClientProvider),
-    ),
-  };
+  return ref.watch(slaPersistenceBundleProvider).contract;
 });
 
 final sanctionReviewQueueRepositoryProvider =
     Provider<SanctionReviewQueueRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory => InMemorySanctionReviewQueueRepository(),
-        PersistenceMode.postgres => PostgresSanctionReviewQueueRepository(
-          ref.watch(supabaseClientProvider),
-        ),
-      };
+      return ref.watch(slaPersistenceBundleProvider).sanctionReviewQueue;
     });
 
+/// Command repos depend on queue/ledger/vault — kept outside the bundle.
 final sanctionReviewCommandRepositoryProvider =
     Provider<SanctionReviewCommandRepository>((ref) {
       return switch (ref.watch(persistenceModeProvider)) {
@@ -176,57 +196,29 @@ final sanctionDisputeResolutionRepositoryProvider =
 
 final disputeReasonCodeRepositoryProvider =
     Provider<DisputeReasonCodeRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory => InMemoryDisputeReasonCodeRepository(),
-        PersistenceMode.postgres => PostgresDisputeReasonCodeRepository(
-          ref.watch(supabaseClientProvider),
-        ),
-      };
+      return ref.watch(slaPersistenceBundleProvider).disputeReasonCode;
     });
 
 final disputeEvidenceRepositoryProvider = Provider<DisputeEvidenceRepository>((
   ref,
 ) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryDisputeEvidenceRepository(),
-    PersistenceMode.postgres => PostgresDisputeEvidenceRepository(
-      ref.watch(supabaseClientProvider),
-    ),
-  };
+  return ref.watch(slaPersistenceBundleProvider).disputeEvidence;
 });
 
 final justificationRepositoryProvider = Provider<JustificationRepository>((
   ref,
 ) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryJustificationRepository(),
-    PersistenceMode.postgres => PostgresJustificationRepository(
-      ref.watch(supabaseClientProvider),
-    ),
-  };
+  return ref.watch(slaPersistenceBundleProvider).justification;
 });
 
 final vehicleInfractionRecurrenceRepositoryProvider =
     Provider<VehicleInfractionRecurrenceRepository>((ref) {
-      return switch (ref.watch(persistenceModeProvider)) {
-        PersistenceMode.inMemory =>
-          const InMemoryVehicleInfractionRecurrenceRepository(),
-        PersistenceMode.postgres =>
-          PostgresVehicleInfractionRecurrenceRepository(
-            ref.watch(supabaseClientProvider),
-          ),
-      };
+      return ref
+          .watch(slaPersistenceBundleProvider)
+          .vehicleInfractionRecurrence;
     });
 
 /// Idempotency store provider (INV-33).
-///
-/// In Postgres mode: uses [PostgresIdempotencyStore] with RPC functions.
-/// In in-memory mode: uses [InMemoryIdempotencyStore] for testing only.
 final idempotencyStoreProvider = Provider<IIdempotencyStore>((ref) {
-  return switch (ref.watch(persistenceModeProvider)) {
-    PersistenceMode.inMemory => InMemoryIdempotencyStore(),
-    PersistenceMode.postgres => PostgresIdempotencyStore(
-      ref.watch(supabaseClientProvider),
-    ),
-  };
+  return ref.watch(slaPersistenceBundleProvider).idempotencyStore;
 });

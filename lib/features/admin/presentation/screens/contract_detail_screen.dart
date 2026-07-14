@@ -185,16 +185,22 @@ class _DetailViewState extends ConsumerState<_DetailView> {
           ],
         ),
       );
-    } catch (e) {
-      final raw = e.toString();
-      final isUnauthorized =
-          raw.contains('Unauthorized') || raw.contains('unauthorized');
+    } on DomainException catch (e) {
+      final isUnauthorized = e.message.toLowerCase().contains('unauthorized');
       final msg = isUnauthorized
           ? 'Permissão negada. Faça logout e login novamente para atualizar suas credenciais.'
           : 'Não foi possível gerar o link do contrato.';
       if (!context.mounted) return;
       messenger.showSnackBar(
         SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Não foi possível gerar o link do contrato.'),
+          backgroundColor: VeraProbColors.error,
+        ),
       );
     } finally {
       if (mounted) setState(() => _submitting = false);

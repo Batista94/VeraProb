@@ -10,6 +10,9 @@ import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/infrastructure/observability/logger_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
+import 'package:veraprob/domain/legal/legal_consent_status.dart'; // pr_scanner: ignore
+
+import 'package:veraprob/state/providers/legal_consent_providers.dart';
 import 'package:veraprob/state/providers/mfa_providers.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 
@@ -70,6 +73,25 @@ class _AdminLockScreenState extends ConsumerState<AdminLockScreen> {
       }
 
       final isSuperAdmin = raw == true || raw?.toString() == 'true';
+
+      // LGPD Legal Gate — tenant operators must accept current terms before
+      // entering the admin shell. SuperAdmins (VeraProb staff) bypass.
+      if (!isSuperAdmin && !EnvironmentConfig.skipLgpdConsentDev) {
+        // Fail-closed: any status RPC failure is treated as pending (F-09).
+        LegalConsentStatus consent;
+        try {
+          consent = await ref.read(legalConsentStatusProvider.future);
+        } catch (_) {
+          consent = const LegalConsentStatus(state: LegalConsentState.pending);
+        }
+        if (!mounted) return;
+        if (consent.isPending) {
+          context.go(AppRoutes.legalConsent);
+          return;
+        }
+        context.go(AppRoutes.adminDashboard);
+        return;
+      }
 
       if (!isSuperAdmin) {
         if (!mounted) return;

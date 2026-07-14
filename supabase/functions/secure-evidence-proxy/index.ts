@@ -16,7 +16,7 @@
  */
 
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
-import { stripExifFromJpeg } from "../shared/exif_stripper.ts";
+import { serveEvidenceBytes } from "../shared/evidence_serve.ts";
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "../shared/sovereignty_error_mapper.ts";
 
@@ -61,40 +61,10 @@ async function handler(
   // INV-26: not found OR wrong org → identical 404
   if (error || !evidence) return sovereigntyErrorResponse();
 
-  // Download from storage
-  const { data: fileData, error: dlError } = await supabase.storage
-    .from(BUCKET)
-    .download(evidence.storage_path);
-
-  if (dlError || !fileData) return sovereigntyErrorResponse();
-
-  const bytes = new Uint8Array(await fileData.arrayBuffer());
-  const ext = evidence.file_name?.split(".").pop()?.toLowerCase() ?? "";
-  const contentType = mimeFromExt(ext);
-
-  // Strip EXIF from JPEG only — other formats served as-is (INV-18)
-  let responseBytes: Uint8Array = bytes;
-  if (ext === "jpg" || ext === "jpeg") {
-    const stripped = stripExifFromJpeg(bytes);
-    if (stripped) responseBytes = stripped;
-  }
-
-  return new Response(responseBytes, {
-    status: 200,
-    headers: {
-      "Content-Type": contentType,
-      "Content-Disposition": `inline; filename="${evidence.file_name}"`,
-      "Cache-Control": "private, max-age=300",
-      "X-Content-Type-Options": "nosniff",
-    },
+  return await serveEvidenceBytes({
+    supabase,
+    bucket: BUCKET,
+    storagePath: evidence.storage_path as string,
+    fileName: evidence.file_name as string | null,
   });
-}
-
-function mimeFromExt(ext: string): string {
-  const map: Record<string, string> = {
-    jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png",
-    pdf: "application/pdf", mp4: "video/mp4", webp: "image/webp",
-    heic: "image/heic", ogg: "audio/ogg",
-  };
-  return map[ext] ?? "application/octet-stream";
 }

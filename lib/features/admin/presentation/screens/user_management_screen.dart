@@ -548,6 +548,7 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
               RemoveMemberCommand(
                 organizationId: orgId,
                 callerRole: callerRole,
+                callerUserId: ref.read(currentOperatorIdProvider) ?? '',
                 targetUserId: userId,
                 sessionId: sessionId,
               ),
@@ -619,6 +620,7 @@ class _UserManagementTabState extends ConsumerState<UserManagementTab> {
               RemoveMemberCommand(
                 organizationId: orgId,
                 callerRole: callerRole,
+                callerUserId: ref.read(currentOperatorIdProvider) ?? '',
                 targetUserId: userId,
                 sessionId: sessionId,
               ),
@@ -1280,12 +1282,21 @@ class _MemberRolesRow extends ConsumerWidget {
             backgroundColor: VeraProbColors.success,
           ),
         );
-      } catch (e) {
-        final msg = e.toString().contains('LastProfileGuard')
+      } on DomainException catch (e) {
+        final msg = e.message.contains('LastProfileGuard')
             ? 'Não é possível remover o único perfil ativo do usuário.'
             : 'Não foi possível remover o perfil. Tente novamente.';
         messenger.showSnackBar(
           SnackBar(content: Text(msg), backgroundColor: VeraProbColors.error),
+        );
+      } catch (_) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Não foi possível remover o perfil. Tente novamente.',
+            ),
+            backgroundColor: VeraProbColors.error,
+          ),
         );
       }
     }

@@ -647,7 +647,10 @@ void main() {
 
         await executionRepo.save(state);
 
-        final saved = await executionRepo.findBySetId(setId);
+        final saved = await executionRepo.findBySetId(
+          setId,
+          organizationId: orgId,
+        );
         expect(saved, isNotNull);
         expect(
           saved!.status.name,
@@ -687,7 +690,10 @@ void main() {
             organizationId: orgId,
           );
 
-          final stateT1 = await executionRepo.findBySetId(smokeSetId!);
+          final stateT1 = await executionRepo.findBySetId(
+            smokeSetId!,
+            organizationId: orgId,
+          );
           expect(stateT1, isNotNull, reason: 'stateT1 should be initialized');
           expect(
             stateT1!.status.name,
@@ -704,7 +710,10 @@ void main() {
             organizationId: orgId,
           );
 
-          final stateT2 = await executionRepo.findBySetId(smokeSetId!);
+          final stateT2 = await executionRepo.findBySetId(
+            smokeSetId!,
+            organizationId: orgId,
+          );
           expect(stateT2, isNotNull, reason: 'stateT2 should be initialized');
           expect(
             stateT2!.status.name,

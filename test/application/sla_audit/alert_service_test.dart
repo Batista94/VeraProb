@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert.dart';
 import 'package:veraprob/domain/sla_audit/operational_alert_repository.dart';
 
@@ -24,11 +25,24 @@ class FakeAlertRepository implements OperationalAlertRepository {
           .toList();
 
   @override
-  Future<List<OperationalAlert>> findByEntityId(String entityId) async =>
-      _store.values.where((a) => a.entityId == entityId).toList();
+  Future<List<OperationalAlert>> findByEntityId(
+    String entityId, {
+    required String organizationId,
+  }) async => _store.values
+      .where(
+        (a) => a.entityId == entityId && a.organizationId == organizationId,
+      )
+      .toList();
 
   @override
-  Future<OperationalAlert?> findById(String alertId) async => _store[alertId];
+  Future<OperationalAlert?> findById(
+    String alertId, {
+    required String organizationId,
+  }) async {
+    final alert = _store[alertId];
+    if (alert == null || alert.organizationId != organizationId) return null;
+    return alert;
+  }
 
   @override
   Future<void> update(OperationalAlert alert) async => _store[alert.id] = alert;
@@ -52,21 +66,22 @@ void main() {
   );
 
   group('AlertService.acknowledge', () {
-    test('throws StateError when alert not found', () async {
+    test('throws IntegrityException when alert not found', () async {
       final repo = FakeAlertRepository();
       final service = AlertService(repo: repo);
 
       expect(
         () => service.acknowledge(
           alertId: 'nonexistent',
+          organizationId: 'org-1',
           userId: 'user-1',
           atUtc: now,
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
-    test('throws StateError when alert is not ACTIVE', () async {
+    test('throws IntegrityException when alert is not ACTIVE', () async {
       final repo = FakeAlertRepository();
       repo.seed(makeAlert(status: 'ACKNOWLEDGED'));
       final service = AlertService(repo: repo);
@@ -74,10 +89,11 @@ void main() {
       expect(
         () => service.acknowledge(
           alertId: 'alert-1',
+          organizationId: 'org-1',
           userId: 'user-1',
           atUtc: now,
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -88,35 +104,44 @@ void main() {
 
       await service.acknowledge(
         alertId: 'alert-1',
+        organizationId: 'org-1',
         userId: 'user-audit-1',
         atUtc: now,
       );
 
-      final updated = await repo.findById('alert-1');
+      final updated = await repo.findById('alert-1', organizationId: 'org-1');
       expect(updated!.status, 'ACKNOWLEDGED');
       expect(updated.acknowledgedByUserId, 'user-audit-1');
     });
   });
 
   group('AlertService.resolve', () {
-    test('throws StateError when alert not found', () async {
+    test('throws IntegrityException when alert not found', () async {
       final repo = FakeAlertRepository();
       final service = AlertService(repo: repo);
 
       expect(
-        () => service.resolve(alertId: 'nonexistent', atUtc: now),
-        throwsA(isA<StateError>()),
+        () => service.resolve(
+          alertId: 'nonexistent',
+          organizationId: 'org-1',
+          atUtc: now,
+        ),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
-    test('throws StateError when alert is not ACKNOWLEDGED', () async {
+    test('throws IntegrityException when alert is not ACKNOWLEDGED', () async {
       final repo = FakeAlertRepository();
       repo.seed(makeAlert(status: 'ACTIVE'));
       final service = AlertService(repo: repo);
 
       expect(
-        () => service.resolve(alertId: 'alert-1', atUtc: now),
-        throwsA(isA<StateError>()),
+        () => service.resolve(
+          alertId: 'alert-1',
+          organizationId: 'org-1',
+          atUtc: now,
+        ),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -125,9 +150,13 @@ void main() {
       repo.seed(makeAlert(status: 'ACKNOWLEDGED'));
       final service = AlertService(repo: repo);
 
-      await service.resolve(alertId: 'alert-1', atUtc: now);
+      await service.resolve(
+        alertId: 'alert-1',
+        organizationId: 'org-1',
+        atUtc: now,
+      );
 
-      final updated = await repo.findById('alert-1');
+      final updated = await repo.findById('alert-1', organizationId: 'org-1');
       expect(updated!.status, 'RESOLVED');
     });
   });

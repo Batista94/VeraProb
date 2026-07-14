@@ -219,36 +219,16 @@ void _testCrossOrgSelect() {
     },
   );
 
-  // ── Case 7: spoofing_audit_entries — SELECT cross-tenant ─────────────
+  // ── Case 7: spoofing_audit_entries — quarantined (no client Data API) ─
   test(
-    'Case 7 — INV-6: Org A cannot SELECT Org B spoofing audit entries',
+    'Case 7 — INV-6: authenticated cannot SELECT spoofing_audit_entries (quarantined)',
     () async {
-      // Seed an entry for Org B
-      final entryId = _uuid.v4();
-      await _adminClient.from('spoofing_audit_entries').upsert({
-        'id': entryId,
-        'organization_id': _orgBId,
-        'device_id': 'rls-test-device',
-        'window_start': DateTime.now()
-            .toUtc()
-            .subtract(const Duration(hours: 1))
-            .toIso8601String(),
-        'window_end': DateTime.now().toUtc().toIso8601String(),
-        'risk_score': 0.5,
-        'signals': <dynamic>[],
-        'facts_analyzed': 1,
-        'fact_ids': [_uuid.v4()],
-        'content_hash': 'rls-test-hash-${entryId.substring(0, 8)}',
-      }, onConflict: 'id');
-
-      final result = await _orgAClient
-          .from('spoofing_audit_entries')
-          .select('id')
-          .eq('id', entryId);
+      // 20260923000001: client grants revoked; table is service_role-only.
       expect(
-        result,
-        isEmpty,
-        reason: 'Org A should not see Org B spoofing audit entries',
+        () => _orgAClient.from('spoofing_audit_entries').select('id').limit(1),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+        ),
       );
     },
   );
@@ -320,33 +300,19 @@ void _testCrossOrgSelect() {
     },
   );
 
-  // ── Case 17: service_manifests — cross-tenant SELECT ─────────────────
-  test('Case 17 — INV-1: Org A cannot SELECT Org B service_manifests', () async {
-    // Seed a service_manifest for Org B via the admin client (bypasses RLS).
-    // Uses _orgBContractId as the FK; gracefully skips if schema changed.
-    final manifestId = _uuid.v4();
-    try {
-      await _adminClient.from('service_manifests').upsert({
-        'id': manifestId,
-        'organization_id': _orgBId,
-        'contract_id': _orgBContractId,
-        'name': 'RLS Test Manifest B',
-        'created_at': DateTime.now().toUtc().toIso8601String(),
-      }, onConflict: 'id');
-    } catch (_) {
-      // Schema mismatch / missing required column — assert empty is still valid.
-    }
-
-    final result = await _orgAClient
-        .from('service_manifests')
-        .select('id')
-        .eq('organization_id', _orgBId);
-    expect(
-      result,
-      isEmpty,
-      reason: 'Org A must not see Org B service_manifests via RLS (INV-1)',
-    );
-  });
+  // ── Case 17: service_manifests — quarantined (no client Data API) ─────
+  test(
+    'Case 17 — INV-1: authenticated cannot SELECT service_manifests (quarantined)',
+    () async {
+      // 20260923000001: client grants revoked; table is service_role-only.
+      expect(
+        () => _orgAClient.from('service_manifests').select('id').limit(1),
+        throwsA(
+          isA<PostgrestException>().having((e) => e.code, 'code', '42501'),
+        ),
+      );
+    },
+  );
 }
 
 void _testImmutability() {

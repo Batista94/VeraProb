@@ -266,7 +266,32 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
                         key: _formKey,
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.only(right: 16),
-                          child: _buildFormFields(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _buildTypeDropdown(),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _nameController,
+                                focusNode: _nameFocus,
+                                decoration: const InputDecoration(
+                                  labelText: 'Nome da Zona *',
+                                  hintText: 'Ex: Garagem Central, Portaria Sul',
+                                ),
+                                validator: (v) =>
+                                    (v == null || v.trim().isEmpty)
+                                    ? 'Obrigatório'
+                                    : null,
+                                autofocus: widget.existingZone == null,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                              ),
+                              const SizedBox(height: 16),
+                              _buildAddressSearchField(),
+                              const SizedBox(height: 16),
+                              _buildMapLocationSection(),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -323,20 +348,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
           )
           .toList(),
       onChanged: (v) => setState(() => _selectedType = v!),
-    );
-  }
-
-  Widget _buildNameField() {
-    return TextFormField(
-      controller: _nameController,
-      focusNode: _nameFocus,
-      decoration: const InputDecoration(
-        labelText: 'Nome da Zona *',
-        hintText: 'Ex: Garagem Central, Portaria Sul',
-      ),
-      validator: (v) => (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
-      autofocus: widget.existingZone == null,
-      onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
     );
   }
 
@@ -541,21 +552,6 @@ class _ZoneFormDialogState extends ConsumerState<_ZoneFormDialog> {
             ],
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildFormFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buildTypeDropdown(),
-        const SizedBox(height: 16),
-        _buildNameField(),
-        const SizedBox(height: 16),
-        _buildAddressSearchField(),
-        const SizedBox(height: 16),
-        _buildMapLocationSection(),
       ],
     );
   }

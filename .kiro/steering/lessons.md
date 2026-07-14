@@ -240,3 +240,21 @@ Future<void> _save() async {
 **Why:** P2 review found `_createEndpointFlow` + `_showRevealModal` (create → reveal-once `RevealSecretModal`, `barrierDismissible: false`) copy-pasted into both `webhook_management_screen.dart` and `endpoint_list_panel.dart`. Duplicated security flows drift silently: one call-site gets a fix (e.g., `barrierDismissible`, `useSafeArea`, mounted-guard) and the clone keeps the vulnerable version. Confidentiality-critical UI (INV-28 secrets) cannot depend on grep luck.
 
 **How to apply:** Before extracting a panel/widget from a screen, list every `showDialog`/flow method it uses. Flows touching secrets stay on the screen; the extracted widget gets callbacks. If two widgets legitimately need the same flow, promote it to ONE shared helper — never a second copy.
+
+---
+
+## 15. OVER-ENGINEERING & SPECULATIVE FIELDS (OVER-ENGINEERING-PREVENTION)
+
+**Rule:** 
+1. Keep Domain VOs/Entities focused strictly on properties needed for UI presentation or local validation logic. Backend-only db audit fields (like SHA-256 hashes, internal versions, publish timestamps) must remain in the SQL ledger or infrastructure layer.
+2. Avoid creating single-use UI helper methods that only wrap a single widget (e.g. `_buildHeader` returning a single `Text`). Inline these widgets.
+3. Avoid nesting layout components (e.g. `Column` inside `Column` with no unique layout properties).
+4. Delete trivial tests that only assert constructor assignments.
+
+**Why:** In `fix/registros` (Legal consent flows), mapping database-only audit metadata (`docType`, `version`, `contentSha256`, `publishedAtUtc`, `priorVersion`) into Flutter domain models was over-engineering. In the UI, single-line helper methods like `_buildHeader` and nested columns duplicated the parent's alignment, adding layout complexity for zero benefit. Unnecessary domain unit tests only asserted trivial constructor mappings, leading to maintenance debt (YAGNI).
+
+**How to apply:**
+- During review, strip any property from the Flutter domain model that is not directly consumed by the UI or local client validation logic.
+- Simplify UI layout trees by inlining trivial helper methods and removing nested layouts without distinct styling properties.
+- Delete unit tests for pure VOs that only assert that `instance.field == field`.
+

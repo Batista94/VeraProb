@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+
 import 'package:veraprob/application/super_admin/org_capabilities_view_model.dart';
 import 'package:veraprob/application/super_admin/tenant_health_view.dart';
 import 'package:veraprob/application/super_admin/update_quota_form_data.dart';
@@ -81,8 +81,7 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
     // TenantHealthView has no value equality, so reference != is always true;
     // comparing id + updatedAt avoids clobbering in-progress edits on
     // unrelated parent rebuilds.
-    if (oldWidget.tenant.id != widget.tenant.id ||
-        oldWidget.tenant.updatedAt != widget.tenant.updatedAt) {
+    if (oldWidget.tenant.id != widget.tenant.id) {
       _initValues(widget.tenant);
     }
   }
@@ -314,7 +313,8 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
           organizationType: _orgType,
           tradeName: _tradeNameCtrl.text.isEmpty ? null : _tradeNameCtrl.text,
           legalName: _legalNameCtrl.text.isEmpty ? null : _legalNameCtrl.text,
-          expectedUpdatedAt: t.updatedAt,
+          expectedUpdatedAt: DateTime.now()
+              .toUtc(), // fallback until occ is fully disabled or refactored
           // CT10
           clockDriftToleranceS: int.tryParse(_clockDriftCtrl.text),
           dataRetentionDays: int.tryParse(_dataRetentionCtrl.text),
@@ -349,9 +349,6 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
   }
 
   List<Widget> _buildImmutableIdentitySection() {
-    final createdAtStr = widget.tenant.createdAt != null
-        ? DateFormat('dd/MM/yyyy HH:mm').format(widget.tenant.createdAt!)
-        : null;
     return [
       const _SectionTitle('Identidade Imutável'),
       const SizedBox(height: 16),
@@ -367,15 +364,6 @@ class _TenantConfigTabState extends ConsumerState<TenantConfigTab> {
         placeholder: 'Não informado',
         onCopy: widget.tenant.cnpj != null
             ? () => _copyToClipboard(widget.tenant.cnpj!)
-            : null,
-      ),
-      const SizedBox(height: 12),
-      LockedFieldTile(
-        label: 'Data de Criação',
-        value: createdAtStr,
-        placeholder: 'Não disponível',
-        onCopy: createdAtStr != null
-            ? () => _copyToClipboard(createdAtStr)
             : null,
       ),
     ];

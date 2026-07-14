@@ -55,7 +55,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
           .maybeSingle();
 
       if (response == null) return null;
-      return _fromRow(response);
+      return fromRow(response);
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
     }
@@ -74,7 +74,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
           .order('created_at', ascending: true);
 
       return (response as List)
-          .map((row) => _fromRow(row as Map<String, dynamic>))
+          .map((row) => fromRow(row as Map<String, dynamic>))
           .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(e, resourceType: 'sanction_review');
@@ -99,7 +99,8 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
     }
   }
 
-  static SanctionReviewQueueEntry _fromRow(Map<String, dynamic> row) {
+  /// Single SSOT row mapper for `sanction_review_queue` (INV-6 UTC + DB status).
+  static SanctionReviewQueueEntry fromRow(Map<String, dynamic> row) {
     return SanctionReviewQueueEntry(
       id: row['id'] as String,
       organizationId: row['organization_id'] as String,
@@ -110,9 +111,9 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
         row['verdict_evidence'] as Map<String, dynamic>,
       ),
       status: _parseStatus(row['status'] as String),
-      createdAtUtc: DateTime.parse(row['created_at'] as String),
+      createdAtUtc: DateTime.parse(row['created_at'] as String).toUtc(),
       reviewedAtUtc: row['reviewed_at'] != null
-          ? DateTime.parse(row['reviewed_at'] as String)
+          ? DateTime.parse(row['reviewed_at'] as String).toUtc()
           : null,
       reviewedByUserId: row['reviewed_by'] as String?,
       rejectionReason: row['rejection_reason'] as String?,
@@ -122,7 +123,7 @@ class PostgresSanctionReviewQueueRepository extends BasePostgresRepository
       peerReviewProposedAction: row['peer_review_proposed_action'] as String?,
       peerReviewOriginStatus: row['peer_review_origin_status'] as String?,
       peerReviewExpiresAtUtc: row['peer_review_expires_at'] != null
-          ? DateTime.parse(row['peer_review_expires_at'] as String)
+          ? DateTime.parse(row['peer_review_expires_at'] as String).toUtc()
           : null,
     );
   }

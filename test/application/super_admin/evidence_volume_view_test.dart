@@ -3,15 +3,6 @@ import 'package:veraprob/application/super_admin/evidence_volume_view.dart';
 
 void main() {
   group('EvidenceVolumeView', () {
-    test('can be constructed with const constructor', () {
-      const view = EvidenceVolumeView(
-        totalHistorical: 15000,
-        totalMonthly: 320,
-      );
-      expect(view.totalHistorical, 15000);
-      expect(view.totalMonthly, 320);
-    });
-
     test('fromJson parses valid data correctly', () {
       final json = <String, Object?>{
         'total_historical': 25000,

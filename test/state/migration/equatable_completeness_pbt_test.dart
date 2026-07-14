@@ -137,24 +137,13 @@ const _entitySpecs = <EntitySpec>[
     name: 'CommandCenterFilterState',
     sourceFile:
         'lib/application/projections/providers/command_center_filter_provider.dart',
-    semanticFields: [
-      'selectedFleetStatusFilter',
-      'selectedSeverityFilter',
-      'followVehicleId',
-    ],
+    semanticFields: ['selectedFleetStatusFilter', 'followVehicleId'],
   ),
   EntitySpec(
     name: 'AuditFilterState',
     sourceFile:
         'lib/application/projections/providers/audit_filter_provider.dart',
-    semanticFields: [
-      'startDate',
-      'endDate',
-      'eventType',
-      'category',
-      'entityId',
-      'silentMode',
-    ],
+    semanticFields: ['category', 'silentMode'],
   ),
   EntitySpec(
     name: 'ContractCommandState',

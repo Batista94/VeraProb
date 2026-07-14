@@ -172,10 +172,10 @@ class _ForensicLogViewState extends ConsumerState<ForensicLogView> {
   // ── Replay button (behaviour unchanged) ───────────────────────────────────
 
   Widget _buildReplayButton() {
-    return Padding(
-      padding: const EdgeInsets.only(top: VeraProbSpacing.md),
-      child: Align(
-        alignment: Alignment.centerRight,
+    return Align(
+      alignment: Alignment.centerRight,
+      child: Padding(
+        padding: const EdgeInsets.only(top: VeraProbSpacing.md),
         child: FilledButton.icon(
           onPressed: _isReplaying ? null : _handleReplay,
           icon: _isReplaying

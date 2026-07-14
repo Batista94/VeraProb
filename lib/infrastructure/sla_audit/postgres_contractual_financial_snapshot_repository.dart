@@ -205,25 +205,6 @@ class PostgresContractualFinancialSnapshotRepository
   }
 
   static DateTime _parseUtc(String dateString) {
-    final parsed = DateTime.parse(dateString);
-    final hasOffset =
-        dateString.endsWith('Z') ||
-        dateString.contains('+', 10) ||
-        dateString.lastIndexOf('-') > 10;
-
-    if (hasOffset) {
-      return parsed.toUtc();
-    }
-
-    return DateTime.utc(
-      parsed.year,
-      parsed.month,
-      parsed.day,
-      parsed.hour,
-      parsed.minute,
-      parsed.second,
-      parsed.millisecond,
-      parsed.microsecond,
-    );
+    return BasePostgresRepository.parsePostgresUtc(dateString, 'timestamp');
   }
 }

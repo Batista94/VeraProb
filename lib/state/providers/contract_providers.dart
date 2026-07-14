@@ -17,7 +17,6 @@ import 'package:veraprob/application/sla_audit/projections/contract_query_servic
 import 'package:veraprob/application/sla_audit/projections/contract_query_service_in_memory.dart';
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/shift_projection_service.dart';
-import 'package:veraprob/application/sla_audit/projections/contract_status_view.dart';
 import 'package:veraprob/domain/shared/idempotency_store.dart';
 import 'package:veraprob/infrastructure/sla_audit/postgres_idempotency_store.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_idempotency_store.dart';
@@ -205,19 +204,6 @@ final selectedContractIdProvider =
       _SelectedContractIdNotifier.new,
     );
 
-/// Active status filter on the contracts list. Null = all statuses.
-class _ContractStatusFilterNotifier extends Notifier<ContractStatusView?> {
-  @override
-  ContractStatusView? build() => null;
-
-  void set(ContractStatusView? value) => state = value;
-}
-
-final contractStatusFilterProvider =
-    NotifierProvider<_ContractStatusFilterNotifier, ContractStatusView?>(
-      _ContractStatusFilterNotifier.new,
-    );
-
 // ── Projections ─────────────────────────────────────────────
 
 final contractListProvider = FutureProvider<List<ContractSummaryView>>((
@@ -226,11 +212,10 @@ final contractListProvider = FutureProvider<List<ContractSummaryView>>((
   final organizationId = ref.watch(currentOrganizationIdProvider);
   if (organizationId == null) return [];
 
-  final status = ref.watch(contractStatusFilterProvider);
   final service = ref.watch(contractQueryServiceProvider);
 
   return service
-      .listContracts(organizationId: organizationId, status: status)
+      .listContracts(organizationId: organizationId)
       .withProviderTimeout();
 });
 

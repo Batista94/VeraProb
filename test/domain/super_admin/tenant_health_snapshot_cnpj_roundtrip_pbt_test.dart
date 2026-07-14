@@ -54,28 +54,17 @@ void main() {
 
         // cnpj must be preserved exactly
         expect(view.cnpj, equals(cnpj));
-
-        // createdAt must be preserved — compare via ISO 8601 round-trip
-        // since DateTime.parse(dt.toIso8601String()) may normalize
-        // microseconds but preserves minute-level precision.
-        expect(view.createdAt, isNotNull);
-        expect(view.createdAt!.year, equals(createdAt.year));
-        expect(view.createdAt!.month, equals(createdAt.month));
-        expect(view.createdAt!.day, equals(createdAt.day));
-        expect(view.createdAt!.hour, equals(createdAt.hour));
-        expect(view.createdAt!.minute, equals(createdAt.minute));
       },
     );
 
-    test('null cnpj + null createdAt are preserved through '
+    test('null cnpj are preserved through '
         'JSON → Snapshot → ViewModel pipeline', () {
-      final json = buildJson(cnpj: null, createdAt: null);
+      final json = buildJson(cnpj: null);
 
       final snapshot = TenantHealthSnapshot.fromJson(json);
       final view = TenantHealthView.fromDomain(snapshot);
 
       expect(view.cnpj, isNull);
-      expect(view.createdAt, isNull);
     });
   });
 }

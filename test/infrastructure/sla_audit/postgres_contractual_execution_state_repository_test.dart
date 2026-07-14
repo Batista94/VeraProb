@@ -70,7 +70,10 @@ void main() async {
         await repository.save(state);
 
         // Find By Id
-        final loadedState = await repository.findBySetId(state.setId);
+        final loadedState = await repository.findBySetId(
+          state.setId,
+          organizationId: state.organizationId,
+        );
 
         expect(loadedState, isNotNull);
         expect(loadedState!.id, state.id);

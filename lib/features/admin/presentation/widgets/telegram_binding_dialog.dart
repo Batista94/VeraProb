@@ -254,7 +254,20 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
                     child: CircularProgressIndicator(),
                   ),
                 ),
-                AsyncError() => _buildErrorState(),
+                AsyncError() => Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: VeraProbColors.error.withValues(alpha: 0.1),
+                    borderRadius: VeraProbRadii.lgAll,
+                    border: Border.all(
+                      color: VeraProbColors.error.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: const Text(
+                    'Falha ao processar vínculo Telegram. Tente novamente.',
+                    style: TextStyle(fontSize: 12, color: VeraProbColors.error),
+                  ),
+                ),
               },
 
               const SizedBox(height: 20),
@@ -321,15 +334,20 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
         ),
         _Step(
           number: '3',
-          text: 'O motorista envia o código de 8 caracteres no chat',
+          text:
+              'O motorista aceita os Termos LGPD no bot (/start) antes de vincular',
         ),
         _Step(
           number: '4',
+          text: 'O motorista envia o código de 8 caracteres no chat',
+        ),
+        _Step(
+          number: '5',
           text: 'Vinculação confirmada — evidências podem ser enviadas',
         ),
         SizedBox(height: 4),
         Text(
-          'O código expira em 15 minutos.',
+          'O código expira em 15 minutos. Sem aceite LGPD no bot, a vinculação é recusada.',
           style: TextStyle(fontSize: 12, color: VeraProbColors.textSecondary),
         ),
       ],
@@ -441,21 +459,6 @@ class _TelegramBindingDialogState extends ConsumerState<TelegramBindingDialog> {
             style: TextStyle(fontSize: 13, color: VeraProbColors.error),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: VeraProbColors.error.withValues(alpha: 0.1),
-        borderRadius: VeraProbRadii.lgAll,
-        border: Border.all(color: VeraProbColors.error.withValues(alpha: 0.3)),
-      ),
-      child: const Text(
-        'Falha ao processar vínculo Telegram. Tente novamente.',
-        style: TextStyle(fontSize: 12, color: VeraProbColors.error),
       ),
     );
   }

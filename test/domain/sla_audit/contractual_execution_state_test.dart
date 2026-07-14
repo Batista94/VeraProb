@@ -7,7 +7,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_contractual_executio
 import 'package:veraprob/domain/shared/money.dart';
 
 void main() {
-  // ── Helpers ──────────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ContractualExecutionState makeState({
     String setId = 'set-1',
     String contractId = 'contract-1',
@@ -38,7 +38,7 @@ void main() {
     );
   }
 
-  // ── Aggregate Tests ─────────────────────────────────────
+  // â”€â”€ Aggregate Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   group('ContractualExecutionState', () {
     test('create() initializes with pending status', () {
       final state = makeState();
@@ -285,7 +285,7 @@ void main() {
     });
   });
 
-  // ── Repository Tests ────────────────────────────────────
+  // â”€â”€ Repository Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   group('InMemoryContractualExecutionStateRepository', () {
     late InMemoryContractualExecutionStateRepository repo;
 
@@ -297,13 +297,16 @@ void main() {
       final state = makeState(setId: 'set-x');
       await repo.save(state);
 
-      final found = await repo.findBySetId('set-x');
+      final found = await repo.findBySetId('set-x', organizationId: 'org-1');
       expect(found, isNotNull);
       expect(found!.id, state.id);
     });
 
     test('findBySetId returns null when not found', () async {
-      final found = await repo.findBySetId('nonexistent');
+      final found = await repo.findBySetId(
+        'nonexistent',
+        organizationId: 'org-1',
+      );
       expect(found, isNull);
     });
 
@@ -319,7 +322,7 @@ void main() {
       );
       await repo.save(state);
 
-      final found = await repo.findBySetId('set-x');
+      final found = await repo.findBySetId('set-x', organizationId: 'org-1');
       expect(found!.status, ExecutionStatus.completed);
     });
 
@@ -376,9 +379,9 @@ void main() {
       expect(results.first.setId, 'in-window');
     });
   });
-  // ── FSM Adversarial Transition Tests ─────────────────────────────────────
+  // â”€â”€ FSM Adversarial Transition Tests â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   group('FSM adversarial transitions', () {
-    test('startTransit: planned → inTransit emits TransitStartedEvent', () {
+    test('startTransit: planned â†’ inTransit emits TransitStartedEvent', () {
       final state = makeState();
       final t = DateTime.utc(2026, 3, 1, 6, 5);
       state.startTransit(timestampUtc: t, source: 'geofence');
@@ -387,7 +390,7 @@ void main() {
       expect(state.domainEvents.first, isA<TransitStartedEvent>());
     });
 
-    test('startTransit: idempotent — second call is no-op', () {
+    test('startTransit: idempotent â€” second call is no-op', () {
       final state = makeState();
       final t = DateTime.utc(2026, 3, 1, 6, 5);
       state.startTransit(timestampUtc: t, source: 'geofence');
@@ -413,7 +416,7 @@ void main() {
       );
     });
 
-    test('markFailed: inTransit → failed after window', () {
+    test('markFailed: inTransit â†’ failed after window', () {
       final state = makeState();
       state.startTransit(
         timestampUtc: DateTime.utc(2026, 3, 1, 6, 5),
@@ -423,7 +426,7 @@ void main() {
       expect(state.status, ExecutionStatus.failed);
     });
 
-    test('bindExecution: inTransit → completed (normal dwell path)', () {
+    test('bindExecution: inTransit â†’ completed (normal dwell path)', () {
       final state = makeState();
       state.startTransit(
         timestampUtc: DateTime.utc(2026, 3, 1, 6, 5),
@@ -440,7 +443,7 @@ void main() {
     });
 
     test(
-      'bindExecution: completedWithGaps → completed (INV-12 late arrival upgrade)',
+      'bindExecution: completedWithGaps â†’ completed (INV-12 late arrival upgrade)',
       () {
         final state = makeState();
         state.startTransit(
@@ -466,7 +469,7 @@ void main() {
       );
     });
 
-    test('inhibit: planned → inhibited emits ExecutionInhibitedEvent', () {
+    test('inhibit: planned â†’ inhibited emits ExecutionInhibitedEvent', () {
       final state = makeState();
       state.inhibit(
         timestampUtc: DateTime.utc(2026, 3, 1, 6, 10),

@@ -101,6 +101,11 @@ verify_jwt = false
 [functions.super-admin-proxy]
 verify_jwt = false
 
+# telegram-webhook receives requests directly from Telegram's API which uses
+# X-Telegram-Bot-Api-Secret-Token, not Supabase JWTs. We must disable JWT verification.
+[functions.telegram-webhook]
+verify_jwt = false
+
 
 [analytics]
 enabled          = false

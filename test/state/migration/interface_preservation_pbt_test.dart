@@ -193,15 +193,6 @@ const _expectedInterfaces = <MethodSpec>[
   ),
   MethodSpec(
     notifierName: 'CommandCenterFilterNotifier',
-    methodName: 'setSeverityFilter',
-    parameterNames: ['severity'],
-    parameterTypes: ['int?'],
-    returnType: 'void',
-    sourceFile:
-        'lib/application/projections/providers/command_center_filter_provider.dart',
-  ),
-  MethodSpec(
-    notifierName: 'CommandCenterFilterNotifier',
     methodName: 'setFollowVehicleId',
     parameterNames: ['vehicleId'],
     parameterTypes: ['String?'],
@@ -211,24 +202,6 @@ const _expectedInterfaces = <MethodSpec>[
   ),
 
   // ── AuditFilterNotifier ─────────────────────────────────────────────────
-  MethodSpec(
-    notifierName: 'AuditFilterNotifier',
-    methodName: 'setDateRange',
-    parameterNames: ['start', 'end'],
-    parameterTypes: ['DateTime', 'DateTime'],
-    returnType: 'void',
-    sourceFile:
-        'lib/application/projections/providers/audit_filter_provider.dart',
-  ),
-  MethodSpec(
-    notifierName: 'AuditFilterNotifier',
-    methodName: 'clearDates',
-    parameterNames: [],
-    parameterTypes: [],
-    returnType: 'void',
-    sourceFile:
-        'lib/application/projections/providers/audit_filter_provider.dart',
-  ),
   MethodSpec(
     notifierName: 'AuditFilterNotifier',
     methodName: 'setCategory',
@@ -243,15 +216,6 @@ const _expectedInterfaces = <MethodSpec>[
     methodName: 'clearCategory',
     parameterNames: [],
     parameterTypes: [],
-    returnType: 'void',
-    sourceFile:
-        'lib/application/projections/providers/audit_filter_provider.dart',
-  ),
-  MethodSpec(
-    notifierName: 'AuditFilterNotifier',
-    methodName: 'setEntity',
-    parameterNames: ['entityId'],
-    parameterTypes: ['String'],
     returnType: 'void',
     sourceFile:
         'lib/application/projections/providers/audit_filter_provider.dart',
@@ -282,8 +246,8 @@ const _expectedMethodCounts = <String, int>{
   'JustificationActionNotifier': 2,
   'TelegramBindingNotifier': 2,
   'LinkEvidenceNotifier': 1,
-  'CommandCenterFilterNotifier': 3,
-  'AuditFilterNotifier': 7,
+  'CommandCenterFilterNotifier': 2,
+  'AuditFilterNotifier': 4,
 };
 
 /// Maps notifier names to their expected state type.

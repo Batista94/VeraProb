@@ -58,14 +58,26 @@ class InMemoryOperationalAlertRepository implements OperationalAlertRepository {
   }
 
   @override
-  Future<List<OperationalAlert>> findByEntityId(String entityId) async {
-    return _alerts.where((a) => a.entityId == entityId).toList()
+  Future<List<OperationalAlert>> findByEntityId(
+    String entityId, {
+    required String organizationId,
+  }) async {
+    return _alerts
+        .where(
+          (a) => a.entityId == entityId && a.organizationId == organizationId,
+        )
+        .toList()
       ..sort((a, b) => b.triggeredAtUtc.compareTo(a.triggeredAtUtc));
   }
 
   @override
-  Future<OperationalAlert?> findById(String alertId) async {
-    final matches = _alerts.where((a) => a.id == alertId);
+  Future<OperationalAlert?> findById(
+    String alertId, {
+    required String organizationId,
+  }) async {
+    final matches = _alerts.where(
+      (a) => a.id == alertId && a.organizationId == organizationId,
+    );
     return matches.isEmpty ? null : matches.first;
   }
 

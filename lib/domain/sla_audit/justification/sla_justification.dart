@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — PR elevation org-scope ports / domain touch (Council-approved plan)
 import 'package:equatable/equatable.dart';
 
 import 'justification_status.dart';
@@ -32,7 +33,7 @@ class SLAJustification extends Equatable {
 
   final SLAJustificationCategory category;
 
-  /// Minimum 10 characters (validated in SLAJustificationManager).
+  /// Minimum 10 characters (validated in SubmitJustificationHandler).
   final String description;
 
   /// Links to photos/documents in Supabase Storage.

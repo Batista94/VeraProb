@@ -259,7 +259,10 @@ void main() {
           );
 
           // Org_A client attempts to read Org_B alert.
-          final result = await repoA.findById(alertBId);
+          final result = await repoA.findById(
+            alertBId,
+            organizationId: _orgAId,
+          );
 
           if (result != null) {
             debugPrint(
@@ -370,7 +373,10 @@ void main() {
 
           // Verify via service_role that the original record is unchanged.
           final adminRepo = PostgresOperationalAlertRepository(adminClient);
-          final original = await adminRepo.findById(alertBId);
+          final original = await adminRepo.findById(
+            alertBId,
+            organizationId: _orgBId,
+          );
 
           if (original?.status == 'ACKNOWLEDGED') {
             debugPrint(
@@ -428,7 +434,10 @@ void main() {
           );
 
           final savedId = await repoA.save(alert);
-          final retrieved = await repoA.findById(savedId);
+          final retrieved = await repoA.findById(
+            savedId,
+            organizationId: _orgAId,
+          );
 
           expect(retrieved, isNotNull);
           expect(retrieved!.context['emoji'], equals('🚨🔴⚠️'));
@@ -516,7 +525,10 @@ void main() {
             contractId: _orgAContractId,
           );
           final savedId = await repoA.save(alert);
-          final retrieved = await repoA.findById(savedId);
+          final retrieved = await repoA.findById(
+            savedId,
+            organizationId: _orgAId,
+          );
 
           expect(retrieved, isNotNull);
           expect(retrieved!.triggeringEventId, isNull);
@@ -582,7 +594,10 @@ void main() {
           await repoA.markViewed(alertId, userId);
           await repoA.markViewed(alertId, userId);
 
-          final retrieved = await repoA.findById(alertId);
+          final retrieved = await repoA.findById(
+            alertId,
+            organizationId: _orgAId,
+          );
           expect(retrieved, isNotNull);
 
           final viewedIds = retrieved!.viewedByUserIds;
@@ -624,7 +639,10 @@ void main() {
           final savedId = await repoA.save(alert);
           expect(savedId, isNotEmpty);
 
-          final retrieved = await repoA.findById(savedId);
+          final retrieved = await repoA.findById(
+            savedId,
+            organizationId: _orgAId,
+          );
           expect(retrieved, isNotNull);
           expect(retrieved!.organizationId, equals(_orgAId));
           expect(retrieved.entityId, equals(_entityId));

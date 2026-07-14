@@ -90,32 +90,29 @@ SELECT ok(
   'chk_srq_peer_action constrains the proposed action domain'
 );
 
--- 10–12. Widened ledger type CHECK admits the peer-review lifecycle facts.
+-- 10-12. ledger_event_type enum admits the peer-review lifecycle facts.
 SELECT ok(
-  pg_get_constraintdef(
-    (SELECT oid FROM pg_constraint
-      WHERE conname = 'chk_ledger_type'
-        AND conrelid = 'public.sla_audit_ledger_v2'::regclass)
-  ) LIKE '%PEER_REVIEW_REQUESTED%',
-  'chk_ledger_type admits PEER_REVIEW_REQUESTED'
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='PEER_REVIEW_REQUESTED'),
+  'ledger_event_type admits PEER_REVIEW_REQUESTED'
 );
 
 SELECT ok(
-  pg_get_constraintdef(
-    (SELECT oid FROM pg_constraint
-      WHERE conname = 'chk_ledger_type'
-        AND conrelid = 'public.sla_audit_ledger_v2'::regclass)
-  ) LIKE '%PEER_REVIEW_DECLINED%',
-  'chk_ledger_type admits PEER_REVIEW_DECLINED'
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='PEER_REVIEW_DECLINED'),
+  'ledger_event_type admits PEER_REVIEW_DECLINED'
 );
 
 SELECT ok(
-  pg_get_constraintdef(
-    (SELECT oid FROM pg_constraint
-      WHERE conname = 'chk_ledger_type'
-        AND conrelid = 'public.sla_audit_ledger_v2'::regclass)
-  ) LIKE '%PEER_REVIEW_EXPIRED%',
-  'chk_ledger_type admits PEER_REVIEW_EXPIRED'
+  EXISTS (SELECT 1 FROM pg_enum e JOIN pg_type ty ON ty.oid=e.enumtypid
+          JOIN pg_namespace n ON n.oid=ty.typnamespace
+          WHERE n.nspname='public' AND ty.typname='ledger_event_type'
+            AND e.enumlabel='PEER_REVIEW_EXPIRED'),
+  'ledger_event_type admits PEER_REVIEW_EXPIRED'
 );
 
 SELECT * FROM finish();

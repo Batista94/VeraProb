@@ -2,17 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'evaluation_engine/_engine_test_helpers.dart';
 
-// ── Skill Insight: INV-5 (BPS Precision), INV-6 (UTC), INV-15 (Deterministic)
-// ── INV-23 (SANCTION_RECOMMENDED carries VerdictEvidence)
+// â”€â”€ Skill Insight: INV-5 (BPS Precision), INV-6 (UTC), INV-15 (Deterministic)
+// â”€â”€ INV-23 (SANCTION_RECOMMENDED carries VerdictEvidence)
 //
 // Coverage targets:
-//   1. False Positive  — minGeofenceCoverage, dwell ≥ 30s → ExecutionStatus.completed,
+//   1. False Positive  â€” minGeofenceCoverage, dwell â‰¥ 30s â†’ ExecutionStatus.completed,
 //                        ledger has ZERO SANCTION_RECOMMENDED entries.
-//   2. Relentless Fine — noShowPenalty BPS cap (INV-5):
+//   2. Relentless Fine â€” noShowPenalty BPS cap (INV-5):
 //                        contractualValue=15000, noShowPenaltyBps=15000
 //                        raw = (15000 * 15000 + 5000) ~/ 10000 = 22500
 //                        cap = (15000 *   100 + 5000) ~/ 10000 =   150
-//                        → fineCents = 150 (cap enforced)
+//                        â†’ fineCents = 150 (cap enforced)
 
 void main() {
   setUpAll(initializeTimezones);
@@ -30,14 +30,14 @@ void main() {
     engine = deps.engine;
   });
 
-  // ── Group 1: False Positive ──────────────────────────────────────────────
+  // â”€â”€ Group 1: False Positive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('False Positive — minGeofenceCoverage dwell met', () {
+  group('False Positive â€” minGeofenceCoverage dwell met', () {
     const contractId = 'c-fp';
     const setId = 'set-fp';
 
     test(
-      'vehicle inside geofence ≥ 30s → status executed, zero SANCTION_RECOMMENDED',
+      'vehicle inside geofence â‰¥ 30s â†’ status executed, zero SANCTION_RECOMMENDED',
       () async {
         // Arrange
         final windowStart = DateTime.utc(2026, 3, 1, 6, 0);
@@ -51,7 +51,7 @@ void main() {
         await repo.save(state);
         await seedPlanWithDwellRule(planRepo, contractId, 1);
 
-        // Act — ping 1: vehicle enters geofence at 06:30:00
+        // Act â€” ping 1: vehicle enters geofence at 06:30:00
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         await engine.processVehicleState(
           makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
@@ -59,7 +59,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        // Act — ping 2: still inside geofence, 31 seconds later (dwell ≥ 30s)
+        // Act â€” ping 2: still inside geofence, 31 seconds later (dwell â‰¥ 30s)
         final t31 = DateTime.utc(2026, 3, 1, 6, 30, 31);
         await engine.processVehicleState(
           makeVehicleAtTime(
@@ -72,7 +72,7 @@ void main() {
         );
 
         // Assert: state is now executed
-        final updated = await repo.findBySetId(setId);
+        final updated = await repo.findBySetId(setId, organizationId: 'org-1');
         expect(
           updated!.status,
           ExecutionStatus.completed,
@@ -93,7 +93,7 @@ void main() {
     );
 
     test(
-      'vehicle inside geofence < 30s → state transitions to inTransit (dwell not met)',
+      'vehicle inside geofence < 30s â†’ state transitions to inTransit (dwell not met)',
       () async {
         // Arrange
         final state = makeExecState(
@@ -105,7 +105,7 @@ void main() {
         await repo.save(state);
         await seedPlanWithDwellRule(planRepo, contractId, 1);
 
-        // Act — single ping inside geofence, dwell NOT yet met
+        // Act â€” single ping inside geofence, dwell NOT yet met
         final t0 = DateTime.utc(2026, 3, 1, 6, 30, 0);
         await engine.processVehicleState(
           makeVehicleAtTime(latitude: geoLat, longitude: geoLng, timestamp: t0),
@@ -114,12 +114,12 @@ void main() {
         );
 
         // Assert: state transitions to inTransit (geofence entry detected, dwell not yet met)
-        final updated = await repo.findBySetId(setId);
+        final updated = await repo.findBySetId(setId, organizationId: 'org-1');
         expect(
           updated!.status,
           ExecutionStatus.inTransit,
           reason:
-              'First geofence entry transitions planned→inTransit; dwell not yet met so not completed',
+              'First geofence entry transitions plannedâ†’inTransit; dwell not yet met so not completed',
         );
         expect(
           ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'),
@@ -129,16 +129,16 @@ void main() {
     );
   });
 
-  // ── Group 2: Relentless Fine — noShowPenalty BPS cap ────────────────────
+  // â”€â”€ Group 2: Relentless Fine â€” noShowPenalty BPS cap â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  group('Relentless Fine — noShowPenalty BPS cap (INV-5)', () {
+  group('Relentless Fine â€” noShowPenalty BPS cap (INV-5)', () {
     const contractId = 'c-fine';
     const setId = 'set-fine';
 
     // contractualValue = Money(15000), noShowPenaltyBps = 15000 (from makeExecState defaults)
     // INV-5: raw = (15000 * 15000 + 5000) ~/ 10000 = 22500
     //        cap = (15000 *   100 + 5000) ~/ 10000 =   150
-    //        22500 > 150  →  penaltyCents = 150
+    //        22500 > 150  â†’  penaltyCents = 150
 
     test(
       'sweep emits SANCTION_RECOMMENDED with fineCents capped at 100 BPS = 150',
@@ -154,7 +154,7 @@ void main() {
         await repo.save(state);
         await seedPlanWithPenaltyRule(planRepo, contractId, 1);
 
-        // Act — sweep 5 minutes after window expiry
+        // Act â€” sweep 5 minutes after window expiry
         final sweepNow = DateTime.utc(2026, 3, 1, 7, 5);
         await engine.sweepExpiredObligations(
           nowUtc: sweepNow,
@@ -162,7 +162,7 @@ void main() {
         );
 
         // Assert: state marked as noShow
-        final updated = await repo.findBySetId(setId);
+        final updated = await repo.findBySetId(setId, organizationId: 'org-1');
         expect(
           updated!.status,
           ExecutionStatus.failed,
@@ -200,7 +200,7 @@ void main() {
     test(
       'sweep without noShowPenalty rule emits NO SANCTION_RECOMMENDED',
       () async {
-        // Arrange: plan with only a dwell rule — no noShowPenalty trigger
+        // Arrange: plan with only a dwell rule â€” no noShowPenalty trigger
         final state = makeExecState(
           setId: setId,
           contractId: contractId,
@@ -217,7 +217,7 @@ void main() {
         );
 
         // Assert: noShow declared but no financial sanction
-        final updated = await repo.findBySetId(setId);
+        final updated = await repo.findBySetId(setId, organizationId: 'org-1');
         expect(updated!.status, ExecutionStatus.failed);
         final sanctions = ledger.entries
             .where((e) => e.type == 'SANCTION_RECOMMENDED')
@@ -225,7 +225,7 @@ void main() {
         expect(
           sanctions,
           isEmpty,
-          reason: 'No noShowPenalty rule → no SANCTION_RECOMMENDED emitted',
+          reason: 'No noShowPenalty rule â†’ no SANCTION_RECOMMENDED emitted',
         );
       },
     );

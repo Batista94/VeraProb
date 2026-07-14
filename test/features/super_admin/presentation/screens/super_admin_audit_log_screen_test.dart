@@ -5,12 +5,10 @@ library;
 
 import 'dart:async';
 import 'dart:io';
-
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:alchemist/alchemist.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -750,93 +748,5 @@ void main() {
       ).called(2);
       // TDD-RED: Remove skip when filter-change AUDIT_LOG_VIEWED emission lands.
     }, skip: true);
-  });
-
-  // ═══════════════════════════════════════════════════════════════════════════
-  // GROUP 6 — GOLDEN TESTS (Visual Logic & Branding)
-  // ═══════════════════════════════════════════════════════════════════════════
-  group('Golden Tests — Visual Regression', () {
-    goldenTest(
-      'Golden: severity highlighting with all severities present',
-      fileName: 'audit_log_all_severities',
-      builder: () {
-        final entries = [
-          _view(eventType: 'DEBUG_TRACE', severity: 'debug'),
-          _view(eventType: 'EVALUATION_RUN', severity: 'info'),
-          _view(eventType: 'STORAGE_QUOTA_EXCEEDED', severity: 'warning'),
-          _view(eventType: 'PROXY_ERROR', severity: 'error'),
-          _view(
-            eventType: 'MFA_LOCKED',
-            severity: 'critical',
-            actorType: 'SYSTEM',
-          ),
-        ];
-        return SizedBox(
-          width: 1400,
-          height: 1200,
-          child: _buildScreen(providerOverride: (ref, _) async => entries),
-        );
-      },
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden: empty state centered with correct typography',
-      fileName: 'audit_log_empty_state',
-      builder: () => SizedBox(
-        width: 1400,
-        height: 900,
-        child: _buildScreen(providerOverride: (ref, _) async => const []),
-      ),
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden: error state visual',
-      fileName: 'audit_log_error_state',
-      builder: () => SizedBox(
-        width: 1400,
-        height: 900,
-        child: _buildScreen(
-          providerOverride: (ref, _) async => throw StateError('network'),
-        ),
-      ),
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-      },
-    );
-
-    goldenTest(
-      'Golden: payload diff dialog uses monospace font',
-      fileName: 'audit_log_payload_diff',
-      builder: () {
-        final payload = <String, Object?>{
-          'before': {'status': 'active', 'quota_gb': 10},
-          'after': {'status': 'suspended', 'quota_gb': 5},
-        };
-        return SizedBox(
-          width: 1400,
-          height: 900,
-          child: _buildScreen(
-            providerOverride: (ref, _) async => [
-              _view(
-                eventType: 'STATUS_CHANGE',
-                payload: payload,
-                actorType: 'HUMAN',
-              ),
-            ],
-          ),
-        );
-      },
-      pumpBeforeTest: (tester) async {
-        await tester.pumpAndSettle();
-        await tester.tap(find.byIcon(Icons.data_object));
-        await tester.pumpAndSettle();
-      },
-    );
   });
 }

@@ -7,7 +7,6 @@ import 'package:veraprob/domain/shared/date_time_provider.dart';
 import 'package:veraprob/domain/sla_audit/canonical_fact.dart' as domain_fact;
 import 'package:veraprob/domain/sla_audit/ingestion_integrity_flag.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/raw_telemetry_batch.dart';
-import 'package:veraprob/domain/sla_audit/telemetry/canonical_fact.dart';
 import 'package:veraprob/domain/sla_audit/telemetry/spoofing_detected_exception.dart';
 import 'package:veraprob/domain/sla_audit/sla_ledger_entry.dart';
 import 'package:veraprob/domain/sla_audit/spoofing_detector.dart';
@@ -68,15 +67,6 @@ void main() {
       spoofingDetector: mockSpoofingDetector,
     );
 
-    registerFallbackValue(
-      CanonicalFact(
-        deviceId: '',
-        occurredAt: kEpoch,
-        latitude: 0.0,
-        longitude: 0.0,
-        organizationId: '',
-      ),
-    );
     registerFallbackValue(
       domain_fact.CanonicalFact.reconstitute(
         id: '',

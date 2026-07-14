@@ -2,9 +2,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:veraprob/domain/sla_audit/sanction_review_queue_entry.dart';
 import 'package:veraprob/domain/sla_audit/vehicle_infraction_recurrence_repository.dart';
-import 'package:veraprob/domain/sla_audit/verdict_evidence.dart';
-import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/infrastructure/shared/base_postgres_repository.dart';
+import 'package:veraprob/infrastructure/sla_audit/postgres_sanction_review_queue_repository.dart';
 
 /// Postgres implementation of [VehicleInfractionRecurrenceRepository].
 ///
@@ -47,7 +46,11 @@ class PostgresVehicleInfractionRecurrenceRepository
           .limit(100);
 
       return (response as List)
-          .map((row) => _fromRow(row as Map<String, dynamic>))
+          .map(
+            (row) => PostgresSanctionReviewQueueRepository.fromRow(
+              row as Map<String, dynamic>,
+            ),
+          )
           .toList();
     } on PostgrestException catch (e) {
       throw mapPostgrestToDomainException(
@@ -55,30 +58,5 @@ class PostgresVehicleInfractionRecurrenceRepository
         resourceType: 'vehicle_infraction',
       );
     }
-  }
-
-  static SanctionReviewQueueEntry _fromRow(Map<String, dynamic> row) {
-    return SanctionReviewQueueEntry(
-      id: row['id'] as String,
-      organizationId: row['organization_id'] as String,
-      ledgerEntryId: row['ledger_entry_id'] as String,
-      setId: row['set_id'] as String,
-      contractId: row['contract_id'] as String,
-      vehiclePlate: row['vehicle_plate'] as String?,
-      verdictEvidence: VerdictEvidence.fromJson(
-        row['verdict_evidence'] as Map<String, dynamic>,
-      ),
-      status: IntegrityException.shield(
-        SanctionReviewStatus.values,
-        row['status'] as String,
-        'status',
-      ),
-      createdAtUtc: DateTime.parse(row['created_at'] as String).toUtc(),
-      reviewedAtUtc: row['reviewed_at'] != null
-          ? DateTime.parse(row['reviewed_at'] as String).toUtc()
-          : null,
-      reviewedByUserId: row['reviewed_by'] as String?,
-      rejectionReason: row['rejection_reason'] as String?,
-    );
   }
 }

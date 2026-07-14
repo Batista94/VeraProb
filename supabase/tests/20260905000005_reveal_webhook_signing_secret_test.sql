@@ -126,6 +126,9 @@ SELECT results_eq(
 );
 
 -- ── CT06: UNIQUE partial index — não permite 2 chaves active para mesma org ───
+-- Run as postgres (table owner): service_role only has SELECT on this table
+-- (INV-31 edge-only writes via authenticated TENANT_ADMIN / SECURITY DEFINER).
+RESET ROLE;
 
 SELECT throws_ok(
   $$ INSERT INTO public.webhook_signing_keys (organization_id, version, status)

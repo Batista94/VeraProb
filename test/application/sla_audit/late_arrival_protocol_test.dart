@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/telemetry_ingestion_pipeline.dart';
@@ -94,7 +94,10 @@ void main() {
         organizationId: orgId,
       );
 
-      final sweptStatus = (await execRepo.findBySetId(setId))?.status;
+      final sweptStatus = (await execRepo.findBySetId(
+        setId,
+        organizationId: 'org-1',
+      ))?.status;
       assert(
         sweptStatus == ExecutionStatus.failed,
         'Pre-condition: state must be noShow after sweep',
@@ -144,7 +147,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           finalState?.status,
           equals(ExecutionStatus.completed),
@@ -164,7 +170,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           finalState?.status,
           equals(ExecutionStatus.completed),
@@ -184,7 +193,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           finalState?.status,
           equals(ExecutionStatus.failed),
@@ -207,7 +219,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final afterFirst = await execRepo.findBySetId(setId);
+        final afterFirst = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           afterFirst?.status,
           equals(ExecutionStatus.completed),
@@ -220,7 +235,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
         expect(
           finalState?.status,
           equals(ExecutionStatus.completed),
@@ -310,7 +328,10 @@ void main() {
           organizationId: orgId,
         );
 
-        final sweptStatus = (await execRepo.findBySetId(setId))?.status;
+        final sweptStatus = (await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        ))?.status;
         expect(
           sweptStatus,
           equals(ExecutionStatus.failed),
@@ -354,7 +375,10 @@ void main() {
         await pipeline.process([lateFact2, lateFact1], organizationId: orgId);
 
         // 5. Check if the status was updated (or a compensatory record created)
-        final finalState = await execRepo.findBySetId(setId);
+        final finalState = await execRepo.findBySetId(
+          setId,
+          organizationId: 'org-1',
+        );
 
         // CHALLENGE: If the protocol is working correctly, the NO_SHOW should be resolved or countered.
         expect(

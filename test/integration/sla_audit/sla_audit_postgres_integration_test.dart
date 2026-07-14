@@ -272,7 +272,10 @@ void main() {
       )).first;
       final service = savedPlan.services.first;
 
-      final executionState = await executionRepo.findBySetId(service.setId);
+      final executionState = await executionRepo.findBySetId(
+        service.setId,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         executionState,
         isNull,
@@ -331,7 +334,10 @@ void main() {
         organizationId: '00000000-0000-0000-0000-000000000001',
       );
 
-      var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
+      var stateAfterTick1 = await executionRepo.findBySetId(
+        sharedSetId!,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         stateAfterTick1!.status.name,
         'inTransit',
@@ -348,7 +354,10 @@ void main() {
       );
 
       // Validate DB transitions
-      var stateAfterTick2 = await executionRepo.findBySetId(sharedSetId!);
+      var stateAfterTick2 = await executionRepo.findBySetId(
+        sharedSetId!,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         stateAfterTick2!.status.name,
         'completed',
@@ -908,7 +917,7 @@ void main() {
           reason: 'Should indicate reclamation from stale key',
         );
 
-        // Cleanup: transition processingâ†’error first to unblock the
+        // Cleanup: transition processing→error first to unblock the
         // prevent_idempotency_processing_delete trigger, then delete.
         await client.rpc<void>(
           'fail_idempotency_key',
@@ -944,7 +953,7 @@ class MockContractualRuleRepository implements ContractualRuleRepository {
 class _MockAuthRepository extends Mock implements IAuthRepository {}
 
 /// Returns an active [Contract] for any non-empty contractId.
-/// Using [ContractStatus.active] avoids the draftâ†’active auto-activation path
+/// Using [ContractStatus.active] avoids the draft→active auto-activation path
 /// in [DeclareContractualPlanHandler], which would write an extra
 /// CONTRACT_ACTIVATED ledger entry and break Stage 3's count assertion.
 class MockContractRepository implements ContractRepository {

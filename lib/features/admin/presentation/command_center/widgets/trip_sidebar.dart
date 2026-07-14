@@ -9,30 +9,6 @@ import 'package:veraprob/application/projections/providers/command_center_filter
 import 'package:veraprob/presentation/shared/ui/status_badge.dart';
 import 'package:veraprob/dev/performance_metrics.dart';
 
-/// Local sidebar state for search and sort (not global — UI-only).
-class _SidebarSearchNotifier extends Notifier<String> {
-  @override
-  String build() => '';
-
-  void set(String value) => state = value;
-}
-
-final _sidebarSearchProvider = NotifierProvider<_SidebarSearchNotifier, String>(
-  _SidebarSearchNotifier.new,
-);
-
-class _SidebarSortAscNotifier extends Notifier<bool> {
-  @override
-  bool build() => true;
-
-  void set(bool value) => state = value;
-  void toggle() => state = !state;
-}
-
-final _sidebarSortAscProvider = NotifierProvider<_SidebarSortAscNotifier, bool>(
-  _SidebarSortAscNotifier.new,
-);
-
 /// Left sidebar in the Command Center showing all active trips.
 ///
 /// Features:
@@ -40,17 +16,24 @@ final _sidebarSortAscProvider = NotifierProvider<_SidebarSortAscNotifier, bool>(
 /// - Sort by route name (A→Z / Z→A toggle)
 /// - Active filter banner when KpiBar filter is active
 /// - No duplicate filter chips (filters are in KpiBar only)
-class TripSidebar extends ConsumerWidget {
+class TripSidebar extends ConsumerStatefulWidget {
   const TripSidebar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TripSidebar> createState() => _TripSidebarState();
+}
+
+class _TripSidebarState extends ConsumerState<TripSidebar> {
+  String _searchQuery = '';
+  bool _sortAsc = true;
+
+  @override
+  Widget build(BuildContext context) {
     final trips = ref.watch(filteredTripsProvider);
     final selectedId = ref.watch(selectedTripIdProvider);
     final filterState = ref.watch(commandCenterFilterProvider);
     final statusFilter = filterState.selectedFleetStatusFilter;
-    final searchQuery = ref.watch(_sidebarSearchProvider).toLowerCase();
-    final sortAsc = ref.watch(_sidebarSortAscProvider);
+    final searchQuery = _searchQuery.toLowerCase();
 
     // Apply local search filter
     var displayTrips = trips.where((t) {
@@ -61,7 +44,7 @@ class TripSidebar extends ConsumerWidget {
     }).toList();
 
     // Apply local sort if user toggled it
-    if (sortAsc) {
+    if (_sortAsc) {
       displayTrips.sort(
         (a, b) => (a.routeShortName ?? '').compareTo(b.routeShortName ?? ''),
       );
@@ -89,11 +72,11 @@ class TripSidebar extends ConsumerWidget {
             // Search + Sort controls
             _SearchSortBar(
               onSearchChanged: (query) {
-                ref.read(_sidebarSearchProvider.notifier).set(query);
+                setState(() => _searchQuery = query);
               },
-              sortAsc: sortAsc,
+              sortAsc: _sortAsc,
               onSortToggle: () {
-                ref.read(_sidebarSortAscProvider.notifier).set(!sortAsc);
+                setState(() => _sortAsc = !_sortAsc);
               },
             ),
 

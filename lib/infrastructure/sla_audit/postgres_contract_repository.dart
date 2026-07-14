@@ -68,22 +68,7 @@ class PostgresContractRepository extends BasePostgresRepository
   /// Throws [IntegrityException] if [raw] is null or not a [String].
   @visibleForTesting
   DateTime parseUtc(dynamic raw, String fieldName) {
-    if (raw == null) {
-      throw IntegrityException(
-        'Timestamp "$fieldName" is null',
-        field: fieldName,
-      );
-    }
-    if (raw is! String) {
-      throw IntegrityException(
-        'Timestamp "$fieldName" has unexpected type ${raw.runtimeType}, expected String',
-        field: fieldName,
-      );
-    }
-    final normalized = (raw.endsWith('Z') || raw.contains('+'))
-        ? raw
-        : '${raw}Z';
-    return DateTime.parse(normalized);
+    return BasePostgresRepository.parsePostgresUtc(raw, fieldName);
   }
 
   @override

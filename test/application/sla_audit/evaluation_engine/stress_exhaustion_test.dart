@@ -72,7 +72,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
       expect(ledger.entries, hasLength(2));
     });
@@ -114,7 +114,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.planned);
       expect(ledger.entries, isEmpty);
     });
@@ -155,7 +155,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -188,7 +188,7 @@ void main() {
 
       // Timer should have been reset every time vehicle exits
       // After 100s of oscillation, no continuous 30s dwell achieved
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
       expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
@@ -232,7 +232,7 @@ void main() {
       );
 
       // Only 30s accumulated from T+45 → T+75, but we only pinged until T+45
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
     });
 
@@ -261,7 +261,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -290,7 +290,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -319,7 +319,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.planned);
       expect(ledger.entries, isEmpty);
     });
@@ -363,7 +363,7 @@ void main() {
           );
         }
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
         expect(ledger.entries, hasLength(2));
       },
@@ -415,7 +415,7 @@ void main() {
       );
 
       // Timer started at T+0, but only 0s dwell so far
-      var result = await repo.findBySetId('set-1');
+      var result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+30, should bind (timer counted from T+0, not 3x T+0)
@@ -425,7 +425,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      result = await repo.findBySetId('set-1');
+      result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
       expect(ledger.entries, hasLength(2));
     });
@@ -475,7 +475,7 @@ void main() {
       // T+15 and T+0 are before firstEntry, so they are skipped by the
       // `if (now.isBefore(firstEntry)) continue;` guard.
       // Dwell from T+30 perspective = 0s at T+30.
-      var result = await repo.findBySetId('set-1');
+      var result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+60 (30s after T+30), should bind
@@ -485,7 +485,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      result = await repo.findBySetId('set-1');
+      result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -513,7 +513,7 @@ void main() {
       );
 
       // At T+15, no firstEntry exists yet (vehicle outside). Nothing happens.
-      var result = await repo.findBySetId('set-1');
+      var result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.planned);
 
       // Now entry event arrives (T+0, inside)
@@ -524,7 +524,7 @@ void main() {
       );
 
       // firstEntry = T+0. Dwell = 0s at T+0.
-      result = await repo.findBySetId('set-1');
+      result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
 
       // At T+30, should bind
@@ -534,7 +534,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      result = await repo.findBySetId('set-1');
+      result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -559,7 +559,7 @@ void main() {
       }
 
       // All pings at same instant → dwell = 0s
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
       expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
@@ -608,7 +608,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
         expect(result.boundVehicleId, 'v-assigned');
         expect(ledger.entries, hasLength(2));
@@ -642,7 +642,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -735,7 +735,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -764,7 +764,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.inTransit);
       expect(ledger.entries.where((e) => e.type == 'EXECUTION_BOUND'), isEmpty);
     });
@@ -815,7 +815,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        final result = await repo.findBySetId('set-1');
+        final result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
       },
     );
@@ -841,7 +841,7 @@ void main() {
       );
 
       // Still pending, no ledger entries
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.planned);
       expect(ledger.entries, isEmpty);
     });
@@ -872,7 +872,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final result = await repo.findBySetId('set-1');
+      final result = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(result!.status, ExecutionStatus.completed);
     });
 
@@ -906,7 +906,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        var result = await repo.findBySetId('set-1');
+        var result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
 
         // Sweep at T+45 (past windowEnd at T+40) — should NOT affect executed state
@@ -915,7 +915,7 @@ void main() {
           organizationId: 'org-1',
         );
 
-        result = await repo.findBySetId('set-1');
+        result = await repo.findBySetId('set-1', organizationId: 'org-1');
         expect(result!.status, ExecutionStatus.completed);
 
         // Only 1 ledger entry (EXECUTION_BOUND, no NO_SHOW)

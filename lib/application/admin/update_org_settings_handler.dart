@@ -43,9 +43,7 @@ class UpdateOrgSettingsHandler {
     // ── Step 3: Fetch aggregate
     final org = await _repository.findById(command.organizationId);
     if (org == null) {
-      throw DomainException(
-        'Organization not found: ${command.organizationId}',
-      );
+      throw const DomainException('Organização não encontrada.');
     }
 
     // ── Step 4: Field-Level Permission Check (INV-9 / INV-19)

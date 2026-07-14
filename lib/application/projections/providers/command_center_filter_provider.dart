@@ -13,28 +13,21 @@ enum FleetStatusFilter {
 
 class CommandCenterFilterState extends Equatable {
   final FleetStatusFilter selectedFleetStatusFilter;
-  final int? selectedSeverityFilter;
   final String? followVehicleId;
 
   const CommandCenterFilterState({
     this.selectedFleetStatusFilter = FleetStatusFilter.all,
-    this.selectedSeverityFilter,
     this.followVehicleId,
   });
 
   CommandCenterFilterState copyWith({
     FleetStatusFilter? selectedFleetStatusFilter,
-    int? selectedSeverityFilter,
     String? followVehicleId,
-    bool clearSeverity = false,
     bool clearFollow = false,
   }) {
     return CommandCenterFilterState(
       selectedFleetStatusFilter:
           selectedFleetStatusFilter ?? this.selectedFleetStatusFilter,
-      selectedSeverityFilter: clearSeverity
-          ? null
-          : (selectedSeverityFilter ?? this.selectedSeverityFilter),
       followVehicleId: clearFollow
           ? null
           : (followVehicleId ?? this.followVehicleId),
@@ -42,11 +35,7 @@ class CommandCenterFilterState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [
-    selectedFleetStatusFilter,
-    selectedSeverityFilter,
-    followVehicleId,
-  ];
+  List<Object?> get props => [selectedFleetStatusFilter, followVehicleId];
 }
 
 class CommandCenterFilterNotifier extends Notifier<CommandCenterFilterState> {
@@ -60,14 +49,6 @@ class CommandCenterFilterNotifier extends Notifier<CommandCenterFilterState> {
       state = state.copyWith(selectedFleetStatusFilter: FleetStatusFilter.all);
     } else {
       state = state.copyWith(selectedFleetStatusFilter: filter);
-    }
-  }
-
-  void setSeverityFilter(int? severity) {
-    if (severity == null || (state.selectedSeverityFilter == severity)) {
-      state = state.copyWith(clearSeverity: true);
-    } else {
-      state = state.copyWith(selectedSeverityFilter: severity);
     }
   }
 

@@ -1,13 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/projections/forensic_ledger_view.dart';
-import 'package:veraprob/domain/authority/repositories/in_memory_forensic_repository.dart';
 import 'package:veraprob/infrastructure/authority/postgres_forensic_ledger_projection.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_mode.dart';
 import 'package:veraprob/infrastructure/persistence/persistence_provider.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
-import 'package:veraprob/state/providers/authority_providers.dart';
 
 // ── ROI Guardian (Phase 10) ────────────────────────────────────────────────────
 
@@ -83,27 +81,6 @@ final forensicLedgerProjectionProvider =
       if (mode == PersistenceMode.postgres) {
         final client = ref.watch(supabaseClientProvider);
         return PostgresForensicLedgerProjection(client).watchLedger();
-      }
-
-      final repo = ref.watch(forensicDecisionRepositoryProvider);
-
-      if (repo is InMemoryForensicRepository) {
-        return repo.ledgerStream.map((decisions) {
-          return decisions.reversed
-              .map(
-                (d) => ForensicLedgerEntry(
-                  decisionId: d.decisionId,
-                  actionType: d.actionType.key,
-                  actionLabel: actionVerb(d.actionType.key),
-                  actorId: d.actorId.value,
-                  result: d.result.name.toUpperCase(),
-                  reason: d.reason,
-                  narrative: toNarrative(d),
-                  timestamp: d.occurredAt,
-                ),
-              )
-              .toList();
-        });
       }
 
       return Stream.value([]);

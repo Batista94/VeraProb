@@ -337,7 +337,10 @@ void _scenario51(_Fixture f) {
         );
 
         // Persisted plan preserves hash
-        final found = await f.planRepo.findById(plan.id);
+        final found = await f.planRepo.findById(
+          plan.id,
+          organizationId: 'org-5-1b',
+        );
         expect(found!.originalFileHash, expectedHash);
       },
     );
@@ -498,13 +501,19 @@ void _scenario52(_Fixture f) {
           expect(plan2.planVersion, 2);
 
           // Versão 1 ainda existe — não foi sobrescrita
-          final found1 = await f.planRepo.findById(plan1.id);
+          final found1 = await f.planRepo.findById(
+            plan1.id,
+            organizationId: 'org-5-2b',
+          );
           expect(found1, isNotNull);
           expect(found1!.planVersion, 1);
           expect(found1.originalFileHash, 'hash-v1');
 
           // Versão 2 existe com dados distintos
-          final found2 = await f.planRepo.findById(plan2.id);
+          final found2 = await f.planRepo.findById(
+            plan2.id,
+            organizationId: 'org-5-2b',
+          );
           expect(found2!.planVersion, 2);
           expect(found2.services, hasLength(2));
 

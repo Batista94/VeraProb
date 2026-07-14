@@ -107,6 +107,17 @@ class EnvironmentConfig {
   /// CI/CD: never pass this flag — pipelines do not set `SKIP_MFA_DEV`.
   static bool get skipMfaForSuperAdmin => isDev && _skipMfaDev;
 
+  static const _skipLgpdConsentDev = bool.fromEnvironment(
+    'SKIP_LGPD_CONSENT_DEV',
+    defaultValue: false,
+  );
+
+  /// Bypasses Flutter Legal Gate in local development / E2E only.
+  ///
+  /// Requires BOTH: `ENV=dev` AND `--dart-define=SKIP_LGPD_CONSENT_DEV=true`.
+  /// Staging and production are never affected.
+  static bool get skipLgpdConsentDev => isDev && _skipLgpdConsentDev;
+
   // ── Validation ───────────────────────────────────────
   /// Returns true if the minimum required credentials are present.
   /// Only fails silently in dev (in-memory test mode).

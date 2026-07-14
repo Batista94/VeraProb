@@ -89,15 +89,5 @@ void main() {
         isFalse,
       ); // Initially false before being read
     });
-
-    test('provider initial state test structure', () {
-      final container = ProviderContainer.test();
-
-      // We check that container has the provider without instantiating dependencies that might throw UnimplementedError
-      expect(
-        container.exists(contractStatusFilterProvider),
-        isFalse,
-      ); // Initially false before being read
-    });
   });
 }

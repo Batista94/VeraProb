@@ -22,8 +22,13 @@ class InMemoryPlanDeclarationRepository implements PlanDeclarationRepository {
   }
 
   @override
-  Future<PlanDeclaration?> findById(String id) async {
-    return _store[id];
+  Future<PlanDeclaration?> findById(
+    String id, {
+    required String organizationId,
+  }) async {
+    final plan = _store[id];
+    if (plan == null || plan.organizationId != organizationId) return null;
+    return plan;
   }
 
   @override

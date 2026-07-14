@@ -99,24 +99,31 @@ class _DriverFormDrawerState extends ConsumerState<DriverFormDrawer>
         );
         widget.onDriverAdded(newDriver.id);
       }
-    } catch (e, stack) {
-      if (e.toString().contains('DUPLICATE_CNH')) {
+    } on DomainException catch (e) {
+      if (e.message.contains('DUPLICATE_CNH')) {
         setState(() {
           _errorMessage = 'Este motorista já está cadastrado na frota.';
           _isSaving = false;
         });
       } else {
-        LoggerService().error(
-          'Falha ao cadastrar motorista',
-          error: e,
-          stackTrace: stack,
-        );
         setState(() {
-          _errorMessage =
-              'Não foi possível salvar o motorista agora. Tente novamente.';
+          _errorMessage = e.message.isNotEmpty
+              ? e.message
+              : 'Não foi possível salvar o motorista agora. Tente novamente.';
           _isSaving = false;
         });
       }
+    } catch (e, stack) {
+      LoggerService().error(
+        'Falha ao cadastrar motorista',
+        error: e,
+        stackTrace: stack,
+      );
+      setState(() {
+        _errorMessage =
+            'Não foi possível salvar o motorista agora. Tente novamente.';
+        _isSaving = false;
+      });
     }
   }
 

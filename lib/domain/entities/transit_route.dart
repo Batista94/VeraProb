@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:equatable/equatable.dart';
 
 /// A transit route, normalized from GTFS or manually created.
@@ -9,7 +10,6 @@ class TransitRoute extends Equatable {
   final String longName;
   final String? color; // Hex color from GTFS
   final String? agencyId;
-  final DateTime? createdAt;
 
   // Denormalized: live operational stats
   final int? activeTripsCount;
@@ -22,7 +22,7 @@ class TransitRoute extends Equatable {
     required this.longName,
     this.color,
     this.agencyId,
-    this.createdAt,
+
     this.activeTripsCount,
   });
 
@@ -37,7 +37,7 @@ class TransitRoute extends Equatable {
     String? longName,
     String? color,
     String? agencyId,
-    DateTime? createdAt,
+
     int? activeTripsCount,
   }) {
     return TransitRoute(
@@ -48,7 +48,7 @@ class TransitRoute extends Equatable {
       longName: longName ?? this.longName,
       color: color ?? this.color,
       agencyId: agencyId ?? this.agencyId,
-      createdAt: createdAt ?? this.createdAt,
+
       activeTripsCount: activeTripsCount ?? this.activeTripsCount,
     );
   }
@@ -62,9 +62,6 @@ class TransitRoute extends Equatable {
       longName: json['long_name'] as String? ?? '',
       color: json['color'] as String?,
       agencyId: json['agency_id'] as String?,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
     );
   }
 

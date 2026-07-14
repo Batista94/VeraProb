@@ -20,6 +20,10 @@ sealed class AppRoutes {
   static const String adminDashboard = '/admin/dashboard';
   static const String adminHub = '/admin/hub';
 
+  /// LGPD Legal Gate — requires session, blocks shells until terms accepted.
+  /// Not in [publicPaths]; redirect allows it when consent is pending.
+  static const String legalConsent = '/legal-consent';
+
   // ── Super-admin ───────────────────────────────────────────
   static const String superAdmin = '/super-admin';
   static const String superAdminMfaEnrollment = '/super-admin/mfa-enrollment';

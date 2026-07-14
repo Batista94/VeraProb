@@ -36,6 +36,10 @@ class DeactivateMemberHandler {
       );
     }
 
+    if (command.callerUserId == command.targetUserId) {
+      throw const DomainException('Nao e possivel inativar o proprio usuario.');
+    }
+
     final members = await _queryService.getMembers();
 
     final target = members

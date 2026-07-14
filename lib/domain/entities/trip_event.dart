@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression — PR elevation org-scope ports / domain touch (Council-approved plan)
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/enums/event_type.dart';
 import 'package:veraprob/domain/enums/trip_status.dart';
@@ -64,7 +65,7 @@ class TripEvent extends Equatable {
           ? TripStatus.fromString(json['to_status'] as String)
           : null,
       metadata: json['metadata'] as Map<String, dynamic>?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: DateTime.parse(json['created_at'] as String).toUtc(),
     );
   }
 

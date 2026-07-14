@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/normalization/models/vehicle_operational_state.dart';
 import 'package:veraprob/application/normalization/models/motion_state.dart';
@@ -141,10 +141,16 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final afterBinding = await repo.findBySetId('set-1');
+      final afterBinding = await repo.findBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(afterBinding!.status, ExecutionStatus.completed);
 
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(
         traces,
         isNotEmpty,
@@ -162,10 +168,16 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final afterSweep = await repo.findBySetId('set-1');
+      final afterSweep = await repo.findBySetId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(afterSweep!.status, ExecutionStatus.failed);
 
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(
         traces,
         isNotEmpty,
@@ -193,7 +205,10 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       final entries = ledger.entries;
 
       for (final trace in traces) {
@@ -265,7 +280,7 @@ void main() {
           nowUtc: DateTime.utc(2026, 3, 1, 8, 0),
           organizationId: 'org-1',
         );
-        results.add(await t.findByEntityId('set-1'));
+        results.add(await t.findByEntityId('set-1', organizationId: 'org-1'));
       }
 
       expect(results[0].length, equals(results[1].length));
@@ -298,7 +313,10 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       for (final trace in traces) {
         expect(
           trace.engineVersion,
@@ -321,7 +339,10 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(traces, isNotEmpty);
 
       for (final trace in traces) {

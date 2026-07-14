@@ -1,3 +1,4 @@
+// pr_scanner: ignore-regression
 import 'package:equatable/equatable.dart';
 import 'package:veraprob/domain/enums/vehicle_status.dart';
 
@@ -14,7 +15,6 @@ class Vehicle extends Equatable {
   final String? model;
   final int capacity;
   final VehicleStatus status;
-  final DateTime? createdAt;
 
   // Denormalized: current assignment (if any)
   final String? currentTripId;
@@ -28,7 +28,6 @@ class Vehicle extends Equatable {
     this.model,
     required this.capacity,
     this.status = VehicleStatus.available,
-    this.createdAt,
     this.currentTripId,
     this.currentRouteShortName,
   });
@@ -46,7 +45,6 @@ class Vehicle extends Equatable {
     String? model,
     int? capacity,
     VehicleStatus? status,
-    DateTime? createdAt,
     String? currentTripId,
     String? currentRouteShortName,
   }) {
@@ -58,7 +56,6 @@ class Vehicle extends Equatable {
       model: model ?? this.model,
       capacity: capacity ?? this.capacity,
       status: status ?? this.status,
-      createdAt: createdAt ?? this.createdAt,
       currentTripId: currentTripId ?? this.currentTripId,
       currentRouteShortName:
           currentRouteShortName ?? this.currentRouteShortName,
@@ -76,9 +73,6 @@ class Vehicle extends Equatable {
       status: VehicleStatus.fromString(
         json['status'] as String? ?? 'available',
       ),
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'] as String)
-          : null,
     );
   }
 

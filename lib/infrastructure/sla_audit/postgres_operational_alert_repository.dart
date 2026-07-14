@@ -56,11 +56,15 @@ class PostgresOperationalAlertRepository
   }
 
   @override
-  Future<List<OperationalAlert>> findByEntityId(String entityId) async {
+  Future<List<OperationalAlert>> findByEntityId(
+    String entityId, {
+    required String organizationId,
+  }) async {
     try {
       final data = await _client
           .from(_table)
           .select()
+          .eq('organization_id', organizationId)
           .eq('entity_id', entityId)
           .order('triggered_at_utc', ascending: false);
       return data.map(_fromRow).toList();
@@ -70,11 +74,15 @@ class PostgresOperationalAlertRepository
   }
 
   @override
-  Future<OperationalAlert?> findById(String alertId) async {
+  Future<OperationalAlert?> findById(
+    String alertId, {
+    required String organizationId,
+  }) async {
     try {
       final data = await _client
           .from(_table)
           .select()
+          .eq('organization_id', organizationId)
           .eq('id', alertId)
           .maybeSingle();
       return data == null ? null : _fromRow(data);

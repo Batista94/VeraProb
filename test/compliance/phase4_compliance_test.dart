@@ -1,4 +1,4 @@
-﻿import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/contractual_evaluation_engine.dart';
 import 'package:veraprob/application/sla_audit/alert_derivation_service.dart';
 import 'package:veraprob/application/sla_audit/alert_service.dart';
@@ -17,6 +17,7 @@ import 'package:veraprob/infrastructure/sla_audit/in_memory_sla_audit_ledger_rep
 import 'package:veraprob/infrastructure/sla_audit/in_memory_evaluation_trace_repository.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_operational_alert_repository.dart';
 import 'package:veraprob/domain/shared/money.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Phase 4 Compliance Review — Operational Alerts
 void main() {
@@ -151,7 +152,7 @@ void main() {
         organizationId: 'org-1',
       );
 
-      final state = await repo.findBySetId('set-1');
+      final state = await repo.findBySetId('set-1', organizationId: 'org-1');
       expect(state!.status, ExecutionStatus.completed);
 
       // No alert for successful execution without penalties
@@ -181,7 +182,10 @@ void main() {
       expect(alert.traceId, isNotNull);
 
       // Verify the causal chain exists
-      final traces = await traceRepo.findByEntityId('set-1');
+      final traces = await traceRepo.findByEntityId(
+        'set-1',
+        organizationId: 'org-1',
+      );
       expect(
         traces.any((t) => t.id == alert.traceId),
         isTrue,
@@ -247,11 +251,12 @@ void main() {
       // Acknowledge
       await service.acknowledge(
         alertId: alertId,
+        organizationId: 'org-1',
         userId: 'operator-1',
         atUtc: DateTime.utc(2026, 3, 1, 8, 5),
       );
 
-      var alert = await alertRepo.findById(alertId);
+      var alert = await alertRepo.findById(alertId, organizationId: 'org-1');
       expect(alert!.status, equals('ACKNOWLEDGED'));
       expect(alert.acknowledgedByUserId, equals('operator-1'));
       expect(alert.acknowledgedAtUtc, isNotNull);
@@ -259,10 +264,11 @@ void main() {
       // Resolve
       await service.resolve(
         alertId: alertId,
+        organizationId: 'org-1',
         atUtc: DateTime.utc(2026, 3, 1, 9, 0),
       );
 
-      alert = await alertRepo.findById(alertId);
+      alert = await alertRepo.findById(alertId, organizationId: 'org-1');
       expect(alert!.status, equals('RESOLVED'));
       expect(alert.resolvedAtUtc, isNotNull);
     });
@@ -282,14 +288,16 @@ void main() {
       expect(
         () => service.resolve(
           alertId: alertId,
+          organizationId: 'org-1',
           atUtc: DateTime.utc(2026, 3, 1, 8, 5),
         ),
-        throwsStateError,
+        throwsA(isA<IntegrityException>()),
       );
 
       // Acknowledge first
       await service.acknowledge(
         alertId: alertId,
+        organizationId: 'org-1',
         userId: 'op-1',
         atUtc: DateTime.utc(2026, 3, 1, 8, 5),
       );
@@ -298,10 +306,11 @@ void main() {
       expect(
         () => service.acknowledge(
           alertId: alertId,
+          organizationId: 'org-1',
           userId: 'op-2',
           atUtc: DateTime.utc(2026, 3, 1, 8, 10),
         ),
-        throwsStateError,
+        throwsA(isA<IntegrityException>()),
       );
     });
 

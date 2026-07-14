@@ -1,7 +1,12 @@
 BEGIN;
 CREATE EXTENSION IF NOT EXISTS pgtap;
 
-SELECT plan(23);
+SELECT plan(28);
+
+-- =============================================================================
+-- organization_holidays — CIA: C
+-- Quarantine Data API + tx-local GRANT for INV-22 RLS proof under quarantine
+-- =============================================================================
 
 -- ── Seeds (as postgres: bypasses RLS for fixture setup) ──────────────────────
 INSERT INTO public.organizations (
@@ -36,8 +41,8 @@ SELECT has_column('public', 'organization_holidays', 'deleted_at',
 
 -- ── Grants (INV-DATA-API-GRANT + M-arch: no client DELETE) ───────────────────
 SELECT ok(
-  has_table_privilege('authenticated', 'public.organization_holidays', 'SELECT'),
-  'authenticated may SELECT organization_holidays');
+  NOT has_table_privilege('authenticated', 'public.organization_holidays', 'SELECT'),
+  'authenticated has no SELECT on quarantined organization_holidays');
 
 SELECT ok(
   NOT has_table_privilege('authenticated', 'public.organization_holidays', 'DELETE'),
@@ -58,21 +63,18 @@ SELECT is(
   '_compute_easter(2026) returns Apr 5 (verified anchor)');
 
 -- ── Business-day deadline: weekend skip (Fri Jun 12 +1 bday → Mon Jun 15) ─────
--- OrgHA has no holidays yet in this window.
 SELECT is(
   public._compute_business_day_deadline(
     '00000000-0000-0000-0000-0000000d2c10', '2026-06-12'::date, 1),
   '2026-06-15 23:59:59'::timestamptz,
   'business-day deadline skips Sat/Sun (Fri +1 bday = Mon)');
 
--- ── Business-day deadline: zero/negative business days → same day end-of-day ──
 SELECT is(
   public._compute_business_day_deadline(
     '00000000-0000-0000-0000-0000000d2c10', '2026-06-15'::date, 0),
   '2026-06-15 23:59:59'::timestamptz,
   'zero business days returns start-of-window end-of-day');
 
--- ── Business-day deadline: holiday skip (Mon Jun 15 is a holiday → Tue Jun 16) ─
 INSERT INTO public.organization_holidays (organization_id, holiday_date, label, is_national)
 VALUES ('00000000-0000-0000-0000-0000000d2c10', '2026-06-15', 'Test Holiday', FALSE);
 
@@ -82,7 +84,6 @@ SELECT is(
   '2026-06-16 23:59:59'::timestamptz,
   'business-day deadline skips an organization holiday (Mon→Tue)');
 
--- ── Locale pack: BR national holidays seed (run on OrgHB, isolated) ───────────
 SELECT is(
   public.seed_brazilian_national_holidays('00000000-0000-0000-0000-0000000d2c11', 2026),
   12,
@@ -94,7 +95,6 @@ SELECT is(
   12,
   'all 12 seeded rows are flagged is_national');
 
--- ── H4: locale pack is NEVER reachable by generic tenant provisioning ─────────
 SELECT ok(
   NOT has_function_privilege(
     'authenticated', 'public.seed_brazilian_national_holidays(uuid, integer)', 'EXECUTE'),
@@ -110,48 +110,92 @@ SELECT ok(
     'authenticated', 'public._compute_business_day_deadline(uuid, date, integer)', 'EXECUTE'),
   'authenticated cannot EXECUTE the internal deadline function');
 
--- ── RLS behaviour (authenticated, Org HA) ────────────────────────────────────
+-- ── Quarantine (20260923000001): authenticated has no Data API surface ─────────
 SET LOCAL ROLE authenticated;
 SET LOCAL request.jwt.claims =
   '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000d2c10","role":"TENANT_ADMIN"}}';
 
--- Org HB holidays (seeded above) are invisible to Org HA (INV-22).
-SELECT is(
-  (SELECT count(*)::int FROM public.organization_holidays
-    WHERE organization_id = '00000000-0000-0000-0000-0000000d2c11'),
-  0, 'Org HA cannot see Org HB holidays (INV-22)');
+SELECT throws_ok(
+  $$ SELECT count(*)::int FROM public.organization_holidays
+       WHERE organization_id = '00000000-0000-0000-0000-0000000d2c11' $$,
+  '42501', NULL,
+  'authenticated cannot SELECT Org HB holidays (quarantined)');
 
--- Org HA sees its own holiday row.
-SELECT is(
-  (SELECT count(*)::int FROM public.organization_holidays
-    WHERE organization_id = '00000000-0000-0000-0000-0000000d2c10'),
-  1, 'Org HA sees its own holiday (oh_select_own_org)');
+SELECT throws_ok(
+  $$ SELECT count(*)::int FROM public.organization_holidays
+       WHERE organization_id = '00000000-0000-0000-0000-0000000d2c10' $$,
+  '42501', NULL,
+  'authenticated cannot SELECT own-org holidays (quarantined)');
 
--- TENANT_ADMIN may INSERT a holiday for its own org.
-SELECT lives_ok(
+SELECT throws_ok(
   $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
      VALUES ('00000000-0000-0000-0000-0000000d2c10', '2026-07-09', 'Admin Added') $$,
-  'TENANT_ADMIN may INSERT a holiday for its own org');
+  '42501', NULL,
+  'authenticated cannot INSERT holidays (quarantined)');
 
--- A non-admin (DISPATCHER) cannot INSERT (oh_insert_own_org requires TENANT_ADMIN).
 SET LOCAL request.jwt.claims =
   '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000d2c10","role":"DISPATCHER"}}';
 SELECT throws_ok(
   $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
      VALUES ('00000000-0000-0000-0000-0000000d2c10', '2026-07-10', 'Dispatcher') $$,
   '42501', NULL,
-  'non-admin (DISPATCHER) cannot INSERT a holiday');
+  'DISPATCHER cannot INSERT holidays (quarantined)');
 
--- Cross-org INSERT is blocked even for a TENANT_ADMIN (INV-22).
 SET LOCAL request.jwt.claims =
   '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000d2c10","role":"TENANT_ADMIN"}}';
 SELECT throws_ok(
   $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
      VALUES ('00000000-0000-0000-0000-0000000d2c11', '2026-07-11', 'Cross Org') $$,
   '42501', NULL,
-  'TENANT_ADMIN cannot INSERT a holiday for another org (INV-22)');
+  'authenticated cannot INSERT cross-org holidays (quarantined)');
 
 RESET ROLE;
+
+-- ── P2: tx-local GRANT for RLS proof under product quarantine (INV-22) ────────
+-- Comment: tx-local grant for RLS proof under product quarantine — ROLLBACK revokes.
+GRANT SELECT, INSERT ON public.organization_holidays TO authenticated;
+
+SET LOCAL ROLE authenticated;
+SET LOCAL request.jwt.claims =
+  '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000d2c10","role":"TENANT_ADMIN"}}';
+
+SELECT is(
+  (SELECT count(*)::int FROM public.organization_holidays
+    WHERE organization_id = '00000000-0000-0000-0000-0000000d2c11'),
+  0,
+  'INV-22: with tx GRANT, Org A JWT sees 0 Org B holiday rows (RLS)'
+);
+
+SELECT ok(
+  (SELECT count(*)::int FROM public.organization_holidays
+    WHERE organization_id = '00000000-0000-0000-0000-0000000d2c10') >= 1,
+  'INV-22: with tx GRANT, Org A JWT sees own holiday rows'
+);
+
+SELECT lives_ok(
+  $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
+     VALUES ('00000000-0000-0000-0000-0000000d2c10', '2026-07-09', 'Admin Added') $$,
+  'INV-22: TENANT_ADMIN may INSERT own-org holiday under tx GRANT'
+);
+
+SELECT throws_ok(
+  $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
+     VALUES ('00000000-0000-0000-0000-0000000d2c11', '2026-07-11', 'Cross Org') $$,
+  '42501', NULL,
+  'INV-22: TENANT_ADMIN cannot INSERT cross-org holiday (RLS WITH CHECK)'
+);
+
+SET LOCAL request.jwt.claims =
+  '{"role":"authenticated","app_metadata":{"org_id":"00000000-0000-0000-0000-0000000d2c10","role":"DISPATCHER"}}';
+SELECT throws_ok(
+  $$ INSERT INTO public.organization_holidays (organization_id, holiday_date, label)
+     VALUES ('00000000-0000-0000-0000-0000000d2c10', '2026-07-10', 'Dispatcher') $$,
+  '42501', NULL,
+  'INV-22: DISPATCHER cannot INSERT (role gate on WITH CHECK)'
+);
+
+RESET ROLE;
+-- ROLLBACK below drops the tx-local GRANT — production quarantine intact
 
 SELECT * FROM finish();
 ROLLBACK;
