@@ -272,7 +272,10 @@ void main() {
       )).first;
       final service = savedPlan.services.first;
 
-      final executionState = await executionRepo.findBySetId(service.setId);
+      final executionState = await executionRepo.findBySetId(
+        service.setId,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         executionState,
         isNull,
@@ -331,7 +334,10 @@ void main() {
         organizationId: '00000000-0000-0000-0000-000000000001',
       );
 
-      var stateAfterTick1 = await executionRepo.findBySetId(sharedSetId!);
+      var stateAfterTick1 = await executionRepo.findBySetId(
+        sharedSetId!,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         stateAfterTick1!.status.name,
         'inTransit',
@@ -348,7 +354,10 @@ void main() {
       );
 
       // Validate DB transitions
-      var stateAfterTick2 = await executionRepo.findBySetId(sharedSetId!);
+      var stateAfterTick2 = await executionRepo.findBySetId(
+        sharedSetId!,
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      );
       expect(
         stateAfterTick2!.status.name,
         'completed',
