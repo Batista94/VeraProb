@@ -227,6 +227,55 @@ class PostgresTestConfig {
     }
   }
 
+  // ── Auth user helpers ──────────────────────────────────────────────────────
+
+  /// Creates an auth.users row via the admin REST endpoint, or retrieves the
+  /// existing user's UID if the user already exists (HTTP 422).
+  ///
+  /// On 422, instead of listing all users (GoTrue paginates at 50 — fragile),
+  /// this signs in with the known [email]/[password] to obtain the UID in O(1).
+  ///
+  /// Returns the user's UUID.
+  static Future<String> ensureUser({
+    required String email,
+    required String password,
+  }) async {
+    final res = await http.post(
+      Uri.parse('$supabaseUrl/auth/v1/admin/users'),
+      headers: {
+        'apikey': serviceRoleKey,
+        'Authorization': 'Bearer $serviceRoleKey',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'email_confirm': true,
+      }),
+    );
+    if (res.statusCode == 200 || res.statusCode == 201) {
+      return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
+    }
+    if (res.statusCode == 422) {
+      // User already exists — sign in to retrieve their UID without pagination.
+      final tempClient = SupabaseClient(supabaseUrl, supabaseAnonKey);
+      try {
+        await tempClient.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+        return tempClient.auth.currentUser!.id;
+      } finally {
+        await tempClient.auth.signOut();
+        await tempClient.dispose();
+      }
+    }
+    throw StateError(
+      'ensureUser: failed to create or find $email '
+      '(${res.statusCode}): ${res.body}',
+    );
+  }
+
   // ── Telegram seed helpers ─────────────────────────────────────────────────
 
   /// Creates a minimal driver row for [orgId].

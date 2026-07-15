@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/features/admin/presentation/screens/org_settings_screen.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 

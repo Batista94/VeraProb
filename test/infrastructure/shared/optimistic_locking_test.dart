@@ -175,6 +175,13 @@ void main() async {
     });
 
     setUp(() async {
+      // Clean child table first — FK contract_penalty_monthly_accrual.contract_id → contracts
+      // Without this, deleting contracts fails with Postgres error 23503 (FK violation).
+      await client
+          .from('contract_penalty_monthly_accrual')
+          .delete()
+          .neq('contract_id', '00000000-0000-0000-0000-000000000000')
+          .catchError((_) {});
       // Aggressive cleanup: delete ALL test contracts to avoid quota issues
       await client
           .from('contracts')

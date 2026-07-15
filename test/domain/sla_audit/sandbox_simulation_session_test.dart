@@ -11,6 +11,7 @@ void main() {
     final validUtc = DateTime.utc(2026, 1, 5);
 
     test('reconstitute constructs valid session', () {
+      final futureExpiry = DateTime.now().toUtc().add(const Duration(days: 7));
       final session = SandboxSimulationSession.reconstitute(
         id: 'session-1',
         organizationId: 'org-1',
@@ -25,11 +26,11 @@ void main() {
         baselineEventCount: 10,
         createdByUserId: 'user-1',
         createdAtUtc: validUtc,
-        expiresAtUtc: validUtc.add(const Duration(days: 7)),
+        expiresAtUtc: futureExpiry,
       );
 
       expect(session.id, 'session-1');
-      expect(session.isExpired, isFalse); // Because 2026 is current/future
+      expect(session.isExpired, isFalse);
     });
 
     test('reconstitute throws DomainException if period dates are invalid', () {

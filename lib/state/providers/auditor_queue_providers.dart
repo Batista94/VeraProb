@@ -16,7 +16,6 @@ import 'package:veraprob/application/sla_audit/reject_sanction_command.dart';
 import 'package:veraprob/application/sla_audit/reject_sanction_handler.dart';
 import 'package:veraprob/application/sla_audit/resolve_dispute_command.dart';
 import 'package:veraprob/application/sla_audit/resolve_dispute_handler.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/rbac_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/infraction_recurrence_report.dart';

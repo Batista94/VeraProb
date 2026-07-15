@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
@@ -50,7 +51,7 @@ void main() {
     test('fromDb throws on unknown value', () {
       expect(
         () => JustificationCategory.fromDb('UNKNOWN_VALUE'),
-        throwsArgumentError,
+        throwsA(isA<IntegrityException>()),
       );
     });
   });
@@ -70,7 +71,10 @@ void main() {
     });
 
     test('fromDb throws on unknown value', () {
-      expect(() => JustificationStatus.fromDb('INVALID'), throwsArgumentError);
+      expect(
+        () => JustificationStatus.fromDb('INVALID'),
+        throwsA(isA<IntegrityException>()),
+      );
     });
   });
 
@@ -130,7 +134,7 @@ void main() {
         contractId: 'CTR-100',
         setId: 'SET-XYZ',
         justificationId: null,
-        token: 'uuid-token-value',
+        token: 'test-token',
         createdByUserId: 'user-1',
         expiresAtUtc: DateTime.now().toUtc().add(const Duration(hours: 24)),
         usedAtUtc: null,
@@ -146,7 +150,7 @@ void main() {
         contractId: 'CTR-100',
         setId: 'SET-XYZ',
         justificationId: 'just-001',
-        token: 'uuid-token-value',
+        token: 'test-token',
         createdByUserId: 'user-1',
         expiresAtUtc: DateTime.now().toUtc().add(const Duration(hours: 24)),
         usedAtUtc: DateTime.now().toUtc().subtract(const Duration(minutes: 5)),
@@ -162,7 +166,7 @@ void main() {
         contractId: 'CTR-100',
         setId: 'SET-XYZ',
         justificationId: null,
-        token: 'uuid-token-value',
+        token: 'test-token',
         createdByUserId: 'user-1',
         expiresAtUtc: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
         usedAtUtc: null,

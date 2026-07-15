@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_evidence.dart';
@@ -127,7 +128,11 @@ class PostgresJustificationRepository extends BasePostgresRepository
 
       final updated = await findById(id: id, organizationId: organizationId);
       if (updated == null) {
-        throw StateError('Justification $id not found after update.');
+        // INV-10: typed domain exception — StateError forbidden in application/infra boundary.
+        throw IntegrityException(
+          'Justification $id not found after update. '
+          'Record disappeared after successful update — possible concurrent delete.',
+        );
       }
       return updated;
     } on PostgrestException catch (e) {

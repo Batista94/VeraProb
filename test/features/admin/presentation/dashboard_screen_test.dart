@@ -43,6 +43,8 @@ void main() {
     return ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
+        currentUserRoleProvider.overrideWithValue(UserRole.admin),
+        currentOrganizationIdProvider.overrideWithValue('org-test-001'),
       ],
       child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
     );
@@ -62,6 +64,7 @@ void main() {
             sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
             dataSeedingRepositoryProvider.overrideWithValue(mockRepo),
             currentOrganizationIdProvider.overrideWithValue('org-1'),
+            currentUserRoleProvider.overrideWithValue(UserRole.admin),
           ],
           child: const MaterialApp(home: Scaffold(body: DashboardScreen())),
         ),

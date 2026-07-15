@@ -13,7 +13,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/features/admin/presentation/screens/contract_detail_screen.dart';
 import 'package:veraprob/features/admin/presentation/screens/contracts_screen.dart';
 import 'package:veraprob/features/shared/providers.dart';

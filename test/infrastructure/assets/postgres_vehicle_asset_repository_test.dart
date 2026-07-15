@@ -726,7 +726,7 @@ void main() {
           <Map<String, dynamic>>[],
           error: pgException,
         );
-        when(() => mockQb.delete()).thenAnswer((_) => builder);
+        when(() => mockQb.update(any())).thenAnswer((_) => builder);
 
         expect(
           () => repo.deleteVehicle('not-a-uuid'),
@@ -778,7 +778,7 @@ void main() {
       () async {
         when(() => mockAuth.currentSession).thenReturn(null);
         final builder = _FakeBuilder<PostgrestList>(<Map<String, dynamic>>[]);
-        when(() => mockQb.delete()).thenAnswer((_) => builder);
+        when(() => mockQb.update(any())).thenAnswer((_) => builder);
 
         // deleteVehicle has no _orgId guard — org-isolation enforced at DB level via RLS (INV-2)
         await expectLater(repo.deleteVehicle(_vehicleId), completes);

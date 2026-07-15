@@ -20,6 +20,7 @@ import 'package:veraprob/presentation/shared/ui/veraprob_chip.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
 import 'package:veraprob/features/admin/presentation/widgets/contract_amendments_timeline.dart';
+import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 
 import 'declare_contract_plan_form.dart';
 
@@ -237,15 +238,6 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                 label: const Text('Regras SLA'),
                 onPressed: () => context.go(AppRoutes.contractRules(s.id)),
               ),
-              if (ref.watch(canSimulateSandboxProvider)) ...[
-                const SizedBox(width: VeraProbSpacing.sm),
-                OutlinedButton.icon(
-                  key: const Key('contract-simulate-roi-button'),
-                  icon: const Icon(Icons.science_outlined, size: 16),
-                  label: const Text('Simular ROI'),
-                  onPressed: () => context.go(AppRoutes.contractSandbox(s.id)),
-                ),
-              ],
               const SizedBox(width: VeraProbSpacing.sm),
               if (canSubmitForApproval)
                 OutlinedButton.icon(
@@ -282,6 +274,23 @@ class _DetailViewState extends ConsumerState<_DetailView> {
                     }
                   },
                 ),
+              if (ref.watch(canSimulateSandboxProvider)) ...[
+                const SizedBox(width: VeraProbSpacing.lg),
+                Tooltip(
+                  message: 'Projetar impacto financeiro em ambiente isolado.',
+                  child: FilledButton.icon(
+                    key: const Key('contract-simulate-roi-button'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: SandboxTokens.bannerBackgroundColor,
+                      foregroundColor: SandboxTokens.accentColor,
+                    ),
+                    icon: const Icon(Icons.science_outlined, size: 16),
+                    label: const Text('Simular ROI'),
+                    onPressed: () =>
+                        context.go(AppRoutes.contractSandbox(s.id)),
+                  ),
+                ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

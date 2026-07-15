@@ -311,6 +311,21 @@ class _DevSeedButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final role = ref.watch(currentUserRoleProvider);
+    final perms = ref.watch(permissionServiceProvider);
+
+    // ponytail: fail-fast hide button for operators/restricted custom roles
+    final isAdminOrValidator =
+        role == UserRole.admin ||
+        role == UserRole.auditor ||
+        role == UserRole.superAdmin ||
+        perms.hasPermission('org:manage') ||
+        perms.hasPermission('roles:manage');
+
+    if (!isAdminOrValidator) {
+      return const SizedBox.shrink();
+    }
+
     return ElevatedButton.icon(
       onPressed: () => _seedData(context, ref),
       icon: const Icon(Icons.bolt_rounded, size: 18),

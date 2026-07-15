@@ -5,7 +5,6 @@ import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/application/sla_audit/simulate_sla_sandbox_handler.dart';
 import 'package:veraprob/domain/auth/auth_user.dart' as domain;
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/domain/sla_audit/sandbox_simulation_exception.dart';
 import 'package:veraprob/domain/sla_audit/sandbox_simulation_overrides.dart';

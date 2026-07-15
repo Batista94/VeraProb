@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/presentation/sandbox/providers/sandbox_wizard_provider.dart';
 import 'package:veraprob/presentation/sandbox/widgets/wizard/sandbox_wizard_form.dart';

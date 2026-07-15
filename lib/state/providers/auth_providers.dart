@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/utils/jwt_utils.dart';
 import 'package:veraprob/domain/auth/i_auth_repository.dart';
 import 'package:veraprob/domain/enums/user_role.dart';
+export 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/infrastructure/auth/supabase_auth_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';

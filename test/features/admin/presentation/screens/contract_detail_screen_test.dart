@@ -14,11 +14,11 @@ import 'package:veraprob/application/sla_audit/projections/sla_execution_item_vi
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_command.dart';
 import 'package:veraprob/application/sla_audit/submit_contract_for_approval_handler.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/features/admin/presentation/screens/contract_detail_screen.dart';
+import 'package:veraprob/presentation/theme/sandbox_theme_extension.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/contract_providers.dart';
 
@@ -194,6 +194,59 @@ Widget _buildWithDetail(
 }
 
 const _simulateRoiKey = Key('contract-simulate-roi-button');
+const _simulateRoiTooltip = 'Projetar impacto financeiro em ambiente isolado.';
+
+void _expectElevatedSimulateRoi(WidgetTester tester) {
+  final buttonFinder = find.byKey(_simulateRoiKey);
+  expect(buttonFinder, findsOneWidget);
+
+  final button = tester.widget<FilledButton>(buttonFinder);
+  expect(
+    find.ancestor(of: buttonFinder, matching: find.byType(OutlinedButton)),
+    findsNothing,
+  );
+
+  expect(
+    button.style?.backgroundColor?.resolve({}),
+    SandboxTokens.bannerBackgroundColor,
+  );
+  expect(button.style?.foregroundColor?.resolve({}), SandboxTokens.accentColor);
+
+  expect(
+    find.descendant(
+      of: find.byTooltip(_simulateRoiTooltip),
+      matching: buttonFinder,
+    ),
+    findsOneWidget,
+  );
+  expect(
+    find.descendant(of: buttonFinder, matching: find.text('Simular ROI')),
+    findsOneWidget,
+  );
+  expect(
+    find.descendant(
+      of: buttonFinder,
+      matching: find.byIcon(Icons.science_outlined),
+    ),
+    findsOneWidget,
+  );
+
+  // Operational cluster stays outlined; analytic entrypoint is elevated.
+  expect(find.widgetWithText(OutlinedButton, 'Regras SLA'), findsOneWidget);
+}
+
+void _expectSimulateRoiAbsent() {
+  expect(find.byKey(_simulateRoiKey), findsNothing);
+  expect(find.text('Simular ROI'), findsNothing);
+  expect(find.byTooltip(_simulateRoiTooltip), findsNothing);
+  expect(
+    find.descendant(
+      of: find.byType(FilledButton),
+      matching: find.text('Simular ROI'),
+    ),
+    findsNothing,
+  );
+}
 
 void _setSize(WidgetTester tester) {
   tester.view.physicalSize = const Size(1600, 1200);
@@ -784,8 +837,7 @@ void main() {
       await tester.pumpAndSettle();
       _drainOverflow(tester);
 
-      expect(find.byKey(_simulateRoiKey), findsOneWidget);
-      expect(find.text('Simular ROI'), findsOneWidget);
+      _expectElevatedSimulateRoi(tester);
     });
 
     testWidgets(
@@ -802,8 +854,7 @@ void main() {
         await tester.pumpAndSettle();
         _drainOverflow(tester);
 
-        expect(find.byKey(_simulateRoiKey), findsOneWidget);
-        expect(find.text('Simular ROI'), findsOneWidget);
+        _expectElevatedSimulateRoi(tester);
       },
     );
 
@@ -817,8 +868,7 @@ void main() {
         await tester.pumpAndSettle();
         _drainOverflow(tester);
 
-        expect(find.byKey(_simulateRoiKey), findsNothing);
-        expect(find.text('Simular ROI'), findsNothing);
+        _expectSimulateRoiAbsent();
       },
     );
 
@@ -832,8 +882,7 @@ void main() {
         await tester.pumpAndSettle();
         _drainOverflow(tester);
 
-        expect(find.byKey(_simulateRoiKey), findsNothing);
-        expect(find.text('Simular ROI'), findsNothing);
+        _expectSimulateRoiAbsent();
       },
     );
   });

@@ -24,7 +24,6 @@ import 'package:veraprob/application/admin/user_management_command_service.dart'
 import 'package:veraprob/application/admin/user_management_query_service.dart';
 import 'package:veraprob/application/shared/tenant_validation_service.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/admin/invitation.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/user_management_screen.dart';

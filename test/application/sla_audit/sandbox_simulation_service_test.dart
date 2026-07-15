@@ -18,6 +18,10 @@ void main() {
   group('SandboxSimulationCommandService (Interface Contract)', () {
     late MockSandboxSimulationCommandService commandService;
 
+    setUpAll(() {
+      registerFallbackValue(const SandboxSimulationOverrides());
+    });
+
     setUp(() {
       commandService = MockSandboxSimulationCommandService();
     });

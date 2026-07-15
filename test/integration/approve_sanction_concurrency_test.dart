@@ -26,7 +26,6 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
@@ -41,41 +40,6 @@ const _orgId = PostgresTestConfig.testOrgId;
 
 const _approverAEmail = 'approve_race_auditor_a@veraprob.test';
 const _approverBEmail = 'approve_race_auditor_b@veraprob.test';
-
-Future<String> _ensureUser(String email, String password) async {
-  final res = await http.post(
-    Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
-    headers: {
-      'apikey': PostgresTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({
-      'email': email,
-      'password': password,
-      'email_confirm': true,
-    }),
-  );
-  if (res.statusCode == 200 || res.statusCode == 201) {
-    return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
-  }
-  if (res.statusCode == 422) {
-    final list = await http.get(
-      Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
-      headers: {
-        'apikey': PostgresTestConfig.serviceRoleKey,
-        'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-      },
-    );
-    final users =
-        (jsonDecode(list.body) as Map<String, dynamic>)['users'] as List?;
-    final user = users!.firstWhere(
-      (u) => (u as Map<String, dynamic>)['email'] == email,
-    );
-    return (user as Map<String, dynamic>)['id'] as String;
-  }
-  throw Exception('createUser failed (${res.statusCode}): ${res.body}');
-}
 
 Future<SupabaseClient> _signIn(String email) async {
   final client = SupabaseClient(
@@ -105,8 +69,14 @@ void main() async {
     );
     await PostgresTestConfig.ensureSentinelOrg(client: seed);
 
-    approverAId = await _ensureUser(_approverAEmail, _password);
-    approverBId = await _ensureUser(_approverBEmail, _password);
+    approverAId = await PostgresTestConfig.ensureUser(
+      email: _approverAEmail,
+      password: _password,
+    );
+    approverBId = await PostgresTestConfig.ensureUser(
+      email: _approverBEmail,
+      password: _password,
+    );
 
     for (final id in [approverAId, approverBId]) {
       await seed.from('user_roles').upsert({

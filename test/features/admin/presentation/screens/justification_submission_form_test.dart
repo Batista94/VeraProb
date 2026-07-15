@@ -20,7 +20,6 @@ import 'package:supabase_flutter/supabase_flutter.dart' show AuthState;
 
 import 'package:veraprob/application/sla_audit/justification/submit_justification_command.dart';
 import 'package:veraprob/application/sla_audit/justification/submit_justification_handler.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/sla_audit/justification/contractor_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_category.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';

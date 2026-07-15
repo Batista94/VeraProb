@@ -24,7 +24,6 @@ import 'package:glados/glados.dart'
     hide expect, group, test, setUpAll, tearDownAll, setUp, tearDown;
 import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:veraprob/infrastructure/observability/sentry_observer.dart';
-import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// A mock transport that captures all envelopes sent to Sentry.
 ///
@@ -267,7 +266,7 @@ void main() {
         final asyncError = AsyncError<dynamic>(exception, stackTrace);
 
         // The observer extracts error as Object? — verify type is preserved
-        expect(asyncError.error, isA<IntegrityException>());
+        expect(asyncError.error, isA<FormatException>());
         expect(identical(asyncError.error, exception), isTrue);
 
         await Sentry.captureException(

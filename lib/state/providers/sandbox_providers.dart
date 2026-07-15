@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:veraprob/application/sla_audit/simulate_sla_sandbox_command.dart';
 import 'package:veraprob/application/sla_audit/simulate_sla_sandbox_handler.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/shared/resource_not_found_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';

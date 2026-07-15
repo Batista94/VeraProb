@@ -19,10 +19,7 @@
 //   Dual-control — both confirmers are distinct from the first reviewer; the race
 //                  is between two legitimate second auditors.
 
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
@@ -38,40 +35,6 @@ const _orgId = PostgresTestConfig.testOrgId;
 const _reviewer1Email = 'dc_confirm_reviewer1@veraprob.test';
 const _confirmerAEmail = 'dc_confirm_auditor_a@veraprob.test';
 const _confirmerBEmail = 'dc_confirm_auditor_b@veraprob.test';
-
-Future<String> _ensureUser(String email, String password) async {
-  final res = await http.post(
-    Uri.parse('${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users'),
-    headers: {
-      'apikey': PostgresTestConfig.serviceRoleKey,
-      'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-      'Content-Type': 'application/json',
-    },
-    body: jsonEncode({
-      'email': email,
-      'password': password,
-      'email_confirm': true,
-    }),
-  );
-  if (res.statusCode == 200 || res.statusCode == 201) {
-    return (jsonDecode(res.body) as Map<String, dynamic>)['id'] as String;
-  }
-  if (res.statusCode == 422) {
-    final list = await http.get(
-      Uri.parse(
-        '${PostgresTestConfig.supabaseUrl}/auth/v1/admin/users?email=$email',
-      ),
-      headers: {
-        'apikey': PostgresTestConfig.serviceRoleKey,
-        'Authorization': 'Bearer ${PostgresTestConfig.serviceRoleKey}',
-      },
-    );
-    final users =
-        (jsonDecode(list.body) as Map<String, dynamic>)['users'] as List?;
-    return (users!.first as Map<String, dynamic>)['id'] as String;
-  }
-  throw Exception('createUser failed (${res.statusCode}): ${res.body}');
-}
 
 Future<SupabaseClient> _signIn(String email) async {
   final client = SupabaseClient(
@@ -103,9 +66,18 @@ void main() async {
     );
     await PostgresTestConfig.ensureSentinelOrg(client: seed);
 
-    reviewer1Id = await _ensureUser(_reviewer1Email, _password);
-    confirmerAId = await _ensureUser(_confirmerAEmail, _password);
-    confirmerBId = await _ensureUser(_confirmerBEmail, _password);
+    reviewer1Id = await PostgresTestConfig.ensureUser(
+      email: _reviewer1Email,
+      password: _password,
+    );
+    confirmerAId = await PostgresTestConfig.ensureUser(
+      email: _confirmerAEmail,
+      password: _password,
+    );
+    confirmerBId = await PostgresTestConfig.ensureUser(
+      email: _confirmerBEmail,
+      password: _password,
+    );
 
     for (final id in [reviewer1Id, confirmerAId, confirmerBId]) {
       await seed.from('user_roles').upsert({
@@ -145,7 +117,7 @@ void main() async {
 
           // Contract-level threshold override (10000 < 150000 fine) so the verdict
           // forks WITHOUT touching the org baseline — no cross-test pollution.
-          await seed.from('contracts').insert({
+          await seed.from('contracts').upsert({
             'id': contractId,
             'organization_id': _orgId,
             'name': 'DC Concurrency Contract',
@@ -154,7 +126,7 @@ void main() async {
             'valid_until_utc': '2027-01-01T00:00:00Z',
             'status': 'active',
             'dual_control_threshold_cents': 10000,
-          });
+          }, onConflict: 'organization_id,name,valid_from_utc');
 
           // 1. SANCTION_RECOMMENDED ledger → trigger auto-creates a pending queue row.
           final recommended = await seed

@@ -9,7 +9,6 @@ import 'package:veraprob/application/sla_audit/projections/contract_status_view.
 import 'package:veraprob/application/sla_audit/projections/contract_summary_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_item_view.dart';
 import 'package:veraprob/application/sla_audit/projections/sla_execution_summary.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/domain/sla_audit/execution_status.dart';
 import 'package:veraprob/features/admin/presentation/screens/sla_sandbox_screen.dart';

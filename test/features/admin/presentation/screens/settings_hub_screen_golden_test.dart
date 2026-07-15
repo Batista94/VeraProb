@@ -5,12 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/features/admin/presentation/screens/settings_hub_screen.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 
 Widget _wrap(Widget child) {
   return ProviderScope(
