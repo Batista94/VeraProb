@@ -2,7 +2,7 @@
  * reveal-webhook-signing-secret — Edge Function (Fase 10.7, P1).
  *
  * IAM (INV-1, INV-26, INV-28, INV-31):
- *   - Valida JWT via handleWithSecurity (requireAuth: true, sem AAL2 — Fase 11)
+ *   - Valida JWT via handleWithSecurity (requireAuth + requireAAL2)
  *   - Valida role TENANT_ADMIN no app_metadata do JWT (→ 404 se não — INV-26)
  *   - org_id derivado exclusivamente do JWT claim (INV-1 — imutável pelo cliente)
  *   - Nenhum material de chave persiste em DB (INV-31). DB guarda só version/status.
@@ -18,8 +18,8 @@
  *
  * Audit: insere WEBHOOK_SECRET_REVEALED ou WEBHOOK_SECRET_ROTATED em system_audit_log.
  *
- * Feature-flag: REQUIRE_AAL2_TENANT_SECRET (default "false").
- * // TODO Fase 11: MFA Tenant — ligar o step-up AAL2 quando enrolment de tenant for entregue.
+ * AAL2: obrigatório em produção (P-AAL2-01). Dev/development bypass via
+ * isDevEnvironment() em handleWithSecurity — nunca em produção.
  */
 
 // deno-lint-ignore no-import-prefix
@@ -40,6 +40,12 @@ interface RevealResponse {
   version: number;
 }
 
+/**
+ * Production wiring flag for secret reveal (P-AAL2-01).
+ * Exported so unit tests assert the Deno.serve path cannot silently drop AAL2.
+ */
+export const REVEAL_REQUIRE_AAL2 = true;
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 if (import.meta.main) {
@@ -50,8 +56,7 @@ if (import.meta.main) {
       handleReveal,
       /* requireAuth */ true,
       /* requireSuperAdmin */ false,
-      /* requireAAL2 */ false,
-      // TODO Fase 11: substituir por `Deno.env.get("REQUIRE_AAL2_TENANT_SECRET") === "true"`
+      /* requireAAL2 */ REVEAL_REQUIRE_AAL2,
     );
   });
 }

@@ -2,8 +2,18 @@ import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   deriveSecretHex,
   handleReveal,
+  REVEAL_REQUIRE_AAL2,
 } from "../reveal-webhook-signing-secret/index.ts";
 import { deriveOrgKey } from "../shared/hmac_signer.ts";
+import {
+  handleWithSecurity,
+  type SecurityContext,
+} from "../shared/handle_with_security.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
+import {
+  SOVEREIGNTY_BODY,
+  SOVEREIGNTY_STATUS,
+} from "../shared/sovereignty_error_mapper.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -134,4 +144,139 @@ Deno.test("reveal RBAC - direct 'reveal' action is denied (reveal-once)", async 
   // deno-lint-ignore no-explicit-any
   const res = await handleReveal(ctx, {} as any, req);
   assertEquals(res.status, 404);
+});
+
+// ── AAL2 gate (P-AAL2-01) — INV-26 anti-oracle ───────────────────────────────
+
+Deno.test("reveal AAL2 wiring - production entry requires AAL2 (P-AAL2-01)", () => {
+  assertEquals(
+    REVEAL_REQUIRE_AAL2,
+    true,
+    "reveal-webhook-signing-secret must wire requireAAL2=true",
+  );
+});
+
+async function withProductionEnv(fn: () => Promise<void>): Promise<void> {
+  const original = Deno.env.get("ENVIRONMENT");
+  const origUrl = Deno.env.get("SUPABASE_URL");
+  const origKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  Deno.env.set("ENVIRONMENT", "production");
+  if (!origUrl) Deno.env.set("SUPABASE_URL", "https://fake.supabase.co");
+  if (!origKey) Deno.env.set("SUPABASE_SERVICE_ROLE_KEY", "fake-service-role");
+  try {
+    await fn();
+  } finally {
+    if (original === undefined) Deno.env.delete("ENVIRONMENT");
+    else Deno.env.set("ENVIRONMENT", original);
+    if (!origUrl) Deno.env.delete("SUPABASE_URL");
+    if (!origKey) Deno.env.delete("SUPABASE_SERVICE_ROLE_KEY");
+  }
+}
+
+Deno.test({
+  name:
+    "reveal AAL2 - TENANT_ADMIN with aal1 is rejected in production (INV-26)",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await withProductionEnv(async () => {
+      let handlerInvoked = false;
+      const trackingHandler = async (
+        _ctx: SecurityContext,
+        _supabase: unknown,
+        _req: Request,
+      ): Promise<Response> => {
+        handlerInvoked = true;
+        return new Response(JSON.stringify({ leaked: true }), { status: 200 });
+      };
+
+      const payload = {
+        sub: "tenant-admin-1",
+        aal: "aal1",
+        app_metadata: { role: "TENANT_ADMIN" },
+        organization_id: "11111111-2222-3333-4444-555555555555",
+      };
+      const jwt = createFakeJwt(payload);
+      const req = new Request(
+        "https://example.com/functions/v1/reveal-webhook-signing-secret",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "provision" }),
+        },
+      );
+
+      const response = await handleWithSecurity(
+        req,
+        "reveal-webhook-signing-secret",
+        trackingHandler,
+        true,
+        false,
+        REVEAL_REQUIRE_AAL2,
+        claimsOf(payload),
+      );
+
+      assertEquals(response.status, SOVEREIGNTY_STATUS);
+      assertEquals(await response.text(), SOVEREIGNTY_BODY);
+      assertEquals(
+        handlerInvoked,
+        false,
+        "handler must not run when AAL2 fails",
+      );
+    });
+  },
+});
+
+Deno.test({
+  name: "reveal AAL2 - TENANT_ADMIN with aal2 reaches handler in production",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await withProductionEnv(async () => {
+      let handlerInvoked = false;
+      const trackingHandler = async (
+        _ctx: SecurityContext,
+        _supabase: unknown,
+        _req: Request,
+      ): Promise<Response> => {
+        handlerInvoked = true;
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      };
+
+      const payload = {
+        sub: "tenant-admin-1",
+        aal: "aal2",
+        app_metadata: { role: "TENANT_ADMIN" },
+        organization_id: "11111111-2222-3333-4444-555555555555",
+      };
+      const jwt = createFakeJwt(payload);
+      const req = new Request(
+        "https://example.com/functions/v1/reveal-webhook-signing-secret",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "provision" }),
+        },
+      );
+
+      const response = await handleWithSecurity(
+        req,
+        "reveal-webhook-signing-secret",
+        trackingHandler,
+        true,
+        false,
+        REVEAL_REQUIRE_AAL2,
+        claimsOf(payload),
+      );
+
+      assertEquals(response.status, 200);
+      assertEquals(handlerInvoked, true);
+    });
+  },
 });

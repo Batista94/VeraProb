@@ -15,7 +15,7 @@
  * - Issuer: SUPABASE_JWT_ISSUER ?? `${SUPABASE_URL}/auth/v1`.
  *
  * Residual risks (backlog — see forensic_records/plans/20260721000000_jwt_p0_residual_risks.md):
- * getClaims may not see logout/ban until exp; reveal-webhook-signing-secret still lacks AAL2.
+ * getClaims may not see logout/ban until exp. AAL2 on reveal-webhook-signing-secret: remediado (P-AAL2-01).
  */
 
 // deno-lint-ignore no-import-prefix

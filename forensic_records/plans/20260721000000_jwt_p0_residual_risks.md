@@ -3,15 +3,17 @@
 > Status: registered after Phase 1 cryptographic JWT fix.  
 > **Do not** promote into the official product roadmap until the agreed final phase.  
 > Date: 2026-07-21
+> Updated: 2026-07-21 — P-AAL2-01 remediado (missão isolada; **não** implica PASS Etapa −1).
 
 ## P0/P1 imediato — AAL2 em `reveal-webhook-signing-secret`
 
-Revelação de segredo de assinatura de webhook é operação sensível. A rota ainda
-não exige AAL2 (comentário TODO / Fase 11 legada).
-
-**Ação:** exigir `requireAAL2: true` (ou equivalente) em
+**Status: CLOSED (2026-07-21)** — `REVEAL_REQUIRE_AAL2 = true` em
 `supabase/functions/reveal-webhook-signing-secret/index.ts` via
-`handleWithSecurity`, com testes unitários de rejeição `aal1` em produção.
+`handleWithSecurity(..., requireAAL2)`. Em produção, `aal1` → 404 INV-26;
+handler não executa. Evidência: `tests/reveal_webhook_signing_secret_unit_test.ts`
+(`reveal AAL2 wiring`, `aal1` reject, `aal2` allow).
+
+Remediação **não** autoriza Etapa 0 nem altera `docs/governance/roadmap.md`.
 
 ## P1 arquitetural — Revogação pré-`exp` com `getClaims`
 
