@@ -55,8 +55,8 @@ INSERT INTO webhook_signing_keys (id, organization_id, version, status) VALUES (
 INSERT INTO webhook_delivery_logs (id, organization_id, endpoint_id, ledger_entry_id, event_type, payload, status)
 VALUES ('b3000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000001', 'VERDICT_SEALED', '{}', 'PENDING');
 
--- Clean audit log
-DELETE FROM system_audit_log;
+-- system_audit_log is append-only (INSTEAD NOTHING on DELETE) — filter by event_type
+-- instead of relying on DELETE, same pattern as CORRUPTION assert below.
 
 SELECT results_eq(
     $$ SELECT id FROM drain_pending_webhooks('b0000000-0000-0000-0000-000000000001'::uuid, 10) $$,
@@ -71,7 +71,10 @@ SELECT results_eq(
 );
 
 SELECT results_eq(
-    $$ SELECT event_type FROM system_audit_log WHERE severity = 'critical' $$,
+    $$ SELECT event_type FROM system_audit_log
+       WHERE severity = 'critical'
+         AND event_type = 'KEY_REVOKED'
+         AND organization_id = 'b0000000-0000-0000-0000-000000000001' $$,
     $$ VALUES ('KEY_REVOKED'::text) $$,
     'Audit log should be recorded for KEY_REVOKED'
 );
@@ -83,7 +86,8 @@ INSERT INTO webhook_delivery_logs (id, organization_id, endpoint_id, ledger_entr
 VALUES ('b3000000-0000-0000-0000-000000000002', 'a0000000-0000-0000-0000-000000000001', 'b1000000-0000-0000-0000-000000000001', 'a2000000-0000-0000-0000-000000000001', 'VERDICT_SEALED', '{}', 'PENDING');
 ALTER TABLE webhook_delivery_logs ENABLE TRIGGER USER;
 
-DELETE FROM system_audit_log;
+-- system_audit_log is append-only (INSTEAD NOTHING on DELETE) — filter by
+-- event_type + organization_id; do not rely on DELETE.
 
 SELECT results_eq(
     $$ SELECT id FROM drain_pending_webhooks('a0000000-0000-0000-0000-000000000001'::uuid, 10) WHERE id = 'b3000000-0000-0000-0000-000000000002' $$,
@@ -92,7 +96,10 @@ SELECT results_eq(
 );
 
 SELECT results_eq(
-    $$ SELECT event_type FROM system_audit_log WHERE severity = 'critical' AND event_type = 'CORRUPTION' $$,
+    $$ SELECT event_type FROM system_audit_log
+       WHERE severity = 'critical'
+         AND event_type = 'CORRUPTION'
+         AND organization_id = 'a0000000-0000-0000-0000-000000000001' $$,
     $$ VALUES ('CORRUPTION'::text) $$,
     'Audit log should be recorded for CORRUPTION'
 );

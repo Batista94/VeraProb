@@ -141,22 +141,32 @@ class EvidenceIntegrityVerifier {
     required List<String> previousHashes,
     required List<DateTime> historicalTimestamps,
   }) {
+    final payloadMap = _decodeEvidencePayloadObject(rawPayloadJson);
+    final timestampStr = _requireEvidenceIdAndTimestamp(payloadMap);
+    _assertEvidencePayloadSeal(rawPayloadJson, declaredHash, previousHashes);
+    _assertEvidenceTemporalRules(timestampStr, historicalTimestamps);
+  }
+
+  /// Parses [rawPayloadJson] into a typed object map (INV-7 / INV-10).
+  Map<String, Object?> _decodeEvidencePayloadObject(String rawPayloadJson) {
     if (rawPayloadJson.trim().isEmpty) {
       throw const IntegrityException('Payload cannot be empty');
     }
 
-    Map<String, dynamic> payloadMap;
     try {
-      final decoded = jsonDecode(rawPayloadJson);
-      if (decoded is! Map<String, dynamic>) {
+      final Object? decoded = jsonDecode(rawPayloadJson);
+      if (decoded is! Map) {
         throw const IntegrityException('Payload is not a valid JSON object');
       }
-      payloadMap = decoded;
+      return Map<String, Object?>.from(decoded);
     } catch (e) {
       if (e is IntegrityException) rethrow;
       throw IntegrityException('Malformed JSON payload: $e');
     }
+  }
 
+  /// Requires non-null, non-empty `id` and `timestamp` fields; returns timestamp.
+  String _requireEvidenceIdAndTimestamp(Map<String, Object?> payloadMap) {
     if (!payloadMap.containsKey('id') || payloadMap['id'] == null) {
       throw const IntegrityException('Payload missing required field: id');
     }
@@ -179,7 +189,15 @@ class EvidenceIntegrityVerifier {
       throw const IntegrityException('Payload timestamp cannot be empty');
     }
 
-    // 1. Hash validation (tampering detection)
+    return timestampStr;
+  }
+
+  /// SHA-256 seal of the raw JSON string + replay check (INV-9).
+  void _assertEvidencePayloadSeal(
+    String rawPayloadJson,
+    String declaredHash,
+    List<String> previousHashes,
+  ) {
     final computedHash = sha256.convert(utf8.encode(rawPayloadJson)).toString();
     if (computedHash != declaredHash) {
       throw IntegrityException(
@@ -187,14 +205,18 @@ class EvidenceIntegrityVerifier {
       );
     }
 
-    // 2. Replay attack check
     if (previousHashes.contains(computedHash)) {
       throw const IntegrityException(
         'Replay attack detected: evidence hash already processed',
       );
     }
+  }
 
-    // 3. Strict UTC validation (INV-6)
+  /// Strict UTC Z, parse fail-closed (INV-10), future skew, chronological order.
+  void _assertEvidenceTemporalRules(
+    String timestampStr,
+    List<DateTime> historicalTimestamps,
+  ) {
     if (!timestampStr.endsWith('Z') ||
         timestampStr.contains('+') ||
         (timestampStr.length > 10 &&
@@ -204,9 +226,13 @@ class EvidenceIntegrityVerifier {
       );
     }
 
-    final timestamp = DateTime.parse(timestampStr).toUtc();
+    final DateTime timestamp;
+    try {
+      timestamp = DateTime.parse(timestampStr).toUtc();
+    } on FormatException {
+      throw IntegrityException('Malformed timestamp: $timestampStr');
+    }
 
-    // 4. Future timestamp rejection
     final now = DateTime.now().toUtc();
     if (timestamp.isAfter(now.add(const Duration(seconds: 5)))) {
       throw IntegrityException(
@@ -214,7 +240,6 @@ class EvidenceIntegrityVerifier {
       );
     }
 
-    // 5. Chronological / Logical order check
     for (final historical in historicalTimestamps) {
       if (!timestamp.isAfter(historical)) {
         throw IntegrityException(
