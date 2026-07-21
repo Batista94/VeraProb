@@ -1,327 +1,287 @@
-# ADR 011: Auth Zero-Trust — Sessões Revogáveis e Migração Gradual
+# ADR 011: Auth Zero-Trust — Sessões Revogáveis (A portável)
 
 **Date:** 2026-07-21
-**Status:** Proposed
-**Context:** Phase 11 Etapa -1
+**Status:** Accepted
+**Context:** Phase 11 Etapa −1 — revisão H2.1 (A portável)
+
+### Decision record
+
+| Campo | Valor |
+|-------|-------|
+| Status anterior | Proposed (revisão H2.1 — A portável) |
+| Status atual | **Accepted** |
+| Authority | Fundador |
+| Confirmed | 2026-07-21 |
+| Council | H2.1 PASS (Architect, Senior, QA/Security) + Lead PASS_DOCUMENTAL |
+| Scope of acceptance | Contrato Zero-Trust / registro PG / wiring Edge+RLS; `P-REV-IMPL-01` permanece OPEN (runtime) |
+| Explicitly not authorized | Proposta canônica, roadmap, Etapa 0, commit, implementação |
+| Residual sync | `forensic_records/plans/20260721000000_jwt_p0_residual_risks.md` ratificado excepcionalmente pelo fundador |
 
 ## Context
 
 VeraProb exige isolamento multi-tenant fail-fast (INV-1, INV-2, INV-22),
 MFA em transições sensíveis e anti-oracle (INV-26). O baseline atual —
 **JWT P0 na stack Supabase** (`supabase/functions/shared/jwt_auth_validator.ts`)
-— é **temporário**: corrige validação criptográfica imediata, mas **não** é
-o desenho final de autenticação em Go do candidato self-host
-(ver [ADR 010](./010_exit_supabase.md)). “JWT próprio no Go” **não** é
-decisão suficiente; este ADR define o lifecycle completo de identidade,
-sessão, chaves e revogação.
+— é **temporário** para validação criptográfica, mas **não** basta para
+revogação pré-`exp`.
 
-Riscos residuais já registrados:
+Sob **A portável**, Supabase Auth continua responsável por identidade, MFA
+e refresh; um **registro server-side no PostgreSQL** torna-se a autoridade
+de revogação para Edge e RLS/Data API. Go auth / dual-run é contrato
+**condicional** (ADR-010 B/C), não próximo passo aprovado.
+
+Riscos residuais:
 
 - [JWT P0 residual risks](../../../forensic_records/plans/20260721000000_jwt_p0_residual_risks.md)
-  - **P0/P1:** AAL2 ainda não obrigatório em
-    `reveal-webhook-signing-secret`
-  - **P1:** `auth.getClaims` pode não refletir logout/ban/revogação até
-    `exp` do access token
-
-Esta ADR propõe o contrato Zero-Trust de autenticação/autorização para a
-Phase 11, compatível com dual-run gradual fora do Supabase Auth, sem
-consumar a migração.
+  - **AAL2 reveal:** CLOSED (2026-07-21)
+  - **Revogação pré-`exp`:** design neste ADR; implementação `P-REV-IMPL-01`
 
 Documentos irmãos:
 
 - [Proposta canônica Phase 11](../proposals/phase11_enterprise_pivot.md)
 - [Threat model](../proposals/phase11_threat_model.md)
 - [Parity checklist](../proposals/phase11_parity_checklist.md)
-- [ADR 010 — Exit Ramp Supabase](./010_exit_supabase.md)
+- [ADR 010 — A portável / exit ramp](./010_exit_supabase.md)
 - [ADR 012 — RLS / connection lifecycle](./012_rls_connection_lifecycle.md)
 - [ADR 013 — Strangler Fig](./013_strangler_fig.md)
-- [Riscos residuais JWT P0](../../../forensic_records/plans/20260721000000_jwt_p0_residual_risks.md)
 
 ## Alternatives Considered
 
-### A) Permanecer só no Supabase Auth + remediações pontuais
+### A) Só Supabase Auth + remediações pontuais (sem registro PG)
 
-Fechar AAL2 no reveal e encurtar TTL / introspectar rotas privilegiadas,
-sem servidor de sessão próprio.
+- **Prós:** menor escopo.
+- **Contras:** revogação pré-`exp` continua limitada a TTL; rejeitado como
+  destino Zero-Trust.
 
-- **Prós:** menor escopo; aproveita provedor.
-- **Contras:** revogação pré-`exp` continua limitada; pouco controle de
-  `jti`/denylist; não prepara candidato Go.
+### B) Sessões server-side revogáveis + JWT curto sobre Supabase Auth (proposta)
 
-### B) Sessões server-side revogáveis + JWT curto (proposta)
+Access JWT curto; refresh com rotação (Supabase Auth); registro PG como
+autoridade de revogação para Edge/RLS/Data API.
 
-Access JWT de vida curta; refresh com rotação; store de sessão no servidor
-(revogável); dual-run com Supabase Auth até parity gates verdes.
+- **Prós:** logout/ban/revoke-all imediatos; alinhado a A portável.
+- **Contras:** implementação Etapa 1 (`P-REV-IMPL-01`); testes adversarial.
 
-- **Prós:** logout/ban/revoke-all imediatos; alinhado a Zero-Trust;
-  compatível com exit ramp ADR 010.
-- **Contras:** complexidade de dual-run; exige testes adversarial e
-  runbooks.
+### C) Auth Go como principal imediato
 
-### C) mTLS / API keys como principal de UI humana
-
-Rejeitado para sessões interativas de OCC/CFO: API keys permanecem para
-ingest de dispositivos (INV-17), não como substituto de identidade humana
-com MFA/AAL2.
+Rejeitado nesta fase (sem go/no-go B/C). Dual-run futuro permanece
+condicional.
 
 ## Decision
 
-**Recommended direction under evaluation:** adotar, como contrato-alvo sob
-avaliação, um modelo Zero-Trust com **sessões server-side revogáveis**,
-**access JWT de curta duração**, **refresh com rotação e detecção de
-replay**, cookies **HttpOnly + Secure + SameSite=Strict** para mutações da
-SPA, MFA/AAL2 com step-up obrigatório em revelação de segredos, e
-**migração gradual dual-run** a partir do baseline JWT P0 (temporário)
-em direção ao auth do candidato Go — sem declarar cutover consumado.
+Adotar, como **contrato-alvo Accepted sob A portável**, Zero-Trust com:
 
-## Contrato de autenticação (proposta)
+1. Supabase Auth = identidade, MFA, refresh.
+2. Registro PostgreSQL = autoridade de revogação (Edge + RLS/Data API).
+3. Access JWT curto + claims de versão; fail-closed.
+4. Dual-run / emissor candidato = **condicional** a B/C (ADR-010).
 
-### Sessões server-side revogáveis
+## Contrato de autenticação
 
-- Toda autenticação interativa materializa um registro de sessão no
-  servidor (`session_id`), referenciado pelo refresh e, quando aplicável,
-  pelo claim `jti` / `sid` do access token.
-- Estados: `active` | `revoked` | `expired` | `banned_principal`.
-- Revogação é **imediata** no store (antes de `exp`); validadores
-  privilegiados **não** confiam apenas em assinatura local se a política
-  da rota exigir sessão viva (fail-closed).
+### Autoridade
 
-### Access JWT curto
+| Superfície | Autoridade |
+|------------|------------|
+| Identidade / MFA / refresh | Supabase Auth |
+| Revogação efetiva (Edge, RLS, Data API) | Registro server-side PostgreSQL |
+| Indisponibilidade PG ou Auth | **Fail-closed** (deny); sem fallback permissivo |
 
-- Access token: TTL curto (valor exato = pendência operacional; ver
-  P-AUTH-TTL).
-- Validação: assinatura + claims obrigatórios + allowlist de `alg` +
-  `kid` via JWKS; **sem coerção ambígua** de tipos/claims.
-- Baseline JWT P0 atual permanece até o dual-run atingir parity gates;
-  não é o endpoint final Go.
+Baseline nota: `jwt_expiry = 300` e rotação de refresh já configurados no
+provedor são **baseline**, **não** evidência suficiente de revogação
+pré-`exp`.
 
-### Refresh com rotação
+### Enforcement sob A portável (PostgREST / Edge) — contrato de wiring
 
-- Cada uso de refresh emite novo par access/refresh e **invalida** o
-  refresh anterior (rotation).
-- Reuso de refresh já rotacionado = **replay** → revogar a família de
-  sessão (detection) e forçar re-login (fail-closed).
+Sem este wiring, `PG-REVOCATION` **não** pode ser `CONTRACT COMPLETE`.
+Implementação = `P-REV-IMPL-01` (Etapa 1 A portável); aqui fica o mecanismo
+obrigatório:
 
-### Detecção de replay
+1. **Registro** (tabela PostgreSQL, nome canônico na Etapa 1): colunas
+   mínimas `session_id` (PK opaca), `principal_id` (`sub`), `user_version`,
+   `session_version`, `status` (`active`\|`revoked`\|`expired`\|`banned_principal`),
+   `refresh_family_id`, `revoked_at`, `expires_at` (absoluta/idle),
+   timestamps UTC. Grants: sem `SELECT` amplo a `authenticated` na tabela
+   crua; acesso só via funções abaixo.
 
-- Tracking de `jti` / refresh token hash; janela de graça mínima apenas se
-  documentada e testada; default = rejeitar e revogar família.
+2. **Função fail-closed** `app.session_is_live()` (SECURITY INVOKER ou
+   equivalente documentado): lê claims `session_id`, `user_version`,
+   `session_version`, `jti` de `auth.jwt()`; compara ao registro; retorna
+   `true` só se status=`active` e versões iguais; em ausência de claim,
+   divergência, linha ausente, ou erro de leitura → `false` (nunca
+   “allow on error”).
 
-### Logout
+3. **Data API / RLS:** policies de tabelas sensíveis (e, no mínimo, todas
+   as mutações tenant-scoped) **MUST** incluir
+   `AND app.session_is_live()` (ou predicado equivalente). Predicado de
+   org (`organization_id` / INV-2) permanece; o check de sessão é
+   **adicional**, não substituto. Catálogos globais read-only podem
+   listar exceção explícita no inventário de policies da Etapa 1.
 
-- Logout de dispositivo: revoga sessão corrente + invalida refresh +
-  access torna-se inutilizável nas rotas que introspectam sessão
-  (não basta esperar `exp`).
-- Logout deve ser idempotente (`session_id` já revogado → 204/equivalente
-  sem vazar existência cross-tenant).
-- Em dual-run: logout deve invalidar coerentemente sessão Supabase Auth
-  **e** session store candidato (ou documentar ordem canônica única).
+4. **Edge:** `handleWithSecurity` / validadores privilegiados **MUST**
+   consultar o mesmo registro (RPC/`session_is_live` ou SELECT via
+   service path com os claims do caller) **antes** do handler; deny =
+   401/404 INV-26 conforme rota. Não basta `getClaims` local.
 
-### Ban de principal
+5. **RPCs de revogação** (logout, revoke-one, revoke-all / bump
+   `user_version`, ban): SECURITY DEFINER com checagem de principal/org,
+   idempotentes, audit append-only sem tokens. Refresh replay → revoga
+   família (`refresh_family_id`) inclusive sucessor.
 
-- Ban marca o sujeito (`sub`) como banido; todas as sessões ativas do
-  principal são revogadas; novos logins fail-closed até remoção do ban
-  por fluxo privilegiado com AAL2.
+6. **Proibido:** cache positivo de `session_is_live`; confiar só em TTL
+   do JWT; bypass Data API sem predicado de registro em tabelas
+   sensíveis.
 
-### Account recovery
+> **Supersessão documental:** o trecho “Opções a decidir” em
+> `forensic_records/plans/20260721000000_jwt_p0_residual_risks.md` §P1
+> fica **superseded** por este ADR (design). A sincronização literal do
+> residual é track `DOC-RESIDUAL-SYNC-01` (editável com autorização;
+> não bloqueia o contrato se a supersessão estiver explícita aqui).
 
-- Recovery via canal out-of-band verificado; tokens de recovery de uso
-  único, TTL curto, rate-limited.
-- Sucesso de recovery: **revoke-all sessions** do principal + step-up MFA
-  obrigatório antes de operações sensíveis.
-- Anti-oracle: respostas de “e-mail enviado” / “se existir” sem distinguir
-  tenant alheio nem enumerar usuários (INV-26).
-
-### Revoke-all sessions
-
-- Endpoint autenticado (self) e endpoint admin (SuperAdmin / security
-  role) com AAL2.
-- Efeito: todas as `session_id` do `sub` → `revoked`; refresh family
-  invalidada; denylist/introspection passa a falhar **antes** de `exp`.
-
-### Concorrência e idempotência
-
-- Rotação de refresh, logout, ban e revoke-all são **idempotentes** por
-  chave (`session_id`, `jti`, `idempotency_key` de escrita).
-- Corridas: uma rotação vence; a perdedora trata-se como replay ou no-op
-  seguro — nunca cria segunda família ativa silenciosa.
-
-### Cookies: HttpOnly, Secure, SameSite=Strict
-
-- Tokens de sessão/refresh em cookie: `HttpOnly`, `Secure`,
-  `SameSite=Strict` para a SPA que realiza mutações same-site.
-- **Escolha:** `Strict` (não `Lax`) para reduzir CSRF em POST/PUT/PATCH/DELETE
-  da OCC; documentar que navegação cross-site top-level não reenviará o
-  cookie (trade-off aceito para superfície forense).
-- Access JWT em memória da SPA é aceitável se o refresh permanecer no
-  cookie Strict; não armazenar refresh em `localStorage`.
-
-### CSRF
-
-- Com `SameSite=Strict` + mutações same-origin, CSRF clássico é mitigado;
-  ainda assim exigir CSRF token **vinculado à sessão** (double-submit ou
-  header custom `X-Requested-With` / token dedicado) em mutações
-  state-changing enquanto dual-run com clientes legados existir.
-- Rejeitar requests sem origem/header esperados (fail-closed).
-
-### MFA / AAL2 / step-up / anti-downgrade
-
-- Login pode emitir AAL1; operações sensíveis exigem **step-up** para
-  AAL2 (MFA satisfeito na sessão corrente).
-- Claim `aal` obrigatório e verificado server-side; cliente não “promove”
-  AAL.
-- **Anti-downgrade:** sessão que atingiu AAL2 não pode ser rebaixada a
-  AAL1 sem novo login; token com `aal` menor que o exigido pela rota →
-  deny.
-
-### AAL2 obrigatório em revelação de segredo
-
-- `reveal-webhook-signing-secret` (e equivalentes) **MUST** exigir
-  `requireAAL2: true` (ou paridade no auth Go).
-- Rejeição explícita de `aal1` em produção com teste unitário/adversarial.
-- Residual atual: ver plano JWT P0 — owner e gate `PG-AAL2` abaixo.
-
-### Impersonação
-
-- Impersonação é sessão **derivada** distinta: autorização explícita,
-  TTL curto, revogável, auditada (append-only), com claims que
-  distinguem identidade real (`actor`) vs identidade atuante (`sub`
-  efetivo).
-- Não herda refresh de longa duração do impersonator sem novo step-up.
-- Hybrid principal proibido (abaixo).
-- SuperAdmin impersonation → ainda falha se `organization_id` alvo não
-  for explicitamente bound na sessão derivada.
-
-### Claims obrigatórios
+### Claims obrigatórios (além do conjunto JWT P0)
 
 | Claim | Regra |
 |-------|--------|
-| `iss` | Allowlist de emissores (Supabase dual-run e/ou auth Go) |
-| `aud` | Audience da API OCC/Edge; reject mismatch |
-| `sub` | Identificador estável do principal |
-| `exp` | Obrigatório; rejeitar expirado |
-| `nbf` | Se presente, rejeitar antes de `nbf` |
-| `iat` | Obrigatório; clock skew mínimo documentado |
+| `session_id` | Opaco; referencia registro PG |
 | `jti` | Obrigatório em access; unicidade + denylist pós-revogação |
-| `role` | Role RBAC tipada; nunca confiar só no client |
-| `organization_id` | Tenant bind top-level (INV-1); fail-fast se ausente em fluxos tenant |
-| `aal` | `aal1` \| `aal2`; step-up enforced server-side |
+| `user_version` | Inteiro; divergência vs registro → deny |
+| `session_version` | Inteiro; divergência vs registro → deny |
+| `iss` / `aud` / `sub` / `exp` / `iat` / `role` / `organization_id` / `aal` | Como JWT P0 + INV-1 |
+| `actor` | Obrigatório em impersonação; separado de `sub` efetivo |
 
-Validação **sem coerção ambígua** (tipos, strings vazias, arrays
-inesperados → reject).
+Ausência de claim obrigatório, divergência de versão ou store indisponível
+→ **fail-closed**.
 
-### Algoritmos e prevenção de algorithm confusion
+### Revogação
 
-- **Allowlist de `alg`:** apenas algoritmos aprovados (ex.: `ES256` /
-  `RS256` conforme key set); **`none` proibido**.
-- `alg` do header deve bater com o JWK do `kid`; rejeitar tokens que
-  tentem trocar família assimétrica↔simétrica (algorithm confusion).
-- Não aceitar chave embutida no token (reject `jwk` header).
+| Ação | Efeito |
+|------|--------|
+| Individual | Marca a sessão `revoked` no registro |
+| Global (revoke-all) | Incrementa `user_version`; invalida todas as sessões do principal |
+| Logout / ban / recovery / mudança de senha / role / tenant | Idempotentes + auditados; efeito imediato no registro |
 
-### `kid`, JWKS, geração e rotação de chaves
+Staleness máxima de revogação após commit no registro: **zero**.
+Sem cache positivo de autorização nesta fase.
 
-- Validação via JWKS; `kid` desconhecido → reject fail-closed.
-- Geração/armazenamento de signing keys em vault/KMS (nunca em repo);
-  rotação com **overlap** seguro de chaves; cache JWKS com TTL curto e
-  refresh explícito.
-- Indisponibilidade de JWKS (timeout, 5xx, parse error) → **deny**
-  (fail-closed); sem fallback permissivo para “assinatura local apenas”
-  em rotas privilegiadas.
+### TTLs
+
+| Token / sessão | TTL |
+|----------------|-----|
+| Access JWT | **5 minutos** |
+| Idle | **24 horas** |
+| Sessão absoluta | **30 dias** |
+| Step-up AAL2 | **15 minutos** |
+| Impersonação | **30 minutos**, **sem refresh**, `actor` separado |
+
+### Refresh — rotação, concorrência e replay
+
+- Rotação **atômica** e **serializada pelo cliente**.
+- Um commit vence; qualquer uso posterior do refresh já consumido é
+  **replay**.
+- Replay **revoga toda a família** — inclusive o sucessor emitido — e
+  força reautenticação de **todos** os concorrentes.
+
+### Rate limiting e anti-oracle
+
+Obrigatório em login, recovery, MFA, refresh e revogação, por combinação
+de IP + principal normalizado + sessão quando aplicável. Excesso → **429**
+sem revelar existência da conta (INV-26).
+
+A stack A herda os limites configurados do Supabase Auth e **registra
+valores/fontes** na implementação (`P-REV-IMPL-01`). Contrato futuro (B/C)
+deve ser igual ou mais restritivo. Ausência de limite em endpoint sensível
+**reprova** `PG-REVOCATION` / `PG-AUTH`.
+
+### Logout, ban, recovery
+
+- Logout: revoga sessão corrente; idempotente.
+- Ban: marca principal; revoke-all; novos logins fail-closed até unban
+  privilegiado com AAL2.
+- Recovery: token one-shot, TTL curto, rate-limited; sucesso → revoke-all
+  + step-up MFA antes de operações sensíveis; anti-oracle INV-26.
+
+### MFA / AAL2 / step-up / anti-downgrade
+
+- Operações sensíveis exigem step-up AAL2.
+- Anti-downgrade: AAL2 não rebaixa a AAL1 sem novo login.
+- **`reveal-webhook-signing-secret` MUST `requireAAL2: true`** — **CLOSED**
+  em código (2026-07-21).
+
+### Impersonação
+
+Sessão derivada: TTL 30 min, sem refresh, auditada, `actor` ≠ `sub`
+efetivo; hybrid principal **proibido**.
+
+### Cookies / CSRF (SPA)
+
+Quando cookies forem usados: `HttpOnly` + `Secure` + `SameSite=Strict`;
+CSRF token vinculado à sessão em mutações. Refresh não em `localStorage`.
+
+### Algoritmos / JWKS
+
+Allowlist `alg` (ex. ES256/RS256); `none` proibido; algorithm confusion
+rejeitada; JWKS indisponível → deny.
 
 ### Separação tenant / SuperAdmin
 
-- Principal de tenant e SuperAdmin são **espaços distintos** de sessão e
-  claims.
-- Escapes multi-tenant apenas via `SuperAdminBypassTenantValidator` (ou
-  equivalente Go) com MFA.
-- SuperAdmin orgless **somente** em fluxos explicitamente allowlisted e
-  auditados; nunca via `SET` de tenant do usuário (ADR 012).
-- **Proibido hybrid principal:** mesmo token/sessão não pode carregar
-  simultaneamente poderes de tenant arbitrário e SuperAdmin sem actor
-  model explícito e auditado.
+Espaços distintos; escapes só via `SuperAdminBypassTenantValidator` (ou
+equivalente futuro) com MFA. Hybrid principal proibido.
 
-### Rate limit, credential stuffing, anti-oracle
-
-- Rate limit por IP + identificador normalizado em login, recovery e MFA.
-- Mitigação de credential stuffing e enumeração de usuários (mensagens/
-  timing homogêneos).
-- Respostas de autenticação homogêneas para not-found vs wrong-org vs
-  wrong-password onde aplicável (INV-26).
-- Lockout progressivo sem vazar se a conta existe em outro tenant.
-
-### Logs sem segredos
+### Logs e retenção
 
 - Logs/auditoria: `sub`, `session_id`, `jti`, `organization_id`, `aal`,
-  `iss`, resultado — **nunca** access/refresh tokens, cookies, MFA
-  secrets, webhook signing secrets, recovery tokens, nem PII
-  desnecessária.
-- Mascaramento obrigatório em Edge/API e SIEM pipelines.
+  `iss`, resultado — **nunca** tokens, cookies, MFA secrets, recovery
+  tokens.
+- Estado operacional terminal (sessões revogadas/expiradas): **90 dias**.
+- Auditoria append-only: arquivada ≥ **1 ano** em pré-produção.
 
-### Fail-closed
+### Fail-closed / timeouts
 
-- Qualquer falha de JWKS, store de sessão indisponível, claim obrigatório
-  ausente, `alg` fora da allowlist, AAL insuficiente, tenant ausente/
-  inválido, timeout de introspecção → **deny**.
-- Não degradar para “assinatura local apenas” em rotas privilegiadas
-  (SA, reveal, MFA gates) quando a política exige sessão viva.
+Qualquer falha de JWKS, store, claim, AAL, tenant, timeout/AbortSignal →
+**deny**. Sem allow-by-timeout.
 
-### Timeouts / AbortSignal
+### Dual-run futuro (condicional B/C)
 
-- Chamadas de introspecção, JWKS fetch e store de sessão usam timeout +
-  `AbortSignal` (ou equivalente Go `context.WithTimeout`).
-- Estouro de prazo / cancelamento / verificador indisponível = fail-closed
-  (deny), nunca allow-by-timeout nem bypass.
+- Um único issuer por rota.
+- Sincronização de revogações por **outbox idempotente**.
+- Hybrid principal proibido.
+- **Rollback:** mantém Supabase Auth como autoridade primária; invalida
+  sessões emitidas pelo candidato **antes** de desligar a flag do
+  emissor candidato.
 
-### Migração gradual Supabase Auth (dual-run)
-
-1. Manter JWT P0 como baseline temporário.
-2. Introduzir session store + refresh rotation atrás de flag.
-3. Emitir/validar tokens do emissor candidato em shadow mode (log-only).
-4. Rotas privilegiadas: introspecção real (`getUser` / session store)
-   antes de cortar confiança exclusiva em `getClaims`.
-5. Logout/ban/revoke-all coerentes entre stacks durante dual-run.
-6. Cutover por rota quando gates `PG-AAL2` e `PG-REVOCATION` estiverem
-   verdes; rollback = flag off + emissor anterior (ADR 013).
-
-### Testes obrigatórios (proposta de aceitação técnica)
+### Testes obrigatórios (aceitação técnica — Etapa 1)
 
 | Classe | Escopo |
 |--------|--------|
-| **Crypto** | Allowlist `alg`, reject `none`, algorithm confusion, kid rotation, assinatura inválida, JWKS indisponível → deny |
-| **Contract** | Claims `iss aud sub exp nbf iat jti role organization_id aal` sem coerção ambígua |
-| **Adversarial** | Replay de refresh; CSRF sem token; AAL1 em reveal; AAL downgrade; hybrid principal; wrong-org → parity 404; ban mid-session; revoke-all sob concorrência; impersonation sem actor; SuperAdmin orgless fora da allowlist |
-| **Timeout** | JWKS/session store abort → deny |
+| Crypto | alg allowlist, JWKS down → deny |
+| Contract | claims + versões sem coerção ambígua |
+| Adversarial | replay refresh; AAL1 reveal; ban mid-session; revoke-all concorrente; impersonation sem actor; wrong-org → 404 |
+| Revocation | individual/global antes de `exp` em Edge **e** Data API/RLS; store down → deny; rate limit; audit sem tokens |
+| Dual-run (se B/C) | rollback emissor candidato |
 
-## Gates de paridade e riscos residuais
+## Gates e pendências
 
-| Gate ID | Objetivo | Critério verde (proposta) |
-|---------|----------|---------------------------|
-| `PG-AAL2` | Paridade AAL2 em revelação de segredo | `reveal-webhook-signing-secret` (e sucessor Go) rejeita `aal1`; testes adversarial passando |
-| `PG-REVOCATION` | Paridade de revogação pré-`exp` | Logout/ban/revoke-all invalida access em rotas privilegiadas **antes** de `exp`, com evidência de teste |
+| Gate ID | Objetivo | Estado documental | Runtime |
+|---------|----------|-------------------|---------|
+| `PG-AAL2` | Reveal exige AAL2 | **CLOSED** (evidência) | PASS (código atual) |
+| `PG-REVOCATION` | Revogação pré-`exp` | **CONTRACT COMPLETE** | **NOT RUN** até `P-REV-IMPL-01` |
 
-### Owners de risco residual
+| ID | Risco | status |
+|----|-------|--------|
+| P-AUTH-AAL2 / P-AAL2-01 | AAL2 reveal | **CLOSED** |
+| P-AUTH-REV / P-REV-01 | Design revogação | **CLOSED** (decisão arquitetural) |
+| **P-REV-IMPL-01** | Implementação registro PG + wiring | **OPEN** — não bloqueia PASS documental −1; **bloqueia primeiro piloto** e qualquer `PG-REVOCATION PASS` |
+| P-AUTH-TTL | TTLs numéricos | **CLOSED** (tabela acima) |
+| P-AUTH-DUAL | Dual-run iss/aud | **conditional_future** (não pré-requisito de A) |
+| P-AUTH-COOKIE | SameSite/CSRF rollout | track Etapa 1 se cookies forem usados |
 
-| ID | Risco | owner role | prazo | impacto | gate afetado | status |
-|----|-------|------------|-------|---------|--------------|--------|
-| P-AUTH-AAL2 | AAL2 ausente em `reveal-webhook-signing-secret` | QA/Security + Senior Engineer | 2026-08-08 | Revelação de segredo com sessão AAL1 | `PG-AAL2` | pending |
-| P-AUTH-REV | `getClaims` sem revogação pré-`exp` | Architect + Senior Engineer | 2026-08-15 | Logout/ban ineficazes até TTL | `PG-REVOCATION` | pending |
-| P-AUTH-TTL | TTL numérico do access JWT / refresh | Security Lead | 2026-08-15 | Sem número medido; só política “curto” | `PG-REVOCATION` | pending |
-| P-AUTH-DUAL | Plano dual-run iss/aud/JWKS + logout coerente | Architect | 2026-08-29 | Drift de emissores / hybrid principal | security go/no-go (ADR 010) | pending |
-| P-AUTH-COOKIE | Rollout SameSite=Strict + CSRF token bound à sessão | UX/Operations + Senior Engineer | 2026-08-22 | Quebra de fluxos cross-site legítimos | reliability | pending |
-
-Cada residual exige: owner, controle, teste verificável e parity gate
-associado antes de promoção a `Accepted`.
+Evidência AAL2: `forensic_records/plans/20260721000000_jwt_p0_residual_risks.md`;
+`supabase/functions/reveal-webhook-signing-secret/index.ts`;
+`supabase/functions/tests/reveal_webhook_signing_secret_unit_test.ts`.
 
 ## Consequences
 
-- **Positive:** contrato Zero-Trust explícito; JWT P0 delimitado como
-  temporário; caminho dual-run alinhado ao exit ramp ADR 010; gates
-  `PG-AAL2` / `PG-REVOCATION` tornam-se critérios objetivos de go/no-go.
-- **Negative:** dual-run aumenta complexidade transitória; `SameSite=Strict`
-  exige validação de fluxos OCC; pendências TTL/quotes não inventadas
-  bloqueiam `Accepted`.
-- **Security:** fail-closed e anti-oracle passam a ser requisito de
-  aceite, não “best effort”; residuals AAL2/revogação ficam rastreáveis.
-- **Não-consequência:** esta ADR **não** substitui o Supabase Auth em
-  produção nem aprova o auth Go como implementado — apenas recomenda o
-  contrato sob avaliação.
+- **Positive:** autoridade de revogação explícita; TTLs fechados; AAL2
+  fechado; design P-REV fechado sem fingir mitigação runtime.
+- **Negative:** Etapa 1 obrigatória antes do piloto; rate limits e wiring
+  RLS/Data API a implementar.
+- **Não-consequência:** não substitui Supabase Auth agora; não aprova auth
+  Go; não declara `PG-REVOCATION PASS`.

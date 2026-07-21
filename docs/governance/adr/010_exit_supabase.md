@@ -1,21 +1,36 @@
-# ADR 010: Exit Ramp Supabase — Avaliação de Self-Host Candidate
+# ADR 010: Exit Ramp Supabase — A portável (avaliação A/B/C)
 
 **Date:** 2026-07-21
-**Status:** Proposed
-**Context:** Phase 11 Etapa -1
+**Status:** Accepted
+**Context:** Phase 11 Etapa −1 — revisão H2.1 (A portável)
+**source_date (lista pública de preços):** 2026-07-21
 
 > **Numeração:** O ID `010` é intencional. Os slots `002`–`009` permanecem
 > reservados/não utilizados; não há ADRs intermediários a preencher nesta etapa.
 
+### Decision record
+
+| Campo | Valor |
+|-------|-------|
+| Status anterior | Proposed (revisão H2.1 — A portável) |
+| Status atual | **Accepted** |
+| Authority | Fundador |
+| Confirmed | 2026-07-21 |
+| Council | H2.1 PASS (Architect, Senior, QA/Security) + Lead PASS_DOCUMENTAL |
+| Scope of acceptance | Direção A portável; B/C permanecem contratos condicionais de saída |
+| Explicitly not authorized | Proposta canônica, roadmap, Etapa 0, commit, implementação |
+
 ## Context
 
 VeraProb opera hoje sobre a stack gerenciada Supabase (PostgreSQL + Auth +
-Edge Functions + Storage + Realtime) com frontend Flutter Wasm. A Phase 11
-Etapa −1 exige uma **avaliação formal de saída / exit ramp**, sem consumar
-migração, para decidir se a plataforma permanece no provedor gerenciado,
-adota um modelo híbrido, ou avança para um candidato de self-host
-(Go API + OpenAPI + PostgreSQL 16 + React) como direção recomendada sob
-avaliação.
+Edge Functions + Storage + Realtime) com frontend Flutter Wasm, em postura
+**pré-revenue** (desembolso de plataforma atual **R$ 0**).
+
+A Phase 11 Etapa −1 exige avaliação formal de saída / exit ramp **sem
+consumar migração**. Nesta revisão H2, a direção proposta é **A portável**:
+permanecer em Supabase/Flutter, corrigir portabilidade, revogação e
+recuperação antes do primeiro piloto; B e C ficam como contratos
+condicionais de saída, reabertos só por gatilhos objetivos.
 
 Documentos irmãos (Etapa −1):
 
@@ -30,233 +45,238 @@ Documentos irmãos (Etapa −1):
 
 ### Motivadores
 
-1. **Soberania forense e isolamento multi-tenant (INV-1, INV-2, INV-22):**
-   reduzir dependência de comportamentos opacos do provedor em Auth, RLS e
-   Data API, especialmente onde revogação pré-`exp` e AAL2 ainda têm
-   lacunas residuais (ver plano JWT P0).
-2. **Controle de superfície de autenticação:** o JWT P0 da stack atual é
-   **baseline temporário**, não o desenho final de auth em Go; Etapa −1
-   deve separar “o que é seguro o bastante agora” de “o que a plataforma
-   precisa no steady-state enterprise” (ADR 011).
-3. **Capacidade e previsibilidade operacional:** telemetria de alta
-   frequência, Edge Functions e cotas gerenciadas podem tornar-se
-   restrição de escala; a hipótese precisa ser **mensurada**, não
-   assumida.
-4. **Reversibilidade e exit ramp contratual:** sem ramp documentado,
-   qualquer lock-in vira risco de negócio não quantificado.
-5. **TCO e FTE de ops:** custo total (provedor + engenharia + plantão +
-   dual-run) precisa de tabela formal 12/24 meses; valores desconhecidos
-   entram como pendências, nunca como inventário fictício.
+1. **Soberania forense e isolamento multi-tenant (INV-1, INV-2, INV-22)**
+   sem novo desembolso antes do piloto.
+2. **Revogação pré-`exp` e DR exercitável** na stack atual (ADR 011 +
+   gates PG-BACKUP/RESTORE/DR) antes de first-tenant.
+3. **Exit ramp contratual** sem lock-in não quantificado: B/C documentados,
+   não aprovados.
+4. **TCO pré-revenue honesto:** lista pública USD + fórmulas; sem inventar
+   invoice; sem tratar preço de lista como cotação comercial.
 
 ### Baseline mensurável (campos)
 
 | Campo | Descrição | Valor atual | Status |
 |-------|-----------|-------------|--------|
 | `baseline_provider` | Provedor de plataforma | Supabase (gerenciado) | measured |
-| `baseline_db_engine` | Motor / major | PostgreSQL (versão de produção a confirmar no ambiente) | pending |
+| `baseline_db_engine` | Motor / major | PostgreSQL (versão de produção a confirmar no ambiente) | pending (non-blocking para A) |
 | `baseline_auth` | IdP / sessão | Supabase Auth + JWT P0 validator | measured |
 | `baseline_edge` | Runtime de funções | Supabase Edge Functions (Deno) | measured |
 | `baseline_frontend` | Cliente principal | Flutter Wasm / CanvasKit | measured |
-| `baseline_rpo_declared` | RPO declarado (contrato/SLA interno) | — | pending |
-| `baseline_rto_declared` | RTO declarado (contrato/SLA interno) | — | pending |
-| `baseline_p95_ingest_ms` | Latência p95 ingest privilegiado | — | pending |
-| `baseline_error_budget_monthly` | Error budget mensal | — | pending |
-| `baseline_tenant_count` | Tenants ativos em produção | — | pending |
-| `baseline_monthly_platform_cost` | Custo mensal plataforma (invoice) | — | pending |
-| `baseline_fte_ops` | FTE ops/plantão atribuído | — | pending |
-| `baseline_secret_reveal_aal2` | AAL2 em `reveal-webhook-signing-secret` | Não exigido (risco residual) | measured |
-| `baseline_pre_exp_revocation` | Revogação pré-`exp` via `getClaims` | Limitada / não garantida | measured |
-
-Campos `pending` bloqueiam promoção deste ADR para `Accepted` até
-preenchimento com fonte e data.
+| `baseline_rpo_declared` | RPO pré-prod | 24h (sem SLA) | decided (P-DR-01) |
+| `baseline_rto_declared` | RTO pré-prod | 24h (sem SLA) | decided (P-DR-01) |
+| `baseline_monthly_platform_cost` | Desembolso mensal plataforma | **R$ 0** (Free / pré-revenue) | measured |
+| `baseline_secret_reveal_aal2` | AAL2 em reveal | Exigido (`REVEAL_REQUIRE_AAL2=true`) | measured (CLOSED) |
+| `baseline_pre_exp_revocation` | Revogação pré-`exp` | Design CLOSED; runtime OPEN (`P-REV-IMPL-01`) | design_closed |
+| `baseline_prod_rpo_rto_runbook` | Objetivo prod `<5min/<4h` | **Não aprovado** nesta fase | deferred |
 
 ## Alternatives Considered
 
-### A) Permanecer em Supabase (gerenciado)
+### A) A portável — permanecer em Supabase + Flutter (direção proposta)
 
-Manter Auth, Postgres, Edge e Storage no provedor atual; remediar apenas
-riscos residuais P0/P1 (AAL2 no reveal; estratégia de revogação) sem
-exit ramp estrutural.
+Manter Auth, Postgres, Edge e Storage no provedor atual; fechar portabilidade
+de contratos, revogação server-side (registro PG) e DR pré-prod **antes do
+primeiro piloto**; sem novo desembolso agora.
 
-- **Prós:** menor churn; aproveita RLS/Data API existentes; caminho curto
-  para fechar gaps de segurança pontuais.
-- **Contras:** lock-in; limites de introspecção/revogação de sessão;
-  TCO e cotas ainda não baselineados; JWT P0 permanece baseline
-  temporário sem destino claro.
+- **Prós:** zero cash out-of-pocket agora; caminho curto para piloto; RLS/Data
+  API existentes; Flutter preservado; React fora do plano.
+- **Contras:** lock-in residual; Free sem daily backup automático do
+  provedor (exige dump off-site); cotas Free; revogação runtime ainda a
+  implementar.
 
 ### B) Híbrido (Postgres/Auth gerenciados + API própria)
 
-Extrair gradualmente a superfície de aplicação (ingest, webhooks,
-OCC APIs) para um serviço próprio, mantendo Postgres/Auth no Supabase
-durante dual-run.
+Extrair superfície de aplicação para serviço próprio, mantendo
+Postgres/Auth no Supabase durante dual-run.
 
-- **Prós:** reduz blast radius da migração; permite dual-run de auth
-  (ver ADR 011); exit ramp incremental.
-- **Contras:** dois planos de controle; risco de hybrid principal se
-  claims/tenant não forem selados; custo operacional transitório
-  (dual-run).
+- **Prós:** exit ramp incremental; reduz blast radius.
+- **Contras:** dois planos de controle; dual-run ops; risco de hybrid
+  principal; desembolso + tempo do fundador maiores.
 
 ### C) Self-host candidate completo (Go API + OpenAPI + PG16 + React)
 
-Candidato sob avaliação — **não** decisão aceita. Stack proposta para
-estudo: API em Go com contrato OpenAPI, PostgreSQL 16 self-managed (ou
-IaaS gerenciado não-Supabase), frontend React alinhado ao Design System
-Industrial Dark, auth Zero-Trust conforme ADR 011.
+Candidato sob avaliação futura — **não** decisão. Stack de estudo: Go +
+OpenAPI + PostgreSQL 16 + React.
 
-- **Prós:** soberania de sessão/JWKS/revogação; contrato API estável;
-  controle de RPO/RTO e capacity planning.
-- **Contras:** FTE ops, hardening, migração de Flutter→React e de Edge
-  Functions; risco de regressão forense se INVs não forem revalidados;
-  TCO 12/24m ainda sem quotes.
+- **Prós:** soberania de sessão/JWKS/revogação; RPO/RTO sob controle próprio.
+- **Contras:** FTE ops, migração Flutter→React, dual-run, risco forense,
+  TCO cash e econômico elevados no pré-revenue.
 
 ## Decision
 
-**Directions under evaluation (nenhuma Accepted):** (A) permanecer no
-Supabase; (B) híbrido; (C) candidato self-host (Go API + OpenAPI +
-PostgreSQL 16 + React). Exit ramp híbrido é o **caminho de transição
-candidato** se, e somente se, os critérios go/no-go forem atendidos com
-quotes e baselines medidas.
+**Direção Accepted:** **A portável**.
 
-Esta seção **não** consome a migração e **não** elege C como default.
-Não há compromisso de “vamos migrar”; há comparação obrigatória A/B/C
-por quotes, baseline mensurável e gates de paridade de segurança
-(incl. ADR 011). Se os critérios objetivos não justificarem a saída, a
-decisão válida é **não migrar** (A ou B) e retornar ao first-tenant.
+B e C **não** estão cancelados nem aprovados. Permanecem contratos
+condicionais de saída. Cutover **não agendado**. Um gatilho objetivo
+autoriza **nova análise**, nunca migração automática.
 
-O JWT P0 da stack atual permanece **baseline temporário de autenticação**,
-não o desenho final de auth em Go.
+O JWT P0 da stack atual permanece **baseline temporário de autenticação**;
+o desenho de revogação é ADR 011 (registro PostgreSQL), não “auth Go
+agora”.
 
-## TCO 12 / 24 meses (hipóteses — sem inventar valores)
+## Fontes de preço (lista pública — não cotação comercial)
 
-> Qualquer célula sem fonte mensurada ou cotação formal permanece
-> `pending_quote` / `assumption`. Promoção a `Accepted` exige fechar
-> linhas de custo e FTE com `source` + `source_date`.
+| Item | Valor (USD) | Fonte | source_date | Notas |
+|------|-------------|-------|-------------|-------|
+| Free plan | $0 / mês | [supabase.com/pricing](https://supabase.com/pricing) | 2026-07-21 | Desembolso atual VeraProb = R$ 0 |
+| Pro plan | from $25 / org / mês | idem | 2026-07-21 | Compute separado; ~$10 crédito compute |
+| Team plan | from $599 / org / mês | idem | 2026-07-21 | SOC2/ISO; backups 14d |
+| Enterprise | custom | idem | 2026-07-21 | Não usar como quote |
+| Daily backups Free | não incluídos | [Backups docs](https://supabase.com/docs/guides/platform/backups) | 2026-07-21 | Usar `db dump` + off-site |
+| Daily backups Pro | 7 dias | idem | 2026-07-21 | |
+| Daily backups Team | 14 dias | idem | 2026-07-21 | |
+| Daily backups Enterprise | até 30 dias | idem | 2026-07-21 | |
+| PITR add-on | ~$100 / $200 / $400 (7/14/28d) | idem | 2026-07-21 | Lista pública aproximada |
+| Storage objects no DB backup | **não incluídos** | idem | 2026-07-21 | Blobs exigem cópia separada |
+| Câmbio USD→BRL | variável | — | — | **Não fixar FX**; converter só na reavaliação |
+| Impostos / descontos / enterprise | excluídos | — | — | Lista ≠ cotação comercial |
 
-| cost_line | 12m_hypothesis | 24m_hypothesis | unit | method | source | source_date | confidence | status |
-|-----------|----------------|----------------|------|--------|--------|-------------|------------|--------|
-| platform_managed_supabase | — | — | BRL/year | invoice rollup | — | — | low | pending_quote |
-| db_compute_storage_iops | — | — | BRL/year | capacity model × unit price | — | — | low | pending_quote |
-| auth_provider_or_selfhost | — | — | BRL/year | vendor quote / self-host build | — | — | low | pending_quote |
-| edge_or_api_runtime | — | — | BRL/year | traffic × compute | — | — | low | pending_quote |
-| object_storage_egress | — | — | BRL/year | usage × egress tariff | — | — | low | pending_quote |
-| observability_siem | — | — | BRL/year | seats + ingest GB | — | — | low | pending_quote |
-| secrets_kms_hsm | — | — | BRL/year | key ops + vault | — | — | low | pending_quote |
-| backup_dr_replication | — | — | BRL/year | RPO/RTO target × media | — | — | low | pending_quote |
-| postgres_maintenance_patching | — | — | BRL/year | patch window × effort | — | — | low | pending_quote |
-| incident_response_oncall | — | — | BRL/year | pager coverage model | — | — | low | pending_quote |
-| fte_platform_engineering | — | — | FTE-year | effort model | — | — | low | pending_quote |
-| fte_sre_oncall | — | — | FTE-year | pager coverage model | — | — | low | pending_quote |
-| fte_security_authz | — | — | FTE-year | auth dual-run + audit | — | — | low | pending_quote |
-| migration_oneoff_cutover | — | — | BRL | project estimate | — | — | low | pending_quote |
-| dual_run_incremental_ops | — | — | BRL/year | dual-stack ops delta | — | — | low | pending_quote |
-| training_runbooks | — | — | BRL | curriculum + drills | — | — | low | pending_quote |
-| contingency_rollback_buffer | — | — | BRL | % of migration_oneoff | — | — | low | assumption |
-| opportunity_cost_first_tenant_delay | — | — | BRL | roadmap delay vs first-tenant | — | — | low | pending_quote |
+## TCO — fórmulas (4 estágios × 3 faixas × 12/24 meses)
 
-### Pendências econômicas (bloqueiam `Accepted`)
+### Estágios operacionais
 
-| ID | owner role | prazo | impacto | gate afetado | status |
-|----|------------|-------|---------|--------------|--------|
-| P-TCO-01 | Platform Owner (coleta) + Finance/CFO delegate (validação) | 2026-08-30 | Sem invoice rollup 12m não há comparação fair vs self-host | go/no-go cost; R-02 | pending |
-| P-TCO-02 | Platform Engineering Lead | 2026-08-22 | Capacity model (ingest, storage, IOPS) sem medição | go/no-go capacity | pending |
-| P-TCO-03 | SRE Lead | 2026-08-22 | FTE ops/plantão e custo de incident response não dimensionados | go/no-go cost + reliability | pending |
-| P-TCO-04 | Security Lead | 2026-08-29 | Custo KMS/vault + SIEM para paridade forense | go/no-go security + cost | pending |
-| P-TCO-05 | Engineering Manager | 2026-09-05 | Quote migração one-off + dual-run + buffer de rollback | go/no-go cost + reversibility | pending |
-| P-TCO-06 | Product / Business Maverick | 2026-09-05 | Thresholds de custo (máx. delta 12/24m aceitável) e oportunidade first-tenant | go/no-go cost | pending |
-| P-TCO-07 | SRE Lead | 2026-08-29 | RPO/RTO declarados + restore drill baseline | go/no-go reliability | pending |
+| # | Estágio | Variáveis típicas (não inventar volumes) |
+|---|---------|------------------------------------------|
+| 1 | Desenvolvimento atual | `T≈0` tenants pagantes; `E` baixo; Free |
+| 2 | Primeiro piloto (1–3 tenants) | `T∈[1,3]`; `E`,`S`,`G` variáveis |
+| 3 | Operação inicial | `T`,`E`,`S`,`R`,`G` medidos pós-piloto |
+| 4 | Crescimento posterior | Escala; possível tier pago / B/C |
 
-**Nota:** thresholds numéricos de custo **não** são definidos neste ADR.
-Qualquer promoção a `Accepted` sem quotes e thresholds preenchidos é
-processo inválido.
+Faixas por estágio: **otimista / base / pessimista** — parametrizar
+`T` (tenants), `E` (eventos), `S` (storage), `R` (retenção), `G` (egress)
+sem preencher números fictícios de uso.
 
-## Critérios go / no-go (objetivos)
+### Fórmulas
 
-| Dimensão | Critério objetivo | Bloqueio se |
-|----------|-------------------|-------------|
-| **Security** | Paridade INV-1/2/22; AAL2 em reveal; revogação pré-`exp` com evidência; sem hybrid principal; gates `PG-AAL2` e `PG-REVOCATION` verdes (ADR 011) | Qualquer gap residual P0 sem owner/prazo |
-| **Reliability** | Error budget e SLOs de ingest/OCC definidos e observados no baseline | `baseline_error_budget_monthly` pending |
-| **Capacity** | Modelo de carga (tenants, eventos/s, storage) validado contra cotas atuais e alvo self-host | `baseline_tenant_count` / p95 pending |
-| **RPO / RTO** | RPO/RTO declarados e testados (restore drill) no candidato ≥ baseline | `baseline_rpo_declared` / `baseline_rto_declared` pending |
-| **Cost** | TCO 12/24m com quotes; delta vs baseline dentro de threshold aprovado pelo CFO | Todas as linhas `pending_quote` de custo/FTE; thresholds pending (P-TCO-06) |
-| **Reversibility** | Exit ramp documentado com dual-run, feature flags e procedimento de rollback ≤ janela RTO | Ausência de runbook de rollback ou buffer P-TCO-05 |
+```text
+TCO_cash(M) = plataforma + compute + banco + storage + egress
+            + backup/DR + observabilidade + segurança/KMS
+            + operação + incident_response + migração + dual_run
 
-**Go** somente se todas as dimensões acima estiverem `measured` ou
-`pending_quote` resolvido com `confidence ≥ medium` e owners de decisão
-assinarem a promoção de status (fora do escopo deste documento Proposed).
+TCO_economic(M) = TCO_cash(M)
+                + (H_build + H_ops + H_security + H_incident) × V_fundador
+```
 
-**No-go** (permanecer em A ou B) se security/reliability falharem, ou se
-custo/reversibilidade permanecerem bloqueados após os prazos das
-pendências.
+`V_fundador` é variável econômica aprovada **somente** quando houver decisão
+de investimento; nesta fase o trabalho do fundador **não** gera desembolso
+(`TCO_cash` atual de plataforma = R$ 0).
 
-## Riscos do self-host (candidato)
+Horizontes: agregar `TCO_*(12)` e `TCO_*(24)` por alternativa A/B/C e por
+faixa.
 
-1. **Regressão forense:** perda de paridade RLS / security_invoker /
-   partitions ao rehospedar PG16 (ADR 012).
-2. **Ops maturity:** plantão, patching, backup, JWKS rotation e incidente
-   Auth sem o envelope do provedor.
-3. **Migração de cliente:** Flutter Wasm → React (candidato) implica
-   revalidação UX OCC e goldens/hermeticidade.
-4. **Dual-run Auth:** risco de hybrid principal se `organization_id` /
-   SuperAdmin não forem estritamente separados (ADR 011).
-5. **Subestimação de FTE:** linhas FTE estão `pending_quote` — decisão
-   precoce cria dívida operacional.
-6. **Custo de oportunidade:** atraso do first-tenant / Sandbox enquanto
-   o pivot consome capacidade de engenharia.
-7. **Riscos residuais herdados:** AAL2 em
-   `reveal-webhook-signing-secret` e revogação pré-`exp` com `getClaims`
-   (ver [plano JWT P0](../../../forensic_records/plans/20260721000000_jwt_p0_residual_risks.md))
-   devem ser fechados ou explicitamente aceitos com owner antes de
-   cutover.
+### Separação obrigatória de dimensões
 
-## Exit ramp (proposta operacional)
+| Dimensão | Conteúdo |
+|----------|----------|
+| Desembolso | Cash out-of-pocket (hoje R$ 0 em A/Free) |
+| Tempo do fundador | Horas/FTE (pré-revenue accountable) |
+| Custo projetado | USD lista pública × câmbio variável |
+| Oportunidade | Atraso first-tenant / piloto se B/C agora |
+| Risco | Lock-in, ops, compliance, regressão forense |
 
-> **Namespace:** passos abaixo usam IDs `XR-*` (exit-ramp). **Não** reutilizar
-> os rótulos `Etapa 0..4` da proposta canônica (Specs IA → PG/RLS → OpenAPI/Go
-> → React → CI). A sequência canônica de fase permanece em
-> [phase11_enterprise_pivot.md](../proposals/phase11_enterprise_pivot.md) §3.
+### Matriz resumida (qualitativa — sem inventar invoice)
 
-1. **XR-1 (Etapa −1 documental, atual):** ADRs Proposed + baseline + TCO
-   pendências; Council PASS/REVISE do contrato.
-2. **XR-2 (em paralelo à stack atual, pré-Etapa 1 de dados):** remediar P0
-   Auth no Supabase (AAL2 reveal; desenho de revogação) **sem** mudar
-   provedor — não é a “Etapa 0 Specs IA”.
-3. **XR-3 (após PASS −1 + Etapas 0–2 canônicas):** dual-run de borda
-   (OpenAPI/Go) contra Supabase; Auth conforme ADR 011; tenant conforme
-   ADR 012; fatias conforme ADR 013.
-4. **XR-4:** rehearsal de continuidade (backup/restore / replicação quando
-   aplicável) com RPO/RTO **medidos** (não inventados).
-5. **XR-5:** decisão go/no-go com TCO preenchido; só então promover ADRs
-   para `Accepted` ou arquivar como `Rejected`/`Superseded`.
-6. **Aborto econômico/técnico:** ROI negativo, threshold de custo excedido,
-   ou gate crítico de segurança/reliability falho → **manter a stack
-   atual** (alternativa A ou B) e **retornar o programa ao objetivo
-   first-tenant**, sem penalizar a decisão de não migrar.
-7. **Rollback operacional:** feature flags + tráfego shadow; abortar
-   cutover se gates `PG-AAL2` / `PG-REVOCATION` ou error budget falharem.
+| Alt | Estágio 1 cash | Estágio 2 cash | 12/24m nota | Tempo fundador | Risco dominante |
+|-----|----------------|----------------|-------------|----------------|-----------------|
+| **A** | $0 lista Free | Free ou Pro se cotas/backup exigirem (gatilho) | Menor cash pré-revenue; dump off-site obrigatório | Médio (revogação+DR) | Lock-in + Free limits |
+| **B** | Plataforma + API própria + dual-run | Cresce com dual-run | Cash + ops dual-stack | Alto | Hybrid principal / drift |
+| **C** | IaaS/PG + Go + (React futuro) + dual-run | Alto | Maior cash + FTE | Muito alto | Regressão forense / ops |
+
+**Conclusão econômica desta revisão:** em pré-revenue, **A portável**
+minimiza desembolso e risco de atraso do piloto; B/C só após gatilho +
+quotes reais (P-TCO-02..07).
+
+## P-DR-01 — Continuidade pré-produção
+
+| Campo | Valor |
+|-------|-------|
+| RPO pré-prod | **24h** |
+| RTO pré-prod | **24h** |
+| SLA | **Nenhum** nesta fase |
+| Backup mínimo | Dump lógico diário **cifrado** em localização **independente** do projeto Supabase |
+| Storage objects | Classificar: descartáveis de dev podem ficar fora; qualquer objeto necessário ao piloto exige **cópia diária separada** (DB backup **não** restaura blobs) |
+| Restore | Exercitado e evidenciado **antes do primeiro piloto** (`PG-RESTORE`) |
+| Runbook `<5 min / <4h` | Objetivo de **produção não aprovado**; **não** editar o runbook nesta missão |
+
+Gates: `PG-BACKUP`, `PG-RESTORE`, `PG-DR` permanecem `NOT RUN` até Etapa 1;
+bloqueiam piloto, não confundem com decisão P-DR-01.
+
+## Pendências econômicas
+
+| ID | owner role | status | Nota |
+|----|------------|--------|------|
+| P-TCO-01 | Platform + Finance (fundador) | **resolved_for_A** | Decisão A sustentada por desembolso atual R$ 0 + **fórmulas** 4×3×12/24 + lista pública USD; células numéricas de volume (`T,E,S,R,G`) permanecem variáveis — **não** invoice medido |
+| P-TCO-02 | Platform Engineering | deferred_non_blocking_for_A | Obrigatório antes de Approved B/C |
+| P-TCO-03 | SRE / fundador | deferred_non_blocking_for_A | FTE ops B/C |
+| P-TCO-04 | Security | deferred_non_blocking_for_A | KMS/SIEM paridade B/C |
+| P-TCO-05 | Engineering Manager | deferred_non_blocking_for_A | Migração one-off + dual-run |
+| P-TCO-06 | Product / Business Maverick | deferred_non_blocking_for_A | Thresholds custo B/C |
+| P-TCO-07 | SRE | deferred_non_blocking_for_A | Quotes DR B/C; pré-prod A coberto por P-DR-01 |
+| P-DR-01 | Platform Owner | **resolved_objective** | 24h/24h; runtime gates NOT RUN |
+
+## Critérios go / no-go
+
+### Para manter A portável (agora)
+
+| Dimensão | Critério |
+|----------|----------|
+| Security design | ADR-011 design CLOSED; AAL2 CLOSED; `P-REV-IMPL-01` trackado |
+| DR objective | P-DR-01 24h/24h declarado |
+| Cost | Desembolso atual R$ 0; tier pago = gatilho |
+| Scope | Sem Go/React produtivo; React fora do plano |
+
+### Para aprovar B ou C (futuro)
+
+Todas as dimensões Security / Reliability / Capacity / RPO-RTO / Cost /
+Reversibility com P-TCO-02..07 resolvidos, dual-run gates e Council +
+fundador. **Go** só então.
+
+## Gatilhos objetivos (reabrir A/B/C)
+
+Um gatilho autoriza **nova análise**, não migração automática:
+
+1. Primeiro piloto
+2. Primeiro cliente pagante
+3. Ativação de tier pago
+4. Requisito de compliance / residência
+5. Primeiro SLA
+6. Crescimento material de ingestão / storage
+7. Mudança relevante de fatura
+8. Revisão trimestral
+9. Antes de ação irreversível
+
+## Exit ramp (XR-*)
+
+> Namespace `XR-*` — **não** reutilizar rótulos Etapa 0..4 da proposta
+> canônica.
+
+1. **XR-1 (concluído documentalmente):** ADRs 010–013 **Accepted** (fundador
+   2026-07-21) + A portável + Council H2.1 PASS; implementação/Etapa 0
+   **não** autorizadas neste registro.
+2. **XR-2:** remediação na stack atual — `P-REV-IMPL-01`, backup/restore
+   drills (Etapa 1 canônica).
+3. **XR-3+:** dual-run / self-host **somente** após gatilho + go/no-go B/C.
+4. **Aborto econômico:** ROI negativo ou gate crítico → permanecer em A e
+   focar first-tenant.
 
 ## Owners
 
 | Papel | Responsabilidade |
 |-------|------------------|
-| **Architect** | Recomendação técnica da direção (candidato vs híbrido vs stay) |
-| **QA/Security** | Validação de paridade INV + gates `PG-AAL2` / `PG-REVOCATION` |
-| **Senior Engineer / Platform** | Baseline mensurável, capacity model, dual-run técnico |
-| **SRE Lead** | RPO/RTO drills, FTE ops, runbooks de rollback |
-| **Finance / CFO delegate** | Quotes TCO 12/24m e thresholds de custo (validação financeira) |
-| **Lead Reviewer / Engineering Council** | Decisão formal de promoção de status (futuro; não neste ADR) |
-| **Business Maverick** | ROI / no-go se complexidade sem impacto financeiro claro; aceite de oportunidade |
+| **Architect** | Direção A vs B/C; contratos condicionais |
+| **QA/Security** | Paridade INV + PG-AAL2 / PG-REVOCATION |
+| **Senior Engineer / Platform** | Baseline, capacity, portabilidade |
+| **SRE / fundador** | RPO/RTO drills, dump off-site |
+| **Finance / fundador** | Validação TCO_cash vs lista pública |
+| **Lead Reviewer** | Promoção formal de status (futuro) |
+| **Business Maverick** | ROI / no-go se complexidade sem impacto |
 
 ## Consequences
 
-- **Positive (se validado):** exit ramp explícito; TCO e FTE deixam de ser
-  narrativa informal; JWT P0 fica marcado como temporário; candidato
-  Go/OpenAPI/PG16/React pode ser comparado com critérios objetivos;
-  aborto econômico é caminho válido, não falha de processo.
-- **Negative / custo de processo:** Etapa −1 gera trabalho de medição e
-  cotação antes de qualquer código de migração; thresholds de custo
-  bloqueiam `Accepted` até P-TCO-* fecharem; dual-run tem custo
-  incremental (`dual_run_incremental_ops`).
-- **Security:** riscos residuais JWT P0 permanecem na stack atual até
-  remediação; self-host não é atalho para ignorá-los.
-- **Não-consequência:** este ADR **não** autoriza cutover, troca de
-  frontend, nem desligamento do Supabase Auth.
+- **Positive:** direção clara sem desembolso; B/C documentados; TCO honesto
+  (lista ≠ quote); DR pré-prod explícito; AAL2 fechado; revogação design
+  fechada.
+- **Negative:** Free exige disciplina de dump/Storage; runtime revogação e
+  restore ainda bloqueiam piloto; lock-in permanece até gatilho.
+- **Não-consequência:** este ADR **não** autoriza cutover, Go/React, nem
+  implementação; status **Accepted** cobre a direção documental A portável.

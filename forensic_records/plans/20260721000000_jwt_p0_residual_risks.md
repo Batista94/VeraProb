@@ -1,7 +1,7 @@
 # JWT P0 — Residual Risks (backlog)
 
-> Status: registered after Phase 1 cryptographic JWT fix.  
-> **Do not** promote into the official product roadmap until the agreed final phase.  
+> Status: registered after Phase 1 cryptographic JWT fix.
+> **Do not** promote into the official product roadmap until the agreed final phase.
 > Date: 2026-07-21
 > Updated: 2026-07-21 — P-AAL2-01 remediado (missão isolada; **não** implica PASS Etapa −1).
 
@@ -20,11 +20,17 @@ Remediação **não** autoriza Etapa 0 nem altera `docs/governance/roadmap.md`.
 `auth.getClaims` valida assinatura/claims locais e **pode não refletir**
 logout, ban ou revogação de sessão até o `exp` do access token.
 
-Opções a decidir (não implementadas nesta fase):
+**Design (CLOSED — superseded por ADR-011 H2 / A portável):** registro
+server-side PostgreSQL como autoridade de revogação; Edge + Data API/RLS
+via `app.session_is_live()` (ou equivalente); claims `session_id` / `jti` /
+`user_version` / `session_version`; fail-closed. Ver
+`docs/governance/adr/011_auth_zero_trust.md`.
 
-1. TTL curto de access token + refresh controlado;
-2. `getUser` / introspection nas rotas privilegiadas (SA, reveal, MFA gates);
-3. Denylist de `session_id` (ou `jti`) para revogação imediata no Edge.
+**Implementação:** `P-REV-IMPL-01` OPEN — bloqueia primeiro piloto e
+`PG-REVOCATION PASS`. Runtime **não** está mitigado até evidência Etapa 1.
+
+Opções históricas (TTL curto / getUser / denylist) ficam arquivadas como
+antecedentes; **não** estão “a decidir”.
 
 ## Referência
 

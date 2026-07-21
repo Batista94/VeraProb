@@ -1,16 +1,46 @@
 # ADR 012: Ciclo de Vida de Conexão, Tenant Context e RLS Fail-Closed
 
 **Date:** 2026-07-21
-**Status:** Proposed
-**Context:** Phase 11 Etapa -1
+**Status:** Accepted
+**Context:** Phase 11 Etapa −1 — revisão H2.1 (A portável)
+
+> **Contrato condicional de saída.** Este ADR **não** é migração aprovada nem
+> Etapa 1 imediata. Sob **A portável**, o baseline operacional permanece
+> Supabase/PostgREST (`auth.jwt() ->> 'organization_id'`, INV-2). O contrato
+> `SET LOCAL` / pool / txn-per-request aplica-se **somente se/quando** B ou C
+> for Approved após gatilho objetivo + go/no-go (ADR-010).
+
+### Decision record
+
+| Campo | Valor |
+|-------|-------|
+| Status anterior | Proposed (revisão H2.1 — A portável) |
+| Status atual | **Accepted** |
+| Authority | Fundador |
+| Confirmed | 2026-07-21 |
+| Council | H2.1 PASS (Architect, Senior, QA/Security) + Lead PASS_DOCUMENTAL |
+| Scope of acceptance | Contrato condicional B/C; baseline A = PostgREST |
+| Explicitly not authorized | Proposta canônica, roadmap, Etapa 0, commit, implementação, self-host agora |
 
 ## Contexto
 
-Se o candidato self-host (Go API + Postgres 16) for **Accepted** após go/no-go (ADR-010), o isolamento multi-tenant deixa de depender de PostgREST injetar `auth.jwt() ->> 'organization_id'` (INV-2 atual) e passa a depender de **contexto de tenant amarrado à transação** via `SET LOCAL app.tenant_id`, role `app_user` sem `BYPASSRLS`, e pool em **transaction mode**. Enquanto Status=Proposed, Supabase/PostgREST permanece o baseline operacional.
+Se o candidato self-host (Go API + Postgres 16) for **Approved** após go/no-go
+(ADR-010 B/C), o isolamento multi-tenant deixa de depender de PostgREST
+injetar `auth.jwt() ->> 'organization_id'` (INV-2 atual) e passa a depender
+de **contexto de tenant amarrado à transação** via `SET LOCAL app.tenant_id`,
+role `app_user` sem `BYPASSRLS`, e pool em **transaction mode**.
 
-Um vazamento de tenant entre borrowers do mesmo connection pool é falha forense crítica: Tenant-A nunca pode ler/escrever dados de Tenant-B (INV-22), inclusive sob reuso físico da conexão.
+Enquanto A portável vigorar e este ADR estiver `Proposed` sem promoção,
+Supabase/PostgREST permanece o baseline operacional. Nenhum código Go de
+pool é autorizado por este documento.
 
-Este ADR congela critérios **testáveis** do ciclo de vida da conexão e do harness RLS. Não inicia Etapa 1 (código/migrations). Status: **Proposed** — não Accepted.
+Um vazamento de tenant entre borrowers do mesmo connection pool é falha
+forense crítica: Tenant-A nunca pode ler/escrever dados de Tenant-B
+(INV-22), inclusive sob reuso físico da conexão.
+
+Este ADR congela critérios **testáveis** do ciclo de vida da conexão e do
+harness RLS **para a saída futura**. Não inicia self-host. Status:
+**Proposed**.
 
 ### Artefatos relacionados
 
@@ -26,7 +56,14 @@ Este ADR congela critérios **testáveis** do ciclo de vida da conexão e do har
 
 ## Decisão
 
-Adotar o contrato abaixo para **toda** requisição tenant-scoped no `apps/api` (Go) e para workers/jobs que toquem dados de organização. Critérios são obrigatórios em testes automatizados (unitários Go + pgTAP + Red-Team de pool) antes de qualquer cutover de fatia.
+**Condicional:** se/quando uma API própria assumir a Data API (alternativa
+B ou C Approved), adotar o contrato abaixo para **toda** requisição
+tenant-scoped no `apps/api` (Go) e para workers/jobs que toquem dados de
+organização. Critérios são obrigatórios em testes automatizados (unitários
+Go + pgTAP + Red-Team de pool) antes de qualquer cutover de fatia.
+
+Até lá: PostgREST + RLS JWT continuam; Etapa 1 de A portável implementa
+revogação/DR na stack atual (ADR-011 / ADR-010), **não** este pool Go.
 
 ---
 
@@ -102,7 +139,8 @@ Testes: matriz de casos (ausente / inválido / org errada / org correta) com ass
 
 ## 5. Red-Team adversarial A↔B na mesma conexão física (pool size 1)
 
-Harness obrigatório (Etapa 1 / CI) — **pool bleed tests**:
+Harness obrigatório (**pós-aprovação B/C** / CI self-host) — **pool bleed tests**
+(não confundir com Etapa 1 A portável = revogação + backup/restore):
 
 1. Configurar pool com **tamanho 1**.
 2. Tenant A: request de sucesso (leitura/escrita autorizada) → commit.
@@ -283,8 +321,14 @@ Durante o replay lift-and-shift (sem redesign de schema):
 
 ## Consequências
 
-- **Positivas:** Isolamento testável sob reuso de conexão; contrato claro para Etapa 1; alinhamento com dual-run (ADR-013) sem redesign de schema.
-- **Negativas / custo:** Reescrita do harness pgTAP com equivalência semântica; disciplina rigorosa de drivers/prepared statements; break-glass e roles extras a operar.
-- **Risco residual:** Bugs de middleware que esquecem `SET LOCAL` — mitigado por fail-closed na policy + testes de pool size 1 + scanner.
+- **Positivas:** Isolamento testável sob reuso de conexão **quando** B/C for
+  aprovado; contrato de saída explícito sem forçar migração agora.
+- **Negativas / custo:** Se B/C avançar — reescrita do harness pgTAP;
+  disciplina de drivers/prepared statements; roles extras.
+- **Risco residual (só pós-aprovação B/C):** middleware sem `SET LOCAL` —
+  mitigado por fail-closed + pool size 1 + scanner.
+- **Não-consequência:** sob A portável este ADR **não** agenda Etapa 1
+  self-host nem altera o baseline PostgREST.
 
-Status deste documento: **Proposed**. Nenhum número de capacidade/SLO inventado aqui; budgets quantitativos ficam `pending_baseline` no checklist até medição.
+Status deste documento: **Accepted** (contrato condicional B/C). Budgets
+quantitativos: `pending_baseline` até medição pós-gatilho B/C.

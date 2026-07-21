@@ -1,16 +1,47 @@
 # ADR 013: Strangler Fig — Ordem de Fatias, Dual-Run e Cutover
 
 **Date:** 2026-07-21
-**Status:** Proposed
-**Context:** Phase 11 Etapa -1
+**Status:** Accepted
+**Context:** Phase 11 Etapa −1 — revisão H2.1 (A portável)
+
+> **Contrato condicional de saída.** Este ADR **não** é migração aprovada.
+> Sob **A portável**, Flutter + Supabase permanecem a stack de produção;
+> **React está fora do plano atual**; fatias 1–7 **não** estão agendadas.
+> O Strangler aplica-se **somente se/quando** B ou C for Approved após
+> gatilho objetivo + go/no-go (ADR-010). Cutover **não agendado**.
+>
+> **Preservação obrigatória na saída futura:** contrato de API, IDs,
+> dinheiro em centavos (INV-4), UTC (INV-6), erros INV-26, dados e side
+> effects — sem redesign oportunista.
+
+### Decision record
+
+| Campo | Valor |
+|-------|-------|
+| Status anterior | Proposed (revisão H2.1 — A portável) |
+| Status atual | **Accepted** |
+| Authority | Fundador |
+| Confirmed | 2026-07-21 |
+| Council | H2.1 PASS (Architect, Senior, QA/Security) + Lead PASS_DOCUMENTAL |
+| Scope of acceptance | Ramp condicional B/C; React fora do plano A; cutover não agendado |
+| Explicitly not authorized | Proposta canônica, roadmap, Etapa 0, commit, implementação, Go/React produtivo agora |
 
 ## Contexto
 
-**Se** o go/no-go de ADR-010 aceitar o candidato self-host, a Phase 11 migra **gradualmente** (Strangler Fig) a superfície Flutter + Supabase Edge Functions + Supabase Auth para Go (`apps/api`) + Postgres 16 + React (`apps/web`), preservando o motor forense e o schema via lift-and-shift. Enquanto este ADR estiver `Proposed`, Flutter/Supabase permanecem a stack de produção.
+**Se** o go/no-go de ADR-010 aprovar B ou C, a Phase 11 poderá migrar
+**gradualmente** (Strangler Fig) a superfície Flutter + Supabase Edge
+Functions + Supabase Auth para Go (`apps/api`) + Postgres 16, preservando
+o motor forense e o schema via lift-and-shift. React (`apps/web`), se
+algum dia autorizado, só após paridade de API — **não** faz parte do plano
+A portável.
 
-**Big-bang** (desligar Flutter/Supabase e ligar React/Go no mesmo instante) é **proibido**: risco inaceitável para INV-22 (isolamento), INV-9/28 (evidência/HMAC), INV-26 (anti-oracle) e continuidade B2B.
+**Big-bang** (desligar Flutter/Supabase e ligar React/Go no mesmo instante)
+é **proibido**: risco inaceitável para INV-22, INV-9/28, INV-26 e
+continuidade B2B.
 
-Este ADR define a ordem Strangler Fig, o mapeamento **candidato** das 22 Edge Functions reais, flags, dual-run/shadow, critérios objetivos de paridade, rollback e decommission. Status: **Proposed** — não Accepted.
+Este ADR define a ordem Strangler Fig **candidata**, o mapeamento das 22
+Edge Functions, flags, dual-run/shadow, critérios de paridade, rollback e
+decommission — como ramp condicional. Status: **Proposed**.
 
 ### Artefatos relacionados
 
@@ -26,7 +57,14 @@ Este ADR define a ordem Strangler Fig, o mapeamento **candidato** das 22 Edge Fu
 
 ## Decisão
 
-Migrar por **fatias ordenadas** atrás do mesmo contrato OpenAPI, com **dual-run** até gates PASS, feature flags por rota/função, e preservação do stack legado até cutover explícito por superfície.
+**Condicional a B/C Approved:** migrar por **fatias ordenadas** atrás do
+mesmo contrato OpenAPI, com **dual-run** até gates PASS, feature flags por
+rota/função, e preservação do stack legado até cutover explícito por
+superfície.
+
+**Sob A portável (agora):** nenhuma fatia entra em dual-run; Etapa 2
+documenta OpenAPI das superfícies existentes **sem** Go produtivo; Etapa 3
+desacopla repositories Flutter do provedor **sem** React.
 
 ---
 
@@ -63,7 +101,7 @@ Nenhuma fatia N+1 entra em dual-run de escrita sem a fatia N ter critérios de e
 
 ## 3. Mapeamento candidato: inventário real (22 funções)
 
-Fonte: diretórios `supabase/functions/*/index.ts` (exclui `shared/`, `tests/`, `node_modules/`).  
+Fonte: diretórios `supabase/functions/*/index.ts` (exclui `shared/`, `tests/`, `node_modules/`).
 **Isto não presume buckets fechados** — é mapeamento **candidato** com justificativa; o inventário canônico 1:1 em [phase11_edge_functions_inventory.md](../proposals/phase11_edge_functions_inventory.md) pode refinar destino (`apps/api` | worker | storage | defer) sem alterar a **ordem** das fatias.
 
 | Função | Fatia candidata | Justificativa |
@@ -197,10 +235,12 @@ Teste de aceite do drill: cronômetro < 15 min do decisão→tráfego legado; ch
 
 ---
 
-## 10. React (fatia 7) — regra de ouro
+## 10. React (fatia 7) — fora do plano atual
 
+- **React permanece fora do plano A portável.** Fatia 7 só existe se B/C for
+  Approved e a API correspondente estiver em paridade PASS.
 - Nenhuma rota React em produção sem API Go daquela capacidade em paridade PASS.
-- Migração **tela a tela** (Dashboard, Fila Auditora, Tenant Admin, etc.) espelhando OpenAPI.
+- Migração **tela a tela** (se autorizada) espelhando OpenAPI.
 - CSRF header em mutações (ADR-011).
 - Design tokens: portar de `.kiro/steering/ux-standards.md` — sem reinventar tema.
 
@@ -231,8 +271,12 @@ Somente quando **todos** forem verdadeiros:
 
 ## Consequências
 
-- **Positivas:** Risco forense priorizado; rollback rápido; inventário rastreável; Flutter/Supabase como rede de segurança.
-- **Custo:** Dual-run e shadow exigem canonicalização e disciplina de flags; fatia 4 (reads) precisa de inventário além das Edge Functions.
-- **Dependências:** ADR-011 (Auth) e ADR-012 (RLS/pool) são pré-requisitos duros das fatias 1–3.
+- **Positivas:** Ramp de saída documentado sem agendar cutover; Flutter/Supabase
+  como rede de segurança sob A portável; React explicitamente fora do plano.
+- **Custo (só se B/C):** Dual-run/shadow; disciplina de flags; inventário de reads.
+- **Dependências (só se B/C):** ADR-011 e ADR-012 como pré-requisitos das fatias.
+- **Não-consequência:** este ADR **não** autoriza Go/React produtivo nem
+  descomissionamento do legado sob A portável.
 
-Status deste documento: **Proposed**. Budgets numéricos de SLO/performance/estabilidade: `pending_baseline` até fonte medida no checklist.
+Status deste documento: **Accepted** (contrato condicional B/C). Budgets
+numéricos: `pending_baseline` até medição pós-gatilho.

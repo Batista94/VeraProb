@@ -1,13 +1,14 @@
 # Phase 11 — Inventário 1:1 das Edge Functions (Etapa −1)
 
-**Date:** 2026-07-21  
-**Status:** Proposed (inventário contratual; **não** Accepted)  
-**Commit baseline:** `4d4786516c5d2800aad8873e3633faa750f067bb`  
-**collected_at:** `2026-07-21T19:34:21Z`  
-**Branch de coleta:** `feat/roi-simulator-ui`  
+**Date:** 2026-07-21
+**Status:** Proposed (inventário contratual; **não** Accepted)
+**Commit baseline:** `6e626a6f6314484e7c939e988ff34980351f257b`
+**collected_at:** `2026-07-21T21:05:00Z`
+**Branch de coleta:** `feat/roi-simulator-ui`
+**Direção:** A portável (Supabase/Flutter); destinos Go = **candidatos condicionais** (ADR-010 B/C)
 **SSOT siblings:** [phase11_enterprise_pivot.md](phase11_enterprise_pivot.md), [phase11_threat_model.md](phase11_threat_model.md), [phase11_parity_checklist.md](phase11_parity_checklist.md), [ADR-010](../adr/010_exit_supabase.md), [ADR-011](../adr/011_auth_zero_trust.md), [ADR-012](../adr/012_rls_connection_lifecycle.md), [ADR-013](../adr/013_strangler_fig.md)
 
-> **Destino candidato** neste documento é **candidatura** (ADR-013 §3), não fato Accepted. Cutover/decommission só após gates do [parity checklist](phase11_parity_checklist.md).
+> **Destino candidato** neste documento é candidatura condicional a B/C (ADR-013), **não** roadmap de execução sob A portável. Cutover/decommission só após gatilho + go/no-go + gates do [parity checklist](phase11_parity_checklist.md).
 
 ---
 
@@ -95,7 +96,7 @@ Inventário **completo** sob o critério declarado. Qualquer função Edge futur
 | `dispatch-carrier-notifications` | dual-path | 5 | worker | No | ✅ |
 | `dispatch-verdict-webhooks` | dual-path | 5 | worker | No | ✅ |
 | `telegram-webhook` | Telegram secret; `verify_jwt=false` | 5 | worker / `apps/api` | N/A | ✅ integration |
-| `reveal-webhook-signing-secret` | handleWithSecurity; **AAL2=false** | 5–6 | `apps/api` handler | **No (P0)** | ✅ |
+| `reveal-webhook-signing-secret` | handleWithSecurity; **AAL2=true** (CLOSED) | 5–6 cond. | `apps/api` handler (cond. B/C) | **Yes (CLOSED)** | ✅ |
 | `super-admin-proxy` | manual JWT+HMAC; `verify_jwt=false` | 6 | `apps/api` handler | Yes | ✅ integration |
 
 ---
@@ -476,23 +477,23 @@ Campos obrigatórios do plano validado: `nome`, `responsabilidade`, `trigger`, `
 | responsabilidade | Provision/rotate webhook signing keys; derive org secret hex reveal-once; audit `WEBHOOK_SECRET_*` |
 | trigger | POST `{ action: "provision" \| "rotate" }` |
 | consumidores | Flutter `SupabaseWebhookRepository._invokeReveal` |
-| autenticação/gateway | `handleWithSecurity` requireAuth; **`requireAAL2=false` explícito** (TODO Fase 11 / `REQUIRE_AAL2_TENANT_SECRET`) |
-| claims | `organization_id` do JWT |
+| autenticação/gateway | `handleWithSecurity` requireAuth + **`requireAAL2=true`** (`REVEAL_REQUIRE_AAL2`) — CLOSED 2026-07-21 |
+| claims | `organization_id` do JWT; `aal=aal2` obrigatório |
 | roles | `TENANT_ADMIN` |
 | service_role | Sim |
 | tabelas/views/RPCs | `webhook_signing_keys`; `system_audit_log` |
 | efeitos externos | Nenhum (derive local) |
 | dados sensíveis/secrets | `HMAC_SECRET_KEY_V1`, `SUPABASE_*` |
 | invariantes | INV-1, INV-26, INV-28, INV-31 |
-| testes existentes | `tests/reveal_webhook_signing_secret_unit_test.ts`; Dart webhook repo |
+| testes existentes | `tests/reveal_webhook_signing_secret_unit_test.ts` (AAL2 wiring / aal1 reject / aal2 allow); Dart webhook repo |
 | observabilidade | `console.error` RBAC/audit |
 | dependências | `handle_with_security`, `sovereignty_error_mapper`, `hmac_signer` |
-| destino candidato | `apps/api` handler |
-| ordem migração | Fatia **5–6** |
-| risco | **P0:** reveal com sessão AAL1 (T-26 / PG-AAL2) |
-| critério paridade | PG-AAL2 + PG-HMAC — aal1 deve deny |
+| destino candidato | `apps/api` handler (**condicional B/C**) |
+| ordem migração | Fatia **5–6** (só se B/C) |
+| risco | Residual AAL2 **CLOSED**; risco residual = abuso pós-AAL2 / audit |
+| critério paridade | PG-AAL2 PASS (Edge) + PG-HMAC |
 | rollback | Disable reveal route |
-| desligamento | Após remediação AAL2 + Go parity |
+| desligamento | Condicional a B/C + parity |
 
 ### 5.16 `revoke-impersonation`
 
@@ -680,18 +681,18 @@ Campos obrigatórios do plano validado: `nome`, `responsabilidade`, `trigger`, `
 
 ---
 
-## 6. Findings (abertos — Status Proposed)
+## 6. Findings (Status Proposed — A portável)
 
-| ID | Finding | Severidade | Funções | Gate / ADR |
-|----|---------|------------|---------|------------|
-| F-01 | Gaps de teste Deno: sem unit dedicado em várias superfícies (portal evidence, ingest unit, impersonation, revoke-*, generate-org-secret, justification URL, verify-ledger-hmac, notify-invite, secure-evidence-proxy handler) | Alta (cobertura) | ver §4 | PG-* correspondentes |
-| F-02 | `generate-org-secret` **retired** no plano DB mas diretório Edge + handler Dart ainda presentes | Média | `generate-org-secret` | PG-HMAC / cleanup |
-| F-03 | `verify-evidence-hash` é stub 404 permanente | Baixa (dívida) | `verify-evidence-hash` | decommission |
-| F-04 | AAL2 **não** exigido em `reveal-webhook-signing-secret` (`requireAAL2=false`) | **P0** | reveal | PG-AAL2, ADR-011, T-26 |
-| F-05 | `notify-invite`: auth só `getUser`, **sem RBAC de role** | Média | notify-invite | endurecer na migração worker |
-| F-06 | `ingest-omnitracs` sem `verify_jwt=false` (paridade sascar) | Alta (config) | ingest-omnitracs | PG-INGEST, T-28 |
-| F-07 | Contagem migrations **377** ≠ 365 do texto histórico do plano | Info | lift-and-shift | ADR-010/013 |
-| F-08 | Residual JWT P0: revogação pré-`exp` com `getClaims` | Alta | revoke-user-sessions / auth | PG-REVOCATION |
+| ID | Finding | Severidade | Funções | Gate / ADR | Status |
+|----|---------|------------|---------|------------|--------|
+| F-01 | Gaps de teste Deno: sem unit dedicado em várias superfícies | Alta (cobertura) | ver §4 | PG-* correspondentes | Open |
+| F-02 | `generate-org-secret` **retired** no plano DB mas diretório Edge + handler Dart ainda presentes | Média | `generate-org-secret` | PG-HMAC / cleanup | Open |
+| F-03 | `verify-evidence-hash` é stub 404 permanente | Baixa (dívida) | `verify-evidence-hash` | decommission | Open |
+| F-04 | AAL2 em `reveal-webhook-signing-secret` | — | reveal | PG-AAL2, ADR-011, T-26 | **CLOSED** (2026-07-21; `requireAAL2=true`) |
+| F-05 | `notify-invite`: auth só `getUser`, **sem RBAC de role** | Média | notify-invite | endurecer | Open |
+| F-06 | `ingest-omnitracs` sem `verify_jwt=false` (paridade sascar) | Alta (config) | ingest-omnitracs | PG-INGEST, T-28 | Open (track pós-PASS −1) |
+| F-07 | Contagem migrations **377** ≠ 365 do texto histórico do plano | Info | lift-and-shift | ADR-010/013 | Open (info) |
+| F-08 | Revogação pré-`exp` com `getClaims` | Alta (runtime) | revoke-user-sessions / auth | PG-REVOCATION, P-REV-IMPL-01, T-27 | **Design CLOSED** (ADR-011); **risco runtime Open/High** até `P-REV-IMPL-01` — não chamar “mitigado” |
 
 ---
 
