@@ -14,24 +14,16 @@ import {
   type SecurityContext,
 } from "../shared/handle_with_security.ts";
 import { sanitizeJwtClaims } from "../shared/jwt_claims_sanitizer.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 import {
   checkRateLimit,
   rateLimitMap,
   RATE_LIMIT,
-  WINDOW_MS,
 } from "../log-security-incident/index.ts";
 
 // ── Test Helpers ─────────────────────────────────────────────────────────────
 
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 function validJwtPayload(): Record<string, unknown> {
   return {
@@ -150,6 +142,7 @@ Deno.test({
         true,  // requireAuth
         false, // requireSuperAdmin
         false, // requireAAL2
+        claimsOf(validJwtPayload()),
       );
 
       assertEquals(
@@ -226,6 +219,8 @@ Deno.test({
         true,
         false,
         false,
+
+        claimsOf(validJwtPayload()),
       );
 
       assertEquals(
@@ -362,6 +357,8 @@ Deno.test({
           true,
           false,
           false,
+
+          claimsOf(validJwtPayload()),
         );
 
         assertEquals(
@@ -395,6 +392,8 @@ Deno.test({
         true,
         false,
         false,
+
+        claimsOf(validJwtPayload()),
       );
 
       assertEquals(

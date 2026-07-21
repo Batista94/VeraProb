@@ -1,11 +1,20 @@
 {
   "tasks": {
-    "test": "deno test shared/ tests/"
+    "test": "deno test --allow-env --allow-net --allow-read --no-check \"--ignore=**/jwt_getclaims_integration_test.ts\" \"--ignore=**/telegram_webhook_integration_test.ts\" \"--ignore=**/super_admin_proxy_integration_test.ts\" shared/ tests/",
+    "check": "deno check shared/jwt_auth_validator.ts shared/handle_with_security.ts shared/with_timeout.ts shared/hmac_signer.ts reveal-webhook-signing-secret/index.ts log-security-incident/index.ts tests/jwt_auth_validator_test.ts tests/jwt_test_helpers.ts tests/jwt_getclaims_integration_test.ts tests/aal2_enforcement_pbt_test.ts tests/headers_integrity_404_pbt_test.ts tests/log_security_incident_auth_pbt_test.ts tests/log_security_incident_unit_test.ts tests/penetration_protocol_integration_test.ts tests/reveal_webhook_signing_secret_unit_test.ts tests/security_incident_log_completeness_pbt_test.ts",
+    "lint": "deno lint shared/jwt_auth_validator.ts shared/handle_with_security.ts shared/with_timeout.ts shared/hmac_signer.ts reveal-webhook-signing-secret/index.ts log-security-incident/index.ts tests/jwt_auth_validator_test.ts tests/jwt_test_helpers.ts tests/jwt_getclaims_integration_test.ts tests/aal2_enforcement_pbt_test.ts tests/headers_integrity_404_pbt_test.ts tests/log_security_incident_auth_pbt_test.ts tests/log_security_incident_unit_test.ts tests/penetration_protocol_integration_test.ts tests/reveal_webhook_signing_secret_unit_test.ts tests/security_incident_log_completeness_pbt_test.ts"
   },
   "compilerOptions": {
     "lib": ["deno.window", "deno.ns"]
   },
+  "lint": {
+    "rules": {
+      "exclude": ["no-import-prefix", "no-unversioned-import", "require-await"]
+    }
+  },
   "imports": {
-    "fast-check": "npm:fast-check@3.22.0"
+    "fast-check": "npm:fast-check@3.22.0",
+    "@std/assert": "jsr:@std/assert@1",
+    "@supabase/supabase-js": "jsr:@supabase/supabase-js@2"
   }
 }

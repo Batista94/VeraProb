@@ -16,6 +16,7 @@
 import { assertEquals, assert } from "jsr:@std/assert@1";
 import fc from "fast-check";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
@@ -44,15 +45,7 @@ const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[
 
 // ── Test Helpers ─────────────────────────────────────────────────────────────
 
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 function createAuthRequest(jwt?: string, userAgent?: string): Request {
   const headers: Record<string, string> = {
@@ -181,7 +174,7 @@ const failingJwtPayloadArb = fc.oneof(
     exp: fc.constant(Math.floor(Date.now() / 1000) + 3600),
     app_metadata: fc.record({
       super_admin: fc.constant(true),
-      org_id: fc.uuid(),
+      org_id: fc.constant(null),
     }),
   }),
 );
@@ -216,6 +209,7 @@ Deno.test({
             true,  // requireAuth
             true,  // requireSuperAdmin
             true,  // requireAAL2
+            claimsOf(payload),
           );
 
           assertHeaderIntegrity(response, `SuperAdmin rejection`);
@@ -242,7 +236,6 @@ Deno.test({
             role: "authenticated",
             exp: Math.floor(Date.now() / 1000) + 3600,
             app_metadata: {
-              super_admin: true,
               org_id: crypto.randomUUID(),
             },
           };
@@ -256,6 +249,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             true,   // requireAAL2
+            claimsOf(payload),
           );
 
           assertHeaderIntegrity(response, `AAL2 rejection with aal='${aal}'`);
@@ -308,7 +302,7 @@ Deno.test({
             exp: Math.floor(Date.now() / 1000) + 3600,
             app_metadata: {
               super_admin: true,
-              org_id: crypto.randomUUID(),
+              org_id: null,
             },
           };
           const jwt = createTestJwt(payload);
@@ -321,6 +315,7 @@ Deno.test({
             true,  // requireAuth
             true,  // requireSuperAdmin
             true,  // requireAAL2
+            claimsOf(payload),
           );
 
           assertHeaderIntegrity(response, `Handler error`);
@@ -349,6 +344,7 @@ Deno.test({
             true,  // requireAuth
             true,  // requireSuperAdmin
             true,  // requireAAL2
+            claimsOf(payload),
           );
 
           assertHeaderIntegrity(response, `Varied auth state`);

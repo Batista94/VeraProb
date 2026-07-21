@@ -20,10 +20,10 @@ import {
   type SecurityContext,
 } from "../shared/handle_with_security.ts";
 import { sanitizeJwtClaims } from "../shared/jwt_claims_sanitizer.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 import {
   checkRateLimit,
   rateLimitMap,
-  RATE_LIMIT,
 } from "../log-security-incident/index.ts";
 
 // ── Test Helpers ─────────────────────────────────────────────────────────────
@@ -31,20 +31,12 @@ import {
 /**
  * Creates a minimal JWT token with the given payload claims.
  */
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 /**
  * Creates a POST Request with the given JWT and body payload.
  */
-function createLogRequest(jwt: string): Request {
+function _createLogRequest(jwt: string): Request {
   return new Request("https://example.com/log-security-incident", {
     method: "POST",
     headers: {
@@ -140,14 +132,11 @@ const authenticatedJwtPayloadArb = fc
       fc.constant(""),
       fc.stringOf(fc.char().filter((c) => /[a-zA-Z0-9]/.test(c)), { minLength: 1, maxLength: 10 }),
     ),
-    role: fc.oneof(
-      fc.constant("authenticated"),
-      fc.constant("anon"),
-      fc.constant("service_role"),
-      fc.stringOf(fc.char().filter((c) => /[a-zA-Z0-9]/.test(c)), { minLength: 1, maxLength: 15 }),
-    ),
+    // Top-level JWT role must be "authenticated" (user access token).
+    // Property 11 varies super_admin/aal — not the Auth role claim.
+    role: fc.constant("authenticated"),
+    // Tenant route: exclusive principals — never emit hybrid SA+org or orgless SA
     super_admin: fc.oneof(
-      fc.constant(true),
       fc.constant(false),
       fc.constant(null),
       fc.constant(undefined),
@@ -215,6 +204,7 @@ Deno.test({
             true,  // requireAuth
             false, // requireSuperAdmin
             false, // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -273,7 +263,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "Property 11: super_admin=true with aal2 also receives HTTP 200 (not blocked)",
+  name: "Property 11: orgless SuperAdmin on tenant route receives 404 (exclusive principals)",
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
@@ -290,7 +280,7 @@ Deno.test({
             session_id: crypto.randomUUID(),
             app_metadata: {
               super_admin: true,
-              org_id: crypto.randomUUID(),
+              org_id: null,
             },
           };
 
@@ -320,12 +310,13 @@ Deno.test({
             true,  // requireAuth
             false, // requireSuperAdmin
             false, // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
             response.status,
-            200,
-            `Expected super_admin+aal2 user to get 200, got ${response.status}`,
+            404,
+            `Expected orgless SA on tenant route to get 404, got ${response.status}`,
           );
         }),
         { numRuns: 100 },

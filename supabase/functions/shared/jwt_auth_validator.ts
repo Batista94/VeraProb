@@ -1,37 +1,39 @@
 /**
- * JWT Auth Validator for Deno Edge Functions (INV-1, INV-26, INV-27).
+ * JWT Auth Validator for Deno Edge Functions (INV-1, INV-22, INV-26).
  *
- * Decodes and validates the Supabase JWT from the `Authorization` header,
- * extracting the `organization_id` claim for tenant isolation checks.
+ * Cryptographically verifies the Supabase JWT via `auth.getClaims`, then
+ * validates application claims. Never trusts unsigned payload decode.
  *
  * **Security Contract:**
- * - Stateless: no session cache, no DB calls — pure JWT decode + claim check.
- * - On ANY failure (missing token, expired, malformed, org mismatch): returns
- *   an indistinguishable HTTP 404 to prevent Oracle Attacks (INV-26).
- * - Internal forensic data (org IDs, session ID) is logged to Sentry
- *   via the `sendSecurityLog` helper — never exposed to the client.
+ * - Claims come ONLY from a successful verifier (`getClaims` in production).
+ * - Deadline lives in validateJwtAuth (every verifier receives AbortSignal).
+ * - Principals are mutually exclusive: SuperAdmin must have org_id null/absent;
+ *   tenant users must have a non-empty org_id string. Hybrid → 404.
+ * - Orgless SuperAdmin is allowed ONLY when allowOrglessSuperAdmin=true
+ *   (handleWithSecurity sets this iff requireSuperAdmin).
+ * - On ANY failure: indistinguishable HTTP 404 (INV-26). Never log the token.
+ * - Issuer: SUPABASE_JWT_ISSUER ?? `${SUPABASE_URL}/auth/v1`.
  *
- * **Usage:**
- * ```ts
- * const auth = await validateJwtAuth(req, "org-expected-optional");
- * if (!auth.ok) return auth.response; // 404 — stop processing
- *
- * // auth.userId, auth.orgId, auth.jwtPayload are available
- * await handleBusinessLogic(auth.userId, auth.orgId, req);
- * ```
+ * Residual risks (backlog — see forensic_records/plans/20260721000000_jwt_p0_residual_risks.md):
+ * getClaims may not see logout/ban until exp; reveal-webhook-signing-secret still lacks AAL2.
  */
 
+// deno-lint-ignore no-import-prefix
+import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "./sovereignty_error_mapper.ts";
+import { withDeadline } from "./with_timeout.ts";
 
 // deno-lint-ignore no-explicit-any
 declare const Sentry: any;
+
+export const JWT_VERIFIER_TIMEOUT_MS = 3000;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export interface JwtAuthSuccess {
   ok: true;
   userId: string;
-  orgId: string;
+  orgId: string | undefined;
   sessionId: string;
   jwtPayload: Record<string, unknown>;
 }
@@ -43,145 +45,220 @@ export interface JwtAuthFailure {
 
 export type JwtAuthResult = JwtAuthSuccess | JwtAuthFailure;
 
-// ── JWT Decode Helpers ───────────────────────────────────────────────────────
+/**
+ * Injectable claims verifier. Production default uses `auth.getClaims`.
+ * Always receives AbortSignal from validateJwtAuth's single deadline.
+ */
+export type JwtClaimsVerifier = (
+  token: string,
+  signal: AbortSignal,
+) => Promise<{ claims: Record<string, unknown> } | { error: true }>;
+
+export interface ValidateJwtAuthOptions {
+  expectedOrgId?: string;
+  /** Default false. true only when handleWithSecurity has requireSuperAdmin. */
+  allowOrglessSuperAdmin?: boolean;
+  verifier?: JwtClaimsVerifier;
+  /** Test-only: override fetch used by defaultJwtClaimsVerifier. */
+  fetchImpl?: typeof fetch;
+}
+
+// ── Default verifier (production) ────────────────────────────────────────────
 
 /**
- * Decodes a JWT payload (base64url) without verifying the signature.
- *
- * **Warning:** This does NOT validate the token signature. It only extracts
- * the claims. Use Supabase's `auth.getUser()` for full validation when
- * the user identity must be cryptographically trusted.
+ * Verifies JWT via anon client + getClaims. Propagates signal only —
+ * deadline/abort is owned by validateJwtAuth.
  */
-function decodeJwtPayload(
+export async function defaultJwtClaimsVerifier(
   token: string,
-): Record<string, unknown> | null {
-  try {
-    const parts = token.split(".");
-    if (parts.length !== 3) return null;
+  signal: AbortSignal,
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ claims: Record<string, unknown> } | { error: true }> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!url || !anonKey) return { error: true };
 
-    // base64url → base64 → UTF-8
-    const payloadB64 = parts[1]
-      .replace(/-/g, "+")
-      .replace(/_/g, "/");
-    const jsonStr = decodeURIComponent(
-      atob(payloadB64)
-        .split("")
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
-        .join(""),
-    );
-    return JSON.parse(jsonStr) as Record<string, unknown>;
+  const client = createClient(url, anonKey, {
+    global: {
+      fetch: (input, init) =>
+        fetchImpl(input, {
+          ...init,
+          signal,
+        }),
+    },
+  });
+  try {
+    const { data, error } = await client.auth.getClaims(token);
+    if (error || data == null || data.claims == null) return { error: true };
+    return { claims: data.claims as Record<string, unknown> };
   } catch {
-    return null;
+    return { error: true };
   }
 }
 
-/**
- * Extracts the Bearer token from the Authorization header.
- */
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function extractBearerToken(req: Request): string | null {
   const authHeader = req.headers.get("Authorization") ?? "";
   const match = authHeader.match(/^Bearer\s+(.+)$/i);
   return match ? match[1].trim() : null;
 }
 
+function expectedIssuer(): string | null {
+  const explicit = Deno.env.get("SUPABASE_JWT_ISSUER");
+  if (explicit) return explicit.replace(/\/$/, "");
+  const url = Deno.env.get("SUPABASE_URL");
+  if (!url) return null;
+  return `${url.replace(/\/$/, "")}/auth/v1`;
+}
+
+function isAuthenticatedAudience(aud: unknown): boolean {
+  if (aud === "authenticated") return true;
+  if (Array.isArray(aud)) {
+    return aud.includes("authenticated");
+  }
+  return false;
+}
+
 // ── Main Validator ───────────────────────────────────────────────────────────
 
 /**
- * Validates the JWT from the request and extracts the organization_id claim.
- *
- * **Validation Steps:**
- * 1. Extract Bearer token from Authorization header
- * 2. Decode JWT payload (base64url)
- * 3. Check `exp` claim for expiry
- * 4. Extract `sub` (user ID) and `app_metadata.org_id` claims
- * 5. (Optional) Verify org_id matches the expected tenant
- *
- * On ANY failure, returns a 404 response (INV-26).
- *
- * @param req — The incoming HTTP request
- * @param expectedOrgId — Optional: if provided, validates the JWT's org_id
- *   matches this value. Mismatch returns 404 (not 403) to prevent inference.
+ * Validates the JWT from the request and extracts tenant / SuperAdmin identity.
  */
-// deno-lint-ignore require-await
 export async function validateJwtAuth(
   req: Request,
-  expectedOrgId?: string,
+  options: ValidateJwtAuthOptions = {},
 ): Promise<JwtAuthResult> {
-  // Step 1: Extract token
   const token = extractBearerToken(req);
   if (!token) {
-    return _failure("Missing Authorization header", 401);
+    return _failure("Missing Authorization header");
   }
 
-  // Step 2: Decode
-  const payload = decodeJwtPayload(token);
-  if (!payload) {
-    return _failure("Not Found");
+  const verifier: JwtClaimsVerifier = options.verifier ??
+    ((t, signal) =>
+      defaultJwtClaimsVerifier(t, signal, options.fetchImpl ?? fetch));
+
+  let verified: { claims: Record<string, unknown> } | { error: true };
+  try {
+    verified = await withDeadline(
+      (signal) => verifier(token, signal),
+      JWT_VERIFIER_TIMEOUT_MS,
+    );
+  } catch {
+    return _failure("Verifier deadline/error");
+  }
+  if ("error" in verified) {
+    return _failure("Verification failed");
   }
 
-  // Step 3: Check expiry
-  const exp = payload.exp as number | undefined;
-  if (exp && Date.now() >= exp * 1000) {
-    return _failure("Not Found");
+  const claims = verified.claims;
+  const issExpected = expectedIssuer();
+  if (!issExpected || claims.iss !== issExpected) {
+    return _failure("Invalid issuer");
   }
 
-  // Step 4: Extract claims
-  const userId = payload.sub as string | undefined;
-  const appMetadata = payload.app_metadata as Record<string, unknown> | undefined;
-  const orgId = appMetadata?.org_id as string | undefined;
-
-  if (!userId || !orgId) {
-    return _failure("Not Found");
+  if (!isAuthenticatedAudience(claims.aud)) {
+    return _failure("Invalid audience");
   }
 
-  // Step 5: Optional org_id match (INV-1: Identity Sovereignty)
-  if (expectedOrgId && orgId !== expectedOrgId) {
-    // INV-26: Return 404, not 403 — prevent org enumeration
-    return _failure("Not Found", undefined, {
-      forensicEvent: "IDENTITY_SPOOFING",
-      forensicPayloadOrgId: expectedOrgId,
-      forensicJwtOrgId: orgId,
-      forensicUserId: userId,
-    });
+  if (claims.role !== "authenticated") {
+    return _failure("Invalid role");
   }
 
-  // Success
+  const exp = claims.exp;
+  if (typeof exp !== "number" || Date.now() >= exp * 1000) {
+    return _failure("Expired or missing exp");
+  }
+
+  const userId = claims.sub;
+  if (typeof userId !== "string" || userId.length === 0) {
+    return _failure("Invalid sub");
+  }
+
+  const appMetadata = claims.app_metadata;
+  if (
+    typeof appMetadata !== "object" ||
+    appMetadata === null ||
+    Array.isArray(appMetadata)
+  ) {
+    return _failure("Invalid app_metadata");
+  }
+
+  const meta = appMetadata as Record<string, unknown>;
+  const isSuperAdmin = meta.super_admin === true;
+  const rawOrg = meta.org_id;
+
+  let orgId: string | undefined;
+  if (isSuperAdmin) {
+    if (rawOrg !== null && rawOrg !== undefined) {
+      return _failure("Hybrid principal");
+    }
+    if (options.allowOrglessSuperAdmin !== true) {
+      return _failure("SA on tenant route");
+    }
+    orgId = undefined;
+  } else {
+    if (typeof rawOrg !== "string" || rawOrg.length === 0) {
+      return _failure("Invalid org_id");
+    }
+    orgId = rawOrg;
+  }
+
+  if (options.expectedOrgId !== undefined) {
+    if (orgId === undefined || orgId !== options.expectedOrgId) {
+      return _failure("Not Found", {
+        forensicEvent: "IDENTITY_SPOOFING",
+        forensicPayloadOrgId: options.expectedOrgId,
+        forensicJwtOrgId: typeof orgId === "string" ? orgId : undefined,
+        forensicUserId: userId,
+      });
+    }
+  }
+
+  const sessionRaw = claims.session_id;
+  const sessionId = typeof sessionRaw === "string" && sessionRaw.length > 0
+    ? sessionRaw
+    : "unknown";
+
   return {
     ok: true,
     userId,
     orgId,
-    sessionId: payload.session_id as string ?? "unknown",
-    jwtPayload: payload,
+    sessionId,
+    jwtPayload: claims,
   };
 }
 
 // ── Internal ─────────────────────────────────────────────────────────────────
 
-/**
- * Returns a 404 failure response.
- *
- * INV-26: All failures return identical `{"error":"Not Found"}`.
- * Forensic context is passed for internal logging (Sentry).
- */
 function _failure(
   _reason: string,
-  _status?: number,
   forensicContext?: Record<string, string | undefined>,
 ): JwtAuthFailure {
-  // Log forensic context to Sentry (if Sentry is initialized)
   if (forensicContext && typeof Sentry !== "undefined") {
     try {
-      Sentry.withScope?.((scope: { setTag: (arg0: string, arg1: string) => void; setContext: (arg0: string, arg1: Record<string, string | undefined>) => void }) => {
-        scope.setTag("security_event", "JWT_AUTH_FAILURE");
-        scope.setTag("severity", "HIGH");
-        if (forensicContext.forensicPayloadOrgId) {
-          scope.setTag("payload_org_id", forensicContext.forensicPayloadOrgId);
-        }
-        if (forensicContext.forensicJwtOrgId) {
-          scope.setTag("jwt_org_id", forensicContext.forensicJwtOrgId);
-        }
-        scope.setContext("forensic_data", forensicContext);
-      });
+      Sentry.withScope?.(
+        (scope: {
+          setTag: (arg0: string, arg1: string) => void;
+          setContext: (
+            arg0: string,
+            arg1: Record<string, string | undefined>,
+          ) => void;
+        }) => {
+          scope.setTag("security_event", "JWT_AUTH_FAILURE");
+          scope.setTag("severity", "HIGH");
+          if (forensicContext.forensicPayloadOrgId) {
+            scope.setTag(
+              "payload_org_id",
+              forensicContext.forensicPayloadOrgId,
+            );
+          }
+          if (forensicContext.forensicJwtOrgId) {
+            scope.setTag("jwt_org_id", forensicContext.forensicJwtOrgId);
+          }
+          scope.setContext("forensic_data", forensicContext);
+        },
+      );
     } catch {
       // Sentry not initialized — silently skip
     }

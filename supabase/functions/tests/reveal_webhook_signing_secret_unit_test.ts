@@ -1,4 +1,4 @@
-import { assertEquals, assertNotEquals } from "jsr:@std/assert";
+import { assertEquals, assertNotEquals } from "@std/assert";
 import {
   deriveSecretHex,
   handleReveal,
@@ -6,22 +6,6 @@ import {
 import { deriveOrgKey } from "../shared/hmac_signer.ts";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function b64url(obj: Record<string, unknown>): string {
-  return btoa(JSON.stringify(obj))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function fakeJwtRequest(appMetadata: Record<string, unknown>): Request {
-  const payload = b64url({ sub: "user-1", app_metadata: appMetadata });
-  return new Request("http://localhost", {
-    method: "POST",
-    headers: { Authorization: `Bearer h.${payload}.s` },
-    body: JSON.stringify({ action: "provision" }),
-  });
-}
 
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
@@ -52,7 +36,7 @@ Deno.test("reveal parity - deriveSecretHex equals deriveOrgKey material", async 
   const revealedHex = await deriveSecretHex(orgId, version);
   const erpKey = await crypto.subtle.importKey(
     "raw",
-    hexToBytes(revealedHex),
+    hexToBytes(revealedHex) as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -86,27 +70,39 @@ Deno.test("reveal parity - orgs derive distinct keys (INV-28)", async () => {
 // ── RBAC / Anti-Oracle (INV-1, INV-26) ────────────────────────────────────────
 
 Deno.test("reveal RBAC - non-TENANT_ADMIN role gets 404", async () => {
-  const req = fakeJwtRequest({ role: "VIEWER", org_id: "org-1" });
+  const req = new Request("http://localhost", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "provision" }),
+  });
   // deno-lint-ignore no-explicit-any
-  const ctx = { orgId: "org-1", userId: "user-1" } as any;
+  const ctx = { orgId: "org-1", userId: "user-1", role: "VIEWER" } as any;
   // deno-lint-ignore no-explicit-any
   const res = await handleReveal(ctx, {} as any, req);
   assertEquals(res.status, 404);
 });
 
 Deno.test("reveal RBAC - missing orgId in context gets 404", async () => {
-  const req = fakeJwtRequest({ role: "TENANT_ADMIN" });
+  const req = new Request("http://localhost", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "provision" }),
+  });
   // deno-lint-ignore no-explicit-any
-  const ctx = { userId: "user-1" } as any;
+  const ctx = { userId: "user-1", role: "TENANT_ADMIN" } as any;
   // deno-lint-ignore no-explicit-any
   const res = await handleReveal(ctx, {} as any, req);
   assertEquals(res.status, 404);
 });
 
 Deno.test("reveal-once - provision with existing active key gets 409", async () => {
-  const req = fakeJwtRequest({ role: "TENANT_ADMIN", org_id: "org-1" });
+  const req = new Request("http://localhost", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "provision" }),
+  });
   // deno-lint-ignore no-explicit-any
-  const ctx = { orgId: "org-1", userId: "user-1" } as any;
+  const ctx = { orgId: "org-1", userId: "user-1", role: "TENANT_ADMIN" } as any;
   const mockSupabase = {
     from: (_table: string) => ({
       select: (_cols: string) => ({
@@ -128,17 +124,13 @@ Deno.test("reveal-once - provision with existing active key gets 409", async () 
 });
 
 Deno.test("reveal RBAC - direct 'reveal' action is denied (reveal-once)", async () => {
-  const payload = b64url({
-    sub: "user-1",
-    app_metadata: { role: "TENANT_ADMIN", org_id: "org-1" },
-  });
   const req = new Request("http://localhost", {
     method: "POST",
-    headers: { Authorization: `Bearer h.${payload}.s` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action: "reveal" }),
   });
   // deno-lint-ignore no-explicit-any
-  const ctx = { orgId: "org-1", userId: "user-1" } as any;
+  const ctx = { orgId: "org-1", userId: "user-1", role: "TENANT_ADMIN" } as any;
   // deno-lint-ignore no-explicit-any
   const res = await handleReveal(ctx, {} as any, req);
   assertEquals(res.status, 404);

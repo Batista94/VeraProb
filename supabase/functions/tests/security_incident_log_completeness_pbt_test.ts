@@ -26,6 +26,7 @@ import {
   type SecurityContext,
 } from "../shared/handle_with_security.ts";
 import { sanitizeJwtClaims } from "../shared/jwt_claims_sanitizer.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 import {
   rateLimitMap,
 } from "../log-security-incident/index.ts";
@@ -75,15 +76,7 @@ function createMockSupabaseClient(): {
 /**
  * Creates a minimal JWT token with the given payload claims.
  */
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 /**
  * Sets environment variables and restores them after the callback.
@@ -331,6 +324,7 @@ Deno.test({
             true,  // requireAuth
             false, // requireSuperAdmin
             false, // requireAAL2
+            claimsOf(jwtPayload),
           );
 
           assertEquals(response.status, 200, `Expected HTTP 200, got ${response.status}`);
@@ -485,6 +479,8 @@ Deno.test({
             true,
             false,
             false,
+
+            claimsOf(jwtPayload),
           );
 
           const inserts = getInserts();
@@ -591,6 +587,8 @@ Deno.test({
             true,
             false,
             false,
+
+            claimsOf(jwtPayload),
           );
 
           const inserts = getInserts();

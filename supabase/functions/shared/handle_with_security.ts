@@ -36,8 +36,14 @@
 // deno-lint-ignore no-import-prefix
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { sovereigntyErrorResponse } from "./sovereignty_error_mapper.ts";
-import { validateJwtAuth, type JwtAuthResult } from "./jwt_auth_validator.ts";
+import {
+  validateJwtAuth,
+  type JwtAuthResult,
+  type JwtClaimsVerifier,
+} from "./jwt_auth_validator.ts";
 import { sanitizeJwtClaims } from "./jwt_claims_sanitizer.ts";
+import { withDeadline } from "./with_timeout.ts";
+
 
 // deno-lint-ignore no-explicit-any
 declare const Sentry: any;
@@ -153,6 +159,8 @@ async function sha256Hex(payload: string): Promise<string> {
  * @param handler — Business logic handler receiving SecurityContext + Supabase
  * @param requireAuth — If true (default), validates JWT. Set false for
  *   webhook/ingestion endpoints that use API keys instead.
+ * @param authVerifier — Optional injectable JWT verifier (tests only).
+ *   Production omits this; default is `auth.getClaims` via validateJwtAuth.
  */
 export async function handleWithSecurity(
   req: Request,
@@ -161,7 +169,13 @@ export async function handleWithSecurity(
   requireAuth: boolean = true,
   requireSuperAdmin: boolean = false,
   requireAAL2: boolean = false,
+  authVerifier?: JwtClaimsVerifier,
 ): Promise<Response> {
+  // Contradictory config: SA/AAL2 without auth can never be enforced → 404
+  if (!requireAuth && (requireSuperAdmin || requireAAL2)) {
+    return sovereigntyErrorResponse();
+  }
+
   // Step 1: Generate correlation ID
   const correlationId = generateCorrelationId();
 
@@ -192,11 +206,14 @@ export async function handleWithSecurity(
     payloadHash,
   };
 
-  // Step 5: Validate JWT (if required)
+  // Step 5: Validate JWT (if required) — crypto verify BEFORE service_role
   if (requireAuth) {
     let authResult: JwtAuthResult;
     try {
-      authResult = await validateJwtAuth(req);
+      authResult = await validateJwtAuth(req, {
+        allowOrglessSuperAdmin: requireSuperAdmin,
+        verifier: authVerifier,
+      });
     } catch {
       // INV-26: Any auth failure → canonical 404
       return sovereigntyErrorResponse();
@@ -217,15 +234,16 @@ export async function handleWithSecurity(
       ctx.role = appMeta.role;
     }
 
-    // Step 5.1: SuperAdmin Enforcement (INV-6)
+    // Step 5.1: SuperAdmin Enforcement — strict boolean true only
     if (requireSuperAdmin) {
-      const appMetadata = authResult.jwtPayload.app_metadata as { super_admin?: boolean | string } | undefined;
-      const isSuperAdmin = appMetadata?.super_admin === true || 
-                          appMetadata?.super_admin === "true";
-      
-      if (!isSuperAdmin) {
+      const appMetadata = authResult.jwtPayload.app_metadata as
+        | { super_admin?: boolean }
+        | undefined;
+      if (appMetadata?.super_admin !== true) {
         // INV-26: Return canonical 404 to prevent inference of SuperAdmin status
-        console.error(`[handleWithSecurity] SuperAdmin violation by user ${ctx.userId}`);
+        console.error(
+          `[handleWithSecurity] SuperAdmin violation by user ${ctx.userId}`,
+        );
         return sovereigntyErrorResponse();
       }
     }
@@ -238,31 +256,41 @@ export async function handleWithSecurity(
 
       if (isDev) {
         // In dev, log warning and skip AAL2 enforcement
-        console.warn(`[handleWithSecurity] AAL2 bypassed in dev for user ${ctx.userId} on ${edgeFunction}`);
+        console.warn(
+          `[handleWithSecurity] AAL2 bypassed in dev for user ${ctx.userId} on ${edgeFunction}`,
+        );
       } else if (aal !== "aal2") {
         // Production: AAL2 is mandatory — log forensic event and reject
-        console.error(`[handleWithSecurity] AAL2 violation by user ${ctx.userId} on ${edgeFunction}`);
+        console.error(
+          `[handleWithSecurity] AAL2 violation by user ${ctx.userId} on ${edgeFunction}`,
+        );
 
-        // Forensic logging to system_audit_log
+        // Forensic logging to system_audit_log (bounded — must not delay 404)
         try {
           const auditSupabase = createClient(
             Deno.env.get("SUPABASE_URL")!,
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
           );
-          await auditSupabase.from("system_audit_log").insert({
-            event_type: "SECURITY_VIOLATION_AAL2_BYPASS",
-            severity: "critical",
-            source: "edge_function",
-            payload: {
-              correlation_id: correlationId,
-              ip: requestIp,
-              user_agent: req.headers.get("user-agent") ?? "unknown",
-              jwt_claims: sanitizeJwtClaims(authResult.jwtPayload),
+          await withDeadline(
+            async (_signal) => {
+              await auditSupabase.from("system_audit_log").insert({
+                event_type: "SECURITY_VIOLATION_AAL2_BYPASS",
+                severity: "critical",
+                source: "edge_function",
+                payload: {
+                  correlation_id: correlationId,
+                  ip: requestIp,
+                  user_agent: req.headers.get("user-agent") ?? "unknown",
+                  jwt_claims: sanitizeJwtClaims(authResult.jwtPayload),
+                },
+                actor_type: "UNAUTHORIZED",
+              });
             },
-            actor_type: "UNAUTHORIZED",
-          });
+            2000,
+          );
         } catch {
-          // Audit log failure must not block the security response
+          // Audit log failure / deadline must not block the security response
+          // ponytail: fire-and-forget residual if insert outlives race is OK
         }
 
         return sovereigntyErrorResponse();

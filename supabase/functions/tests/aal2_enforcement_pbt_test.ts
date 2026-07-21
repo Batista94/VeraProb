@@ -12,9 +12,10 @@
  * Run with: deno test --no-check --allow-env --allow-net supabase/functions/tests/aal2_enforcement_pbt_test.ts
  */
 
-import { assertEquals, assert } from "jsr:@std/assert@1";
+import { assertEquals } from "jsr:@std/assert@1";
 import fc from "fast-check";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 
 // ── Test Helpers ─────────────────────────────────────────────────────────────
 
@@ -23,15 +24,7 @@ import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_
  * Base64url-encoded JWT (header.payload.signature) — signature
  * is not verified by our validator, only the payload is decoded.
  */
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 /**
  * Creates a Request with the given JWT as Bearer token.
@@ -114,7 +107,22 @@ const nonAal2ValueArb = fc.oneof(
 );
 
 /**
- * Generates a valid JWT payload with super_admin=true and a given aal value.
+ * Tenant JWT payload for requireAAL2-only routes (exclusive principals).
+ */
+function tenantPayload(aal: unknown): Record<string, unknown> {
+  return {
+    sub: "user-" + crypto.randomUUID().slice(0, 8),
+    aal,
+    role: "authenticated",
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    app_metadata: {
+      org_id: crypto.randomUUID(),
+    },
+  };
+}
+
+/**
+ * SuperAdmin JWT payload (org_id null) for requireSuperAdmin routes.
  */
 function superAdminPayload(aal: unknown): Record<string, unknown> {
   return {
@@ -124,7 +132,7 @@ function superAdminPayload(aal: unknown): Record<string, unknown> {
     exp: Math.floor(Date.now() / 1000) + 3600,
     app_metadata: {
       super_admin: true,
-      org_id: crypto.randomUUID(),
+      org_id: null,
     },
   };
 }
@@ -139,7 +147,7 @@ Deno.test({
     await withEnv("production", async () => {
       await fc.assert(
         fc.asyncProperty(fc.constant("aal2"), async (aal) => {
-          const payload = superAdminPayload(aal);
+          const payload = tenantPayload(aal);
           const jwt = createTestJwt(payload);
           const req = createAuthRequest(jwt);
 
@@ -150,6 +158,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             true,   // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -172,7 +181,7 @@ Deno.test({
     await withEnv("production", async () => {
       await fc.assert(
         fc.asyncProperty(nonAal2ValueArb, async (aal) => {
-          const payload = superAdminPayload(aal);
+          const payload = tenantPayload(aal);
           const jwt = createTestJwt(payload);
           const req = createAuthRequest(jwt);
 
@@ -183,6 +192,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             true,   // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -216,6 +226,7 @@ Deno.test({
             true,  // requireAuth
             true,  // requireSuperAdmin — should also enforce AAL2
             false, // requireAAL2 — even when false, superAdmin triggers AAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -238,7 +249,7 @@ Deno.test({
     await withEnv("dev", async () => {
       await fc.assert(
         fc.asyncProperty(nonAal2ValueArb, async (aal) => {
-          const payload = superAdminPayload(aal);
+          const payload = tenantPayload(aal);
           const jwt = createTestJwt(payload);
           const req = createAuthRequest(jwt);
 
@@ -249,6 +260,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             true,   // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -271,7 +283,7 @@ Deno.test({
     await withEnv("development", async () => {
       await fc.assert(
         fc.asyncProperty(nonAal2ValueArb, async (aal) => {
-          const payload = superAdminPayload(aal);
+          const payload = tenantPayload(aal);
           const jwt = createTestJwt(payload);
           const req = createAuthRequest(jwt);
 
@@ -282,6 +294,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             true,   // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(
@@ -304,7 +317,7 @@ Deno.test({
     await withEnv("production", async () => {
       await fc.assert(
         fc.asyncProperty(nonAal2ValueArb, async (aal) => {
-          const payload = superAdminPayload(aal);
+          const payload = tenantPayload(aal);
           const jwt = createTestJwt(payload);
           const req = createAuthRequest(jwt);
 
@@ -315,6 +328,7 @@ Deno.test({
             true,   // requireAuth
             false,  // requireSuperAdmin
             false,  // requireAAL2
+            claimsOf(payload),
           );
 
           assertEquals(

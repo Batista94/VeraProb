@@ -111,7 +111,8 @@ Deno.serve(async (req) => {
             user_agent: req.headers.get("user-agent")?.trim() || "unknown",
             timestamp_utc: new Date().toISOString(),
           },
-        });
+          // Untyped createClient → PostgREST insert expects `never` without DB generics.
+        } as never);
       } catch {
         // Silent failure — do not reveal logging infrastructure state
         // to potential attackers (INV-26).
