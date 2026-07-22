@@ -41,7 +41,8 @@ continuidade B2B.
 
 Este ADR define a ordem Strangler Fig **candidata**, o mapeamento das 22
 Edge Functions, flags, dual-run/shadow, critérios de paridade, rollback e
-decommission — como ramp condicional. Status: **Proposed**.
+decommission — como ramp condicional. Status do documento: **Accepted**
+(condicional B/C) — ver Errata pós-aceite.
 
 ### Artefatos relacionados
 
@@ -280,3 +281,21 @@ Somente quando **todos** forem verdadeiros:
 
 Status deste documento: **Accepted** (contrato condicional B/C). Budgets
 numéricos: `pending_baseline` até medição pós-gatilho.
+
+---
+
+## Errata documental pós-aceite
+
+**Date:** 2026-07-21
+**Authority:** AUTH-E0 (fundador) · Documentation Owner
+**Escopo:** Correção editorial de menção interna obsoleta a `Proposed` que
+conflitava com o header `**Status:** Accepted` e o Decision record.
+**Não altera:** Decision, Alternatives, Consequences, ordem de fatias,
+proibição de React no plano A, cutover não agendado, nem autoriza Go/React
+produtivo.
+
+| Local (pré-errata) | Correção |
+|--------------------|----------|
+| §Contexto: “Status: **Proposed**” | “Status do documento: **Accepted** (condicional B/C)” |
+
+Referência: [phase11_etapa0_executable_specs.md](../proposals/phase11_etapa0_executable_specs.md) (R-E0-05).

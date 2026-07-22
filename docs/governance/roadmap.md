@@ -1,6 +1,6 @@
 # VeraProb — Active Strategic Roadmap
 
-**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC, Financial Guard (Stop-Loss) & Legal Gate (LGPD) concluídos** (com cobertura total de testes pgTAP, integração, widgets e fluxos de consentimento) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído**.
+**Current Status:** Phase 10.7 entregue (Sealed Verdict Webhook engine, UI Tenant Admin & Notificação Resend na resolução) · **Custom RBAC, Financial Guard (Stop-Loss) & Legal Gate (LGPD) concluídos** (com cobertura total de testes pgTAP, integração, widgets e fluxos de consentimento) · **Global UI/UX Overhaul (`happy-rain` P1-P6) concluído**. · **Phase 11 — A portável** incluída no roadmap (missão R11; Etapa −1 PASS documental; Etapa 0 ainda não autorizada neste arquivo).
 
 ---
 
@@ -9,7 +9,7 @@
 | Aspect | Status |
 | :--- | :--- |
 | DB Tests (pgTAP) | 1500+ passing · 165 files · `make test-db` ✅ |
-| Migrations | 365 committed ✅ |
+| Migrations | 377 committed ✅ (recontado `supabase/migrations/*.sql` em 2026-07-21T19:12:07Z — missão R11) |
 | Static Analysis | 0 errors · 0 warnings · `flutter analyze` ✅ |
 | CI Regression | Zero-Trust Data Masking & Retract State Leak → resolvido por `20260901000004` ✅ |
 
@@ -25,6 +25,8 @@
 - [x] **Financial Guard (Penalty Stop-Loss Cap):** Obrigatório para evitar que falhas de telemetria gerem faturamento infinito (limite de teto de multa por evento/contrato).
 - [x] **Legal Gate & Terms of Use (LGPD):** Bloqueio de acesso ao sistema/telemetria pendente de aceite explícito do contrato de custódia de dados.
 - [ ] **SLA Sandbox:** Functional 'Sandbox' system for basic SLA model simulation.
+
+**Bloqueantes de piloto (Phase 11 — A portável; runtime NOT RUN):** `P-REV-IMPL-01`, `PG-REVOCATION`, `PG-BACKUP`, `PG-RESTORE`, `PG-DR`. Não confundir com o checklist de produto acima.
 
 ---
 
@@ -73,7 +75,50 @@
 
 ---
 
-## Phase 11+ — VeraProb Enterprise: Scale & Integrations
+## Phase 11 — A portável
+
+**Direção Accepted (ADR-010):** permanecer em Supabase + Flutter; corrigir portabilidade, revogação e DR antes do primeiro piloto. Go, React, PostgreSQL self-host e migração B/C **não** estão aprovados nem agendados. Reabertura A/B/C somente por gatilhos objetivos + nova decisão formal.
+
+**SSOT:** `docs/governance/proposals/phase11_enterprise_pivot.md` · ADRs 010–013 · inventário / threat model / parity checklist.
+
+| Etapa | Status | Escopo | Proibido nesta etapa |
+|-------|--------|--------|----------------------|
+| −1 | **PASS** (documental; checkpoint `08fda779`) | Contrato + ADRs Accepted | Código; cutover |
+| 0 | **NOT STARTED** (após R11; requer AUTH-E0) | Specs executáveis / governança A portável | Código; Go/React; remoção de regras Flutter/Supabase |
+| 1 | Não iniciada | `P-REV-IMPL-01`, backup/restore, drills DR pré-prod | Self-host PG16; Go produtivo |
+| 2 | Não iniciada | OpenAPI das superfícies existentes (sem Go produtivo) | Go produtivo sem go/no-go |
+| 3 | Não iniciada | Desacoplar repositories Flutter do provedor | React; reescrita UI |
+| 4 | Não iniciada | Portabilidade / segurança / restore / gatilhos | Cutover automático |
+| Cutover | **Não agendado** | — | Só após decisão B ou C |
+
+### Gates bloqueantes do primeiro piloto (runtime)
+
+| Gate / ID | Estado | Nota |
+|-----------|--------|------|
+| `P-REV-IMPL-01` | OPEN | Implementação registro PG + wiring Edge/RLS |
+| `PG-REVOCATION` | CONTRACT COMPLETE / runtime **NOT RUN** | Não declarar PASS sem evidência |
+| `PG-BACKUP` | NOT RUN | Dump diário off-site (+ Storage classificado) |
+| `PG-RESTORE` | NOT RUN | Restore exercitado ≤24h |
+| `PG-DR` | NOT RUN | Continuity drill; RPO/RTO pré-prod **24h/24h, sem SLA** |
+
+### R11 — mapeamento origem → destino (backlog Phase 11+)
+
+Inclusão de “Phase 11 — A portável” **não** substitui o backlog empresarial preexistente. Itens abaixo preservados **1:1** (mesmo texto e mesmo estado de checkbox); nenhum removido, reclassificado ou marcado concluído.
+
+| Origem (pré-R11) | Destino (pós-R11) | Estado preservado |
+|------------------|-------------------|-------------------|
+| `Phase 11+` › Bulk SLA Rule Importer (CSV) | `Phase 11+ — backlog futuro (Scale & Integrations)` › mesmo item | `[ ]` |
+| `Phase 11+` › Bulk Contract Importer (CSV) | idem › mesmo item | `[ ]` |
+| `Phase 11+` › WS-8: Keyboard-First Navigation | idem › mesmo item | `[ ]` |
+| `Phase 11+` › Smart Defaulting | idem › mesmo item | `[ ]` |
+| `Phase 11+` › SuperAdmin Provisioning Script | idem › mesmo item | `[ ]` |
+| Intro “API/Webhooks (SAP/Oracle), Passive Capture (OCR/SDK), JIT Signature.” | idem › mesma intro | preservada |
+
+---
+
+## Phase 11+ — backlog futuro (Scale & Integrations)
+
+> Título histórico: **Phase 11+ — VeraProb Enterprise: Scale & Integrations**. Mantido como backlog futuro sob o programa Phase 11; itens intactos 1:1 (missão R11). Remoção/reclassificação/conclusão exige decisão explícita.
 
 API/Webhooks (SAP/Oracle), Passive Capture (OCR/SDK), JIT Signature.
 

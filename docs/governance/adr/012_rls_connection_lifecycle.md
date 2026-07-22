@@ -30,8 +30,9 @@ injetar `auth.jwt() ->> 'organization_id'` (INV-2 atual) e passa a depender
 de **contexto de tenant amarrado à transação** via `SET LOCAL app.tenant_id`,
 role `app_user` sem `BYPASSRLS`, e pool em **transaction mode**.
 
-Enquanto A portável vigorar e este ADR estiver `Proposed` sem promoção,
-Supabase/PostgREST permanece o baseline operacional. Nenhum código Go de
+Enquanto A portável vigorar, este ADR permanece **Accepted** apenas como
+contrato condicional de saída (B/C); Supabase/PostgREST permanece o baseline
+operacional. Nenhum código Go de
 pool é autorizado por este documento.
 
 Um vazamento de tenant entre borrowers do mesmo connection pool é falha
@@ -39,8 +40,8 @@ forense crítica: Tenant-A nunca pode ler/escrever dados de Tenant-B
 (INV-22), inclusive sob reuso físico da conexão.
 
 Este ADR congela critérios **testáveis** do ciclo de vida da conexão e do
-harness RLS **para a saída futura**. Não inicia self-host. Status:
-**Proposed**.
+harness RLS **para a saída futura**. Não inicia self-host. Status do
+documento: **Accepted** (condicional B/C) — ver Errata pós-aceite.
 
 ### Artefatos relacionados
 
@@ -332,3 +333,21 @@ Durante o replay lift-and-shift (sem redesign de schema):
 
 Status deste documento: **Accepted** (contrato condicional B/C). Budgets
 quantitativos: `pending_baseline` até medição pós-gatilho B/C.
+
+---
+
+## Errata documental pós-aceite
+
+**Date:** 2026-07-21
+**Authority:** AUTH-E0 (fundador) · Documentation Owner
+**Escopo:** Correção editorial de menções internas obsoletas a `Proposed` que
+conflitavam com o header `**Status:** Accepted` e o Decision record.
+**Não altera:** Decision, Alternatives, Consequences, escopo condicional B/C,
+baseline PostgREST sob A portável, nem autoriza implementação.
+
+| Local (pré-errata) | Correção |
+|--------------------|----------|
+| §Contexto: “este ADR estiver `Proposed` sem promoção” | Texto alinhado a **Accepted** como contrato condicional B/C |
+| §Contexto: “Status: **Proposed**” | “Status do documento: **Accepted** (condicional B/C)” |
+
+Referência: [phase11_etapa0_executable_specs.md](../proposals/phase11_etapa0_executable_specs.md) (R-E0-05).

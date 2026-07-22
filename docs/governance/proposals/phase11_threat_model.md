@@ -5,7 +5,7 @@
 **Commit baseline:** `6e626a6f6314484e7c939e988ff34980351f257b`
 **Direção:** A portável
 **SSOT siblings:** [phase11_enterprise_pivot.md](phase11_enterprise_pivot.md), [phase11_edge_functions_inventory.md](phase11_edge_functions_inventory.md), [phase11_parity_checklist.md](phase11_parity_checklist.md), [ADR-010](../adr/010_exit_supabase.md), [ADR-011](../adr/011_auth_zero_trust.md), [ADR-012](../adr/012_rls_connection_lifecycle.md), [ADR-013](../adr/013_strangler_fig.md)
-**Baseline auth:** JWT P0 Edge/Supabase Auth + contrato ADR-011 (Proposed). Residual: `forensic_records/plans/20260721000000_jwt_p0_residual_risks.md`.
+**Baseline auth:** JWT P0 Edge/Supabase Auth + contrato ADR-011 (**Accepted**). Residual: `forensic_records/plans/20260721000000_jwt_p0_residual_risks.md`. Specs Etapa 0: [phase11_etapa0_executable_specs.md](phase11_etapa0_executable_specs.md).
 
 ## 1. Escalas
 

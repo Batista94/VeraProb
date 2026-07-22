@@ -1,11 +1,12 @@
-# Phase 11 — Enterprise Pivot (Proposta Canônica, Etapa −1)
+# Phase 11 — Enterprise Pivot (Proposta Canônica)
 
 **Date:** 2026-07-21
-**Status:** Contract complete — Etapa −1 **PASS** (auditoria final H2.1 + ADRs Accepted)
-**Commit baseline:** `6e626a6f6314484e7c939e988ff34980351f257b`
+**Status:** Etapa −1 **PASS** (H2.1 + ADRs Accepted) · Etapa 0 **PASS** (AUTH-E0; SSOT [phase11_etapa0_executable_specs.md](phase11_etapa0_executable_specs.md)) · commit/E1 **não** autorizados
+**Commit baseline (criação artefatos −1):** `6e626a6f6314484e7c939e988ff34980351f257b`
+**Checkpoint documental −1 (close):** `08fda779` — ver §15 (anexo); **não** reescreve §12
 **collected_at:** `2026-07-21T21:05:00Z`
-**Author (draft):** Migration Owner (execução documental Etapa −1 — A portável)
-**Roadmap file:** `docs/governance/roadmap.md` — **NÃO ALTERADO** (arquivo intacto; status de programa abaixo)
+**Author (draft):** Migration Owner (Etapa −1; sync Etapa 0 sob AUTH-E0)
+**Roadmap file:** `docs/governance/roadmap.md` — ver §13 (histórico −1) e §15 (R11 / Etapa 0)
 **Postura:** pré-revenue; desembolso Supabase atual **R$ 0**
 
 > **Exceção histórica (fundador):** o commit baseline `6e626a6f` mistura artefatos documentais da Etapa −1 com remediação de código AAL2 em `reveal-webhook-signing-secret`. Fica registrado como **exceção autorizada pelo fundador** — não constitui precedente de processo.
@@ -76,7 +77,7 @@ Ver [ADR-010](../adr/010_exit_supabase.md):
 - **A portável** — direção **Accepted** (fundador 2026-07-21).
 - **B híbrido** / **C self-host** — contratos condicionais de saída (Accepted como ramp documental); reavaliados apenas por gatilhos objetivos; um gatilho autoriza análise, não migração automática.
 
-## 6. Artefatos SSOT (oito)
+## 6. Artefatos SSOT (oito + Etapa 0)
 
 | # | Artefato |
 |---|----------|
@@ -88,6 +89,7 @@ Ver [ADR-010](../adr/010_exit_supabase.md):
 | 6 | [Inventário Edge Functions](phase11_edge_functions_inventory.md) |
 | 7 | [Threat model](phase11_threat_model.md) |
 | 8 | [Parity checklist](phase11_parity_checklist.md) |
+| 9 | [Etapa 0 — Executable Specs (SSOT único)](phase11_etapa0_executable_specs.md) |
 
 ## 7. Proibições explícitas nesta etapa
 
@@ -226,9 +228,31 @@ Nenhuma edição automática do arquivo. Etapa 0 / commit / implementação: NÃ
 | Fase | Permitido | Proibido |
 |------|-----------|----------|
 | −1 (**PASS**) | Contrato documental fechado; ADRs Accepted | Código, editar roadmap.md, INV rewrite, commit (neste registro) |
-| 0 | Governança A portável; dual-stack rules preservadas | Remover Flutter/Supabase; Go/React — **não autorizada ainda** |
+| 0 (**PASS** / AUTH-E0) | Specs SSOT; sync threat/parity; errata ADR-012/013; Council | Código; Go/React; runtime gates PASS; commit sem AUTH |
 | 1 | Revogação PG + backup/restore + replay drill | Self-host PG16; Go produtivo |
 | 2 | OpenAPI das superfícies existentes | Go produtivo sem go/no-go |
 | 3 | Desacoplar repos Flutter do provedor | React |
 | 4 | Portabilidade / segurança / restore / gatilhos | Cutover automático |
 | Cutover | Não agendado | Desligar legado sem decisão B/C |
+
+---
+
+## 15. Anexo — trilha pós-PASS Etapa −1 (não reescreve §12 / §13)
+
+> **Preservação:** o texto de §12 e §13 acima permanece o registro histórico do
+> veredicto Etapa −1 (incluindo “commit não autorizado neste registro” e
+> roadmap intacto **naquele momento**). Este anexo apenas registra eventos
+> posteriores autorizados pelo fundador.
+
+| Evento | Data | Evidência | Nota |
+|--------|------|-----------|------|
+| Checkpoint documental Etapa −1 commitado | 2026-07-21 | `08fda779` — `docs(governance): close Etapa -1 A portavel` | Posterior ao registro §12; não altera o fato histórico de §12 |
+| Missão R11 (AUTH-R11) | 2026-07-21 | Changeset `docs/governance/roadmap.md` — Phase 11 A portável + Phase 11+ 1:1 + migrations 377 | Roadmap **deixou** de estar intacto após AUTH-R11; §13 descreve o estado **pré-R11** |
+| Missão AUTH-E0 | 2026-07-21 | [phase11_etapa0_executable_specs.md](phase11_etapa0_executable_specs.md) + sync + errata ADR-012/013 · Council PASS · `ETAPA 0 STATUS: PASS` | Sem código; sem commit até AUTH explícita |
+
+```text
+ROADMAP STATUS (pós-R11): PHASE_11_A_PORTAVEL_ADDED (changeset; commit pending AUTH)
+ETAPA 0 STATUS: PASS
+IMPLEMENTATION AUTHORIZED: NO
+COMMIT AUTHORIZED: NO
+```
