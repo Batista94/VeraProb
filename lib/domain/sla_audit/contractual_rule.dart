@@ -1,5 +1,6 @@
 // pr_scanner: ignore-regression
 import 'package:equatable/equatable.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 enum SlaRuleType {
   maxToleranceDelay('MAX_TOLERANCE_DELAY'),
@@ -15,7 +16,7 @@ enum SlaRuleType {
   static SlaRuleType fromString(String val) {
     return values.firstWhere(
       (e) => e.value == val,
-      orElse: () => throw ArgumentError('Unknown SLA Rule Type: $val'),
+      orElse: () => throw IntegrityException('Unknown SLA Rule Type: $val'),
     );
   }
 }

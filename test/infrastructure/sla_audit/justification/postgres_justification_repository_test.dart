@@ -855,7 +855,7 @@ void _registerUpdateStatusGroup(_ClientGetter clientOf, _SutGetter sutOf) {
           reviewedByUserId: 'reviewer-001',
           reviewedAtUtc: DateTime.utc(2026, 1, 15, 15, 0),
         ),
-        throwsA(isA<StateError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
   });
@@ -1463,7 +1463,7 @@ void _registerStatusMapperGroup(_ClientGetter clientOf, _SutGetter sutOf) {
 
       expect(
         () => sut.findById(id: _justId, organizationId: _orgId),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
   });
@@ -1511,7 +1511,7 @@ void _registerCategoryMapperGroup(_ClientGetter clientOf, _SutGetter sutOf) {
 
       expect(
         () => sut.findById(id: _justId, organizationId: _orgId),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
   });

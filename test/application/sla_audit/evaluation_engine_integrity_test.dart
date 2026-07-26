@@ -139,7 +139,10 @@ void main() {
         organizationId: 'org-audit',
       );
 
-      final result = await repo.findBySetId('utc-1', organizationId: 'org-1');
+      final result = await repo.findBySetId(
+        'utc-1',
+        organizationId: 'org-audit',
+      );
       expect(result!.lastEvaluatedAtUtc.isUtc, isTrue);
     });
 
@@ -166,7 +169,10 @@ void main() {
         organizationId: 'org-audit',
       );
       expect(
-        (await repo.findBySetId('grace-edge', organizationId: 'org-1'))!.status,
+        (await repo.findBySetId(
+          'grace-edge',
+          organizationId: 'org-audit',
+        ))!.status,
         ExecutionStatus.planned,
       );
 
@@ -186,7 +192,10 @@ void main() {
       );
 
       expect(
-        (await repo.findBySetId('grace-edge', organizationId: 'org-1'))!.status,
+        (await repo.findBySetId(
+          'grace-edge',
+          organizationId: 'org-audit',
+        ))!.status,
         ExecutionStatus.completed,
       );
     });
@@ -227,7 +236,7 @@ void main() {
 
       final result = await repo.findBySetId(
         'ooo-test',
-        organizationId: 'org-1',
+        organizationId: 'org-audit',
       );
       expect(
         result!.status,

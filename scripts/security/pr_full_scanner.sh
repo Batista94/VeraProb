@@ -760,17 +760,35 @@ else
     SUPABASE_ONLINE=true
   fi
 
-  DENO_TEST_FLAGS="--config supabase/functions/deno.json --allow-env --allow-net --no-check"
+  DENO_TEST_FLAGS="--config supabase/functions/deno.json --allow-env --allow-net --allow-read --no-check"
+  # --no-check: suite-wide Pre-existing PostgREST/Uint8Array debt outside JWT surface.
+  # Type gate is `deno task check` (all JWT P0 altered .ts) — BLOCK above.
   if [[ -f ".env" ]]; then
     DENO_TEST_FLAGS="--env-file=.env $DENO_TEST_FLAGS"
   fi
 
+  # Always ignore host-only getClaims integration (runs via make test-jwt-integration).
+  JWT_INTEGRATION_IGNORE='--ignore=**/jwt_getclaims_integration_test.ts'
+  OFFLINE_EXTRA_IGNORES='--ignore=**/telegram_webhook_integration_test.ts --ignore=**/super_admin_proxy_integration_test.ts'
+
   if [[ "$SUPABASE_ONLINE" == "true" ]]; then
-    echo -e "  Supabase local services detected. Running ALL Deno tests..."
-    DENO_CMD_ARGS="test $DENO_TEST_FLAGS supabase/functions/tests/"
+    echo -e "  Supabase local services detected. Running Deno unit/integration (excl. JWT getClaims host suite)..."
+    DENO_CMD_ARGS="test $DENO_TEST_FLAGS $JWT_INTEGRATION_IGNORE supabase/functions/tests/"
   else
     echo -e "  ${YELLOW}Supabase offline.${NC} Running only Deno unit tests (excluding live integration tests)..."
-    DENO_CMD_ARGS="test $DENO_TEST_FLAGS --ignore=supabase/functions/tests/telegram_webhook_integration_test.ts,supabase/functions/tests/super_admin_proxy_integration_test.ts supabase/functions/tests/"
+    DENO_CMD_ARGS="test $DENO_TEST_FLAGS $JWT_INTEGRATION_IGNORE $OFFLINE_EXTRA_IGNORES supabase/functions/tests/"
+  fi
+
+  # Type-check + lint gate on JWT P0 surface (BLOCK)
+  echo "  Running: $DENO_CMD check (JWT P0 surface)"
+  if ! (cd supabase/functions && $DENO_CMD task check); then
+    echo -e "  ${RED}${BOLD}[BLOCK]${NC} Deno check failed on JWT P0 surface."
+    TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
+  fi
+  echo "  Running: $DENO_CMD lint (JWT P0 surface)"
+  if ! (cd supabase/functions && $DENO_CMD task lint); then
+    echo -e "  ${RED}${BOLD}[BLOCK]${NC} Deno lint failed on JWT P0 surface."
+    TOTAL_BLOCKS=$((TOTAL_BLOCKS + 1))
   fi
 
   # Run Deno tests

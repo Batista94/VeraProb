@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:veraprob/application/concurrency/smart_concurrency_governor.dart';
 import 'package:veraprob/application/sla_audit/justification/evidence_integrity_verifier.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 class MockEvidenceStorageReader extends Mock implements EvidenceStorageReader {}
 
@@ -427,5 +428,460 @@ void main() {
       expect(governor.inFlightCount, 0);
       expect(governor.queuedCount, 0);
     });
+  });
+
+  group(
+    'EvidenceIntegrityVerifier - Forensic Payload validation (INV-6, INV-9, INV-10)',
+    () {
+      late MockEvidenceStorageReader reader;
+      late EvidenceIntegrityVerifier verifier;
+
+      setUp(() {
+        reader = MockEvidenceStorageReader();
+        verifier = EvidenceIntegrityVerifier(reader);
+      });
+
+      test(
+        '1. Happy Path: deve validar com sucesso quando todos os dados sao validos',
+        () {
+          final payload = jsonEncode({
+            'id': 'evt-101',
+            'timestamp': '2026-07-14T12:00:00Z',
+            'signature':
+                'valid-cryptographic-signature-hash-value-here-32chars',
+            'data': 'normal-telemetry-coordinates-ok',
+          });
+          final declaredHash = _sha256Of(utf8.encode(payload));
+
+          expect(
+            () => verifier.verifyEvidencePayload(
+              rawPayloadJson: payload,
+              declaredHash: declaredHash,
+              previousHashes: const [],
+              historicalTimestamps: const [],
+            ),
+            returnsNormally,
+          );
+        },
+      );
+
+      group('2. Detecção de Fraude e Adulteração (Zero-Trust Telemetry)', () {
+        test(
+          'deve falhar com IntegrityException se houver alteração de um caractere ou timestamp',
+          () {
+            final originalPayload = jsonEncode({
+              'id': 'evt-102',
+              'timestamp': '2026-07-14T12:00:00Z',
+              'data': 'evidence-data-xyz',
+            });
+            final originalHash = _sha256Of(utf8.encode(originalPayload));
+
+            // Alteração de um único caractere no payload
+            final tamperedPayload1 = jsonEncode({
+              'id': 'evt-102',
+              'timestamp': '2026-07-14T12:00:00Z',
+              'data': 'evidence-data-xyZ', // Z maiúsculo
+            });
+
+            // Alteração no timestamp
+            final tamperedPayload2 = jsonEncode({
+              'id': 'evt-102',
+              'timestamp': '2026-07-14T12:00:01Z', // 01s em vez de 00s
+              'data': 'evidence-data-xyz',
+            });
+
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: tamperedPayload1,
+                declaredHash: originalHash,
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: tamperedPayload2,
+                declaredHash: originalHash,
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+          },
+        );
+
+        test(
+          'signature substring theater is not a real crypto gate (hash still binds)',
+          () {
+            final payload = jsonEncode({
+              'id': 'evt-103',
+              'timestamp': '2026-07-14T12:00:00Z',
+              'signature': 'corrupted-signature-hack',
+              'data': 'secret-auth-telemetry',
+            });
+            final declaredHash = _sha256Of(utf8.encode(payload));
+
+            // Hash match is the integrity gate; fake substring checks removed.
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payload,
+                declaredHash: declaredHash,
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              returnsNormally,
+            );
+          },
+        );
+      });
+
+      group('3. Ataques de Replay (Re-envio de Dados)', () {
+        test(
+          'deve falhar com IntegrityException se tentar revalidar uma evidência já processada (hash duplicado)',
+          () {
+            final payload = jsonEncode({
+              'id': 'evt-104',
+              'timestamp': '2026-07-14T12:00:00Z',
+              'data': 'some-payload',
+            });
+            final declaredHash = _sha256Of(utf8.encode(payload));
+
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payload,
+                declaredHash: declaredHash,
+                previousHashes: [
+                  declaredHash,
+                ], // O hash já está registrado nos históricos
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+          },
+        );
+
+        test(
+          'deve falhar com IntegrityException se a evidência estiver fora da ordem cronológica',
+          () {
+            final payload = jsonEncode({
+              'id': 'evt-105',
+              'timestamp': '2026-07-14T12:00:00Z',
+              'data': 'chronological-anomaly',
+            });
+            final declaredHash = _sha256Of(utf8.encode(payload));
+
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payload,
+                declaredHash: declaredHash,
+                previousHashes: const [],
+                // Histórico contém um evento em 12:05:00, mas o atual é 12:00:00 (anomalia temporal / retrocesso)
+                historicalTimestamps: [DateTime.parse('2026-07-14T12:05:00Z')],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+          },
+        );
+      });
+
+      group('4. Cenários Adversos & UTC (INV-6)', () {
+        test(
+          'deve falhar se os timestamps não estiverem no padrão estrito UTC (terminando em Z)',
+          () {
+            final payloadNonUtc = jsonEncode({
+              'id': 'evt-106',
+              'timestamp':
+                  '2026-07-14T12:00:00-03:00', // Offset explícito em vez de Z
+              'data': 'non-utc-timestamp',
+            });
+            final hashNonUtc = _sha256Of(utf8.encode(payloadNonUtc));
+
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payloadNonUtc,
+                declaredHash: hashNonUtc,
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+          },
+        );
+
+        test('deve falhar se o timestamp estiver no futuro', () {
+          final now = DateTime.now().toUtc();
+          final futureTime = now.add(const Duration(minutes: 10));
+          final payloadFuture = jsonEncode({
+            'id': 'evt-107',
+            'timestamp': futureTime.toIso8601String(), // Estará no futuro
+            'data': 'future-timestamp',
+          });
+          final hashFuture = _sha256Of(utf8.encode(payloadFuture));
+
+          expect(
+            () => verifier.verifyEvidencePayload(
+              rawPayloadJson: payloadFuture,
+              declaredHash: hashFuture,
+              previousHashes: const [],
+              historicalTimestamps: const [],
+            ),
+            throwsA(isA<IntegrityException>()),
+          );
+        });
+
+        test(
+          'deve falhar fast com IntegrityException para payloads incompletos, nulos ou malformados',
+          () {
+            // Payload malformado (JSON inválido)
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: '{id: 108, timestamp: no-json}',
+                declaredHash: 'any-hash',
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+
+            // Payload sem o ID
+            final payloadMissingId = jsonEncode({
+              'timestamp': '2026-07-14T12:00:00Z',
+              'data': 'missing-id',
+            });
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payloadMissingId,
+                declaredHash: _sha256Of(utf8.encode(payloadMissingId)),
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+
+            // Payload sem o timestamp
+            final payloadMissingTime = jsonEncode({
+              'id': 'evt-109',
+              'data': 'missing-time',
+            });
+            expect(
+              () => verifier.verifyEvidencePayload(
+                rawPayloadJson: payloadMissingTime,
+                declaredHash: _sha256Of(utf8.encode(payloadMissingTime)),
+                previousHashes: const [],
+                historicalTimestamps: const [],
+              ),
+              throwsA(isA<IntegrityException>()),
+            );
+          },
+        );
+      });
+    },
+  );
+
+  group('characterization — verifyEvidencePayload', () {
+    late EvidenceIntegrityVerifier verifier;
+
+    setUp(() {
+      verifier = EvidenceIntegrityVerifier(MockEvidenceStorageReader());
+    });
+
+    Matcher throwsIntegrityWith(String message) => throwsA(
+      isA<IntegrityException>().having((e) => e.message, 'message', message),
+    );
+
+    test('empty / whitespace payload → Payload cannot be empty', () {
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: '',
+          declaredHash: 'any',
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload cannot be empty'),
+      );
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: '   \n\t  ',
+          declaredHash: 'any',
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload cannot be empty'),
+      );
+    });
+
+    test('malformed JSON → Malformed JSON payload: prefix', () {
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: '{id: 108, timestamp: no-json}',
+          declaredHash: 'any-hash',
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsA(
+          isA<IntegrityException>().having(
+            (e) => e.message,
+            'message',
+            contains('Malformed JSON payload:'),
+          ),
+        ),
+      );
+    });
+
+    test('non-object JSON array → not a valid JSON object', () {
+      const payload = '[{"id":"x"}]';
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: payload,
+          declaredHash: _sha256Of(utf8.encode(payload)),
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload is not a valid JSON object'),
+      );
+    });
+
+    test('missing id / timestamp → exact missing-field messages', () {
+      final missingId = jsonEncode({
+        'timestamp': '2026-07-14T12:00:00Z',
+        'data': 'missing-id',
+      });
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: missingId,
+          declaredHash: _sha256Of(utf8.encode(missingId)),
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload missing required field: id'),
+      );
+
+      final missingTs = jsonEncode({'id': 'evt-109', 'data': 'missing-time'});
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: missingTs,
+          declaredHash: _sha256Of(utf8.encode(missingTs)),
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload missing required field: timestamp'),
+      );
+    });
+
+    test('empty id / timestamp strings → cannot be empty', () {
+      final emptyId = jsonEncode({
+        'id': '   ',
+        'timestamp': '2026-07-14T12:00:00Z',
+      });
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: emptyId,
+          declaredHash: _sha256Of(utf8.encode(emptyId)),
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload id cannot be empty'),
+      );
+
+      final emptyTs = jsonEncode({'id': 'evt-1', 'timestamp': '  '});
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: emptyTs,
+          declaredHash: _sha256Of(utf8.encode(emptyTs)),
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith('Payload timestamp cannot be empty'),
+      );
+    });
+
+    test('hash mismatch → Computed / Declared message', () {
+      final payload = jsonEncode({
+        'id': 'evt-102',
+        'timestamp': '2026-07-14T12:00:00Z',
+        'data': 'evidence-data-xyz',
+      });
+      final wrongHash = _sha256Of(utf8.encode('other'));
+      final computed = _sha256Of(utf8.encode(payload));
+
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: payload,
+          declaredHash: wrongHash,
+          previousHashes: const [],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith(
+          'Hash mismatch (tampering detected). Computed: $computed, Declared: $wrongHash',
+        ),
+      );
+    });
+
+    test('replay → exact replay message', () {
+      final payload = jsonEncode({
+        'id': 'evt-104',
+        'timestamp': '2026-07-14T12:00:00Z',
+        'data': 'some-payload',
+      });
+      final declaredHash = _sha256Of(utf8.encode(payload));
+
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: payload,
+          declaredHash: declaredHash,
+          previousHashes: [declaredHash],
+          historicalTimestamps: const [],
+        ),
+        throwsIntegrityWith(
+          'Replay attack detected: evidence hash already processed',
+        ),
+      );
+    });
+
+    test('chronological anomaly → Temporal anomaly message', () {
+      final payload = jsonEncode({
+        'id': 'evt-105',
+        'timestamp': '2026-07-14T12:00:00Z',
+        'data': 'chronological-anomaly',
+      });
+      final declaredHash = _sha256Of(utf8.encode(payload));
+      final historical = DateTime.parse('2026-07-14T12:05:00Z');
+
+      expect(
+        () => verifier.verifyEvidencePayload(
+          rawPayloadJson: payload,
+          declaredHash: declaredHash,
+          previousHashes: const [],
+          historicalTimestamps: [historical],
+        ),
+        throwsIntegrityWith(
+          'Temporal anomaly detected: timestamp 2026-07-14T12:00:00Z is not strictly after historical event at $historical',
+        ),
+      );
+    });
+
+    test(
+      'UTC textual Z but syntactically invalid date → IntegrityException Malformed timestamp (INV-10)',
+      () {
+        final payload = jsonEncode({
+          'id': 'evt-bad-ts',
+          'timestamp': 'not-a-dateZ',
+          'data': 'invalid-parse',
+        });
+        final declaredHash = _sha256Of(utf8.encode(payload));
+
+        expect(
+          () => verifier.verifyEvidencePayload(
+            rawPayloadJson: payload,
+            declaredHash: declaredHash,
+            previousHashes: const [],
+            historicalTimestamps: const [],
+          ),
+          throwsIntegrityWith('Malformed timestamp: not-a-dateZ'),
+        );
+      },
+    );
   });
 }

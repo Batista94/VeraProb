@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import 'package:veraprob/application/concurrency/smart_concurrency_governor.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 /// Application-layer port: provides streaming access to raw evidence bytes.
 ///
@@ -118,5 +119,133 @@ class EvidenceIntegrityVerifier {
     input.close();
 
     return result!.toString();
+  }
+
+  /// Validates a structured evidence payload string against strict forensic rules.
+  ///
+  /// Enforces:
+  /// - Malformed JSON / missing fields detection (Zero-Trust, INV-10).
+  /// - Tampering detection via SHA-256 mismatch (INV-9).
+  /// - Replay attack prevention (re-use of old payload hashes).
+  /// - Chronological ordering.
+  /// - STRICT UTC timestamp validation (INV-6).
+  /// - Future timestamp rejection.
+  ///
+  /// Throws [IntegrityException] on any violation.
+  ///
+  /// ponytail: real cryptographic signature verify lands with a dedicated
+  /// verifier — do not reintroduce string-substring "forgery" checks.
+  void verifyEvidencePayload({
+    required String rawPayloadJson,
+    required String declaredHash,
+    required List<String> previousHashes,
+    required List<DateTime> historicalTimestamps,
+  }) {
+    final payloadMap = _decodeEvidencePayloadObject(rawPayloadJson);
+    final timestampStr = _requireEvidenceIdAndTimestamp(payloadMap);
+    _assertEvidencePayloadSeal(rawPayloadJson, declaredHash, previousHashes);
+    _assertEvidenceTemporalRules(timestampStr, historicalTimestamps);
+  }
+
+  /// Parses [rawPayloadJson] into a typed object map (INV-7 / INV-10).
+  Map<String, Object?> _decodeEvidencePayloadObject(String rawPayloadJson) {
+    if (rawPayloadJson.trim().isEmpty) {
+      throw const IntegrityException('Payload cannot be empty');
+    }
+
+    try {
+      final Object? decoded = jsonDecode(rawPayloadJson);
+      if (decoded is! Map) {
+        throw const IntegrityException('Payload is not a valid JSON object');
+      }
+      return Map<String, Object?>.from(decoded);
+    } catch (e) {
+      if (e is IntegrityException) rethrow;
+      throw IntegrityException('Malformed JSON payload: $e');
+    }
+  }
+
+  /// Requires non-null, non-empty `id` and `timestamp` fields; returns timestamp.
+  String _requireEvidenceIdAndTimestamp(Map<String, Object?> payloadMap) {
+    if (!payloadMap.containsKey('id') || payloadMap['id'] == null) {
+      throw const IntegrityException('Payload missing required field: id');
+    }
+
+    if (!payloadMap.containsKey('timestamp') ||
+        payloadMap['timestamp'] == null) {
+      throw const IntegrityException(
+        'Payload missing required field: timestamp',
+      );
+    }
+
+    final id = payloadMap['id'].toString();
+    final timestampStr = payloadMap['timestamp'].toString();
+
+    if (id.trim().isEmpty) {
+      throw const IntegrityException('Payload id cannot be empty');
+    }
+
+    if (timestampStr.trim().isEmpty) {
+      throw const IntegrityException('Payload timestamp cannot be empty');
+    }
+
+    return timestampStr;
+  }
+
+  /// SHA-256 seal of the raw JSON string + replay check (INV-9).
+  void _assertEvidencePayloadSeal(
+    String rawPayloadJson,
+    String declaredHash,
+    List<String> previousHashes,
+  ) {
+    final computedHash = sha256.convert(utf8.encode(rawPayloadJson)).toString();
+    if (computedHash != declaredHash) {
+      throw IntegrityException(
+        'Hash mismatch (tampering detected). Computed: $computedHash, Declared: $declaredHash',
+      );
+    }
+
+    if (previousHashes.contains(computedHash)) {
+      throw const IntegrityException(
+        'Replay attack detected: evidence hash already processed',
+      );
+    }
+  }
+
+  /// Strict UTC Z, parse fail-closed (INV-10), future skew, chronological order.
+  void _assertEvidenceTemporalRules(
+    String timestampStr,
+    List<DateTime> historicalTimestamps,
+  ) {
+    if (!timestampStr.endsWith('Z') ||
+        timestampStr.contains('+') ||
+        (timestampStr.length > 10 &&
+            timestampStr.substring(10).contains('-'))) {
+      throw IntegrityException(
+        'Timestamp is not in strict UTC Z format: $timestampStr',
+      );
+    }
+
+    final DateTime timestamp;
+    try {
+      timestamp = DateTime.parse(timestampStr).toUtc();
+    } on FormatException {
+      throw IntegrityException('Malformed timestamp: $timestampStr');
+    }
+
+    final now = DateTime.now().toUtc();
+    if (timestamp.isAfter(now.add(const Duration(seconds: 5)))) {
+      throw IntegrityException(
+        'Timestamp is in the future: $timestampStr (now is $now)',
+      );
+    }
+
+    for (final historical in historicalTimestamps) {
+      if (!timestamp.isAfter(historical)) {
+        throw IntegrityException(
+          'Temporal anomaly detected: timestamp $timestampStr is not strictly after historical event at $historical',
+        );
+      }
+    }
   }
 }

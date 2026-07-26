@@ -20,6 +20,7 @@
 import { assertEquals, assert } from "jsr:@std/assert@1";
 import { handleWithSecurity, type SecurityContext } from "../shared/handle_with_security.ts";
 import { SOVEREIGNTY_BODY, SOVEREIGNTY_STATUS } from "../shared/sovereignty_error_mapper.ts";
+import { claimsOf, createFakeJwt } from "./jwt_test_helpers.ts";
 
 // ── Test Helpers ─────────────────────────────────────────────────────────────
 
@@ -28,15 +29,7 @@ import { SOVEREIGNTY_BODY, SOVEREIGNTY_STATUS } from "../shared/sovereignty_erro
  * Base64url-encoded JWT (header.payload.signature) — signature is not
  * verified by our validator, only the payload is decoded.
  */
-function createTestJwt(payload: Record<string, unknown>): string {
-  const header = { alg: "HS256", typ: "JWT" };
-  const encode = (obj: Record<string, unknown>) => {
-    const json = JSON.stringify(obj);
-    const b64 = btoa(json);
-    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  };
-  return `${encode(header)}.${encode(payload as Record<string, unknown>)}.fake-signature`;
-}
+const createTestJwt = createFakeJwt;
 
 /**
  * Creates a Request with the given JWT as Bearer token.
@@ -140,7 +133,7 @@ function superAdminPayload(overrides?: Record<string, unknown>): Record<string, 
     session_id: crypto.randomUUID(),
     app_metadata: {
       super_admin: true,
-      org_id: crypto.randomUUID(),
+      org_id: null,
     },
     ...overrides,
   };
@@ -166,6 +159,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin — this is the SuperAdmin route
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       // Verify canonical 404 response
@@ -216,6 +210,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       assertEquals(handlerInvoked, false, "Handler should NOT be invoked for non-super-admin");
@@ -243,6 +238,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       // Verify canonical 404 response
@@ -281,6 +277,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       assertEquals(handlerInvoked, false, "Handler should NOT be invoked when AAL2 fails");
@@ -305,6 +302,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       assertEquals(response.status, 404);
@@ -335,6 +333,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       // Verify canonical 404 response
@@ -373,6 +372,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payload),
       );
 
       assertEquals(handlerInvoked, false, "Handler should NOT be invoked for non-super-admin");
@@ -396,6 +396,7 @@ Deno.test({
         "generate_org_secret",
         successHandler,
         true, true, true,
+        claimsOf(payloadA),
       );
 
       // Scenario B: super_admin but aal1
@@ -408,6 +409,7 @@ Deno.test({
         "generate_org_secret",
         successHandler,
         true, true, true,
+        claimsOf(payloadB),
       );
 
       // Both should be identical 404s
@@ -441,6 +443,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payloadInvalid),
       );
 
       // Scenario 2: Valid UUID but user has no super_admin permission
@@ -455,6 +458,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payloadNoPermission),
       );
 
       // Scenario 3: Super admin with aal1 (non-existent permission level)
@@ -469,6 +473,7 @@ Deno.test({
         true,  // requireAuth
         true,  // requireSuperAdmin
         true,  // requireAAL2
+        claimsOf(payloadAal1),
       );
 
       // All three should have identical status codes
@@ -519,6 +524,7 @@ Deno.test({
             "super_admin_tenants",
             successHandler,
             true, true, true,
+            claimsOf(payload),
           );
           const elapsed = performance.now() - start;
           assertEquals(response.status, 404);
@@ -539,6 +545,7 @@ Deno.test({
             "super_admin_tenants",
             successHandler,
             true, true, true,
+            claimsOf(payload),
           );
           const elapsed = performance.now() - start;
           assertEquals(response.status, 404);
@@ -616,19 +623,37 @@ Deno.test({
 
       // Scenario 2: Admin without super_admin
       {
-        const jwt = createTestJwt(adminPayload({ aal: "aal2" }));
+        const payload = adminPayload({ aal: "aal2" });
+        const jwt = createTestJwt(payload);
         const req = createAuthRequest(jwt, "10.0.0.1");
         responses.push(
-          await handleWithSecurity(req, "test_fn", successHandler, true, true, true),
+          await handleWithSecurity(
+            req,
+            "test_fn",
+            successHandler,
+            true,
+            true,
+            true,
+            claimsOf(payload),
+          ),
         );
       }
 
       // Scenario 3: Super admin with aal1
       {
-        const jwt = createTestJwt(superAdminPayload({ aal: "aal1" }));
+        const payload = superAdminPayload({ aal: "aal1" });
+        const jwt = createTestJwt(payload);
         const req = createAuthRequest(jwt, "10.0.0.2");
         responses.push(
-          await handleWithSecurity(req, "test_fn", successHandler, true, true, true),
+          await handleWithSecurity(
+            req,
+            "test_fn",
+            successHandler,
+            true,
+            true,
+            true,
+            claimsOf(payload),
+          ),
         );
       }
 

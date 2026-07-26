@@ -7,7 +7,6 @@ import 'package:veraprob/domain/authority/core/authority_types.dart';
 import 'package:veraprob/domain/authority/decision/authorization_decision.dart';
 import 'package:veraprob/domain/authority/policies/authority_policy_evaluator.dart';
 import 'package:veraprob/domain/authority/repositories/forensic_decision_repository.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/infrastructure/authority/postgres_forensic_repository.dart';
 import 'package:veraprob/infrastructure/providers/supabase_provider.dart';
 import 'package:veraprob/state/providers/fleet_providers.dart';

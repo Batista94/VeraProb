@@ -10,9 +10,10 @@
 --   • 2 user_roles (TENANT_ADMIN por org — JWT hook lê desta tabela)
 --   • 2 contracts ativos (um por org, com UUIDs fixos para k6 env vars)
 --
--- Credenciais de teste:
---   Org A — admin-a@veraprob.dev / veraprob123!
---   Org B — admin-b@veraprob.dev / veraprob123!
+-- Credenciais de teste (SSOT: scripts/dev/bootstrap_dev.mjs — não confiar só neste seed):
+--   Org A — admin-a@veraprob.dev / 123456
+--   Org B — admin-b@veraprob.dev / 123456
+--   SuperAdmin — master@veraprob.dev / veraprob123!
 --
 -- UUIDs fixos (para uso nos scripts k6):
 --   ORG_A_ID       = 00000000-0000-0000-0000-000000000001

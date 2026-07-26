@@ -72,9 +72,11 @@ abstract class BasePostgresRepository with PostgresErrorInterceptor {
         field: fieldName,
       );
     }
-    final normalized = (raw.endsWith('Z') || raw.contains('+'))
-        ? raw
-        : '${raw}Z';
+    final hasOffset = RegExp(
+      r'(Z|[+-]\d{2}:?\d{2})$',
+      caseSensitive: false,
+    ).hasMatch(raw);
+    final normalized = hasOffset ? raw : '${raw}Z';
     return DateTime.parse(normalized).toUtc();
   }
 

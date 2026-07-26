@@ -1,3 +1,5 @@
+import 'package:veraprob/domain/shared/integrity_exception.dart';
+
 /// Lifecycle status of a shadow execution cost object.
 ///
 /// Shadow executions are created when evidence arrives with no linked contract.
@@ -37,6 +39,6 @@ extension ShadowExecutionStatusX on ShadowExecutionStatus {
     'RECONCILED' => ShadowExecutionStatus.reconciled,
     'RECONCILED_AS_NEW_REVENUE' => ShadowExecutionStatus.reconciledAsNewRevenue,
     'DISMISSED' => ShadowExecutionStatus.dismissed,
-    _ => throw ArgumentError('Unknown ShadowExecutionStatus: $value'),
+    _ => throw IntegrityException('Unknown ShadowExecutionStatus: $value'),
   };
 }

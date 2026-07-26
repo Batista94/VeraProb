@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/application/sla_audit/justification/justification_summary.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   Map<String, dynamic> row({
@@ -69,11 +70,11 @@ void main() {
     test('throws on an unknown status — zero-trust, no silent mis-bucket', () {
       expect(
         () => JustificationSummary.fromRealtimeRow(row(status: 'pending')),
-        throwsArgumentError,
+        throwsA(isA<IntegrityException>()),
       );
       expect(
         () => JustificationSummary.fromRealtimeRow(row(status: 'GARBAGE')),
-        throwsArgumentError,
+        throwsA(isA<IntegrityException>()),
       );
     });
   });

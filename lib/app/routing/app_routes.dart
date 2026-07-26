@@ -44,6 +44,11 @@ sealed class AppRoutes {
   static String contractRules(String contractId) =>
       '/admin/hub/contracts/$contractId/rules';
 
+  /// SLA Sandbox (ROI Simulator) for a contract. Nested under the contracts
+  /// admin branch. `:contractId` is a contract UUID (mandatory path variable).
+  static String contractSandbox(String contractId) =>
+      '/admin/hub/contracts/$contractId/sandbox';
+
   /// Fleet Risk analytics dashboard (carrier ranking + risk thermometer).
   /// Nested under the Administração hub branch so the shell is preserved.
   static const String fleetRiskAnalytics = '/admin/hub/fleet-risk';

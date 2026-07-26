@@ -1,4 +1,5 @@
 import 'package:veraprob/app/routing/app_routes.dart';
+import 'package:veraprob/app/routing/routing_utils.dart';
 
 /// Static route → required-permission gate for the admin shell (Pilar 3).
 ///
@@ -24,8 +25,13 @@ const Map<String, String> kRoutePermissions = <String, String>{
 /// Matches on the exact path or a `${key}/` prefix so nested deep links inherit
 /// their parent's gate (e.g. a future `/admin/hub/billing-reports/:id`).
 String? requiredPermissionFor(String path) {
+  if (parseSandboxContractIdFromPath(path) != null) {
+    return 'sandbox:simulate';
+  }
+
   for (final entry in kRoutePermissions.entries) {
-    if (path == entry.key || path.startsWith('${entry.key}/')) {
+    final key = entry.key;
+    if (path == key || path.startsWith('$key/')) {
       return entry.value;
     }
   }

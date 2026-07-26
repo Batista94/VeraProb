@@ -97,7 +97,6 @@ class PostgresVehicleAssetRepository extends BasePostgresRepository
       () => client
           .from('vehicles')
           .update({'status': 'retired'})
-          .eq('organization_id', sessionOrgId)
           .eq('id', vehicleId),
     );
   }

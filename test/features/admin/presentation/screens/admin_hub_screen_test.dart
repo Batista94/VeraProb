@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:veraprob/app/routing/app_routes.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/presentation/screens/admin_hub_screen.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/features/admin/providers/onboarding_provider.dart';

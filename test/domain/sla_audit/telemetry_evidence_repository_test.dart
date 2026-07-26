@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/telemetry_evidence.dart';
 import 'package:veraprob/infrastructure/sla_audit/in_memory_telemetry_evidence_repository.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 TelemetryEvidence makeEvidence({
   String organizationId = 'org-1',
@@ -80,7 +81,7 @@ void main() {
         previousEvidenceHash: e1.previousEvidenceHash,
         chainHash: e1.chainHash,
       );
-      expect(() => repo.save(duplicate), throwsA(isA<StateError>()));
+      expect(() => repo.save(duplicate), throwsA(isA<IntegrityException>()));
     });
 
     test('tenant isolation: findBySetId returns empty for wrong org', () async {

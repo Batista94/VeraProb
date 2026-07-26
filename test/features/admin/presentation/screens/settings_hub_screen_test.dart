@@ -17,10 +17,8 @@ import 'package:veraprob/application/admin/access_management_service.dart'
     show RoleAssignment, RolePermissionGrant, TenantPermission, TenantRole;
 import 'package:veraprob/application/admin/governance_audit_query_service.dart';
 import 'package:veraprob/application/admin/user_management_query_service.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/domain/admin/org_status.dart';
 import 'package:veraprob/domain/admin/organization.dart';
-import 'package:veraprob/domain/enums/user_role.dart';
 import 'package:veraprob/domain/services/permission_service.dart';
 import 'package:veraprob/features/admin/presentation/screens/access_management_tab.dart';
 import 'package:veraprob/features/admin/presentation/screens/governance_audit_screen.dart';

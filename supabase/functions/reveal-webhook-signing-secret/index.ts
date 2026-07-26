@@ -2,7 +2,7 @@
  * reveal-webhook-signing-secret — Edge Function (Fase 10.7, P1).
  *
  * IAM (INV-1, INV-26, INV-28, INV-31):
- *   - Valida JWT via handleWithSecurity (requireAuth: true, sem AAL2 — Fase 11)
+ *   - Valida JWT via handleWithSecurity (requireAuth + requireAAL2)
  *   - Valida role TENANT_ADMIN no app_metadata do JWT (→ 404 se não — INV-26)
  *   - org_id derivado exclusivamente do JWT claim (INV-1 — imutável pelo cliente)
  *   - Nenhum material de chave persiste em DB (INV-31). DB guarda só version/status.
@@ -18,10 +18,11 @@
  *
  * Audit: insere WEBHOOK_SECRET_REVEALED ou WEBHOOK_SECRET_ROTATED em system_audit_log.
  *
- * Feature-flag: REQUIRE_AAL2_TENANT_SECRET (default "false").
- * // TODO Fase 11: MFA Tenant — ligar o step-up AAL2 quando enrolment de tenant for entregue.
+ * AAL2: obrigatório em produção (P-AAL2-01). Dev/development bypass via
+ * isDevEnvironment() em handleWithSecurity — nunca em produção.
  */
 
+// deno-lint-ignore no-import-prefix
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import {
   handleWithSecurity,
@@ -39,6 +40,12 @@ interface RevealResponse {
   version: number;
 }
 
+/**
+ * Production wiring flag for secret reveal (P-AAL2-01).
+ * Exported so unit tests assert the Deno.serve path cannot silently drop AAL2.
+ */
+export const REVEAL_REQUIRE_AAL2 = true;
+
 // ── Entry point ───────────────────────────────────────────────────────────────
 
 if (import.meta.main) {
@@ -49,8 +56,7 @@ if (import.meta.main) {
       handleReveal,
       /* requireAuth */ true,
       /* requireSuperAdmin */ false,
-      /* requireAAL2 */ false,
-      // TODO Fase 11: substituir por `Deno.env.get("REQUIRE_AAL2_TENANT_SECRET") === "true"`
+      /* requireAAL2 */ REVEAL_REQUIRE_AAL2,
     );
   });
 }
@@ -63,17 +69,12 @@ export async function handleReveal(
   supabase: ReturnType<typeof createClient>,
   req: Request,
 ): Promise<Response> {
-  // 1. Validate TENANT_ADMIN role (INV-1, INV-26).
-  // handleWithSecurity só valida JWT e org_id. Role TENANT_ADMIN deve ser
-  // verificado manualmente aqui para preservar a semântica de 404 anti-oracle.
-  const jwtPayload = await _extractJwtPayload(req);
-  if (!jwtPayload) return sovereigntyErrorResponse();
-
-  const appMeta = jwtPayload.app_metadata as Record<string, unknown> | undefined;
-  const role = appMeta?.role as string | undefined;
-  if (role !== "TENANT_ADMIN") {
+  // 1. Validate TENANT_ADMIN from verified SecurityContext (INV-1, INV-26).
+  // Role comes from crypto-verified JWT claims via handleWithSecurity — never
+  // re-decode the Bearer token here.
+  if (ctx.role !== "TENANT_ADMIN") {
     console.error(
-      `[reveal-webhook-signing-secret] RBAC violation: role=${role} user=${ctx.userId}`,
+      `[reveal-webhook-signing-secret] RBAC violation: role=${ctx.role} user=${ctx.userId}`,
     );
     return sovereigntyErrorResponse(); // INV-26: indistinguível de 404
   }
@@ -130,7 +131,9 @@ async function handleProvision(
   // ganha e o perdedor (23505) recebe 409 — o vencedor já viu o segredo.
   const { data: inserted, error: insErr } = await supabase
     .from("webhook_signing_keys")
-    .insert({ organization_id: orgId, version: 1, status: "active" })
+    .insert(
+      { organization_id: orgId, version: 1, status: "active" } as never,
+    )
     .select("id, version")
     .maybeSingle();
 
@@ -187,7 +190,9 @@ async function handleRotate(
   // Transição: active → retiring.
   const { error: retireErr } = await supabase
     .from("webhook_signing_keys")
-    .update({ status: "retiring", retiring_until: retiringUntil })
+    .update(
+      { status: "retiring", retiring_until: retiringUntil } as never,
+    )
     .eq("id", currentKey.id);
 
   if (retireErr) {
@@ -202,7 +207,7 @@ async function handleRotate(
       organization_id: orgId,
       version: newVersion,
       status: "active",
-    })
+    } as never)
     .select("id, version")
     .single();
 
@@ -271,7 +276,7 @@ async function _auditLog(
       source: "edge_function",
       organization_id: orgId,
       payload: { user_id: userId, ...payload },
-    });
+    } as never);
   } catch (e) {
     // Falha no audit nunca bloqueia o reveal (mas é logada).
     console.error(`[reveal-webhook-signing-secret] audit log failed: ${e}`);
@@ -285,32 +290,4 @@ function _successResponse(data: RevealResponse): Response {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });
-}
-
-/**
- * Extrai o payload JWT do header Authorization sem verificar assinatura.
- * handleWithSecurity já validou o token; aqui só extraímos claims para role check.
- */
-function _extractJwtPayload(
-  req: Request,
-): Promise<Record<string, unknown> | null> {
-  try {
-    const auth = req.headers.get("Authorization") ?? "";
-    const token = auth.replace(/^Bearer\s+/i, "").trim();
-    if (!token) return Promise.resolve(null);
-
-    const parts = token.split(".");
-    if (parts.length !== 3) return Promise.resolve(null);
-
-    const payloadB64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-    const jsonStr = decodeURIComponent(
-      atob(payloadB64)
-        .split("")
-        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
-        .join(""),
-    );
-    return Promise.resolve(JSON.parse(jsonStr) as Record<string, unknown>);
-  } catch {
-    return Promise.resolve(null);
-  }
 }

@@ -96,7 +96,7 @@ void main() {
 
       final sweptStatus = (await execRepo.findBySetId(
         setId,
-        organizationId: 'org-1',
+        organizationId: orgId,
       ))?.status;
       assert(
         sweptStatus == ExecutionStatus.failed,
@@ -149,7 +149,7 @@ void main() {
 
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           finalState?.status,
@@ -172,7 +172,7 @@ void main() {
 
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           finalState?.status,
@@ -195,7 +195,7 @@ void main() {
 
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           finalState?.status,
@@ -221,7 +221,7 @@ void main() {
 
         final afterFirst = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           afterFirst?.status,
@@ -237,7 +237,7 @@ void main() {
 
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           finalState?.status,
@@ -330,7 +330,7 @@ void main() {
 
         final sweptStatus = (await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         ))?.status;
         expect(
           sweptStatus,
@@ -377,7 +377,7 @@ void main() {
         // 5. Check if the status was updated (or a compensatory record created)
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
 
         // CHALLENGE: If the protocol is working correctly, the NO_SHOW should be resolved or countered.

@@ -256,7 +256,7 @@ export async function signPayload(payload: unknown): Promise<string> {
 
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    activeKey.raw,
+    activeKey.raw as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"],
@@ -331,7 +331,7 @@ export async function verifyPayload(
 
   const cryptoKey = await crypto.subtle.importKey(
     "raw",
-    key.raw,
+    key.raw as BufferSource,
     { name: "HMAC", hash: "SHA-256" },
     false,
     ["verify"],
@@ -340,7 +340,12 @@ export async function verifyPayload(
   const signatureBytes = hexToBytes(hexSignature);
 
   try {
-    return await crypto.subtle.verify("HMAC", cryptoKey, signatureBytes, data);
+    return await crypto.subtle.verify(
+      "HMAC",
+      cryptoKey,
+      signatureBytes as BufferSource,
+      data,
+    );
   } catch {
     return false;
   }
@@ -392,7 +397,11 @@ function hexToBytes(hex: string): Uint8Array {
 export async function deriveOrgKey(orgId: string, version: number): Promise<CryptoKey> {
   const derived = await deriveOrgKeyRaw(orgId, version);
   return await crypto.subtle.importKey(
-    "raw", derived, { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    "raw",
+    derived as BufferSource,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
 }
 
@@ -406,7 +415,11 @@ async function deriveOrgKeyRaw(orgId: string, version: number): Promise<Uint8Arr
   const keys = getKeys(); // throws the INV-31 error if no master is configured
   const master = keys.find((k) => k.version === 1) ?? keys[0];
   const masterKey = await crypto.subtle.importKey(
-    "raw", master.raw, { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+    "raw",
+    master.raw as BufferSource,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
   );
   const derived = await crypto.subtle.sign(
     "HMAC", masterKey, new TextEncoder().encode(`${orgId}|${version}`),

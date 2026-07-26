@@ -8,6 +8,7 @@ import 'package:veraprob/domain/shared/idempotency_processing_exception.dart';
 import 'package:veraprob/domain/shared/conflict_exception.dart';
 import 'package:veraprob/domain/sla_audit/domain_exception.dart';
 import 'package:veraprob/testing/fakes/fake_date_time_provider.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 // ─────────────────────────────────────────────────────────────
 // Test doubles
@@ -338,7 +339,7 @@ void main() {
           execute(
             businessLogic: () async => throw StateError('DB connection lost'),
           ),
-          throwsStateError,
+          throwsA(isA<StateError>()),
         );
 
         verify(
@@ -453,7 +454,7 @@ void main() {
 
     // ── Cenário 5c: Cache hit completed + responseBody nulo ──
     test(
-      'Cenário 5c — Cache hit completed com responseBody nulo → StateError (guardrail forense)',
+      'Cenário 5c — Cache hit completed com responseBody nulo → IntegrityException (guardrail forense)',
       () async {
         when(
           () => store.tryRegister(
@@ -469,7 +470,7 @@ void main() {
 
         await expectLater(
           execute(businessLogic: () async => const _Entity('entity-1', 1)),
-          throwsStateError,
+          throwsA(isA<IntegrityException>()),
         );
       },
     );

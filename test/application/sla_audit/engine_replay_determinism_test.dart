@@ -148,10 +148,7 @@ void main() {
         // RUN A: Single Batch
         await pipeline.process(facts, organizationId: orgId);
 
-        final stateA = await execRepo.findBySetId(
-          setId,
-          organizationId: 'org-1',
-        );
+        final stateA = await execRepo.findBySetId(setId, organizationId: orgId);
         expect(stateA?.status, equals(ExecutionStatus.completed));
 
         final ledgerA = await ledgerRepo.getEntriesBySetId(setId);
@@ -175,10 +172,7 @@ void main() {
         await pipeline.process([facts[1]], organizationId: orgId);
         await pipeline.process([facts[2]], organizationId: orgId);
 
-        final stateB = await execRepo.findBySetId(
-          setId,
-          organizationId: 'org-1',
-        );
+        final stateB = await execRepo.findBySetId(setId, organizationId: orgId);
         expect(stateB?.status, equals(ExecutionStatus.completed));
 
         final ledgerB = await ledgerRepo.getEntriesBySetId(setId);
@@ -235,7 +229,7 @@ void main() {
 
         final stateAtSweep = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           stateAtSweep?.status,
@@ -264,7 +258,7 @@ void main() {
 
         final finalState = await execRepo.findBySetId(
           setId,
-          organizationId: 'org-1',
+          organizationId: orgId,
         );
         expect(
           finalState?.status,

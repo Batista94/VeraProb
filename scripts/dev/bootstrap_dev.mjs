@@ -746,6 +746,270 @@ function cleanupZombies(userIds) {
   }
 }
 
+// ── Dados Históricos para SLA Sandbox ──────────────────────────────────────────
+
+async function ensureSandboxTestData(url, serviceKey) {
+  process.stdout.write('  ── Provisionando Dados Históricos para SLA Sandbox (Modo Simulação)\n');
+
+  const orgId = '00000000-0000-0000-0000-000000000001';
+  const contractId = '00000000-0000-0000-0000-ca0000000001';
+  const ruleSetId = '00000000-0000-0000-0000-fa0000000001';
+
+  // 1. Criar contract_rule_sets
+  process.stdout.write('      [1/3] Criar contract_rule_sets... ');
+  const resRuleSet = await post(
+    `${url}/rest/v1/contract_rule_sets`,
+    { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+    {
+      id: ruleSetId,
+      organization_id: orgId,
+      contract_id: contractId
+    }
+  );
+  if (!resRuleSet.ok && resRuleSet.status !== 409) {
+    throw new Error(`Erro ao criar rule set: ${resRuleSet.status} - ${JSON.stringify(resRuleSet.data)}`);
+  }
+  console.log('ok');
+
+  // 2. Criar contract_rule_versions
+  process.stdout.write('      [2/3] Criar contract_rule_versions (MAX_TOLERANCE_DELAY + NO_SHOW_PENALTY)... ');
+  const rules = [
+    {
+      id: '00000000-0000-0000-0000-fb0000000001',
+      rule_set_id: ruleSetId,
+      rule_type: 'MAX_TOLERANCE_DELAY',
+      rule_config: { threshold_minutes: 15 },
+      rule_version: 1,
+      evaluation_order: 1,
+      active_from_utc: '2026-01-01T00:00:00Z',
+      created_at_utc: '2026-01-01T00:00:00Z',
+      active_to_utc: null,
+      is_scheduled: false
+    },
+    {
+      id: '00000000-0000-0000-0000-fb0000000002',
+      rule_set_id: ruleSetId,
+      rule_type: 'NO_SHOW_PENALTY',
+      rule_config: { penalty_amount_cents: 250000 },
+      rule_version: 1,
+      evaluation_order: 2,
+      active_from_utc: '2026-01-01T00:00:00Z',
+      created_at_utc: '2026-01-01T00:00:00Z',
+      active_to_utc: null,
+      is_scheduled: false
+    }
+  ];
+
+  for (const rule of rules) {
+    const resRule = await post(
+      `${url}/rest/v1/contract_rule_versions`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      rule
+    );
+    if (!resRule.ok && resRule.status !== 409) {
+      throw new Error(`Erro ao criar rule version: ${resRule.status} - ${JSON.stringify(resRule.data)}`);
+    }
+  }
+  console.log('ok');
+
+  // 3. Criar registros em sla_audit_ledger_v2
+  process.stdout.write('      [3/3] Criar registros históricos em sla_audit_ledger_v2... ');
+
+  // Eventos distribuídos de Janeiro a Junho de 2026
+  const events = [
+    // Janeiro 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000001',
+      organization_id: orgId,
+      occurred_at_utc: '2026-01-10T08:30:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000 // R$ 1.000,00
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    {
+      id: '00000000-0000-0000-0000-fc0000000002',
+      organization_id: orgId,
+      occurred_at_utc: '2026-01-20T17:15:00Z',
+      type: 'NO_SHOW_PENALTY',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'NO_SHOW_PENALTY',
+          fine_cents: 250000 // R$ 2.500,00
+        },
+        original_fine_cents: 250000,
+        cap_truncated: false
+      }
+    },
+    // Fevereiro 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000003',
+      organization_id: orgId,
+      occurred_at_utc: '2026-02-12T09:00:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    // Março 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000004',
+      organization_id: orgId,
+      occurred_at_utc: '2026-03-05T14:20:00Z',
+      type: 'NO_SHOW_PENALTY',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'NO_SHOW_PENALTY',
+          fine_cents: 250000
+        },
+        original_fine_cents: 250000,
+        cap_truncated: false
+      }
+    },
+    {
+      id: '00000000-0000-0000-0000-fc0000000005',
+      organization_id: orgId,
+      occurred_at_utc: '2026-03-25T11:45:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    // Abril 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000006',
+      organization_id: orgId,
+      occurred_at_utc: '2026-04-18T16:10:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    // Maio 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000007',
+      organization_id: orgId,
+      occurred_at_utc: '2026-05-02T08:00:00Z',
+      type: 'NO_SHOW_PENALTY',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'NO_SHOW_PENALTY',
+          fine_cents: 250000
+        },
+        original_fine_cents: 250000,
+        cap_truncated: false
+      }
+    },
+    {
+      id: '00000000-0000-0000-0000-fc0000000008',
+      organization_id: orgId,
+      occurred_at_utc: '2026-05-22T15:30:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    // Junho 2026
+    {
+      id: '00000000-0000-0000-0000-fc0000000009',
+      organization_id: orgId,
+      occurred_at_utc: '2026-06-14T10:00:00Z',
+      type: 'SANCTION_RECOMMENDED',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'MAX_TOLERANCE_DELAY',
+          fine_cents: 100000
+        },
+        original_fine_cents: 100000,
+        cap_truncated: false
+      }
+    },
+    {
+      id: '00000000-0000-0000-0000-fc0000000010',
+      organization_id: orgId,
+      occurred_at_utc: '2026-06-28T19:00:00Z',
+      type: 'NO_SHOW_PENALTY',
+      contract_id: contractId,
+      plan_version: 1,
+      payload: {
+        verdict_evidence: {
+          rule_type: 'NO_SHOW_PENALTY',
+          fine_cents: 250000
+        },
+        original_fine_cents: 250000,
+        cap_truncated: false
+      }
+    }
+  ];
+
+  for (const event of events) {
+    const resEvent = await post(
+      `${url}/rest/v1/sla_audit_ledger_v2`,
+      { ...authHeaders(serviceKey), Prefer: 'resolution=ignore-duplicates,return=minimal' },
+      event
+    );
+    if (!resEvent.ok && resEvent.status !== 409) {
+      throw new Error(`Erro ao criar evento na ledger: ${resEvent.status} - ${JSON.stringify(resEvent.data)}`);
+    }
+  }
+
+  // 4. Configurar stop-loss cap no Contrato da Org Alpha (atualiza o contrato com o cap após inserções históricas)
+  // Fazemos isso por último para que os INSERTS passados passem pela trigger de cap operacional (enforce_financial_guard) sem truncar
+  process.stdout.write('      [4/4] Configurar stop-loss cap no Contrato da Org Alpha... ');
+  const resContract = await patch(
+    `${url}/rest/v1/contracts?id=eq.${contractId}`,
+    authHeaders(serviceKey),
+    { monthly_penalty_cap_cents: 500000 } // R$ 5.000,00 de cap mensal
+  );
+  if (!resContract.ok) {
+    throw new Error(`Erro ao atualizar cap do contrato: ${resContract.status} - ${JSON.stringify(resContract.data)}`);
+  }
+  console.log('ok\n');
+}
+
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -835,6 +1099,9 @@ async function main() {
 
   // Dados de negócio
   await ensureTestData(url, serviceKey);
+
+  // Dados Históricos do SLA Sandbox (ROI Simulator)
+  await ensureSandboxTestData(url, serviceKey);
 
   console.log('╔══════════════════════════════════════════════════════════╗');
   console.log('║                  CREDENCIAIS DE TESTE                   ║');

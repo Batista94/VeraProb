@@ -211,7 +211,7 @@ void main() {
         );
         await expectLater(
           logger.log(eventType: 'X', metadata: {}, jwtClaimsSnapshot: {}),
-          throwsStateError,
+          throwsA(isA<StateError>()),
           reason:
               'negative reference: non-INV26-compliant impl DOES propagate — real impl must not',
         );

@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/telegram/compliance_check_result.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 // ── Mirrors PostgresTelegramRepository.getComplianceStatus parsing ────────────
 
@@ -76,7 +77,7 @@ void main() {
     test('unknown status throws ArgumentError', () {
       expect(
         () => parseComplianceResponse({'status': 'UNKNOWN'}),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
@@ -162,7 +163,7 @@ void main() {
         () => parseBatchResponse([
           {'set_id': 'SET-1', 'status': 'INVALID_STATUS'},
         ]),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 

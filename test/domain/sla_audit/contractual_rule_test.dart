@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/contractual_rule.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   final baseTime = DateTime.utc(2026, 1, 1);
@@ -68,18 +69,21 @@ void main() {
     test('throws ArgumentError for unknown value', () {
       expect(
         () => SlaRuleType.fromString('UNKNOWN_RULE'),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
 
     test('throws ArgumentError for empty string', () {
-      expect(() => SlaRuleType.fromString(''), throwsA(isA<ArgumentError>()));
+      expect(
+        () => SlaRuleType.fromString(''),
+        throwsA(isA<IntegrityException>()),
+      );
     });
 
     test('is case-sensitive', () {
       expect(
         () => SlaRuleType.fromString('max_tolerance_delay'),
-        throwsA(isA<ArgumentError>()),
+        throwsA(isA<IntegrityException>()),
       );
     });
   });

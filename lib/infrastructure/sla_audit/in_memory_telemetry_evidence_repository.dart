@@ -1,3 +1,4 @@
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 import 'package:veraprob/domain/sla_audit/telemetry_evidence.dart';
 import 'package:veraprob/domain/sla_audit/telemetry_evidence_repository.dart';
 
@@ -22,7 +23,8 @@ class InMemoryTelemetryEvidenceRepository
   @override
   Future<void> save(TelemetryEvidence evidence) async {
     if (_byContentHash.containsKey(evidence.contentHash)) {
-      throw StateError(
+      // INV-10: typed domain exception — StateError is forbidden in repositories.
+      throw IntegrityException(
         'Duplicate contentHash detected: ${evidence.contentHash}. '
         'TelemetryEvidence is append-only (INV-1).',
       );

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:veraprob/app/routing/app_routes.dart';
 import 'package:veraprob/app/routing/route_permissions.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/features/admin/providers/admin_navigation_provider.dart';
 import 'package:veraprob/state/providers/auth_providers.dart';
 import 'package:veraprob/features/admin/providers/onboarding_provider.dart';

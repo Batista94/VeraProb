@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:veraprob/domain/sla_audit/justification/justification_status.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification.dart';
 import 'package:veraprob/domain/sla_audit/justification/sla_justification_category.dart';
+import 'package:veraprob/domain/shared/integrity_exception.dart';
 
 void main() {
   final occurrenceTimestamp = DateTime.utc(2026, 4, 14, 10, 30);
@@ -142,7 +143,7 @@ void main() {
     test('unknown DB value throws ArgumentError', () {
       expect(
         () => SLAJustificationCategory.fromDb('INVALID'),
-        throwsArgumentError,
+        throwsA(isA<IntegrityException>()),
       );
     });
   });

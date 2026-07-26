@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:veraprob/core/theme/app_theme.dart';
-import 'package:veraprob/application/shared/app_types.dart';
 import 'package:veraprob/application/admin/org_capabilities.dart';
 import 'package:veraprob/application/admin/update_org_operational_params_command.dart';
 import 'package:veraprob/state/providers/admin_providers.dart';
